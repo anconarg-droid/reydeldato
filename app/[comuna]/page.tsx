@@ -1,69 +1,116 @@
-// app/[comuna]/page.tsx
-import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import BuscarClient from "@/app/buscar/BuscarClient";
+import ComunaEnPreparacion from "@/components/ComunaEnPreparacion";
 
-export default async function Page({
-  params,
-}: {
+type PageProps = {
   params: Promise<{ comuna: string }>;
-}) {
-  const { comuna } = await params;
+  searchParams?: Promise<{ subcategoria?: string }> | { subcategoria?: string };
+};
+
+function s(v: unknown): string {
+  return String(v ?? "").trim();
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { comuna: comunaSlug } = await params;
+  const slug = s(comunaSlug).toLowerCase().replace(/\s+/g, "-");
+  if (!slug) return { title: "Comuna | Rey del Dato" };
+
+  const supabase = createSupabaseServerClient();
+  const [
+    { data: activa },
+    { data: resumen },
+    { data: comuna },
+  ] = await Promise.all([
+    supabase.from("comunas_activas").select("comuna_nombre").eq("comuna_slug", slug).maybeSingle(),
+    supabase.from("vw_comunas_por_abrir").select("comuna_nombre").eq("comuna_slug", slug).maybeSingle(),
+    supabase.from("comunas").select("nombre").eq("slug", slug).maybeSingle(),
+  ]);
+
+  const nombre =
+    s(activa?.comuna_nombre) ||
+    s((resumen as any)?.comuna_nombre) ||
+    s((comuna as any)?.nombre) ||
+    slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return {
+    title: `Emprendimientos y servicios en ${nombre} | Rey del Dato`,
+    description: `Encuentra emprendimientos y servicios en ${nombre}. Contacta directo por WhatsApp con negocios de tu comuna.`,
+  };
+}
+
+export default async function ComunaPage({ params, searchParams }: PageProps) {
+  const { comuna: comunaSlug } = await params;
+  const slug = s(comunaSlug).toLowerCase().replace(/\s+/g, "-");
+  if (!slug) notFound();
+  const sp = searchParams ? await searchParams : {};
+  const subcategoriaFromQuery = s((sp as { subcategoria?: string }).subcategoria || "");
+
+  const supabase = createSupabaseServerClient();
+
+  const [
+    { data: activaRow },
+    { data: resumenRow },
+    { data: comunaRow },
+  ] = await Promise.all([
+    supabase
+      .from("comunas_activas")
+      .select("comuna_slug, comuna_nombre, activa")
+      .eq("comuna_slug", slug)
+      .maybeSingle(),
+    supabase
+      .from("vw_comunas_por_abrir")
+      .select("comuna_slug, comuna_nombre, total_emprendedores, avance_porcentaje, faltan_emprendedores_meta")
+      .eq("comuna_slug", slug)
+      .maybeSingle(),
+    supabase
+      .from("comunas")
+      .select("slug, nombre")
+      .eq("slug", slug)
+      .maybeSingle(),
+  ]);
+
+  const comunaNombre =
+    s(activaRow?.comuna_nombre) ||
+    s((resumenRow as any)?.comuna_nombre) ||
+    s((comunaRow as any)?.nombre) ||
+    slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const activa = activaRow?.activa === true;
+
+  if (!activaRow && !resumenRow && !comunaRow) {
+    notFound();
+  }
+
+  if (activa) {
+    return (
+      <BuscarClient
+        initialComuna={slug}
+        initialComunaNombre={comunaNombre || undefined}
+        initialSubcategoria={subcategoriaFromQuery || undefined}
+      />
+    );
+  }
+
+  const total = Number((resumenRow as any)?.total_emprendedores) || 0;
+  const faltan = Number((resumenRow as any)?.faltan_emprendedores_meta) || 40;
+  const progreso = [
+    {
+      nombre: "Emprendimientos",
+      actual: total,
+      meta: Math.max(total + 1, total + faltan),
+    },
+  ];
 
   return (
-    <div style={{ padding: 24, maxWidth: 980, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 34, fontWeight: 900, marginBottom: 8 }}>
-        Comuna dinámica
-      </h1>
-
-      <div style={{ opacity: 0.85, marginBottom: 16 }}>
-        params.comuna: <b>{comuna}</b>
+    <main className="min-h-screen bg-slate-50">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <ComunaEnPreparacion
+          comunaSlug={slug}
+          comunaNombre={comunaNombre}
+          progreso={progreso}
+        />
       </div>
-
-      <div
-        style={{
-          padding: 14,
-          background: "#f5f7fa",
-          borderRadius: 10,
-          border: "1px solid #e6eaf0",
-        }}
-      >
-        <div style={{ fontWeight: 900, marginBottom: 8 }}>
-          Ir a búsqueda en esta comuna
-        </div>
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link
-            href={`/${comuna}/buscar?q=gasfiter`}
-            style={{
-              display: "inline-block",
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.2)",
-              textDecoration: "none",
-              fontWeight: 900,
-              color: "inherit",
-              background: "white",
-            }}
-          >
-            Probar: gasfiter
-          </Link>
-
-          <Link
-            href={`/${comuna}/buscar?q=veterinario`}
-            style={{
-              display: "inline-block",
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.2)",
-              textDecoration: "none",
-              fontWeight: 900,
-              color: "inherit",
-              background: "white",
-            }}
-          >
-            Probar: veterinario
-          </Link>
-        </div>
-      </div>
-    </div>
+    </main>
   );
 }
