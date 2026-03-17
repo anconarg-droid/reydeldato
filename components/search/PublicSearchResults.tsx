@@ -91,25 +91,20 @@ const TIPO_LABELS: Record<string, string> = {
   arriendo: "Arriendo",
 };
 
-type SearchSuccessResponse = {
-  ok: true;
-  total: number;
-  q?: string;
-  comuna?: string | null;
-  items: SearchHit[];
-  suggested_terms?: string[];
-};
-
 type ProgresoItem = { nombre: string; actual: number; meta: number };
 
-type ComunaEnPreparacionResponse = {
-  modo: "comuna_en_preparacion";
-  comuna: string;
-  comuna_slug: string;
+type SearchResponse = {
+  ok: boolean;
+  total: number;
+  items: SearchHit[];
+  q?: string;
+  comuna?: string | null;
+  suggested_terms?: string[];
+  // Campos opcionales cuando la respuesta representa "comuna en preparación"
+  modo?: "comuna_en_preparacion";
+  comuna_slug?: string;
   progreso?: ProgresoItem[];
 };
-
-type SearchResponse = SearchSuccessResponse | ComunaEnPreparacionResponse;
 
 export type QuickFilterOrderBy =
   | "todos"
@@ -496,14 +491,47 @@ export default function PublicSearchResults({
           throw new Error(text || `Error HTTP ${res.status}`);
         }
 
-        const json = (await res.json()) as SearchResponse;
-        setData(json);
-        if (
-          onSuggestedTerms &&
-          "suggested_terms" in json &&
-          Array.isArray((json as SearchSuccessResponse).suggested_terms)
-        ) {
-          onSuggestedTerms((json as SearchSuccessResponse).suggested_terms!);
+        const raw = await res.json();
+
+        // Normalizar la respuesta para aceptar tanto:
+        // - { ok, items, total }
+        // - como posibles formas antiguas { hits, nbHits }
+        const ok =
+          raw && typeof raw === "object" && "ok" in raw
+            ? Boolean((raw as any).ok)
+            : true;
+
+        const items: SearchHit[] = Array.isArray((raw as any)?.items)
+          ? ((raw as any).items as SearchHit[])
+          : Array.isArray((raw as any)?.hits)
+            ? ((raw as any).hits as SearchHit[])
+            : [];
+
+        const total: number =
+          typeof (raw as any)?.total === "number"
+            ? (raw as any).total
+            : typeof (raw as any)?.nbHits === "number"
+              ? (raw as any).nbHits
+              : items.length;
+
+        const normalized: SearchResponse = {
+          ok,
+          total,
+          items,
+          q: (raw as any)?.q,
+          comuna: (raw as any)?.comuna ?? null,
+          suggested_terms: Array.isArray((raw as any)?.suggested_terms)
+            ? (raw as any).suggested_terms
+            : undefined,
+          modo: (raw as any)?.modo,
+          comuna_slug: (raw as any)?.comuna_slug,
+          progreso: (raw as any)?.progreso,
+        };
+
+        setData(normalized);
+
+        if (onSuggestedTerms && Array.isArray(normalized.suggested_terms)) {
+          onSuggestedTerms(normalized.suggested_terms);
         }
       } catch (err: any) {
         if (err.name === "AbortError") return;
@@ -557,7 +585,7 @@ export default function PublicSearchResults({
     return null;
   }
 
-  if ("modo" in data && data.modo === "comuna_en_preparacion") {
+  if (data.modo === "comuna_en_preparacion") {
     return (
       <div className="mt-6 max-w-2xl mx-auto">
         <p className="text-sm text-slate-600 mb-4">
@@ -572,11 +600,8 @@ export default function PublicSearchResults({
     );
   }
 
-  const items = "items" in data && Array.isArray(data.items) ? data.items : [];
-  const total =
-    "total" in data && typeof data.total === "number"
-      ? data.total
-      : items.length;
+  const items = Array.isArray(data.items) ? data.items : [];
+  const total = typeof data.total === "number" ? data.total : items.length;
 
   const comunaLabel = comuna ? prettyComunaSlug(comuna) : "";
   const subcategoriaLabel = subcategoriaSlug?.trim() ? subcategoriaSlugToLabel(subcategoriaSlug) : "";

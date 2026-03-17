@@ -72,13 +72,19 @@ SELECT
     WHERE erc.emprendedor_id = e.id
   ) AS regiones_cobertura_slugs_arr,
 
-  -- Texto consolidado para búsquedas server-side (NO usa detectadas como fuente oficial)
-  TRIM(
-    e.nombre || ' ' ||
-    COALESCE(e.descripcion_corta, '') || ' ' ||
-    COALESCE(e.descripcion_larga, '') || ' ' ||
-    COALESCE(e.subcategoria_slug_final, '') || ' ' ||
-    array_to_string(COALESCE(e.keywords_finales, ARRAY[]::text[]), ' ')
+  -- Texto consolidado para búsquedas server-side, normalizado (sin tildes, minúsculas)
+  LOWER(
+    translate(
+      TRIM(
+        COALESCE(e.nombre, '') || ' ' ||
+        COALESCE(e.descripcion_corta, '') || ' ' ||
+        COALESCE(e.descripcion_larga, '') || ' ' ||
+        COALESCE(cat.nombre, '') || ' ' ||
+        COALESCE(cb.nombre, '')
+      ),
+      'áéíóúÁÉÍÓÚÑ',
+      'aeiouaeiounn'
+    )
   ) AS search_text
 
 FROM public.emprendedores e
