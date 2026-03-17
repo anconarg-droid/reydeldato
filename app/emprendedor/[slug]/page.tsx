@@ -84,6 +84,13 @@ type Emprendedor = {
   sector_slug?: string | null;
   tags_slugs?: string[] | null;
   clasificacion_confianza?: number | null;
+
+  subcategoria_final?: string;
+  subcategoria_final_nombre?: string;
+  subcategoria_final_slug?: string;
+  subcategoria_sugerida?: string;
+  subcategoria_sugerida_nombre?: string;
+  subcategoria_sugerida_slug?: string;
 };
 
 type Similar = {
@@ -159,7 +166,7 @@ function buildMailUrl(email: string) {
 }
 
 function modalidadesTexto(list?: string[]) {
-  if (!list?.length) return "No informada";
+  if (!list?.length) return "No informado";
 
   const map: Record<string, string> = {
     local_fisico: "Local físico",
@@ -169,7 +176,7 @@ function modalidadesTexto(list?: string[]) {
     fisico: "Físico",
   };
 
-  return list.map((v) => map[v] || v).join(", ");
+  return list.map((v) => map[v] || v).join(" • ");
 }
 
 function prettySubcategoriaPath(list?: string[]) {
@@ -475,6 +482,22 @@ export default async function Page({
   const subcategorias = arr(item.subcategorias_nombres_arr);
   const subcategoriaSlugs = arr(item.subcategorias_slugs_arr);
   const subcategoriaSlugPrincipal = prettySubcategoriaPath(subcategoriaSlugs);
+
+  const subcategoriaDisplay =
+    s(item.subcategoria_final_nombre) ||
+    s(item.subcategoria_sugerida_nombre) ||
+    s(item.subcategoria_final) ||
+    s(item.subcategoria_sugerida) ||
+    s(subcategorias[0]) ||
+    sectorNombreLegible(item.sector_slug) ||
+    "No informado";
+
+  const coberturaDisplay =
+    coberturaComunas.length > 0
+      ? coberturaComunas.join(" • ")
+      : coberturaTipo
+        ? cobertura
+        : "No informado";
 
   const similares = await getSimilares(item.slug);
 
@@ -827,7 +850,11 @@ export default async function Page({
           </p>
 
           <p style={{ fontSize: 14, margin: "0 0 8px 0", color: "#374151" }}>
-            <strong>Cobertura:</strong> {cobertura}
+            <strong>Cobertura:</strong> {coberturaDisplay}
+          </p>
+
+          <p style={{ fontSize: 14, margin: "0 0 8px 0", color: "#374151" }}>
+            <strong>Categoría:</strong> {subcategoriaDisplay}
           </p>
 
           {tieneLocalFisico && item.direccion ? (

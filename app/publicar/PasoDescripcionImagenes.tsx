@@ -302,21 +302,6 @@ function normalizeOneKeyword(s: string): string {
     .slice(0, 40);
 }
 
-const BLOCKED_MANUAL_KEYWORDS = new Set([
-  "mejor",
-  "barato",
-  "barata",
-  "económico",
-  "economico",
-  "calidad",
-  "servicio",
-  "servicios",
-  "excelente",
-  "empresa",
-  "negocio",
-  "local",
-].map(normalizeOneKeyword));
-
 function cleanChipDisplayValue(raw: string): string {
   return raw
     .trim()
@@ -334,10 +319,26 @@ function splitCandidates(raw: string): string[] {
     .filter(Boolean);
 }
 
-function isBlockedManualKeyword(raw: string): boolean {
-  const norm = normalizeOneKeyword(raw);
+function normalizeManualKeywordForStorage(raw: string): string {
+  return normalizeOneKeyword(raw).slice(0, 30);
+}
+
+const BASIC_MANUAL_BLACKLIST = new Set(
+  [
+    "mejor",
+    "barato",
+    "barata",
+    "económico",
+    "economico",
+    "excelente",
+    "calidad",
+  ].map(normalizeManualKeywordForStorage)
+);
+
+function isBlacklistedManualKeyword(raw: string): boolean {
+  const norm = normalizeManualKeywordForStorage(raw);
   if (!norm) return true;
-  return BLOCKED_MANUAL_KEYWORDS.has(norm);
+  return BASIC_MANUAL_BLACKLIST.has(norm);
 }
 
 /** Normalización básica para consistencia en el buscador (ej: empanada → empanadas). */
@@ -416,7 +417,196 @@ function areSimplePluralEquivalents(a: string, b: string): boolean {
   return strip(a) === strip(b);
 }
 
+function toSlugFormLocal(s: string): string {
+  return String(s ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9ñ]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
+function extractMatchedPriorityPhrases(description: string): string[] {
+  const descNorm = normalizeForNgrams(description);
+  if (!descNorm) return [];
+  const out: string[] = [];
+  for (const phrase of PRIORITY_PHRASES) {
+    const normPhrase = normalizeForNgrams(phrase);
+    if (!normPhrase) continue;
+    if (descNorm.includes(normPhrase)) out.push(phrase);
+  }
+  return out;
+}
+
+const SUBCATEGORIA_PRIORITY: Record<string, number> = {
+  // Solo desempate. Mayor = más prioridad.
+  // Agrega/ajusta según reglas internas cuando lo necesites.
+  gasfiter: 100,
+  electricista: 90,
+  vulcanizacion: 80,
+};
+
+async function detectPrimarySubcategoriaFromSignals(params: {
+  supabaseClient: typeof supabase;
+  phrases: string[];
+  manualKeywords: string[];
+  autoKeywords: string[];
+}): Promise<string | null> {
+  const { supabaseClient, phrases, manualKeywords, autoKeywords } = params;
+
+  // Orden de prioridad: frases > manual > automático
+  const items: Array<{ keyword: string; source: "phrase" | "manual" | "auto"; weight: number }> = [
+    ...phrases.map((k) => ({ keyword: k, source: "phrase" as const, weight: 3 })),
+    ...manualKeywords.map((k) => ({ keyword: k, source: "manual" as const, weight: 2 })),
+    ...autoKeywords.map((k) => ({ keyword: k, source: "auto" as const, weight: 1 })),
+  ];
+
+  const normToBestWeight = new Map<string, number>();
+  for (const it of items) {
+    const norm = toSlugFormLocal(it.keyword);
+    if (!norm) continue;
+    const prev = normToBestWeight.get(norm) ?? 0;
+    if (it.weight > prev) normToBestWeight.set(norm, it.weight);
+  }
+
+  const normalized = Array.from(normToBestWeight.keys()).slice(0, 60);
+  if (normalized.length === 0) return null;
+
+  // 1) keyword_to_subcategory_map
+  const { data: mapRows, error: mapErr } = await supabaseClient
+    .from("keyword_to_subcategory_map")
+    .select("subcategoria_id, normalized_keyword, confidence_default")
+    .eq("activo", true)
+    .in("normalized_keyword", normalized);
+
+  if (mapErr || !mapRows || mapRows.length === 0) return null;
+
+  const subIds = Array.from(
+    new Set(mapRows.map((r: any) => String(r.subcategoria_id)).filter(Boolean))
+  );
+  if (subIds.length === 0) return null;
+
+  // 2) Resolver slug de subcategorías
+  const { data: subs, error: subsErr } = await supabaseClient
+    .from("subcategorias")
+    .select("id,slug")
+    .in("id", subIds);
+  if (subsErr || !subs || subs.length === 0) return null;
+
+  const idToSlug = new Map<string, string>();
+  for (const s of subs as any[]) {
+    if (s?.id && s?.slug) idToSlug.set(String(s.id), String(s.slug));
+  }
+
+  type Score = {
+    slug: string;
+    matchPoints: number; // ponderado (frase>manual>auto)
+    matches: number; // cantidad de coincidencias únicas
+    confidenceSum: number;
+  };
+  const scores = new Map<string, Score>();
+  const usedPerSlug = new Map<string, Set<string>>();
+
+  for (const row of mapRows as any[]) {
+    const subId = String(row.subcategoria_id || "");
+    const slug = idToSlug.get(subId);
+    if (!slug) continue;
+    const normKw = String(row.normalized_keyword || "");
+    const weight = normToBestWeight.get(normKw) ?? 0;
+    if (!weight) continue;
+
+    const conf = Number(row.confidence_default) || 0.85;
+
+    if (!usedPerSlug.has(slug)) usedPerSlug.set(slug, new Set());
+    const used = usedPerSlug.get(slug)!;
+    if (used.has(normKw)) continue;
+    used.add(normKw);
+
+    const existing = scores.get(slug) ?? {
+      slug,
+      matchPoints: 0,
+      matches: 0,
+      confidenceSum: 0,
+    };
+    existing.matchPoints += weight;
+    existing.matches += 1;
+    existing.confidenceSum += conf;
+    scores.set(slug, existing);
+  }
+
+  const list = Array.from(scores.values());
+  if (list.length === 0) return null;
+
+  // Conflictos: más coincidencias (ponderadas), luego más coincidencias reales,
+  // luego prioridad interna, luego "más específica" (slug más largo/más tokens).
+  list.sort((a, b) => {
+    if (a.matchPoints !== b.matchPoints) return b.matchPoints - a.matchPoints;
+    if (a.matches !== b.matches) return b.matches - a.matches;
+    const ap = SUBCATEGORIA_PRIORITY[a.slug] ?? 0;
+    const bp = SUBCATEGORIA_PRIORITY[b.slug] ?? 0;
+    if (ap !== bp) return bp - ap;
+    const aTokens = a.slug.split(/[-_]+/g).filter(Boolean).length;
+    const bTokens = b.slug.split(/[-_]+/g).filter(Boolean).length;
+    if (aTokens !== bTokens) return bTokens - aTokens;
+    return b.slug.length - a.slug.length;
+  });
+
+  return list[0]!.slug;
+}
+
+function pickPrimarySubcategoriaSlug(subcatData: unknown): string | null {
+  if (!subcatData) return null;
+
+  const asCandidate = (raw: any) => {
+    const slug =
+      typeof raw === "string"
+        ? raw
+        : raw && typeof raw === "object"
+          ? (raw.subcategoria_slug ?? raw.slug ?? null)
+          : null;
+    if (!slug || typeof slug !== "string") return null;
+
+    const scoreRaw =
+      raw && typeof raw === "object"
+        ? raw.score ?? raw.confidence ?? raw.similarity ?? raw.prob ?? null
+        : null;
+    const score =
+      typeof scoreRaw === "number"
+        ? scoreRaw
+        : typeof scoreRaw === "string"
+          ? Number(scoreRaw)
+          : null;
+
+    const normSlug = String(slug).trim();
+    const tokenCount = normSlug.split(/[-_\\s/]+/g).filter(Boolean).length;
+    const length = normSlug.length;
+
+    return { slug: normSlug, score, tokenCount, length };
+  };
+
+  const items: any[] = Array.isArray(subcatData) ? subcatData : [subcatData];
+  const candidates = items.map(asCandidate).filter(Boolean) as Array<{
+    slug: string;
+    score: number | null;
+    tokenCount: number;
+    length: number;
+  }>;
+  if (candidates.length === 0) return null;
+
+  // Regla: siempre UNA subcategoría final.
+  // Si hay conflicto: priorizar la más específica.
+  // Heurística: score (si existe) desc; luego tokenCount desc; luego length desc.
+  candidates.sort((a, b) => {
+    const aScore = a.score ?? -Infinity;
+    const bScore = b.score ?? -Infinity;
+    if (aScore !== bScore) return bScore - aScore;
+    if (a.tokenCount !== b.tokenCount) return b.tokenCount - a.tokenCount;
+    return b.length - a.length;
+  });
+
+  return candidates[0]!.slug;
+}
 
 type SuggestionResult = {
   suggested: string[];
@@ -536,8 +726,10 @@ export default function PasoDescripcionImagenes({
     "idle" | "analizando" | "aprendiendo" | "ok"
   >("idle");
   const [manualProductInput, setManualProductInput] = useState("");
+  const [manualProductError, setManualProductError] = useState<string>("");
   const removedAutoRef = useRef<string[]>([]);
   const setFieldRef = useRef(setField);
+  const manualProductsRef = useRef<string[]>(manualProducts);
   const suggestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSuggestedForRef = useRef<string>("");
   /** Último texto enviado a registrar_texto_aprendizaje en esta sesión (evita duplicados). */
@@ -551,21 +743,19 @@ export default function PasoDescripcionImagenes({
     removedAutoRef.current = removedAutoProducts;
   }, [removedAutoProducts]);
 
-  // Inicializar desde el draft/estado previo si viene poblado
   useEffect(() => {
-    const initial = Array.isArray(form.productosDetectados)
-      ? cleanDetectedProducts(form.productosDetectados)
-      : [];
-    if (initial.length === 0) return;
-    setManualProducts((prev) => (prev.length ? prev : initial.slice(0, 10)));
-  }, []);
+    manualProductsRef.current = manualProducts;
+  }, [manualProducts]);
 
   const combinedProducts = useMemo(() => {
     const removedSet = new Set(removedAutoProducts.map(normalizeOneKeyword));
     const auto = autoDetectedProducts.filter(
       (p) => !removedSet.has(normalizeOneKeyword(p))
     );
-    const merged = cleanDetectedProducts([...auto, ...manualProducts]);
+    const merged = cleanDetectedProducts([
+      ...auto.map(normalizeManualKeywordForStorage),
+      ...manualProducts.map(normalizeManualKeywordForStorage),
+    ]);
     return merged.slice(0, 10);
   }, [autoDetectedProducts, manualProducts, removedAutoProducts]);
 
@@ -599,28 +789,30 @@ export default function PasoDescripcionImagenes({
         const productNgrams = extractProductNgrams(desc);
         setAutoDetectedProducts(productNgrams);
 
-        // 2) Subcategoría detectada (RPC dedicada)
-        const { data: subcatData, error: subcatError } = await supabase.rpc(
-          "detectar_subcategoria",
-          { texto_input: texto }
-        );
+        // 2) Subcategoría principal (UNA) basada en señales:
+        // frases prioritarias > keywords manuales > keywords automáticas
+        const phraseMatches = extractMatchedPriorityPhrases(desc);
+        const manualNow = manualProductsRef.current || [];
+        const localSlug = await detectPrimarySubcategoriaFromSignals({
+          supabaseClient: supabase,
+          phrases: phraseMatches,
+          manualKeywords: manualNow,
+          autoKeywords: productNgrams,
+        });
 
-        let subcategoriaSlug: string | null = null;
-
-        if (!subcatError && subcatData) {
-          const raw =
-            Array.isArray(subcatData) && subcatData.length > 0
-              ? subcatData[0]
-              : subcatData;
-
-          if (raw && typeof raw === "object") {
-            subcategoriaSlug = (raw as any).subcategoria_slug ?? null;
-          } else if (typeof raw === "string") {
-            subcategoriaSlug = raw;
-          }
+        if (localSlug) {
+          setDetectedSubcategoria(localSlug);
+        } else {
+          // Fallback: RPC existente (mantener compatibilidad)
+          const { data: subcatData, error: subcatError } = await supabase.rpc(
+            "detectar_subcategoria",
+            { texto_input: texto }
+          );
+          const subcategoriaSlug = !subcatError && subcatData
+            ? pickPrimarySubcategoriaSlug(subcatData)
+            : null;
+          setDetectedSubcategoria(subcategoriaSlug);
         }
-
-        setDetectedSubcategoria(subcategoriaSlug);
       } catch {
         // ignore
       } finally {
@@ -721,26 +913,39 @@ export default function PasoDescripcionImagenes({
 
   function tryAddManualProducts(raw: string) {
     const candidates = splitCandidates(raw);
-    if (candidates.length === 0) return;
+    if (candidates.length === 0) {
+      setManualProductError("Esta palabra no es válida");
+      return;
+    }
 
     setManualProducts((prev) => {
-      const currentKeys = new Set([
-        ...autoDetectedProducts.map(normalizeOneKeyword),
-        ...prev.map(normalizeOneKeyword),
-      ]);
+      const currentKeys = new Set(prev.map(normalizeManualKeywordForStorage));
 
       const next = [...prev];
+      let added = 0;
       for (const c of candidates) {
         const display = cleanChipDisplayValue(c);
-        const key = normalizeOneKeyword(display);
-        if (!key) continue;
-        if (isBlockedManualKeyword(display)) continue;
-        if (currentKeys.has(key)) continue;
-        if (autoDetectedProducts.length + next.length >= 10) break;
-        currentKeys.add(key);
-        next.push(display);
+        const trimmed = display.trim();
+        if (trimmed.length < 2 || trimmed.length > 30) continue;
+        if (isBlacklistedManualKeyword(trimmed)) continue;
+
+        const storageKey = normalizeManualKeywordForStorage(trimmed);
+        if (!storageKey) continue;
+        if (currentKeys.has(storageKey)) continue;
+        if (next.length >= 10) break;
+
+        currentKeys.add(storageKey);
+        next.push(trimmed);
+        added += 1;
       }
-      return cleanDetectedProducts(next).slice(0, 10);
+
+      if (added === 0) {
+        setManualProductError("Esta palabra no es válida");
+      } else {
+        setManualProductError("");
+      }
+
+      return next.slice(0, 10);
     });
 
     setManualProductInput("");
@@ -816,6 +1021,29 @@ export default function PasoDescripcionImagenes({
             if (manualProductInput.trim()) tryAddManualProducts(manualProductInput);
           }}
         />
+        {manualProducts.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {manualProducts.map((p, i) => (
+              <span
+                key={`${p}-${i}`}
+                className="bg-gray-200 px-3 py-1 rounded-full text-sm flex items-center"
+              >
+                {p}
+                <button
+                  type="button"
+                  aria-label={`Quitar ${p}`}
+                  className="ml-2 text-red-500 hover:text-red-700"
+                  onClick={() => removeProductChip(p)}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        {manualProductError ? (
+          <div style={errorStyle}>{manualProductError}</div>
+        ) : null}
         <div style={helperStyle}>
           No pongas frases como "el mejor" o "barato". Enfócate en lo que haces.
         </div>
