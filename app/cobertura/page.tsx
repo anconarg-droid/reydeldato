@@ -1,143 +1,206 @@
+import { PageContainer, EmptyStateBlock } from "@/components/ui"
 import { Header } from "@/components/coverage/header"
-import { CityHero } from "@/components/coverage/city-hero"
+import { CoverageBreadcrumb } from "@/components/coverage/coverage-breadcrumb"
+import { ComunaHeroV0 } from "@/components/coverage/ComunaHeroV0"
+import { MissingCategories } from "@/components/coverage/MissingCategories"
+import { NearbyCommunes } from "@/components/coverage/NearbyCommunes"
+import { CountryStats } from "@/components/coverage/CountryStats"
+import { InviteBusinessSection } from "@/components/coverage/invite-business-section"
+import { RegionSelector } from "@/components/coverage/region-selector"
+import { ComunaSelector } from "@/components/coverage/comuna-selector"
 import { TerritorialExpansion } from "@/components/coverage/territorial-expansion"
-import { RegionSummary } from "@/components/coverage/region-summary"
-import { CategoriesNeeded } from "@/components/coverage/categories-needed"
+import { ClosestToOpenRanking } from "@/components/coverage/closest-to-open-ranking"
 import { CitySection } from "@/components/coverage/city-section"
-import { CityRanking } from "@/components/coverage/city-ranking"
+import { getCoverageData } from "@/lib/coverage-data"
+import { getCommuneActivity, incrementCommuneActivity } from "@/lib/commune-activity"
+import { Suspense } from "react"
 
-const selectedCity = {
-  name: "Talagante",
-  region: "Región Metropolitana",
-  businessCount: 7,
-  businessGoal: 50,
-  missingCategories: ["panaderías", "gasfíteres", "mecánicos", "fletes"],
-}
+type PageProps = {
+  searchParams?: Promise<{ region?: string; comuna?: string }> | { region?: string; comuna?: string };
+};
 
-const categories = [
-  { name: "Panadería", registered: 1, goal: 4 },
-  { name: "Gasfíter", registered: 0, goal: 4 },
-  { name: "Mecánico automotriz", registered: 0, goal: 4 },
-  { name: "Veterinaria", registered: 0, goal: 1 },
-  { name: "Peluquería", registered: 2, goal: 3 },
-  { name: "Restaurant", registered: 3, goal: 5 },
-  { name: "Ferretería", registered: 1, goal: 3 },
-  { name: "Electricista", registered: 0, goal: 3 },
-]
+export default async function CoveragePage({ searchParams }: PageProps) {
+  const sp = searchParams ? await searchParams : {};
+  const regionSlug = typeof sp.region === "string" ? sp.region.trim() : null;
+  const comunaSlug = typeof sp.comuna === "string" ? sp.comuna.trim() : null;
+  const data = await getCoverageData(comunaSlug || null, regionSlug || null);
 
-const openingCities = [
-  { name: "Maipú", status: "opening" as const, businessCount: 41, businessGoal: 50 },
-  { name: "Puente Alto", status: "opening" as const, businessCount: 38, businessGoal: 50 },
-  { name: "Peñaflor", status: "opening" as const, businessCount: 32, businessGoal: 50 },
-  { name: "San Bernardo", status: "opening" as const, businessCount: 28, businessGoal: 50 },
-  { name: "Buin", status: "opening" as const, businessCount: 19, businessGoal: 50 },
-]
+  const {
+    selectedCity,
+    categories,
+    rankedCities,
+    activeCities,
+    openingCities,
+    noCoverageCities,
+    countryActive,
+    countryTotal,
+    regionName,
+    currentRegionSlug,
+    regionActive,
+    regionTotal,
+    regionEnApertura,
+    regionSinCobertura,
+    regionPorcentajeCobertura,
+    expansionRegions,
+    regionComunas,
+    ofertaDisponible,
+  } = data;
 
-const noCoverageCities = [
-  { name: "Padre Hurtado", status: "no-coverage" as const, businessCount: 0, businessGoal: 50 },
-  { name: "Calera de Tango", status: "no-coverage" as const, businessCount: 0, businessGoal: 50 },
-  { name: "El Monte", status: "no-coverage" as const, businessCount: 0, businessGoal: 50 },
-  { name: "Isla de Maipo", status: "no-coverage" as const, businessCount: 0, businessGoal: 50 },
-  { name: "Quilicura", status: "no-coverage" as const, businessCount: 0, businessGoal: 50 },
-  { name: "Melipilla", status: "no-coverage" as const, businessCount: 0, businessGoal: 50 },
-]
+  let peopleHelping = 0;
+  if (selectedCity?.slug) {
+    const activity = await getCommuneActivity(selectedCity.slug);
+    await incrementCommuneActivity(selectedCity.slug, "views");
+    const realHelpers = (activity?.contributors ?? 0) + (activity?.invites ?? 0) + (activity?.shares ?? 0);
+    peopleHelping = Math.max(3, realHelpers + 3);
+  }
 
-const rankedCities = [
-  { name: "Maipú", percentage: 82 },
-  { name: "Puente Alto", percentage: 76 },
-  { name: "Peñaflor", percentage: 64 },
-  { name: "San Bernardo", percentage: 56 },
-  { name: "Buin", percentage: 38 },
-]
-
-const expansionRegions = [
-  { name: "Región Metropolitana", active: 6, total: 52 },
-  { name: "Región de Valparaíso", active: 1, total: 38 },
-  { name: "Región del Biobío", active: 0, total: 33 },
-  { name: "Región de O'Higgins", active: 0, total: 33 },
-  { name: "Región del Maule", active: 0, total: 30 },
-  { name: "Región de Coquimbo", active: 0, total: 15 },
-  { name: "Región de La Araucanía", active: 0, total: 32 },
-  { name: "Región de Los Lagos", active: 0, total: 30 },
-]
-
-export default function CoveragePage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#F9FAFB]">
       <Header />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 md:py-12">
-        <div className="space-y-12 md:space-y-16">
-          {/* Hero Section */}
-          <CityHero
-            cityName={selectedCity.name}
-            region={selectedCity.region}
-            businessCount={selectedCity.businessCount}
-            businessGoal={selectedCity.businessGoal}
-            missingCategories={selectedCity.missingCategories}
+
+      <PageContainer>
+        <div className="flex flex-col gap-10 md:gap-12">
+          <CoverageBreadcrumb
+            regionSlug={currentRegionSlug ? String(currentRegionSlug) : null}
+            regionName={regionName ? String(regionName) : null}
+            comunaSlug={selectedCity?.slug ? String(selectedCity.slug) : null}
+            comunaName={selectedCity?.name ? String(selectedCity.name) : null}
           />
 
-          {/* Expansión territorial */}
-          <TerritorialExpansion
-            countryActive={12}
-            countryTotal={346}
-            regionName="Región Metropolitana"
-            regionActive={6}
-            regionTotal={52}
-            regions={expansionRegions}
-          />
+          {selectedCity ? (
+            <>
+              {/* Selectores: región y comuna */}
+              <div className="flex flex-wrap items-center gap-4">
+                <Suspense fallback={<span className="text-sm text-[#6B7280]">Cargando…</span>}>
+                  <RegionSelector regions={expansionRegions} currentRegionSlug={currentRegionSlug} />
+                </Suspense>
+                {currentRegionSlug && regionComunas.length > 0 && (
+                  <Suspense fallback={null}>
+                    <ComunaSelector
+                      comunas={regionComunas}
+                      currentComunaSlug={selectedCity.slug}
+                      regionSlug={currentRegionSlug}
+                    />
+                  </Suspense>
+                )}
+              </div>
 
-          {/* Region Summary + City Ranking */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1 space-y-6">
-              <RegionSummary
-                regionName="Región Metropolitana"
-                activeCities={6}
-                totalCities={52}
-              />
-              <CityRanking cities={rankedCities} />
-            </div>
-            <div className="lg:col-span-2">
-              <CategoriesNeeded
+              {/* Diseño v0: Hero + Rubros + Comunas más cerca + Estado Chile */}
+              <ComunaHeroV0
                 cityName={selectedCity.name}
-                categories={categories}
+                region={selectedCity.region}
+                comunaSlug={selectedCity.slug}
+                registrados={selectedCity.businessCount}
+                meta={selectedCity.businessGoal}
+                peopleHelping={peopleHelping}
+                isActive={selectedCity.isActive}
               />
-            </div>
-          </div>
 
-          {/* Cities Closest to Opening */}
-          <CitySection
-            label="Comunas mas cerca de abrir"
-            title="Comunas más cerca de abrir en la Región Metropolitana"
-            subtitle="Estas comunas ya tienen avance. Elige una para ver qué rubros faltan y cómo ayudar."
-            cities={openingCities}
-          />
+              <MissingCategories
+                cityName={selectedCity.name}
+                citySlug={selectedCity.slug}
+                categories={categories.map((c) => ({ name: c.name, registered: c.registered, goal: c.goal }))}
+              />
 
-          {/* Other Cities */}
-          <CitySection
-            title="Otras comunas donde queremos llegar"
-            cities={noCoverageCities}
-          />
+              <NearbyCommunes
+                comunas={[...openingCities]
+                  .sort((a, b) => {
+                    const progressA = a.businessGoal > 0 ? a.businessCount / a.businessGoal : 0;
+                    const progressB = b.businessGoal > 0 ? b.businessCount / b.businessGoal : 0;
+                    return progressB - progressA;
+                  })
+                  .slice(0, 6)
+                  .map((c) => ({
+                    name: c.name,
+                    slug: c.slug,
+                    registrados: c.businessCount,
+                    meta: c.businessGoal,
+                    regionSlug: currentRegionSlug || "",
+                  }))}
+              />
+
+              <CountryStats comunasActivas={countryActive} totalComunas={countryTotal} />
+
+              {typeof ofertaDisponible === "number" && ofertaDisponible > 0 && (
+                <section className="rounded-2xl border border-[#E5E7EB] bg-[#F9FAFB] p-6">
+                  <h2 className="text-lg font-semibold text-[#111827] mb-1">Oferta disponible en {selectedCity.name}</h2>
+                  <p className="text-sm text-[#6B7280] mb-4">
+                    {ofertaDisponible === 1
+                      ? "1 negocio puede atender esta comuna (base en la comuna, cobertura o alcance regional/nacional)."
+                      : `${ofertaDisponible} negocios pueden atender esta comuna (base en la comuna, cobertura o alcance regional/nacional).`}
+                  </p>
+                  <a
+                    href={`/buscar?comuna=${encodeURIComponent(selectedCity.slug)}`}
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-4 py-2 text-sm font-medium text-white hover:bg-[#1E293B] transition-colors"
+                  >
+                    Ver emprendimientos
+                  </a>
+                </section>
+              )}
+
+              <section id="ayuda-abrir">
+                <InviteBusinessSection cityName={selectedCity.name} citySlug={selectedCity.slug} />
+              </section>
+            </>
+          ) : (
+            <>
+              <EmptyStateBlock
+                title="Cobertura de Rey del Dato"
+                description="Selecciona una comuna en el ranking para ver su avance y cómo ayudar a abrirla."
+              />
+              <div className="flex flex-wrap items-center gap-4">
+                <Suspense fallback={<span className="text-sm text-[#6B7280]">Cargando…</span>}>
+                  <RegionSelector regions={expansionRegions} currentRegionSlug={currentRegionSlug} />
+                </Suspense>
+                {currentRegionSlug && regionComunas.length > 0 && (
+                  <Suspense fallback={null}>
+                    <ComunaSelector
+                      comunas={regionComunas}
+                      currentComunaSlug={null}
+                      regionSlug={currentRegionSlug}
+                    />
+                  </Suspense>
+                )}
+              </div>
+              <TerritorialExpansion
+                countryActive={countryActive}
+                countryTotal={countryTotal}
+                regionName={regionName}
+                regionActive={regionActive}
+                regionTotal={regionTotal}
+                regions={expansionRegions}
+              />
+              {activeCities.length > 0 && (
+                <CitySection
+                  title={`Comunas activas${regionName ? ` en ${regionName}` : ""}`}
+                  subtitle="Comunas que ya alcanzaron la meta de emprendimientos."
+                  cities={activeCities}
+                />
+              )}
+              <ClosestToOpenRanking cities={rankedCities} regionSlug={currentRegionSlug || null} />
+              {openingCities.length > 0 && (
+                <CitySection
+                  title={`Comunas más cerca de abrir${regionName ? ` en ${regionName}` : ""}`}
+                  subtitle="Elige una para ver su avance y cómo ayudar."
+                  cities={openingCities}
+                />
+              )}
+              {noCoverageCities.length > 0 && (
+                <CitySection title="Otras comunas donde queremos llegar" cities={noCoverageCities} />
+              )}
+            </>
+          )}
         </div>
-      </main>
+      </PageContainer>
 
-      {/* Footer */}
-      <footer className="border-t border-border mt-16">
+      <footer className="mt-16 border-t border-[#E5E7EB] bg-[#FFFFFF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              © 2026 Rey del Dato. Conectando comunidades locales.
-            </p>
+            <p className="text-sm text-[#6B7280]">© 2026 Rey del Dato. Conectando comunidades locales.</p>
             <div className="flex items-center gap-6">
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Términos
-              </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Privacidad
-              </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Contacto
-              </a>
+              <a href="#" className="text-sm text-[#6B7280] hover:text-[#111827] transition-colors">Términos</a>
+              <a href="#" className="text-sm text-[#6B7280] hover:text-[#111827] transition-colors">Privacidad</a>
+              <a href="#" className="text-sm text-[#6B7280] hover:text-[#111827] transition-colors">Contacto</a>
             </div>
           </div>
         </div>

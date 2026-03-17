@@ -1,277 +1,174 @@
-import algoliasearch, { SearchClient } from "algoliasearch";
+export type Tier = "base" | "cobertura" | "regional" | "nacional";
 
-type Tier = "base" | "cobertura" | "regional" | "nacional";
+export type HitBusqueda = {
+  id?: string;
+  objectID?: string;
+  slug?: string;
+  nombre?: string;
 
-type ModoTerritorial = "rank" | "strict" | "rank_exclude_irrelevant";
-
-type Hit = {
-  id: string;
-  nombre: string;
-  slug: string;
-
-  descripcion_corta?: string | null;
-  descripcion_larga?: string | null;
-
-  categoria_id?: string | null;
-  categoria_nombre?: string | null;
-  categoria_slug?: string | null;
-
-  comuna_base_id?: string | null;
   comuna_base_slug?: string | null;
   comuna_base_nombre?: string | null;
 
-  subcategorias_slugs?: string[] | null;
-  subcategorias_nombres?: string[] | null;
+  categoria_slug?: string | null;
+  categoria_nombre?: string | null;
 
-  tipos_atencion_ids?: string[] | null;
-  tipos_atencion_nombres?: string[] | null;
+  nivel_cobertura?: string | null;
 
-  cobertura_comunas_ids?: string[] | null;
   cobertura_comunas_slugs?: string[] | null;
-  cobertura_comunas_nombres?: string[] | null;
-
-  nivel_cobertura?:
-    | "solo_mi_comuna"
-    | "varias_comunas"
-    | "varias_regiones"
-    | "nacional"
-    | string;
+  comunas_cobertura_slugs?: string[] | null;
 
   region_ids?: string[] | null;
-  region_nombres?: string[] | null;
 
-  search_text?: string | null;
+  score_popularidad?: number | string | null;
+  vistas_ficha?: number | string | null;
+  click_whatsapp?: number | string | null;
+  click_instagram?: number | string | null;
+  click_web?: number | string | null;
 
-  objectID?: string;
-  _highlightResult?: any;
+  [key: string]: any;
 };
 
-type Scored = Hit & {
-  tier: Tier;
-  score: number;
-  reason: string;
-};
-
-function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Falta variable de entorno ${name}`);
-  return v;
+function s(v: any): string {
+  if (v === null || v === undefined) return "";
+  return String(v).trim();
 }
 
-function getAlgoliaClient(): SearchClient {
-  const appId = requireEnv("ALGOLIA_APP_ID");
-  const searchKey = requireEnv("ALGOLIA_SEARCH_KEY"); // Search API key
-  return algoliasearch(appId, searchKey);
+function arr(v: any): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter(Boolean).map((x) => String(x).trim());
 }
 
-const INDEX_NAME = process.env.ALGOLIA_INDEX_EMPRENDEDORES ?? "emprendedores";
+function normalizeText(v: any): string {
+  return s(v).toLowerCase();
+}
 
-const SCORE: Record<Tier, number> = {
-  base: 1000,
-  cobertura: 700,
-  regional: 400,
-  nacional: 100,
-};
+function getCoberturaComunasSlugs(hit: HitBusqueda): string[] {
+  const a = arr(hit.cobertura_comunas_slugs).map((x) => x.toLowerCase());
+  const b = arr(hit.comunas_cobertura_slugs).map((x) => x.toLowerCase());
+  return a.length > 0 ? a : b;
+}
 
-function classifyTier(
-  hit: Hit,
-  comunaSlug: string,
+export function classifyTier(
+  hit: HitBusqueda,
+  comunaSlug?: string,
   regionId?: string
 ): { tier: Tier; reason: string } {
-  const baseSlug = (hit.comuna_base_slug ?? "").trim().toLowerCase();
-  const comuna = (comunaSlug ?? "").trim().toLowerCase();
+  const baseSlug = normalizeText(hit.comuna_base_slug);
+  const comuna = normalizeText(comunaSlug);
+  const coberturaSlugs = getCoberturaComunasSlugs(hit);
+  const regiones = arr(hit.region_ids);
+  const nivel = normalizeText(hit.nivel_cobertura);
 
-  // 1) BASE
+  // 1) BASE: es de la comuna buscada
   if (baseSlug && comuna && baseSlug === comuna) {
     return { tier: "base", reason: `Es de ${comuna}.` };
   }
 
-  // 2) COBERTURA (varias comunas)
-  const coberturaSlugs = (hit.cobertura_comunas_slugs ?? []).map((s) =>
-    (s ?? "").toLowerCase()
-  );
-
+  // 2) COBERTURA: atiende la comuna buscada desde otra comuna
   if (
-    hit.nivel_cobertura === "varias_comunas" &&
+    nivel === "varias_comunas" &&
     comuna &&
     coberturaSlugs.includes(comuna)
   ) {
-    return { tier: "cobertura", reason: `Atiende ${comuna} desde otra comuna.` };
+    return {
+      tier: "cobertura",
+      reason: `Atiende ${comuna} desde otra comuna.`,
+    };
   }
 
-  // 3) REGIONAL (varias regiones)
-  const regiones = hit.region_ids ?? [];
+  // 3) REGIONAL: cubre varias regiones y coincide con la región buscada
   if (
+    nivel === "varias_regiones" &&
     regionId &&
-    hit.nivel_cobertura === "varias_regiones" &&
     regiones.includes(regionId)
   ) {
-    return { tier: "regional", reason: `Disponible en tu región.` };
-  }
-
-  // 4) NACIONAL real
-  if (hit.nivel_cobertura === "nacional") {
-    return { tier: "nacional", reason: `Disponible con cobertura nacional.` };
-  }
-
-  // 5) Sin match territorial (cae al final como "nacional" por defecto)
-  return { tier: "nacional", reason: `Sin match territorial, cae al final.` };
-}
-
-function shuffleDeterministico<T>(arr: T[], seed: string): T[] {
-  // “aleatorio” estable por 5 minutos: mismo seed => mismo orden, seed cambia => rota
-  let x = 0;
-  for (let i = 0; i < seed.length; i++) x = (x * 31 + seed.charCodeAt(i)) >>> 0;
-
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    x = (1103515245 * x + 12345) >>> 0;
-    const j = x % (i + 1);
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-export async function ejecutarBusqueda(
-  q: string,
-  comunaSlug: string,
-  regionId?: string,
-  modo: ModoTerritorial = "rank"
-) {
-  const client = getAlgoliaClient();
-  const index = client.initIndex(INDEX_NAME);
-
-  const query = (q ?? "").trim();
-  const comuna = (comunaSlug ?? "").trim().toLowerCase();
-
-  if (!query) {
     return {
-      ok: true,
-      query: "",
-      comunaSlug: comuna,
-      regionId: regionId ?? null,
-      perfect: [],
-      related: [],
+      tier: "regional",
+      reason: "Disponible en tu región.",
     };
   }
 
-  // 1) PERFECT: frase exacta (sin typos)
-  const perfectRes = await index.search<Hit>(`"${query}"`, {
-    hitsPerPage: 20,
-    advancedSyntax: true,
-    typoTolerance: false,
-  });
-
-  // 2) RELATED: tolerante (typos ON)
-  const relatedRes = await index.search<Hit>(query, {
-    hitsPerPage: 80,
-    typoTolerance: true,
-  });
-
-  // Clasificar + score
-  const scoreify = (hits: Hit[]) =>
-    hits.map((hit) => {
-      const { tier, reason } = classifyTier(hit, comuna, regionId);
-      return {
-        ...hit,
-        tier,
-        score: SCORE[tier],
-        reason,
-        objectID: hit.objectID ?? hit.id,
-      } as Scored;
-    });
-
-  const perfectScored = scoreify(perfectRes.hits);
-  const relatedScored = scoreify(relatedRes.hits);
-
-  // Dedup: si está en perfect, no repetir en related
-  const perfectIds = new Set(
-    perfectScored.map((h) => h.id || h.objectID || h.slug)
-  );
-  const relatedFiltered = relatedScored.filter((h) => {
-    const k = h.id || h.objectID || h.slug;
-    return !perfectIds.has(k);
-  });
-
-  // Orden por score (tier)
-  const sortScore = (arr: Scored[]) => arr.sort((a, b) => b.score - a.score);
-
-  const perfectSorted = sortScore(perfectScored);
-  const relatedSorted = sortScore(relatedFiltered);
-
-  // Rotación “justa” cada 5 minutos dentro de cada tier
-  const bucketize = (arr: Scored[]) => {
-    const buckets: Record<Tier, Scored[]> = {
-      base: [],
-      cobertura: [],
-      regional: [],
-      nacional: [],
+  // 4) NACIONAL
+  if (nivel === "nacional") {
+    return {
+      tier: "nacional",
+      reason: "Disponible con cobertura nacional.",
     };
-    for (const x of arr) buckets[x.tier].push(x);
-    return buckets;
+  }
+
+  // fallback
+  return {
+    tier: "nacional",
+    reason: "Sin match territorial, cae al final.",
   };
+}
 
-  const seed5min = `${query}|${comuna}|${regionId ?? ""}|${Math.floor(
-    Date.now() / (5 * 60 * 1000)
-  )}`;
+function compareNombre(a: HitBusqueda, b: HitBusqueda): number {
+  return s(a.nombre).localeCompare(s(b.nombre), "es", { sensitivity: "base" });
+}
 
-  const rotate = (arr: Scored[]) => {
-    const b = bucketize(arr);
-    return [
-      ...shuffleDeterministico(b.base, seed5min + "|base"),
-      ...shuffleDeterministico(b.cobertura, seed5min + "|cobertura"),
-      ...shuffleDeterministico(b.regional, seed5min + "|regional"),
-      ...shuffleDeterministico(b.nacional, seed5min + "|nacional"),
-    ];
-  };
+function shuffleDeterministico<T>(input: T[], seed: string): T[] {
+  const arr = [...input];
 
-  const perfectRotated = rotate(perfectSorted);
-  const relatedRotated = rotate(relatedSorted);
-
-  // ✅ FILTRO TERRITORIAL SEGÚN MODO
-  const aplicarModoTerritorial = (arr: Scored[]) => {
-    // si no hay comuna, no filtramos (queda global)
-    if (!comuna) return arr;
-
-    if (modo === "rank") {
-      // Ranking territorial: NO elimina nada, solo ordena por tier (lo actual)
-      return arr;
+  function hash(str: string): number {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
     }
+    return h >>> 0;
+  }
 
-    if (modo === "strict") {
-      // Filtro estricto: elimina los “sin match territorial”
-      // (ojo: tier 'nacional' puede ser "nacional real" o "sin match". Lo distinguimos por nivel_cobertura)
-      return arr.filter((h) => {
-        if (h.tier !== "nacional") return true;
-        return h.nivel_cobertura === "nacional";
-      });
-    }
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = hash(`${seed}:${i}`) % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
 
-    // rank_exclude_irrelevant:
-    // Mantiene nacionales reales, pero corta los “sin match territorial”
-    // (es básicamente strict pero pensado como “ranking + limpieza”)
-    return arr.filter((h) => {
-      if (h.tier !== "nacional") return true;
-      return h.nivel_cobertura === "nacional";
-    });
+  return arr;
+}
+
+function ordenarBucket(
+  items: HitBusqueda[],
+  seedMin: string,
+  tier: Tier
+): HitBusqueda[] {
+  // 1) orden estable y justo por nombre
+  const ordenados = [...items].sort(compareNombre);
+
+  // 2) mezcla suave para que no salgan siempre igual
+  return shuffleDeterministico(ordenados, `${seedMin}:${tier}`);
+}
+
+export function organizarResultadosBusqueda(params: {
+  hits: HitBusqueda[];
+  comunaSlug?: string;
+  regionId?: string;
+  seedMin?: string;
+}) {
+  const { hits, comunaSlug, regionId, seedMin = "0" } = params;
+
+  const buckets: Record<Tier, HitBusqueda[]> = {
+    base: [],
+    cobertura: [],
+    regional: [],
+    nacional: [],
   };
 
-  const perfectFinal = aplicarModoTerritorial(perfectRotated);
-  const relatedFinal = aplicarModoTerritorial(relatedRotated);
+  for (const hit of hits) {
+    const { tier } = classifyTier(hit, comunaSlug, regionId);
+    buckets[tier].push(hit);
+  }
+
+  const base = ordenarBucket(buckets.base, seedMin, "base");
+  const cobertura = ordenarBucket(buckets.cobertura, seedMin, "cobertura");
+  const regional = ordenarBucket(buckets.regional, seedMin, "regional");
+  const nacional = ordenarBucket(buckets.nacional, seedMin, "nacional");
 
   return {
-    ok: true,
-    query,
-    comunaSlug: comuna,
-    regionId: regionId ?? null,
-    perfect: perfectFinal,
-    related: relatedFinal,
-    debug: {
-      modo,
-      perfectHits: perfectRes.nbHits,
-      relatedHits: relatedRes.nbHits,
-      seed5min,
-      note: "perfect = exacta sin typos. related = tolerante. Rotación 5 min. Modo territorial aplica filtrado si hay comuna.",
-    },
+    base,
+    cobertura,
+    regional,
+    nacional,
+    all: [...base, ...cobertura, ...regional, ...nacional],
   };
 }

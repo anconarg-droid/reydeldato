@@ -1,42 +1,94 @@
 import { NextRequest, NextResponse } from "next/server";
-import algoliasearch from "algoliasearch";
 
-function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Falta variable de entorno: ${name}`);
-  return v;
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const SUGERENCIAS = [
+  "gasfiter",
+  "gasfitería",
+  "electricista",
+  "pintor",
+  "jardinero",
+  "limpieza",
+  "veterinario",
+  "veterinaria",
+  "urgencia veterinaria",
+  "vacunas mascotas",
+  "peluquería canina",
+  "paseador de perros",
+  "tortas",
+  "pastelería",
+  "banquetería",
+  "decoración de eventos",
+  "dj",
+  "amplificación",
+  "clases de inglés",
+  "reforzamiento escolar",
+  "profesor particular",
+  "reparación de computadores",
+  "soporte técnico",
+  "redes y wifi",
+  "cámaras de seguridad",
+  "mudanzas",
+  "fletes",
+  "encomiendas",
+  "abogado",
+  "contador",
+  "asesoría tributaria",
+  "peluquería",
+  "barbería",
+  "manicure",
+  "masajes",
+  "kinesiología",
+  "psicología",
+  "productos gourmet",
+  "panadería",
+  "empanadas",
+  "coffee break",
+];
+
+function s(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  return String(v).trim();
 }
 
-function getClient() {
-  const appId = requireEnv("ALGOLIA_APP_ID");
-  const key = requireEnv("ALGOLIA_SEARCH_KEY");
-  return algoliasearch(appId, key);
+function norm(v: unknown): string {
+  return s(v)
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const q = (searchParams.get("q") ?? "").trim();
-  const comuna = (searchParams.get("comuna") ?? "").trim().toLowerCase();
+  try {
+    const q = s(new URL(req.url).searchParams.get("q"));
 
-  if (!q) return NextResponse.json({ ok: true, q, comuna, suggestions: [] });
+    if (q.length < 1) {
+      return NextResponse.json({
+        ok: true,
+        suggestions: SUGERENCIAS.slice(0, 8),
+      });
+    }
 
-  const client = getClient();
-  const indexName = process.env.ALGOLIA_INDEX_EMPRENDEDORES ?? "emprendedores";
-  const index = client.initIndex(indexName);
+    const qq = norm(q);
 
-  // Sugerencias: nombres, subcategorías, etc (lo mínimo para partir)
-  const res = await index.search<any>(q, {
-    hitsPerPage: 8,
-    attributesToRetrieve: ["nombre", "slug", "subcategorias_nombres", "subcategorias_slugs", "categoria_nombre", "categoria_slug"],
-    // si quieres sugerencias locales: solo para mejorar UX, no para filtrar duro aquí
-    // facetFilters: comuna ? [[`comuna_base_slug:${comuna}`]] : undefined,
-  });
+    const suggestions = SUGERENCIAS.filter((item) => {
+      const n = norm(item);
+      return n.startsWith(qq) || n.includes(qq);
+    }).slice(0, 8);
 
-  const suggestions = res.hits.map((h: any) => ({
-    type: "emprendedor",
-    label: h.nombre,
-    slug: h.slug,
-  }));
-
-  return NextResponse.json({ ok: true, q, comuna, suggestions });
+    return NextResponse.json({
+      ok: true,
+      suggestions,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "suggest_error",
+        message: err instanceof Error ? err.message : "Error desconocido",
+      },
+      { status: 500 }
+    );
+  }
 }

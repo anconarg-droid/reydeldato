@@ -1,22 +1,28 @@
 import algoliasearch from "algoliasearch";
 
-export function getAlgoliaClient() {
-  const ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID || "";
-  const ALGOLIA_ADMIN_KEY = process.env.ALGOLIA_ADMIN_KEY || "";
+const client = algoliasearch(
+  process.env.ALGOLIA_APP_ID!,
+  process.env.ALGOLIA_ADMIN_KEY!
+);
 
-  if (!ALGOLIA_APP_ID || !ALGOLIA_ADMIN_KEY) {
-    throw new Error("Faltan ALGOLIA_APP_ID o ALGOLIA_ADMIN_KEY en env.");
-  }
+export const index = client.initIndex(process.env.ALGOLIA_INDEX_NAME!);
 
-  return algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
-}
+export async function indexarEmprendedor(emprendedor:any) {
 
-export function getIndexEmprendedores() {
-  const INDEX_EMPRENDEDORES =
-    process.env.ALGOLIA_INDEX_EMPRENDEDORES ||
-    process.env.ALGOLIA_INDEX_NAME ||
-    "emprendedores";
+  const record = {
+    objectID: emprendedor.slug,
+    slug: emprendedor.slug,
+    nombre: emprendedor.nombre,
+    categoria: emprendedor.categoria_nombre,
+    subcategorias: emprendedor.subcategorias_nombres,
+    comuna: emprendedor.comuna_nombre,
+    cobertura: emprendedor.cobertura_tipo,
+    comunas: emprendedor.cobertura_comunas_arr,
+    modalidades: emprendedor.modalidades_arr,
+    whatsapp: emprendedor.whatsapp,
+    instagram: emprendedor.instagram,
+    web: emprendedor.sitio_web
+  };
 
-  const client = getAlgoliaClient();
-  return client.initIndex(INDEX_EMPRENDEDORES);
+  await index.saveObject(record);
 }

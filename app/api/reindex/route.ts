@@ -1,151 +1,298 @@
-// app/api/reindex/route.ts
 import { NextResponse } from "next/server";
-import algoliasearch from "algoliasearch";
 import { createClient } from "@supabase/supabase-js";
+import algoliasearch from "algoliasearch";
 
-export const runtime = "nodejs"; // importante: Algolia + service role en server
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-function requiredEnv(name: string) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Falta variable de entorno: ${name}`);
-  return v;
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+const algolia = algoliasearch(
+  process.env.ALGOLIA_APP_ID!,
+  process.env.ALGOLIA_ADMIN_KEY!
+);
+
+const index = algolia.initIndex(
+  process.env.ALGOLIA_INDEX_EMPRENDEDORES || "emprendedores"
+);
+
+function s(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  return String(v).trim();
 }
 
-async function handler(req: Request) {
-  const url = new URL(req.url);
-  const secret = url.searchParams.get("secret") || "";
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
+}
 
-  const REINDEX_SECRET = requiredEnv("REINDEX_SECRET");
-  if (secret !== REINDEX_SECRET) {
-    return NextResponse.json(
-      { ok: false, error: "Unauthorized (secret incorrecto)" },
-      { status: 401 }
+function asStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return uniq(
+      value.map((x) => s(x)).filter(Boolean)
     );
   }
 
-  // --- ENV ---
-  const SUPABASE_URL = requiredEnv("SUPABASE_URL");
-  const SUPABASE_SERVICE_ROLE_KEY = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const txt = s(value);
+  if (!txt) return [];
 
-  const ALGOLIA_APP_ID = requiredEnv("ALGOLIA_APP_ID");
-  const ALGOLIA_ADMIN_KEY = requiredEnv("ALGOLIA_ADMIN_KEY");
-  // si no existe, cae al default "emprendedores"
-  const ALGOLIA_INDEX =
-    process.env.ALGOLIA_INDEX_EMPRENDEDORES_PUBLICOS || "emprendedores";
+  return uniq(
+    txt
+      .split("|")
+      .map((x) => x.trim())
+      .filter(Boolean)
+  );
+}
 
-  // --- CLIENTS (server) ---
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  });
+function transformRow(row: any) {
+  const subcategoriasNombresArr = asStringArray(
+    row.subcategorias_nombres_arr
+  );
+  const subcategoriasSlugsArr = asStringArray(
+    row.subcategorias_slugs_arr
+  );
 
-  const algolia = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
-  const index = algolia.initIndex(ALGOLIA_INDEX);
+  const comunasCoberturaNombresArr = asStringArray(
+    row.comunas_cobertura_nombres_arr
+  );
+  const comunasCoberturaSlugsArr = asStringArray(
+    row.comunas_cobertura_slugs_arr
+  );
 
-  // --- TRAER SOLO PUBLICADOS ---
-  // OJO: esto requiere que exista la columna `publicado` boolean en la tabla.
-  const { data, error } = await supabase
-    .from("emprendedores")
-    .select(
-      [
+  const regionesCoberturaNombresArr = asStringArray(
+    row.regiones_cobertura_nombres_arr
+  );
+  const regionesCoberturaSlugsArr = asStringArray(
+    row.regiones_cobertura_slugs_arr
+  );
+
+  const serviciosArr = asStringArray(row.servicios);
+  const keywordsArr = asStringArray(row.keywords);
+
+  const modalidadesAtencionArr = asStringArray(
+    row.modalidades_atencion_arr ?? row.modalidades_atencion
+  );
+
+  const galeriaUrlsArr = asStringArray(row.galeria_urls);
+
+  const estadoPublicacion = s(row.estado_publicacion);
+
+  return {
+    objectID: s(row.id || row.objectID),
+    id: s(row.id),
+    slug: s(row.slug),
+    nombre: s(row.nombre),
+
+    descripcion_corta: s(row.descripcion_corta),
+    descripcion_larga: s(row.descripcion_larga),
+
+    categoria_id: s(row.categoria_id),
+    categoria_nombre: s(row.categoria_nombre),
+    categoria_slug: s(row.categoria_slug),
+
+    comuna_base_id: s(row.comuna_base_id),
+    comuna_base_nombre: s(row.comuna_base_nombre),
+    comuna_base_slug: s(row.comuna_base_slug),
+    region_nombre: s(row.region_nombre),
+    region_slug: s(row.region_slug),
+
+    nivel_cobertura: s(row.nivel_cobertura),
+
+    foto_principal_url: s(row.foto_principal_url),
+    galeria_urls: galeriaUrlsArr,
+
+    whatsapp: s(row.whatsapp),
+    instagram: s(row.instagram),
+    web: s(row.web ?? row.sitio_web),
+    email: s(row.email),
+
+    direccion: s(row.direccion),
+    zona_sector: s(row.zona_sector),
+
+    responsable_nombre: s(row.responsable_nombre),
+    mostrar_responsable: !!row.mostrar_responsable,
+    responsable_publico: s(row.responsable_publico),
+
+    plan: s(row.plan),
+    estado: s(row.estado),
+    estado_publicacion: estadoPublicacion,
+    publicado: estadoPublicacion === "publicado",
+
+    subcategorias_nombres_arr: subcategoriasNombresArr,
+    subcategorias_slugs_arr: subcategoriasSlugsArr,
+
+    comunas_cobertura_nombres_arr: comunasCoberturaNombresArr,
+    comunas_cobertura_slugs_arr: comunasCoberturaSlugsArr,
+
+    regiones_cobertura_nombres_arr: regionesCoberturaNombresArr,
+    regiones_cobertura_slugs_arr: regionesCoberturaSlugsArr,
+
+    servicios: serviciosArr,
+    keywords: keywordsArr,
+    modalidades_atencion: modalidadesAtencionArr,
+
+    search_text: s(row.search_text),
+    keywords_text: s(row.keywords_text),
+
+    nivel_rank: Number(row.nivel_rank || 9999),
+  };
+}
+
+export async function GET() {
+  try {
+    const pageSize = 1000;
+    let from = 0;
+    let allRows: any[] = [];
+
+    while (true) {
+      const to = from + pageSize - 1;
+
+      const { data, error } = await supabase
+        .from("vw_emprendedores_busqueda_v2")
+        .select("*")
+        .range(from, to);
+
+      if (error) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "supabase_error",
+            message: error.message,
+            from,
+            to,
+          },
+          { status: 500 }
+        );
+      }
+
+      const rows = data || [];
+      allRows = allRows.concat(rows);
+
+      if (rows.length < pageSize) break;
+      from += pageSize;
+    }
+
+    const objects = allRows
+      .map(transformRow)
+      .filter(
+        (item) =>
+          item.objectID &&
+          item.slug &&
+          item.nombre &&
+          item.categoria_slug &&
+          item.comuna_base_slug &&
+          item.estado_publicacion === "publicado"
+      );
+
+    await index.replaceAllObjects(objects, {
+      autoGenerateObjectIDIfNotExist: false,
+    });
+
+    await index.setSettings({
+      attributesForFaceting: [
+        "filterOnly(categoria_slug)",
+        "filterOnly(comuna_base_slug)",
+        "filterOnly(comunas_cobertura_slugs_arr)",
+        "filterOnly(regiones_cobertura_slugs_arr)",
+        "filterOnly(subcategorias_slugs_arr)",
+        "filterOnly(nivel_cobertura)",
+        "filterOnly(publicado)",
+        "filterOnly(estado_publicacion)",
+        "filterOnly(sector_slug)",
+        "filterOnly(tipo_actividad)",
+        "filterOnly(coverage_keys)",
+      ],
+      searchableAttributes: [
+        "unordered(nombre)",
+        "descripcion_corta",
+        "search_text",
+        "unordered(tags_slugs)",
+        "unordered(keywords_clasificacion)",
+        "descripcion_larga",
+        "unordered(subcategorias_nombres_arr)",
+        "unordered(servicios)",
+        "unordered(keywords)",
+        "categoria_nombre",
+        "keywords_text",
+        "comuna_base_nombre",
+        "region_nombre",
+      ],
+      customRanking: ["asc(nivel_rank)"],
+      attributesToRetrieve: [
+        "objectID",
         "id",
-        "nombre",
         "slug",
-        "descripcion",
+        "nombre",
         "descripcion_corta",
         "descripcion_larga",
-        "comuna_base_id",
-        "nivel_cobertura",
-        "coverage_keys",
-        "coverage_labels",
         "categoria_id",
+        "categoria_nombre",
+        "categoria_slug",
+        "comuna_base_id",
+        "comuna_base_nombre",
+        "comuna_base_slug",
+        "region_nombre",
+        "region_slug",
+        "nivel_cobertura",
+        "foto_principal_url",
+        "galeria_urls",
         "whatsapp",
-        "email",
         "instagram",
-        "sitio_web",
-        "logo_path",
-        "created_at",
-      ].join(",")
-    )
-    .eq("publicado", true);
+        "web",
+        "email",
+        "direccion",
+        "zona_sector",
+        "responsable_nombre",
+        "mostrar_responsable",
+        "responsable_publico",
+        "plan",
+        "estado",
+        "estado_publicacion",
+        "publicado",
+        "subcategorias_nombres_arr",
+        "subcategorias_slugs_arr",
+        "comunas_cobertura_nombres_arr",
+        "comunas_cobertura_slugs_arr",
+        "regiones_cobertura_nombres_arr",
+        "regiones_cobertura_slugs_arr",
+        "servicios",
+        "keywords",
+        "modalidades_atencion",
+        "search_text",
+        "keywords_text",
+        "nivel_rank",
+        "sector_slug",
+        "tipo_actividad",
+        "coverage_keys",
+        "tags_slugs",
+        "keywords_clasificacion",
+      ],
+    });
 
-  if (error) {
+    return NextResponse.json({
+      ok: true,
+      total_supabase: allRows.length,
+      total_algolia: objects.length,
+      index: process.env.ALGOLIA_INDEX_EMPRENDEDORES || "emprendedores",
+      sample: objects.slice(0, 3).map((x) => ({
+        nombre: x.nombre,
+        slug: x.slug,
+        categoria_slug: x.categoria_slug,
+        comuna_base_slug: x.comuna_base_slug,
+        estado_publicacion: x.estado_publicacion,
+        subcategorias_slugs_arr: x.subcategorias_slugs_arr,
+      })),
+    });
+  } catch (err) {
     return NextResponse.json(
-      { ok: false, error: `Supabase error: ${error.message}` },
+      {
+        ok: false,
+        error: "reindex_error",
+        message: err instanceof Error ? err.message : "Error desconocido",
+      },
       { status: 500 }
     );
   }
-
-  const rows = data || [];
-
-  // --- MAPEAR A OBJETOS ALGOLIA ---
-  const objects = rows.map((r: any) => {
-    const nombre = (r?.nombre || "").toString();
-    const desc =
-      (r?.descripcion_larga ||
-        r?.descripcion_corta ||
-        r?.descripcion ||
-        "")?.toString() || "";
-
-    const search_text = [
-      nombre,
-      desc,
-      (r?.coverage_labels || []).join(" "),
-      (r?.coverage_keys || []).join(" "),
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    return {
-      objectID: r.id, // clave en Algolia
-      id: r.id,
-      nombre,
-      slug: r.slug,
-      descripcion_corta: r.descripcion_corta,
-      descripcion_larga: r.descripcion_larga,
-      descripcion: r.descripcion,
-
-      comuna_base_id: r.comuna_base_id,
-      nivel_cobertura: r.nivel_cobertura,
-      coverage_keys: r.coverage_keys || [],
-      coverage_labels: r.coverage_labels || [],
-
-      categoria_id: r.categoria_id,
-
-      whatsapp: r.whatsapp,
-      email: r.email,
-      instagram: r.instagram,
-      sitio_web: r.sitio_web,
-      logo_path: r.logo_path,
-
-      created_at: r.created_at,
-
-      search_text,
-    };
-  });
-
-  // --- SUBIR A ALGOLIA ---
-  // Si quieres “limpiar y reemplazar”, descomenta el clearObjects.
-  // await index.clearObjects();
-
-  const res = await index.saveObjects(objects, {
-    autoGenerateObjectIDIfNotExist: false,
-  });
-
-  return NextResponse.json({
-    ok: true,
-    index: ALGOLIA_INDEX,
-    total_indexados: objects.length,
-    taskID: res.taskID,
-  });
-}
-
-// ✅ Soporta GET (navegador)
-export async function GET(req: Request) {
-  return handler(req);
-}
-
-// ✅ Soporta POST (si después lo llamas desde código)
-export async function POST(req: Request) {
-  return handler(req);
 }

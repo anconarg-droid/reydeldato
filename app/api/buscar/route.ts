@@ -74,7 +74,8 @@ type RawRow = {
 };
 
 type Bucket =
-  | "exacta"
+  | "local"           // tiene local físico en la comuna buscada
+  | "exacta"          // comuna_base_id = comuna buscada
   | "cobertura_comuna"
   | "varias_regiones"
   | "nacional"
@@ -192,12 +193,15 @@ function qualityTiebreaker(item: RawRow): number {
   return q;
 }
 
-function resolveBucket(item: RawRow, comunaBuscada: string): Bucket {
+function resolveBucket(item: RawRow, comunaBuscada: string, tieneLocalEnComuna: boolean): Bucket {
   const comunaRaw = s(comunaBuscada);
   const comunaSlugLike = norm(comunaRaw); // ej: "calera-de-tango"
   const comunaNameLike = norm(comunaRaw.replace(/-/g, " ")); // ej: "calera de tango"
 
   if (!comunaSlugLike && !comunaNameLike) return "general";
+
+  // 0) tiene local físico en la comuna buscada (prioridad máxima)
+  if (tieneLocalEnComuna) return "local";
 
   const comunaBaseSlug = norm(item.comuna_base_slug);
   const comunaBaseNombre = norm(item.comuna_base_nombre);
@@ -250,6 +254,8 @@ function resolveBucket(item: RawRow, comunaBuscada: string): Bucket {
 
 function bucketRank(bucket: Bucket) {
   switch (bucket) {
+    case "local":
+      return 0;
     case "exacta":
       return 1;
     case "cobertura_comuna":
@@ -263,8 +269,10 @@ function bucketRank(bucket: Bucket) {
   }
 }
 
-function exposeBucket(bucket: Bucket): "exacta" | "cobertura_comuna" | "regional" | "nacional" | "relacionada" {
+function exposeBucket(bucket: Bucket): "local" | "exacta" | "cobertura_comuna" | "regional" | "nacional" | "relacionada" {
   switch (bucket) {
+    case "local":
+      return "local";
     case "exacta":
       return "exacta";
     case "cobertura_comuna":
@@ -275,6 +283,18 @@ function exposeBucket(bucket: Bucket): "exacta" | "cobertura_comuna" | "regional
       return "nacional";
     default:
       return "relacionada";
+  }
+}
+
+/** Mapea bucket a comuna_match_source para la respuesta. */
+function bucketToMatchSource(bucket: Bucket): "local" | "base" | "cobertura" | "regional" | "nacional" | null {
+  switch (bucket) {
+    case "local": return "local";
+    case "exacta": return "base";
+    case "cobertura_comuna": return "cobertura";
+    case "varias_regiones": return "regional";
+    case "nacional": return "nacional";
+    default: return null;
   }
 }
 
@@ -348,8 +368,9 @@ export async function GET(req: Request) {
       }
     }
 
-    // Cuando hay comuna: solo traer emprendedores con base en la comuna O cobertura que la incluya
+    // Cuando hay comuna: traer emprendedores con base, con local en la comuna, o cobertura que la incluya
     let comunaId: string | null = null;
+    let idsWithLocalInComuna = new Set<string>();
     if (comunaSlugNorm) {
       const { data: comunaRow } = await supabase
         .from("comunas")
@@ -357,6 +378,15 @@ export async function GET(req: Request) {
         .eq("slug", comunaSlugNorm)
         .maybeSingle();
       comunaId = (comunaRow as { id?: string } | null)?.id ?? null;
+      if (comunaId) {
+        const { data: localesEnComuna } = await supabase
+          .from("emprendedor_locales")
+          .select("emprendedor_id")
+          .eq("comuna_id", comunaId);
+        idsWithLocalInComuna = new Set(
+          (localesEnComuna || []).map((r: { emprendedor_id?: string }) => r.emprendedor_id).filter(Boolean) as string[]
+        );
+      }
     }
 
     // 1) Intento de mapear la query a un tag_slug usando search_alias
@@ -478,6 +508,10 @@ export async function GET(req: Request) {
           if (comunaId) {
             add(base(), (q) => q.eq("comuna_base_id", comunaId).contains("tags_slugs", [subcategoriaNorm]));
             add(base(), (q) => q.eq("comuna_base_id", comunaId).contains("subcategorias_slugs", [subcategoriaNorm]));
+            if (idsWithLocalInComuna.size > 0) {
+              add(base(), (q) => q.in("id", Array.from(idsWithLocalInComuna)).contains("tags_slugs", [subcategoriaNorm]));
+              add(base(), (q) => q.in("id", Array.from(idsWithLocalInComuna)).contains("subcategorias_slugs", [subcategoriaNorm]));
+            }
           }
           add(base(), (q) => q.contains("coverage_labels", [comunaSlugNorm]).contains("tags_slugs", [subcategoriaNorm]));
           add(base(), (q) => q.contains("coverage_labels", [comunaSlugNorm]).contains("subcategorias_slugs", [subcategoriaNorm]));
@@ -489,6 +523,7 @@ export async function GET(req: Request) {
           add(base(), (q) => q.eq("nivel_cobertura", "nacional").contains("subcategorias_slugs", [subcategoriaNorm]));
         } else {
           if (comunaId) add(base(), (q) => q.eq("comuna_base_id", comunaId));
+          if (idsWithLocalInComuna.size > 0) add(base(), (q) => q.in("id", Array.from(idsWithLocalInComuna)));
           add(base(), (q) => q.contains("coverage_labels", [comunaSlugNorm]));
           add(base(), (q) => q.contains("coverage_keys", [comunaSlugNorm]));
           add(base(), (q) => q.eq("nivel_cobertura", "varias_regiones"));
@@ -627,10 +662,12 @@ export async function GET(req: Request) {
     const daySeed = getDaySeed();
     const comunaSlugForDistance = comunaSlugNorm || "";
 
+    const tieneLocalEnComuna = (id: string) => comunaId != null && idsWithLocalInComuna.has(id);
+
     let scored = filtered
       .map((item) => {
         const score = textScore(item, effectiveQ);
-        const _bucket = resolveBucket(item, comuna);
+        const _bucket = resolveBucket(item, comuna, tieneLocalEnComuna(item.id));
         const _quality = qualityTiebreaker(item);
         const _impresiones = Number(item.impresiones_busqueda ?? 0);
         const _isFullProfile = isFullProfile(item);
@@ -662,11 +699,11 @@ export async function GET(req: Request) {
         const byBucket = bucketRank(a._bucket) - bucketRank(b._bucket);
         if (byBucket !== 0) return byBucket;
 
-        const isExacta = a._bucket === "exacta";
+        const isTopTier = a._bucket === "exacta" || a._bucket === "local";
         const preferNew = order === "nuevos";
 
-        if (isExacta) {
-          // Bloque 1: perfiles completos primero, rotación estable, ligera prioridad a nuevos
+        if (isTopTier) {
+          // Bloque local/exacta: perfiles completos primero, rotación estable, ligera prioridad a nuevos
           if (preferNew) {
             const at = (a.created_at ?? "") as string;
             const bt = (b.created_at ?? "") as string;
@@ -697,10 +734,19 @@ export async function GET(req: Request) {
         return a.nombre.localeCompare(b.nombre, "es");
       })
       .slice(0, limit)
-      .map(({ _score, _bucket, _quality, _impresiones, _isFullProfile, _stableKey, _distanceRank, ...item }) => ({
-        ...item,
-        bucket: exposeBucket(_bucket),
-      }));
+      .map(({ _score, _bucket, _quality, _impresiones, _isFullProfile, _stableKey, _distanceRank, ...item }) => {
+        const bucket = exposeBucket(_bucket);
+        const comuna_match_source = bucketToMatchSource(_bucket);
+        const tiene_local_en_comuna = _bucket === "local";
+        const atiende_comuna = ["local", "exacta", "cobertura_comuna", "regional", "nacional"].includes(_bucket);
+        return {
+          ...item,
+          bucket,
+          tiene_local_en_comuna,
+          atiende_comuna,
+          comuna_match_source,
+        };
+      });
 
     // Chips "Refina tu búsqueda": solo desde resultados ya filtrados por sector.
     // Si hay sector activo y muy pocos resultados, ocultar el bloque antes que mostrar chips de otros sectores.

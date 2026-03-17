@@ -1,13 +1,14 @@
 import algoliasearch from "algoliasearch";
 
-const appId = process.env.ALGOLIA_APP_ID!;
-const adminKey = process.env.ALGOLIA_ADMIN_KEY!;
-const indexName = process.env.ALGOLIA_INDEX_EMPRENDEDORES_PUBLICOS!;
-
-if (!appId || !adminKey || !indexName) {
-  throw new Error("Faltan variables de entorno de Algolia (SERVER)");
+function envOrThrow(name: string) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env var: ${name}`);
+  return v;
 }
 
-const client = algoliasearch(appId, adminKey);
-
-export const emprendedoresIndex = client.initIndex(indexName);
+export function getAlgoliaAdminIndex(indexName: string) {
+  const appId = envOrThrow("ALGOLIA_APP_ID");
+  const adminKey = envOrThrow("ALGOLIA_ADMIN_KEY");
+  const client = algoliasearch(appId, adminKey);
+  return client.initIndex(indexName);
+}

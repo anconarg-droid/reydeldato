@@ -1,0 +1,350 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+type ComunaSuggestion = { nombre: string; slug: string; region_nombre?: string };
+
+type CategoriaConSubs = {
+  id: string;
+  nombre: string;
+  slug: string;
+  subcategorias: Array<{ nombre: string; slug: string }>;
+};
+
+type Hit = {
+  objectID?: string;
+  slug?: string;
+  nombre?: string;
+  descripcion_corta?: string;
+  categoria_nombre?: string;
+  subcategorias_nombres_arr?: string[];
+  comuna_base_nombre?: string;
+  comuna_base_slug?: string;
+  nivel_cobertura?: string;
+  foto_principal_url?: string;
+  whatsapp?: string;
+  instagram?: string;
+  web?: string;
+};
+
+type SearchResponse = {
+  ok: boolean;
+  nbHits: number;
+  hits: Hit[];
+  page?: number;
+  nbPages?: number;
+};
+
+type Props = {
+  sugerencias: string[];
+  categorias: CategoriaConSubs[];
+};
+
+function norm(v: string) {
+  return v.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+}
+
+export default function HomeWithSearch({ sugerencias, categorias }: Props) {
+  const [q, setQ] = useState("");
+  const [comunaInput, setComunaInput] = useState("");
+  const [selectedComunaSlug, setSelectedComunaSlug] = useState<string | null>(null);
+  const [openQuery, setOpenQuery] = useState(false);
+  const [openComuna, setOpenComuna] = useState(false);
+  const [comunaSuggestions, setComunaSuggestions] = useState<ComunaSuggestion[]>([]);
+  const [loadingComuna, setLoadingComuna] = useState(false);
+  const [categoriaSlug, setCategoriaSlug] = useState("");
+  const [subcategoriaSlug, setSubcategoriaSlug] = useState("");
+
+  const [hits, setHits] = useState<Hit[]>([]);
+  const [totalHits, setTotalHits] = useState(0);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const queryBoxRef = useRef<HTMLDivElement>(null);
+  const comunaBoxRef = useRef<HTMLDivElement>(null);
+  const comunaDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const sugerenciasFiltradas = sugerencias
+    .filter((item) => norm(item).includes(norm(q)))
+    .slice(0, 8);
+
+  // Autocomplete comuna
+  useEffect(() => {
+    const term = comunaInput.trim();
+    if (term.length < 2) {
+      setComunaSuggestions([]);
+      return;
+    }
+    if (comunaDebounceRef.current) clearTimeout(comunaDebounceRef.current);
+    comunaDebounceRef.current = setTimeout(() => {
+      setLoadingComuna(true);
+      fetch(`/api/suggest/comunas?q=${encodeURIComponent(term)}`)
+        .then((res) => res.json())
+        .then((data: { ok?: boolean; comunas?: ComunaSuggestion[] }) => {
+          if (data?.ok && Array.isArray(data.comunas)) setComunaSuggestions(data.comunas);
+          else setComunaSuggestions([]);
+        })
+        .catch(() => setComunaSuggestions([]))
+        .finally(() => setLoadingComuna(false));
+    }, 200);
+    return () => {
+      if (comunaDebounceRef.current) clearTimeout(comunaDebounceRef.current);
+    };
+  }, [comunaInput]);
+
+  const runSearch = useCallback(() => {
+    const comuna = selectedComunaSlug || comunaInput.trim();
+    if (!q.trim() && !comuna) {
+      setHits([]);
+      setTotalHits(0);
+      setHasSearched(false);
+      return;
+    }
+    setLoadingSearch(true);
+    setHasSearched(true);
+    const params = new URLSearchParams();
+    if (q.trim()) params.set("q", q.trim());
+    if (comuna) params.set("comuna", comuna);
+    if (categoriaSlug) params.set("categoria", categoriaSlug);
+    if (subcategoriaSlug) params.set("subcategoria", subcategoriaSlug);
+    params.set("limit", "24");
+    fetch(`/api/search?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data: SearchResponse) => {
+        if (data?.ok) {
+          setHits(data.hits || []);
+          setTotalHits(data.nbHits ?? 0);
+        } else {
+          setHits([]);
+          setTotalHits(0);
+        }
+      })
+      .catch(() => {
+        setHits([]);
+        setTotalHits(0);
+      })
+      .finally(() => setLoadingSearch(false));
+  }, [q, comunaInput, selectedComunaSlug, categoriaSlug, subcategoriaSlug]);
+
+  // Búsqueda en tiempo real (debounce al cambiar query o comuna)
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(runSearch, 350);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [runSearch]);
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    const target = e.target as Node;
+    if (queryBoxRef.current && !queryBoxRef.current.contains(target)) setOpenQuery(false);
+    if (comunaBoxRef.current && !comunaBoxRef.current.contains(target)) setOpenComuna(false);
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [handleClickOutside]);
+
+  const subcategoriasActivas = categorias.find((c) => c.slug === categoriaSlug)?.subcategorias ?? [];
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Hero + buscador grande */}
+      <header className="bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-8 sm:py-10">
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">
+            Encuentra servicios y datos en tu comuna
+          </h1>
+          <p className="text-slate-600 mb-6 text-lg">
+            Busca oficios, productos o servicios cercanos. Escribe y elige comuna para ver resultados al instante.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 max-w-3xl">
+            <div ref={queryBoxRef} className="relative flex-1">
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => { setQ(e.target.value); setOpenQuery(true); }}
+                onFocus={() => setOpenQuery(true)}
+                onBlur={() => setTimeout(() => setOpenQuery(false), 150)}
+                placeholder="¿Qué estás buscando? (ej. gasfiter, electricista)"
+                className="w-full h-12 sm:h-14 pl-4 pr-4 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 text-base"
+              />
+              {openQuery && sugerenciasFiltradas.length > 0 && (
+                <ul className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50 max-h-64 overflow-y-auto">
+                  {sugerenciasFiltradas.map((item) => (
+                    <li key={item}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); setQ(item); setOpenQuery(false); }}
+                        className="w-full text-left px-4 py-3 hover:bg-slate-100 text-slate-800"
+                      >
+                        {item}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div ref={comunaBoxRef} className="relative sm:w-64">
+              <input
+                type="text"
+                value={comunaInput}
+                onChange={(e) => {
+                  setComunaInput(e.target.value);
+                  setSelectedComunaSlug(null);
+                  setOpenComuna(true);
+                }}
+                onFocus={() => comunaInput.trim().length >= 2 && setOpenComuna(true)}
+                onBlur={() => setTimeout(() => setOpenComuna(false), 150)}
+                placeholder="Comuna"
+                className="w-full h-12 sm:h-14 pl-4 pr-4 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 text-base"
+              />
+              {openComuna && (comunaSuggestions.length > 0 || loadingComuna) && (
+                <ul className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50 max-h-72 overflow-y-auto">
+                  {loadingComuna ? (
+                    <li className="px-4 py-3 text-slate-500 text-sm">Buscando comunas...</li>
+                  ) : (
+                    comunaSuggestions.map((c) => (
+                      <li key={c.slug}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setComunaInput(c.nombre);
+                            setSelectedComunaSlug(c.slug);
+                            setOpenComuna(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-slate-100 block"
+                        >
+                          <span className="font-semibold text-slate-900">{c.nombre}</span>
+                          {c.region_nombre && (
+                            <span className="block text-xs text-slate-500 mt-0.5">{c.region_nombre}</span>
+                          )}
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              )}
+            </div>
+          </div>
+          <p className="mt-2 text-sm text-slate-500">
+            {sugerencias.length} palabras de ayuda disponibles. Los resultados se actualizan al escribir.
+          </p>
+        </div>
+      </header>
+
+      <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
+        {/* Filtros laterales */}
+        <aside className="lg:w-56 shrink-0 space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <h3 className="font-bold text-slate-900 mb-3">Categoría</h3>
+            <select
+              value={categoriaSlug}
+              onChange={(e) => { setCategoriaSlug(e.target.value); setSubcategoriaSlug(""); }}
+              className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+            >
+              <option value="">Todas</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.slug}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
+          {subcategoriasActivas.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <h3 className="font-bold text-slate-900 mb-3">Subcategoría</h3>
+              <select
+                value={subcategoriaSlug}
+                onChange={(e) => setSubcategoriaSlug(e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+              >
+                <option value="">Todas</option>
+                {subcategoriasActivas.map((s) => (
+                  <option key={s.slug} value={s.slug}>{s.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </aside>
+
+        {/* Grid de resultados */}
+        <main className="flex-1 min-w-0">
+          {loadingSearch && (
+            <div className="flex items-center gap-2 text-slate-600 mb-4">
+              <span className="inline-block w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+              Buscando...
+            </div>
+          )}
+          {hasSearched && !loadingSearch && (
+            <p className="text-slate-600 mb-4">
+              {totalHits === 0 ? "No hay resultados." : `${totalHits} resultado${totalHits !== 1 ? "s" : ""}`}
+            </p>
+          )}
+          {!hasSearched && !loadingSearch && (
+            <p className="text-slate-500 mb-4">
+              Escribe algo en el buscador y elige una comuna para ver resultados en tiempo real.
+            </p>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {hits.map((hit) => (
+              <Link
+                key={hit.objectID || hit.slug || hit.nombre}
+                href={`/emprendedor/${hit.slug || hit.objectID}`}
+                className="card-hover-effect bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:border-slate-300 transition-all flex flex-col"
+              >
+                <div className="aspect-video bg-slate-200 relative overflow-hidden">
+                  {hit.foto_principal_url ? (
+                    <img
+                      src={hit.foto_principal_url}
+                      alt=""
+                      className="w-full h-full object-cover card-img-zoom"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-4xl">
+                      🏪
+                    </div>
+                  )}
+                </div>
+                <div className="p-4 flex-1 flex flex-col">
+                  <h3 className="font-bold text-slate-900 text-lg leading-tight mb-1">
+                    {hit.nombre || "Sin nombre"}
+                  </h3>
+                  {hit.categoria_nombre && (
+                    <span className="text-xs font-medium text-slate-500 mb-1">{hit.categoria_nombre}</span>
+                  )}
+                  {Array.isArray(hit.subcategorias_nombres_arr) && hit.subcategorias_nombres_arr.length > 0 && (
+                    <span className="text-xs text-slate-500 mb-0.5">
+                      {hit.subcategorias_nombres_arr.slice(0, 3).join(" · ")}
+                    </span>
+                  )}
+                  {hit.comuna_base_nombre && (
+                    <span className="text-xs text-slate-500 mb-2">📍 {hit.comuna_base_nombre}</span>
+                  )}
+                  {hit.descripcion_corta && (
+                    <p className="text-slate-600 text-sm line-clamp-2 mt-1 flex-1">
+                      {hit.descripcion_corta}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-100">
+                    {hit.whatsapp && (
+                      <span className="text-xs text-green-600" title="WhatsApp">📱</span>
+                    )}
+                    {hit.instagram && (
+                      <span className="text-xs text-pink-600" title="Instagram">📷</span>
+                    )}
+                    {hit.web && (
+                      <span className="text-xs text-blue-600" title="Sitio web">🌐</span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

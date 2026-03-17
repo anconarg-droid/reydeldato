@@ -2,260 +2,229 @@ import { NextResponse } from "next/server";
 import algoliasearch from "algoliasearch";
 import { createClient } from "@supabase/supabase-js";
 
-/**
- * Reindexa emprendedores desde Supabase -> Algolia
- *
- * URL:
- *   http://localhost:3000/api/reindex/emprendedores?secret=123
- */
+export const runtime = "nodejs";
 
-// -------------------------
-// Helpers
-// -------------------------
-function cleanKey(v: unknown): string | null {
-  if (!v) return null;
-  const s = String(v).trim();
-  if (!s || s === "undefined" || s === "null") return null;
-  return s.replace(/^\/+/, "").replace(/\/+$/, "");
+function s(v: any): string {
+  if (v === null || v === undefined) return "";
+  return String(v).trim();
 }
 
-function uniqStrings(arr: (string | null | undefined)[]) {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const v of arr) {
-    if (!v) continue;
-    const s = String(v).trim();
-    if (!s) continue;
-    if (seen.has(s)) continue;
-    seen.add(s);
-    out.push(s);
+function arr(v: any): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter(Boolean).map((x) => String(x).trim());
+}
+
+function chunk(xs: any[], size = 500) {
+  const out = [];
+  for (let i = 0; i < xs.length; i += size) {
+    out.push(xs.slice(i, i + size));
   }
   return out;
 }
 
-function safeLower(s: unknown) {
-  return String(s ?? "").toLowerCase();
+function nivelRank(nivel: any) {
+  const n = s(nivel).toLowerCase();
+
+  if (n === "solo_mi_comuna") return 0;
+  if (n === "comunas") return 1;
+  if (n === "varias_regiones") return 2;
+  if (n === "nacional") return 3;
+
+  return 9;
 }
 
-function toUuidArray(v: any): string[] {
-  if (!v) return [];
-  if (Array.isArray(v)) return v.filter(Boolean).map(String);
-  // soporta "uuid" suelto
-  return [String(v)];
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+const algolia = algoliasearch(
+  process.env.ALGOLIA_APP_ID!,
+  process.env.ALGOLIA_ADMIN_KEY!
+);
+
+const INDEX_NAME = process.env.ALGOLIA_INDEX_EMPRENDEDORES || "emprendedores";
+
+async function getAllRows() {
+  const pageSize = 1000;
+  let from = 0;
+  let all: any[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("vw_emprendedores_algolia_final")
+      .select("*")
+      .range(from, from + pageSize - 1);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) break;
+
+    all = all.concat(data);
+
+    if (data.length < pageSize) break;
+
+    from += pageSize;
+  }
+
+  return all;
 }
 
-// -------------------------
-// ENV
-// -------------------------
-const REINDEX_SECRET = process.env.REINDEX_SECRET;
-
-const ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID;
-const ALGOLIA_ADMIN_KEY = process.env.ALGOLIA_ADMIN_KEY;
-
-// Índice emprendedores (ojo con el nombre exacto)
-const ALGOLIA_INDEX_EMPRENDEDORES =
-  process.env.ALGOLIA_INDEX_EMPRENDEDORES ||
-  process.env.ALGOLIA_INDEX_EMPRENDEDORES_PUBLICOS ||
-  "emprendedores";
-
-// Supabase server
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// Fuente Supabase (view) — usa tu view real (por tus capturas: vw_emprendedores_busqueda_v3)
-const SUPABASE_SOURCE_VIEW =
-  process.env.SUPABASE_VIEW_EMPRENDEDORES || "vw_emprendedores_busqueda_v3";
-
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    // -------------------------
-    // Auth simple por secret
-    // -------------------------
-    const { searchParams } = new URL(req.url);
-    const secret = searchParams.get("secret");
+    const index = algolia.initIndex(INDEX_NAME);
 
-    if (!REINDEX_SECRET || secret !== REINDEX_SECRET) {
-      return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 401 });
-    }
+    const rows = await getAllRows();
 
-    // -------------------------
-    // Validaciones ENV
-    // -------------------------
-    if (!ALGOLIA_APP_ID) {
-      return NextResponse.json({ ok: false, error: "Falta ALGOLIA_APP_ID" }, { status: 500 });
-    }
-    if (!ALGOLIA_ADMIN_KEY) {
-      return NextResponse.json({ ok: false, error: "Falta ALGOLIA_ADMIN_KEY" }, { status: 500 });
-    }
-    if (!ALGOLIA_INDEX_EMPRENDEDORES) {
-      return NextResponse.json(
-        { ok: false, error: "Falta ALGOLIA_INDEX_EMPRENDEDORES" },
-        { status: 500 }
-      );
-    }
-    if (!SUPABASE_URL) {
-      return NextResponse.json({ ok: false, error: "Falta SUPABASE_URL" }, { status: 500 });
-    }
-    if (!SUPABASE_SERVICE_ROLE_KEY) {
-      return NextResponse.json(
-        { ok: false, error: "Falta SUPABASE_SERVICE_ROLE_KEY" },
-        { status: 500 }
+    console.log("SUPABASE_ROWS", rows.length);
+    if (rows.length > 0) {
+      console.log(
+        "[reindex-emprendedores] first raw row from vw_emprendedores_algolia_final:",
+        rows[0]
       );
     }
 
-    // -------------------------
-    // Clientes
-    // -------------------------
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false },
-    });
+    const objects = rows
+      .map((row: any) => {
+        const nivel = s(row?.nivel_cobertura);
+        const tagsSlugs = arr(row?.tags_slugs);
+        const keywordsClasif = arr(row?.keywords_clasificacion);
+        const coverageKeys = arr((row as any)?.coverage_keys);
+        const coverageLabels = arr((row as any)?.coverage_labels);
+        const estadoPublicacion = s((row as any)?.estado_publicacion);
 
-    const algolia = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
-    const index = algolia.initIndex(ALGOLIA_INDEX_EMPRENDEDORES);
+        const idStr = s(row?.id);
+        const slugStr = s(row?.slug);
 
-    // -------------------------
-    // Traer datos desde la VIEW
-    // -------------------------
-    const { data, error } = await supabase.from(SUPABASE_SOURCE_VIEW).select("*");
+        const impresiones =
+          row?.impresiones_busqueda != null
+            ? Number(row.impresiones_busqueda)
+            : 0;
 
-    if (error) {
-      return NextResponse.json(
-        { ok: false, error: `Supabase error leyendo ${SUPABASE_SOURCE_VIEW}: ${error.message}` },
-        { status: 500 }
-      );
+        const createdAt = row?.created_at ?? null;
+
+        const foto =
+          s((row as any)?.foto_principal_url) ||
+          "/placeholder-emprendedor.jpg";
+
+        const comunaBaseSlug = s(row?.comuna_base_slug);
+        const comunaBaseNombre = s(row?.comuna_base_nombre);
+        const sectorSlug = s(row?.sector_slug);
+        const tagsNombres = arr((row as any)?.tags_nombres);
+        const sectorNombre = s((row as any)?.sector_nombre);
+
+        // search_text: sector, tags, keywords, nombre del rubro y descripciones para búsqueda
+        const searchTextParts = [
+          sectorSlug,
+          sectorNombre,
+          ...tagsSlugs,
+          ...tagsNombres,
+          ...keywordsClasif,
+          s(row?.nombre),
+          s(row?.descripcion_corta),
+          s(row?.descripcion_larga),
+          comunaBaseNombre,
+        ].filter(Boolean);
+
+        return {
+          // objectID obligatorio para Algolia: usamos el id real; si faltara, caemos al slug.
+          objectID: idStr || slugStr,
+
+          id: idStr,
+          slug: slugStr,
+          nombre: s(row?.nombre),
+
+          descripcion_corta: s(row?.descripcion_corta),
+          descripcion_larga: s(row?.descripcion_larga),
+          foto_principal_url: foto,
+
+          // Contacto básico
+          whatsapp: s((row as any)?.whatsapp),
+          instagram: s((row as any)?.instagram),
+          sitio_web: s((row as any)?.sitio_web),
+          email: s((row as any)?.email),
+
+          // comuna_slug pedido por el buscador (alias seguro)
+          comuna_slug: comunaBaseSlug,
+          comuna_base_slug: comunaBaseSlug,
+          comuna_base_nombre: comunaBaseNombre,
+
+          coverage_keys: coverageKeys,
+          coverage_labels: coverageLabels,
+
+          nivel_cobertura: nivel,
+          nivel_rank: nivelRank(nivel),
+          estado_publicacion: estadoPublicacion,
+          publicado: estadoPublicacion === "publicado",
+
+          // Nuevos campos de clasificación V1
+          tipo_actividad: s(row?.tipo_actividad),
+          sector_slug: sectorSlug,
+          tags_slugs: tagsSlugs,
+          keywords_clasificacion: keywordsClasif,
+          clasificacion_confianza:
+            row?.clasificacion_confianza != null
+              ? Number(row.clasificacion_confianza)
+              : null,
+
+          // Métricas simples (para ranking/analytics)
+          impresiones_busqueda: impresiones,
+          created_at: createdAt,
+
+          // Búsqueda: sector, tags, keywords, nombre del rubro y descripciones
+          search_text: searchTextParts.join(" ").trim(),
+        };
+      })
+    // No descartar registros si estado_publicacion viene null/incompleto.
+    // Solo filtramos explícitamente cuando está seteado y es distinto de "publicado".
+    .filter((obj: any) => {
+      const estado = s((obj as any)?.estado_publicacion);
+      if (!estado) return true;
+      return estado === "publicado";
+      });
+
+    console.log("ALGOLIA_OBJECTS", objects.length);
+    console.log("FIRST_OBJECT", objects[0]);
+
+    console.log("SENDING_TO_ALGOLIA", objects.length);
+
+    await index.clearObjects();
+
+    for (const part of chunk(objects, 500)) {
+      try {
+        const res = await index.saveObjects(part);
+        console.log(
+          "[reindex-emprendedores] saved chunk to Algolia:",
+          part.length,
+          "objects",
+          "response:",
+          res
+        );
+      } catch (e) {
+        console.error(
+          "[reindex-emprendedores] Algolia saveObjects error:",
+          e
+        );
+      }
     }
 
-    const rows = Array.isArray(data) ? data : [];
-
-    // -------------------------
-    // Mapear -> objetos Algolia
-    // -------------------------
-    const objects = rows.map((r: any) => {
-      // Territorio por slugs (legacy útil)
-      const countrySlug =
-        cleanKey(r.country_slug) || cleanKey(r.pais_slug) || cleanKey(r.pais) || "chile";
-
-      const regionSlug =
-        cleanKey(r.region_slug) || cleanKey(r.region) || cleanKey(r.region_nombre) || null;
-
-      const comunaBaseSlug =
-        cleanKey(r.comuna_base_slug) || cleanKey(r.comuna_slug) || null;
-
-      // Keys legacy para compat (si aún usas coverage_keys en algo)
-      const baseKey =
-        countrySlug && regionSlug && comunaBaseSlug
-          ? `${countrySlug}/${regionSlug}/${comunaBaseSlug}`
-          : null;
-
-      const regionKey = countrySlug && regionSlug ? `${countrySlug}/${regionSlug}` : null;
-      const countryKey = countrySlug ? `${countrySlug}` : null;
-
-      const incomingCoverageKeys = Array.isArray(r.coverage_keys) ? r.coverage_keys : [];
-      const normalizedIncoming = incomingCoverageKeys.map(cleanKey).filter(Boolean) as string[];
-
-      const finalCoverageKeys = uniqStrings([baseKey, ...normalizedIncoming, regionKey, countryKey]);
-
-      // Labels (si existen)
-      const incomingLabels = Array.isArray(r.coverage_labels) ? r.coverage_labels : [];
-      const normalizedLabels = uniqStrings(incomingLabels.map((x: any) => String(x ?? "").trim()));
-
-      // Texto
-      const nombre = String(r.nombre ?? "").trim();
-      const descripcion = String(r.descripcion ?? "").trim();
-      const descripcionCorta = String(r.descripcion_corta ?? "").trim();
-      const descripcionLarga = String(r.descripcion_larga ?? "").trim();
-
-      const searchText = uniqStrings([
-        nombre,
-        descripcionCorta,
-        descripcionLarga,
-        descripcion,
-        comunaBaseSlug ? comunaBaseSlug.replace(/-/g, " ") : null,
-        regionSlug ? regionSlug.replace(/-/g, " ") : null,
-        countrySlug ? countrySlug.replace(/-/g, " ") : null,
-        // también categorías si vienen
-        r.categoria_nombre ? String(r.categoria_nombre) : null,
-        ...(Array.isArray(r.subcategorias_nombres) ? r.subcategorias_nombres : []).map((x: any) =>
-          String(x ?? "").trim()
-        ),
-      ]).join(" ");
-
-      // -------------------------
-      // ✅ CLAVE PARA TU /api/buscar (esto arregla “regional:0”)
-      // -------------------------
-      // region_ids: tu vista puede traer region_ids (array) o region_id (uuid)
-      const region_ids = toUuidArray(r.region_ids ?? r.region_id);
-
-      // cobertura_comunas_ids: tu vista puede traer cobertura_comunas_ids (array)
-      // si no trae, intenta con cobertura_comunas_ids / cobertura_comunas_id
-      const cobertura_comunas_ids = toUuidArray(
-        r.cobertura_comunas_ids ?? r.cobertura_comunas_id
-      );
-
-      // is_national: si tu vista lo trae, úsalo; si no, derivamos de nivel_cobertura
-      const nivel_cobertura = String(r.nivel_cobertura ?? "").trim();
-      const is_national =
-        typeof r.is_national === "boolean"
-          ? r.is_national
-          : nivel_cobertura === "nacional";
-
-      const obj = {
-        objectID: r.objectID || r.id, // Algolia requiere objectID
-        id: r.id,
-        nombre,
-        slug: r.slug ?? null,
-
-        // Descripciones
-        descripcion: descripcion || null,
-        descripcion_corta: descripcionCorta || null,
-        descripcion_larga: descripcionLarga || null,
-
-        // Territorio base (para mostrar/depurar)
-        country_slug: countrySlug,
-        region_slug: regionSlug,
-        comuna_base_slug: comunaBaseSlug,
-        comuna_base_id: r.comuna_base_id ?? null,
-
-        // ✅ Campos que usa /api/buscar
-        region_ids,
-        cobertura_comunas_ids,
-        is_national,
-
-        // Cobertura (enum + legacy)
-        nivel_cobertura: nivel_cobertura || null,
-        coverage_keys: finalCoverageKeys,
-        coverage_labels: normalizedLabels,
-
-        // Contacto
-        whatsapp: r.whatsapp ?? null,
-        email: r.email ?? null,
-        instagram: r.instagram ?? null,
-        sitio_web: r.sitio_web ?? null,
-        logo_path: r.logo_path ?? null,
-
-        // Búsqueda
-        search_text: safeLower(searchText),
-
-        created_at: r.created_at ?? null,
-      };
-
-      return obj;
-    });
-
-    // -------------------------
-    // Subir a Algolia (reemplaza todo)
-    // -------------------------
-    await index.replaceAllObjects(objects, { safe: true });
+    console.log("ALGOLIA_SAVE_DONE");
 
     return NextResponse.json({
       ok: true,
-      index: ALGOLIA_INDEX_EMPRENDEDORES,
-      fuente: SUPABASE_SOURCE_VIEW,
-      total_indexados: objects.length,
-      nota:
-        "Indexado con region_ids + cobertura_comunas_ids + is_national. Ahora /api/buscar debería devolver regional/nacional cuando corresponda.",
+      total_supabase: rows.length,
+      total_algolia: objects.length,
+      sample: objects[0] || null
     });
+
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || "Error inesperado" }, { status: 500 });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "unhandled_exception",
+        message: e?.message || String(e),
+      },
+      { status: 500 }
+    );
   }
 }

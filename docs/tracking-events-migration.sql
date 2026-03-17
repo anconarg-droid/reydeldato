@@ -1,0 +1,12 @@
+-- Referencia: la aplicación usa la tabla existente public.emprendedor_eventos
+-- (no se usa tracking_events). Estructura esperada de emprendedor_eventos:
+--
+-- Columnas usadas en los inserts:
+--   emprendedor_id  uuid (nullable, FK emprendedores.id)
+--   tipo_evento    text (site_visit, search_performed, vista_ficha, search_result_impression, card_click, click)
+--   canal          text (busqueda, otros, whatsapp, instagram, web, email)
+--   metadata       jsonb (slug, comuna_slug, sector_slug, q, session_id, total_resultados, origen, etc.)
+--   created_at     timestamptz (default now())
+--
+-- Índices recomendados para consultas del panel:
+--   (emprendedor_id), (created_at), (emprendedor_id, tipo_evento, created_at)
