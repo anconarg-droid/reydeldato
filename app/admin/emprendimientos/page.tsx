@@ -8,18 +8,7 @@ export default async function AdminEmprendimientosPage() {
 
   const { data, error } = await supabase
     .from("emprendedores")
-    .select(
-      `
-      id,
-      nombre,
-      slug,
-      estado_publicacion,
-      plan,
-      updated_at,
-      comunas!emprendedores_comuna_base_id_fkey ( nombre, slug ),
-      categorias ( nombre, slug )
-    `
-    )
+    .select("id,nombre,slug,estado_publicacion,plan,updated_at,comuna_base_id,categoria_slug_final,subcategoria_slug_final")
     .in("estado_publicacion", ["publicado", "suspendido"])
     .order("updated_at", { ascending: false });
 

@@ -11,19 +11,7 @@ export default async function AdminPendientesPage() {
 
   const { data, error } = await supabase
     .from("emprendedores")
-    .select(`
-      *,
-      categorias (
-        id,
-        nombre,
-        slug
-      ),
-      comunas!emprendedores_comuna_base_id_fkey (
-        id,
-        nombre,
-        slug
-      )
-    `)
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (error) {

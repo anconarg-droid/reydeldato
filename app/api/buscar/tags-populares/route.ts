@@ -114,17 +114,15 @@ export async function GET(req: Request) {
     const limit = Math.min(10, Math.max(1, Number(searchParams.get("limit") || "5")));
 
     const { data, error } = await supabase
-      .from("emprendedores")
+      .from("vw_emprendedores_algolia_final")
       .select(
         `
-        tags_slugs,
         nivel_cobertura,
         coverage_keys,
         coverage_labels,
-        comunas!emprendedores_comuna_base_id_fkey (
-          nombre,
-          slug
-        )
+        comuna_base_nombre,
+        comuna_base_slug,
+        subcategorias_slugs_arr
       `
       )
       .eq("estado_publicacion", "publicado");
@@ -137,9 +135,9 @@ export async function GET(req: Request) {
     }
 
     const rows: Row[] = (data || []).map((row: any) => ({
-      tags_slugs: row.tags_slugs ?? null,
-      comuna_base_slug: row.comunas?.slug ?? null,
-      comuna_base_nombre: row.comunas?.nombre ?? null,
+      tags_slugs: row.subcategorias_slugs_arr ?? null,
+      comuna_base_slug: row.comuna_base_slug ?? null,
+      comuna_base_nombre: row.comuna_base_nombre ?? null,
       coverage_labels: row.coverage_labels ?? null,
       coverage_keys: row.coverage_keys ?? null,
       nivel_cobertura: row.nivel_cobertura ?? null,
