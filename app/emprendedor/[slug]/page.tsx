@@ -85,12 +85,17 @@ type Emprendedor = {
   tags_slugs?: string[] | null;
   clasificacion_confianza?: number | null;
 
-  subcategoria_final?: string;
-  subcategoria_final_nombre?: string;
-  subcategoria_final_slug?: string;
-  subcategoria_sugerida?: string;
-  subcategoria_sugerida_nombre?: string;
-  subcategoria_sugerida_slug?: string;
+  // Contrato público final (no usar *_detectada)
+  subcategoria_principal_id?: string | number | null;
+  subcategoria_principal_nombre?: string;
+  subcategoria_principal_slug?: string;
+  subcategorias_slugs?: string[];
+  categoria_slug_final?: string;
+  subcategoria_slug_final?: string;
+  keywords_finales?: string[];
+  keywords?: string[];
+  modalidad_atencion?: string[];
+  comunas_cobertura?: string[];
 };
 
 type Similar = {
@@ -169,6 +174,7 @@ function modalidadesTexto(list?: string[]) {
   if (!list?.length) return "No informado";
 
   const map: Record<string, string> = {
+    local: "Local físico",
     local_fisico: "Local físico",
     domicilio: "A domicilio",
     online: "Online",
@@ -204,6 +210,12 @@ function sectorNombreLegible(slug?: string | null): string {
     otros: "Otros",
   };
   return map[key] || "No informado";
+}
+
+function prettyFromSlug(slug: string): string {
+  const base = s(slug).replace(/[-_]+/g, " ").trim();
+  if (!base) return "";
+  return base.charAt(0).toUpperCase() + base.slice(1);
 }
 
 function InfoRow({
@@ -455,7 +467,7 @@ export default async function Page({
   const coberturaComunas =
     item.cobertura_comunas_arr || item.comunas_cobertura_nombres_arr || [];
   const modalidades =
-    item.modalidades_atencion_arr || item.modalidades_atencion || [];
+    item.modalidad_atencion || item.modalidades_atencion_arr || item.modalidades_atencion || [];
   const galeria = item.galeria_urls_arr || item.galeria_urls || [];
   const sitioWeb = item.sitio_web || item.web || "";
 
@@ -481,23 +493,51 @@ export default async function Page({
 
   const subcategorias = arr(item.subcategorias_nombres_arr);
   const subcategoriaSlugs = arr(item.subcategorias_slugs_arr);
-  const subcategoriaSlugPrincipal = prettySubcategoriaPath(subcategoriaSlugs);
+  const subcategoriasSlugsFinal = arr(item.subcategorias_slugs).length
+    ? arr(item.subcategorias_slugs)
+    : subcategoriaSlugs;
+  const subcategoriaSlugFinal = s(item.subcategoria_slug_final);
+  const subcategoriaSlugPrincipal =
+    s(item.subcategoria_principal_slug) ||
+    subcategoriaSlugFinal ||
+    prettySubcategoriaPath(subcategoriasSlugsFinal);
 
-  const subcategoriaDisplay =
-    s(item.subcategoria_final_nombre) ||
-    s(item.subcategoria_sugerida_nombre) ||
-    s(item.subcategoria_final) ||
-    s(item.subcategoria_sugerida) ||
+  // 1) Título principal: subcategoría principal (nombre)
+  const subcategoriaPrincipalTitulo =
+    s(item.subcategoria_principal_nombre) ||
     s(subcategorias[0]) ||
-    sectorNombreLegible(item.sector_slug) ||
+    (subcategoriaSlugPrincipal ? prettyFromSlug(subcategoriaSlugPrincipal) : "") ||
     "No informado";
 
+  // 2) Lista: principal primero, luego el resto (sin duplicados)
+  const subcatsForList = (() => {
+    const all = subcategorias.length
+      ? subcategorias
+      : subcategoriasSlugsFinal.map(prettyFromSlug).filter(Boolean);
+
+    const uniq: string[] = [];
+    const seen = new Set<string>();
+    const push = (x: string) => {
+      const k = s(x).toLowerCase();
+      if (!k || seen.has(k)) return;
+      seen.add(k);
+      uniq.push(s(x));
+    };
+
+    push(subcategoriaPrincipalTitulo);
+    all.forEach(push);
+    return uniq;
+  })();
+
+  const comunasCoberturaFinal = arr(item.comunas_cobertura);
   const coberturaDisplay =
-    coberturaComunas.length > 0
-      ? coberturaComunas.join(" • ")
-      : coberturaTipo
-        ? cobertura
-        : "No informado";
+    comunasCoberturaFinal.length > 0
+      ? comunasCoberturaFinal.join(", ")
+      : coberturaComunas.length > 0
+        ? coberturaComunas.join(", ")
+        : coberturaTipo
+          ? cobertura
+          : "No informado";
 
   const similares = await getSimilares(item.slug);
 
@@ -793,7 +833,7 @@ export default async function Page({
             {frase}
           </p>
 
-          {subcategorias.length > 0 ? (
+          {subcatsForList.length > 0 && subcatsForList[0] !== "No informado" ? (
             <div
               style={{
                 display: "flex",
@@ -802,8 +842,8 @@ export default async function Page({
                 marginBottom: 14,
               }}
             >
-              {subcategorias.map((sub, i) => {
-                const slugSub = subcategoriaSlugs[i] || "";
+              {subcatsForList.map((sub, i) => {
+                const slugSub = subcategoriasSlugsFinal[i] || "";
                 return (
                   <a
                     key={`${sub}-${i}`}
@@ -854,7 +894,7 @@ export default async function Page({
           </p>
 
           <p style={{ fontSize: 14, margin: "0 0 8px 0", color: "#374151" }}>
-            <strong>Categoría:</strong> {subcategoriaDisplay}
+            <strong>Categoría:</strong> {subcategoriaPrincipalTitulo}
           </p>
 
           {tieneLocalFisico && item.direccion ? (
@@ -1014,7 +1054,7 @@ export default async function Page({
                 type="web"
                 href={webUrl}
                 label="Visitar sitio web"
-                bg="#2563eb"
+                bg="#475569"
               />
             ) : null}
             {mailUrl ? (

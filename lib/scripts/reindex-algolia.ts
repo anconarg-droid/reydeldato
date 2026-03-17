@@ -2,6 +2,7 @@ import dotenv from "dotenv"
 dotenv.config({ path: ".env.local" })
 import algoliasearch from "algoliasearch";
 import { createClient } from "@supabase/supabase-js";
+import { indexarEmprendedor } from "@/lib/algolia";
 
 type AlgoliaRow = {
   id: string;
@@ -130,7 +131,7 @@ async function run() {
   }));
 
   await index.clearObjects();
-  await index.saveObjects(objects);
+  await indexarEmprendedor(objects);
 
   await index.setSettings({
     searchableAttributes: [

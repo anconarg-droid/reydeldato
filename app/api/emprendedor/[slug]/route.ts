@@ -86,7 +86,13 @@ export async function GET(
       trial_expira?: string | null;
       created_at?: string | null;
       direccion?: string | null;
-      modalidades_atencion_arr?: unknown;
+      modalidades_atencion?: unknown;
+      keywords?: unknown;
+      subcategoria_principal_id?: unknown;
+      subcategorias_slugs?: unknown;
+      categoria_slug_final?: unknown;
+      subcategoria_slug_final?: unknown;
+      keywords_finales?: unknown;
       frase_negocio?: string | null;
     } | null = null;
 
@@ -95,7 +101,7 @@ export async function GET(
     if (id != null) {
       const { data: planRow, error: planErr } = await supabase
         .from("emprendedores")
-        .select("plan_activo, plan_expira_at, trial_expira_at, trial_inicia_at, plan_inicia_at, plan_expira_at, trial_expira, created_at, direccion, modalidades_atencion_arr, frase_negocio")
+        .select("plan_activo, plan_expira_at, trial_expira_at, trial_inicia_at, plan_inicia_at, plan_expira_at, trial_expira, created_at, direccion, modalidades_atencion, keywords, subcategoria_principal_id, subcategorias_slugs, categoria_slug_final, subcategoria_slug_final, keywords_finales, frase_negocio")
         .eq("id", id)
         .maybeSingle();
       if (!planErr && planRow) planFromTable = planRow as typeof planFromTable;
@@ -124,6 +130,21 @@ export async function GET(
     const trialExpira = planFromTable?.trial_expira ?? viewRow.trial_expira ?? null;
     const createdAt = planFromTable?.created_at ?? viewRow.created_at ?? null;
 
+    const principalSubId = s(planFromTable?.subcategoria_principal_id ?? viewRow.subcategoria_principal_id);
+    let principalSubNombre = "";
+    let principalSubSlug = "";
+    if (principalSubId) {
+      const { data: subRow } = await supabase
+        .from("subcategorias")
+        .select("nombre, slug")
+        .eq("id", principalSubId)
+        .maybeSingle();
+      if (subRow) {
+        principalSubNombre = s((subRow as any).nombre);
+        principalSubSlug = s((subRow as any).slug);
+      }
+    }
+
     const item = {
       id: data.id ?? null,
       slug: s(data.slug),
@@ -136,9 +157,16 @@ export async function GET(
       categoria_id: data.categoria_id ?? null,
       categoria_nombre: s(data.categoria_nombre),
       categoria_slug: s(data.categoria_slug),
+      categoria_slug_final: s(planFromTable?.categoria_slug_final),
 
       subcategorias_nombres_arr: arr(data.subcategorias_nombres_arr),
       subcategorias_slugs_arr: arr(data.subcategorias_slugs_arr),
+      // Campos finales (contrato público): principal + lista (sin *_detectada)
+      subcategoria_principal_id: principalSubId || null,
+      subcategoria_principal_nombre: principalSubNombre,
+      subcategoria_principal_slug: principalSubSlug,
+      subcategorias_slugs: arr(planFromTable?.subcategorias_slugs ?? data.subcategorias_slugs_arr),
+      subcategoria_slug_final: s(planFromTable?.subcategoria_slug_final),
 
       comuna_base_id: data.comuna_base_id ?? null,
       comuna_nombre: s(data.comuna_nombre),
@@ -151,8 +179,11 @@ export async function GET(
       cobertura_tipo: s(data.cobertura_tipo),
       cobertura_comunas_arr: arr(data.cobertura_comunas_arr),
       cobertura_comunas_slugs_arr: arr(data.cobertura_comunas_slugs_arr),
+      // Campo final (contrato público)
+      comunas_cobertura: arr(data.cobertura_comunas_arr),
 
-      modalidades_atencion_arr: arr(planFromTable?.modalidades_atencion_arr ?? data.modalidades_atencion_arr),
+      // Campo final (contrato público)
+      modalidad_atencion: arr(planFromTable?.modalidades_atencion ?? (data as any).modalidades_atencion_arr),
 
       whatsapp: s(data.whatsapp),
       instagram: s(data.instagram),
@@ -191,19 +222,15 @@ export async function GET(
           ? Number(viewRow.clasificacion_confianza)
           : null,
 
-      // Subcategoría final/sugerida (si la vista ya las expone)
-      subcategoria_final: s(viewRow.subcategoria_final),
-      subcategoria_final_nombre: s(viewRow.subcategoria_final_nombre),
-      subcategoria_final_slug: s(viewRow.subcategoria_final_slug),
-      subcategoria_sugerida: s(viewRow.subcategoria_sugerida),
-      subcategoria_sugerida_nombre: s(viewRow.subcategoria_sugerida_nombre),
-      subcategoria_sugerida_slug: s(viewRow.subcategoria_sugerida_slug),
+      // Keywords finales (contrato público)
+      keywords: arr(planFromTable?.keywords ?? (viewRow as any).keywords ?? (viewRow as any).keywords_arr),
+      keywords_finales: arr(planFromTable?.keywords_finales),
 
       // aliases temporales para compatibilidad con tu page.tsx actual
       web: s(data.sitio_web),
       nivel_cobertura: s(data.cobertura_tipo),
       comunas_cobertura_nombres_arr: arr(data.cobertura_comunas_arr),
-      modalidades_atencion: arr(data.modalidades_atencion_arr),
+      modalidades_atencion: arr(planFromTable?.modalidades_atencion ?? (data as any).modalidades_atencion_arr),
       galeria_urls: arr(data.galeria_urls_arr),
 
       // Locales físicos (para ficha: 1 local = dirección principal; 2–3 = bloque "Locales físicos")

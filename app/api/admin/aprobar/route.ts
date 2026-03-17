@@ -45,6 +45,90 @@ export async function POST(req: Request) {
       );
     }
 
+    // Copiar valores a campos *_final SOLO si están vacíos (no sobrescribir revisión manual)
+    const { data: row, error: rowErr } = await supabase
+      .from("emprendedores")
+      .select(
+        "id, categoria_id, subcategoria_principal_id, subcategorias_slugs, keywords, keywords_usuario, productos_detectados, categoria_slug_detectada, subcategoria_slug_detectada, categoria_slug_final, subcategoria_slug_final, keywords_finales"
+      )
+      .eq("id", id)
+      .maybeSingle();
+
+    if (rowErr) {
+      return NextResponse.json(
+        { ok: false, error: rowErr.message },
+        { status: 500 }
+      );
+    }
+
+    const updatesFinales: Record<string, unknown> = {};
+    const categoriaSlugFinalActual = s((row as any)?.categoria_slug_final);
+    const subcategoriaSlugFinalActual = s((row as any)?.subcategoria_slug_final);
+    const keywordsFinalesActual = Array.isArray((row as any)?.keywords_finales)
+      ? (row as any).keywords_finales
+      : [];
+
+    if (!categoriaSlugFinalActual) {
+      const categoriaId = s((row as any)?.categoria_id);
+      if (categoriaId) {
+        const { data: catRow } = await supabase
+          .from("categorias")
+          .select("slug")
+          .eq("id", categoriaId)
+          .maybeSingle();
+        const slug = s((catRow as any)?.slug);
+        if (slug) updatesFinales.categoria_slug_final = slug;
+      } else {
+        const detected = s((row as any)?.categoria_slug_detectada);
+        if (detected) updatesFinales.categoria_slug_final = detected;
+      }
+    }
+
+    if (!subcategoriaSlugFinalActual) {
+      const subId = s((row as any)?.subcategoria_principal_id);
+      if (subId) {
+        const { data: subRow } = await supabase
+          .from("subcategorias")
+          .select("slug")
+          .eq("id", subId)
+          .maybeSingle();
+        const slug = s((subRow as any)?.slug);
+        if (slug) updatesFinales.subcategoria_slug_final = slug;
+      } else {
+        const slugs = Array.isArray((row as any)?.subcategorias_slugs)
+          ? (row as any).subcategorias_slugs
+          : [];
+        const first = s(slugs[0]);
+        if (first) updatesFinales.subcategoria_slug_final = first;
+        else {
+          const detected = s((row as any)?.subcategoria_slug_detectada);
+          if (detected) updatesFinales.subcategoria_slug_final = detected;
+        }
+      }
+    }
+
+    if (!keywordsFinalesActual.length) {
+      const kws =
+        (Array.isArray((row as any)?.keywords) && (row as any).keywords) ||
+        (Array.isArray((row as any)?.keywords_usuario) && (row as any).keywords_usuario) ||
+        (Array.isArray((row as any)?.productos_detectados) && (row as any).productos_detectados) ||
+        [];
+      if (kws.length) updatesFinales.keywords_finales = kws;
+    }
+
+    if (Object.keys(updatesFinales).length > 0) {
+      const { error: finalsErr } = await supabase
+        .from("emprendedores")
+        .update(updatesFinales)
+        .eq("id", id);
+      if (finalsErr) {
+        return NextResponse.json(
+          { ok: false, error: finalsErr.message },
+          { status: 500 }
+        );
+      }
+    }
+
     const { error: updateError } = await supabase
       .from("emprendedores")
       .update({

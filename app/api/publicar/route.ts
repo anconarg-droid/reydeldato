@@ -68,7 +68,9 @@ type Payload = {
   modalidades?: string[];
 
   categoria_slug?: string;
+  categoria_slug_detectada?: string;
   subcategorias_slugs?: string[];
+  subcategoria_slug_detectada?: string;
 
   /** Palabras clave que definen el negocio (entre 5 y 10). */
   keywords?: string[];
@@ -215,7 +217,19 @@ export async function POST(req: Request) {
     const modalidades = normalizeModalidades(body.modalidades);
 
     const categoriaSlug = s(body.categoria_slug);
+    const categoriaSlugDetectada = s((body as any).categoria_slug_detectada);
     const subcategoriaSlugs = unique(arr(body.subcategorias_slugs));
+    const subcategoriaSlugDetectada = s((body as any).subcategoria_slug_detectada);
+
+    // Regla: si existe *_slug_detectada y el campo final está vacío, copiarlo.
+    // Nunca sobrescribir si el usuario/admin ya envió un valor final.
+    const categoriaSlugFinal = categoriaSlug || categoriaSlugDetectada;
+    const subcategoriaSlugsFinal =
+      subcategoriaSlugs.length > 0
+        ? subcategoriaSlugs
+        : subcategoriaSlugDetectada
+          ? [subcategoriaSlugDetectada]
+          : [];
 
     const comunasCoberturaSlugs = unique(
       arr(body.comunas_cobertura_slugs).filter((slug) => slug !== comunaBaseSlug)
@@ -561,7 +575,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const hasLegacyTaxonomy = !!categoriaSlug && subcategoriaSlugs.length > 0;
+    const hasLegacyTaxonomy = !!categoriaSlugFinal && subcategoriaSlugsFinal.length > 0;
     const hasNewClassification =
       !!tipoActividadFinal &&
       !!sectorSlugFinal &&
@@ -583,7 +597,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (subcategoriaSlugs.length > 6) {
+    if (subcategoriaSlugsFinal.length > 6) {
       return NextResponse.json(
         { ok: false, error: "Máximo 6 subcategorías." },
         { status: 400 }
@@ -640,10 +654,11 @@ export async function POST(req: Request) {
       }
     }
 
+    let existingDraftPrincipalSubId: string | null = null;
     if (draftId) {
       const { data: draft, error: draftErr } = await supabase
         .from("emprendedores")
-        .select("id, estado")
+        .select("id, estado, subcategoria_principal_id")
         .eq("id", draftId)
         .single();
       if (draftErr || !draft || (draft as any).estado !== "borrador") {
@@ -652,6 +667,9 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+      existingDraftPrincipalSubId = (draft as any).subcategoria_principal_id
+        ? String((draft as any).subcategoria_principal_id)
+        : null;
     }
 
     // ============================
@@ -662,7 +680,7 @@ export async function POST(req: Request) {
       const { data, error } = await supabase
         .from("categorias")
         .select("id,nombre,slug")
-        .eq("slug", categoriaSlug)
+        .eq("slug", categoriaSlugFinal)
         .maybeSingle();
 
       if (error || !data) {
@@ -706,9 +724,9 @@ export async function POST(req: Request) {
       const { data, error } = await supabase
         .from("subcategorias")
         .select("id,slug,categoria_id,nombre")
-        .in("slug", subcategoriaSlugs);
+        .in("slug", subcategoriaSlugsFinal);
 
-      if (error || !data || data.length !== subcategoriaSlugs.length) {
+      if (error || !data || data.length !== subcategoriaSlugsFinal.length) {
         return NextResponse.json(
           { ok: false, error: "Una o más subcategorías no existen." },
           { status: 400 }
@@ -759,6 +777,29 @@ export async function POST(req: Request) {
             .eq("id", primeraCategoriaId)
             .maybeSingle();
           if (catRow) categoria = catRow as { id: string; nombre: string; slug: string };
+        }
+      }
+    }
+
+    // ============================
+    // REGLA: si hay subcategorias_slugs pero no hay subcategoria_principal_id, asignar la primera.
+    // Guard: nunca sobrescribir un principal ya existente (ej. cambiado manualmente por admin).
+    // ============================
+    let principalSubcategoriaIdFinal: string | null =
+      existingDraftPrincipalSubId || null;
+
+    if (!principalSubcategoriaIdFinal) {
+      if (subcats.length > 0) {
+        principalSubcategoriaIdFinal = String((subcats[0] as any).id || "");
+      } else if (subcategoriaSlugsFinal.length > 0) {
+        const firstSlug = subcategoriaSlugsFinal[0];
+        if (firstSlug) {
+          const { data: subRow } = await supabase
+            .from("subcategorias")
+            .select("id")
+            .eq("slug", firstSlug)
+            .maybeSingle();
+          if (subRow?.id) principalSubcategoriaIdFinal = String(subRow.id);
         }
       }
     }
@@ -1025,7 +1066,7 @@ export async function POST(req: Request) {
           ? "Sin subcategoría asignada por clasificación automática. Requiere asignación manual."
           : null,
       categoria_id: useClassifyAndAssign ? null : (categoria ? categoria.id : null),
-      subcategoria_principal_id: useClassifyAndAssign ? null : (subcats.length > 0 ? subcats[0].id : null),
+      subcategoria_principal_id: principalSubcategoriaIdFinal || (useClassifyAndAssign ? null : (subcats.length > 0 ? subcats[0].id : null)),
       comuna_base_id: comunaBase.id,
       direccion: direccionParaEmprendedor || null,
       whatsapp_principal: whatsappPrincipal,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import algoliasearch from "algoliasearch";
 import { createClient } from "@supabase/supabase-js";
+import { indexarEmprendedor } from "@/lib/algolia";
 
 export const runtime = "nodejs";
 
@@ -72,8 +73,6 @@ async function getAllRows() {
 
 export async function GET() {
   try {
-    const index = algolia.initIndex(INDEX_NAME);
-
     const rows = await getAllRows();
 
     console.log("SUPABASE_ROWS", rows.length);
@@ -188,24 +187,12 @@ export async function GET() {
 
     console.log("SENDING_TO_ALGOLIA", objects.length);
 
+    // Indexación centralizada
+    // Nota: no indexa si estado_publicacion !== "publicado"
+    const index = algolia.initIndex(INDEX_NAME);
     await index.clearObjects();
-
     for (const part of chunk(objects, 500)) {
-      try {
-        const res = await index.saveObjects(part);
-        console.log(
-          "[reindex-emprendedores] saved chunk to Algolia:",
-          part.length,
-          "objects",
-          "response:",
-          res
-        );
-      } catch (e) {
-        console.error(
-          "[reindex-emprendedores] Algolia saveObjects error:",
-          e
-        );
-      }
+      await indexarEmprendedor(part);
     }
 
     console.log("ALGOLIA_SAVE_DONE");

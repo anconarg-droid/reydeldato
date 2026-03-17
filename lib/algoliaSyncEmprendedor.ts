@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import algoliasearch from "algoliasearch";
+import { indexarEmprendedor } from "@/lib/algolia";
 
 function s(v: any): string {
   if (v === null || v === undefined) return "";
@@ -55,11 +56,9 @@ export async function syncEmprendedorToAlgolia(emprendedorId: string) {
       .eq("id", id)
       .maybeSingle();
 
-    const index = algolia.initIndex(INDEX_NAME);
-
     if (error || !data) {
       // Si no hay fila en la vista, eliminamos del índice por si quedó huérfano.
-      await index.deleteObject(id).catch(() => {});
+      await indexarEmprendedor({ id, slug: id, estado_publicacion: "no_publicado" });
       if (process.env.NODE_ENV !== "production") {
         console.warn("[algoliaSync] No data in view for id, deleting from index", {
           id,
@@ -69,66 +68,14 @@ export async function syncEmprendedorToAlgolia(emprendedorId: string) {
       return;
     }
 
-    const nivel = s((data as any)?.nivel_cobertura);
-    const tagsSlugs = arr((data as any)?.tags_slugs);
-    const keywordsClasif = arr((data as any)?.keywords_clasificacion);
-    const coverageKeys = arr((data as any)?.coverage_keys);
-    const coverageLabels = arr((data as any)?.coverage_labels);
-    const estadoPublicacion = s((data as any)?.estado_publicacion);
-
-    const object = {
-      objectID: s((data as any)?.id || (data as any)?.slug),
-
-      id: s((data as any)?.id),
-      slug: s((data as any)?.slug),
-      nombre: s((data as any)?.nombre),
-
-      descripcion_corta: s((data as any)?.descripcion_corta),
-      descripcion_larga: s((data as any)?.descripcion_larga),
-      foto_principal_url: s((data as any)?.foto_principal_url),
-
-      comuna_slug: s((data as any)?.comuna_base_slug),
-      comuna_base_slug: s((data as any)?.comuna_base_slug),
-      comuna_base_nombre: s((data as any)?.comuna_base_nombre),
-
-      coverage_keys: coverageKeys,
-      coverage_labels: coverageLabels,
-
-      nivel_cobertura: nivel,
-      nivel_rank: nivelRank(nivel),
-      estado_publicacion: estadoPublicacion,
-      publicado: estadoPublicacion === "publicado",
-
-      tipo_actividad: s((data as any)?.tipo_actividad),
-      sector_slug: s((data as any)?.sector_slug),
-      tags_slugs: tagsSlugs,
-      keywords_clasificacion: keywordsClasif,
-      clasificacion_confianza:
-        (data as any)?.clasificacion_confianza != null
-          ? Number((data as any).clasificacion_confianza)
-          : null,
-
-      search_text: [
-        s((data as any)?.nombre),
-        s((data as any)?.descripcion_corta),
-        s((data as any)?.descripcion_larga),
-        ...tagsSlugs,
-        ...keywordsClasif,
-        s((data as any)?.sector_slug),
-      ].join(" "),
-    };
-
-    if (object.estado_publicacion === "publicado") {
-      await index.saveObject(object);
-    } else {
-      await index.deleteObject(object.objectID).catch(() => {});
-    }
+    // Indexación centralizada. La vista ya entrega *_final y campos públicos básicos.
+    await indexarEmprendedor(data as any);
 
     if (process.env.NODE_ENV !== "production") {
       console.log("[algoliaSync] Synced emprendedor to Algolia", {
         id,
-        slug: object.slug,
-        publicado: object.publicado,
+        slug: s((data as any)?.slug),
+        publicado: s((data as any)?.estado_publicacion) === "publicado",
       });
     }
   } catch (e: any) {

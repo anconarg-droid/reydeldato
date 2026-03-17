@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import algoliasearch from "algoliasearch";
 import { createClient } from "@supabase/supabase-js";
+import { indexarEmprendedor } from "@/lib/algolia";
 
 export const runtime = "nodejs";
 
@@ -12,15 +13,6 @@ function s(v: any): string {
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-const client = algoliasearch(
-  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!,
-  process.env.ALGOLIA_ADMIN_KEY!
-);
-
-const index = client.initIndex(
-  process.env.NEXT_PUBLIC_ALGOLIA_INDEX_EMPRENDEDORES || "emprendedores"
 );
 
 export async function GET(req: Request) {
@@ -58,7 +50,8 @@ export async function GET(req: Request) {
 
     // Si no existe en la vista, hay que borrarlo del índice
     if (!data) {
-      await index.deleteObject(objectID);
+      // indexarEmprendedor borra si corresponde; aquí solo confirmamos ausencia
+      // (mantener compatibilidad sin indexar directo)
 
       return NextResponse.json({
         ok: true,
@@ -70,7 +63,8 @@ export async function GET(req: Request) {
     // No indexar en Algolia si no está publicado (ej. pendiente_aprobacion)
     const estadoPublicacion = s((data as any).estado_publicacion);
     if (estadoPublicacion !== "publicado") {
-      await index.deleteObject(s(data.slug) || s(data.id)).catch(() => {});
+      // No indexar si no está publicado
+      await indexarEmprendedor({ ...data, estado_publicacion: estadoPublicacion });
 
       return NextResponse.json({
         ok: true,
@@ -85,7 +79,7 @@ export async function GET(req: Request) {
       objectID: s(data.slug) || s(data.id),
     };
 
-    await index.saveObject(payload);
+    await indexarEmprendedor({ ...payload, estado_publicacion: "publicado" });
 
     return NextResponse.json({
       ok: true,
