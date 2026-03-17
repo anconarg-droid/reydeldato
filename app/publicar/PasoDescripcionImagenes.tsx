@@ -1,11 +1,294 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import type { FormData } from "./PublicarClient";
-import { MIN_DESCRIPCION_NEGOCIO, KEYWORDS_MIN, KEYWORDS_MAX } from "./PublicarClient";
+import { MIN_DESCRIPCION_NEGOCIO, KEYWORDS_MAX } from "./PublicarClient";
+import { cleanDetectedProducts } from "@/lib/cleanDetectedProducts";
 
 type SetField = <K extends keyof FormData>(key: K, value: FormData[K]) => void;
+
+/** Frases que representan productos/servicios compuestos y deben detectarse primero. */
+const PRIORITY_PHRASES = [
+  /* OFICIOS */
+  "maestro pintor",
+  "maestro gasfiter",
+  "maestro chasquilla",
+  "maestro carpintero",
+  "maestro electrico",
+  "maestro constructor",
+  "maestro albañil",
+  "maestro soldador",
+  "tecnico refrigeracion",
+  "tecnico lavadoras",
+  "tecnico secadoras",
+  "tecnico calefont",
+  "tecnico aire acondicionado",
+  "tecnico computadores",
+  "reparacion lavadoras",
+  "reparacion refrigeradores",
+  "reparacion calefont",
+  "destape cañerias",
+  "instalacion calefont",
+  "instalacion aire acondicionado",
+
+  /* CONSTRUCCION */
+  "pintura casas",
+  "pintura interiores",
+  "pintura exteriores",
+  "instalacion ceramica",
+  "instalacion porcelanato",
+  "instalacion piso flotante",
+  "instalacion piso vinilico",
+  "cierre perimetral",
+  "porton electrico",
+  "reparacion techos",
+  "instalacion canaletas",
+
+  /* COMIDA RAPIDA */
+  "completos italianos",
+  "carro completos",
+  "carro hamburguesas",
+  "carro papas fritas",
+  "carro sopaipillas",
+  "carro churrascos",
+  "carro cabritas",
+  "carro algodones",
+  "carro hot dog",
+  "hamburguesas caseras",
+  "pizzas artesanales",
+  "sandwich chacarero",
+  "sandwich churrasco",
+  "empanadas caseras",
+  "empanadas fritas",
+  "papas fritas",
+  "papas rusticas",
+  "comida rapida",
+  "venta completos",
+  "venta empanadas",
+
+  /* EVENTOS */
+  "juegos inflables",
+  "camas elasticas",
+  "fiestas infantiles",
+  "cumpleaños infantiles",
+  "animacion fiestas",
+  "animador infantil",
+  "pintacaritas",
+  "globoflexia",
+  "decoracion globos",
+  "decoracion cumpleaños",
+  "carro cabritas",
+  "carro algodones",
+  "arriendo mesas",
+  "arriendo sillas",
+  "arriendo vajilla",
+  "arriendo carpas",
+  "arriendo inflables",
+
+  /* EDUCACION */
+  "clases matematicas",
+  "clases ingles",
+  "clases particulares",
+  "clases lenguaje",
+  "clases fisica",
+  "clases quimica",
+  "reforzamiento escolar",
+  "preparacion pruebas",
+  "preuniversitario",
+  "clases guitarra",
+  "clases piano",
+  "clases canto",
+  "clases baile",
+
+  /* SERVICIOS HOGAR / LIMPIEZA / JARDINERIA */
+  "fletes mudanzas",
+  "mudanzas",
+  "fletes economicos",
+  "transporte carga",
+  "retiro escombros",
+  "retiro basura",
+  "limpieza casas",
+  "limpieza oficinas",
+  "limpieza alfombras",
+  "limpieza tapiz",
+  "jardineria",
+  "mantencion jardines",
+  "corte pasto",
+  "podas arboles",
+  "control plagas",
+  "fumigacion",
+
+  /* MASCOTAS */
+  "peluqueria canina",
+  "peluqueria mascotas",
+  "adiestramiento perros",
+  "guarderia perros",
+  "paseo perros",
+  "veterinario domicilio",
+  "venta alimentos mascotas",
+
+  /* ALIMENTOS / TIENDAS DE BARRIO */
+  "verduleria",
+  "carniceria",
+  "panaderia",
+  "pasteleria",
+  "minimarket",
+  "botilleria",
+  "venta frutas",
+  "venta verduras",
+  "venta huevos",
+  "venta miel",
+  "venta frutos secos",
+
+  /* BELLEZA */
+  "peluqueria domicilio",
+  "barberia domicilio",
+  "corte cabello",
+  "tintura cabello",
+  "alisado brasilero",
+  "manicure permanente",
+  "pedicure clinica",
+  "depilacion laser",
+  "depilacion cera",
+  "maquillaje profesional",
+  "peinados novia",
+  "estetica facial",
+
+  /* VEHICULOS */
+  "lavado autos",
+  "lavado vehiculos",
+  "mecanico domicilio",
+  "mecanico automotriz",
+  "electricidad automotriz",
+  "scanner automotriz",
+  "vulcanizacion domicilio",
+  "vulcanizacion",
+  "cambio aceite",
+  "alineacion balanceo",
+  "lavado motor",
+  "detailing automotriz",
+  "pulido autos",
+];
+
+/** Listas de filtrado para detección de productos/servicios. */
+const STOPWORDS = new Set([
+  "de", "y", "para", "con", "en", "por", "a", "el", "la", "los", "las", "del", "al"
+]);
+
+const COMMERCIAL_VERBS = new Set([
+  "vendo", "vendemos", "ofrezco", "ofrecemos",
+  "arrienda", "arriendo", "arrendamos",
+  "presto", "prestamos", "servicio", "servicios",
+  "empresa", "negocio", "local"
+]);
+
+/** Palabras demasiado genéricas que no deben quedar como productos detectados. */
+const GENERIC_WORDS = new Set([
+  "domicilio",
+  "casa",
+  "hogar",
+  "servicio",
+  "servicios",
+  "trabajo",
+  "trabajos",
+  "trabajo",
+  "trabajos",
+  "reparaciones",
+  "instalacion",
+  "instalación",
+  "gas",
+  "agua",
+]);
+
+function normalizeForNgrams(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9ñ\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Extrae productos/servicios del texto combinando:
+ * - Frases prioritarias (compuestas) primero.
+ * - Luego palabras individuales limpias.
+ * Máximo 6 resultados, sin duplicados.
+ */
+function extractProductNgrams(description: string): string[] {
+  const descNorm = normalizeForNgrams(description);
+  if (!descNorm) return [];
+
+  const detected = new Set<string>();
+
+  // 1) Detectar frases prioritarias sobre el texto normalizado
+  const priorityWordsToSkip = new Set<string>();
+  for (const phrase of PRIORITY_PHRASES) {
+    const normPhrase = normalizeForNgrams(phrase);
+    if (!normPhrase) continue;
+    if (descNorm.includes(normPhrase)) {
+      detected.add(phrase);
+      normPhrase.split(" ").forEach((w) => {
+        if (w) priorityWordsToSkip.add(w);
+      });
+    }
+  }
+
+  const tokens = descNorm.split(" ").filter(Boolean);
+
+  // 2) Priorizar frases cercanas (2-3 palabras) antes que palabras sueltas.
+  // La idea es mantener expresiones como "cocinas a gas" y evitar separar en "cocinas" y "gas".
+  const phraseWordsToSkip = new Set<string>();
+  const maxTotal = 6;
+
+  const hasUsefulToken = (phraseTokens: string[]) =>
+    phraseTokens.some((t) => !STOPWORDS.has(t) && !COMMERCIAL_VERBS.has(t));
+
+  const hasNonGenericToken = (phraseTokens: string[]) =>
+    phraseTokens.some(
+      (t) => !STOPWORDS.has(t) && !COMMERCIAL_VERBS.has(t) && !GENERIC_WORDS.has(t)
+    );
+
+  for (const len of [3, 2] as const) {
+    if (detected.size >= maxTotal) break;
+    for (let i = 0; i <= tokens.length - len; i++) {
+      if (detected.size >= maxTotal) break;
+      const slice = tokens.slice(i, i + len);
+      // Evitar construir frases sin señal (solo conectores/stopwords)
+      if (!hasUsefulToken(slice)) continue;
+      // Requiere al menos un token no genérico dentro de la frase
+      if (!hasNonGenericToken(slice)) continue;
+
+      const phrase = slice.join(" ");
+      // Evitar duplicar si ya hay una frase prioritaria equivalente
+      if (detected.has(phrase)) continue;
+
+      detected.add(phrase);
+      // Evitar que tokens de una frase elegida aparezcan además como sueltos
+      slice.forEach((t) => {
+        if (t) phraseWordsToSkip.add(t);
+      });
+    }
+  }
+
+  // 3) Detector normal de palabras individuales (tokens limpios)
+  const cleanTokens = tokens.filter(
+    (t) => !STOPWORDS.has(t) && !COMMERCIAL_VERBS.has(t)
+  );
+  if (cleanTokens.length === 0) return Array.from(detected).slice(0, maxTotal);
+
+  for (const word of cleanTokens) {
+    if (priorityWordsToSkip.has(word)) continue;
+    if (phraseWordsToSkip.has(word)) continue;
+    if (GENERIC_WORDS.has(word)) continue;
+    detected.add(word);
+  }
+
+  // 4) Máximo 6 resultados totales
+  return Array.from(detected).slice(0, maxTotal);
+}
 
 type Keyword = { value: string; source: "auto" | "manual" };
 
@@ -17,6 +300,44 @@ function normalizeOneKeyword(s: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, " ")
     .slice(0, 40);
+}
+
+const BLOCKED_MANUAL_KEYWORDS = new Set([
+  "mejor",
+  "barato",
+  "barata",
+  "económico",
+  "economico",
+  "calidad",
+  "servicio",
+  "servicios",
+  "excelente",
+  "empresa",
+  "negocio",
+  "local",
+].map(normalizeOneKeyword));
+
+function cleanChipDisplayValue(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^[,]+|[,]+$/g, "")
+    .replace(/\s+/g, " ")
+    .slice(0, 60);
+}
+
+function splitCandidates(raw: string): string[] {
+  const s = raw.trim();
+  if (!s) return [];
+  return s
+    .split(",")
+    .map((x) => cleanChipDisplayValue(x))
+    .filter(Boolean);
+}
+
+function isBlockedManualKeyword(raw: string): boolean {
+  const norm = normalizeOneKeyword(raw);
+  if (!norm) return true;
+  return BLOCKED_MANUAL_KEYWORDS.has(norm);
 }
 
 /** Normalización básica para consistencia en el buscador (ej: empanada → empanadas). */
@@ -94,6 +415,8 @@ function areSimplePluralEquivalents(a: string, b: string): boolean {
     w.endsWith("es") ? w.slice(0, -2) : w.endsWith("s") ? w.slice(0, -1) : w;
   return strip(a) === strip(b);
 }
+
+
 
 type SuggestionResult = {
   suggested: string[];
@@ -204,27 +527,59 @@ export default function PasoDescripcionImagenes({
   nextStep: () => void;
   prevStep: () => void;
 }) {
-  const [keywordInput, setKeywordInput] = useState("");
   const [suggestingKeywords, setSuggestingKeywords] = useState(false);
-  const [autoDismissedKeywords, setAutoDismissedKeywords] = useState<string[]>([]);
-  const [relatedSuggestions, setRelatedSuggestions] = useState<string[]>([]);
-  const [detectedProducts, setDetectedProducts] = useState<string[]>(
-    form.productosDetectados || []
-  );
+  const [autoDetectedProducts, setAutoDetectedProducts] = useState<string[]>([]);
+  const [manualProducts, setManualProducts] = useState<string[]>([]);
+  const [removedAutoProducts, setRemovedAutoProducts] = useState<string[]>([]);
   const [detectedSubcategoria, setDetectedSubcategoria] = useState<string | null>(null);
   const [learningState, setLearningState] = useState<
     "idle" | "analizando" | "aprendiendo" | "ok"
   >("idle");
-  const autoDismissedRef = useRef<string[]>([]);
-  const keywordItemsRef = useRef(form.keywordItems);
+  const [manualProductInput, setManualProductInput] = useState("");
+  const removedAutoRef = useRef<string[]>([]);
+  const setFieldRef = useRef(setField);
   const suggestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSuggestedForRef = useRef<string>("");
   /** Último texto enviado a registrar_texto_aprendizaje en esta sesión (evita duplicados). */
   const lastRegisteredTextRef = useRef<string>("");
 
   useEffect(() => {
-    keywordItemsRef.current = form.keywordItems;
-  }, [form.keywordItems]);
+    setFieldRef.current = setField;
+  }, [setField]);
+
+  useEffect(() => {
+    removedAutoRef.current = removedAutoProducts;
+  }, [removedAutoProducts]);
+
+  // Inicializar desde el draft/estado previo si viene poblado
+  useEffect(() => {
+    const initial = Array.isArray(form.productosDetectados)
+      ? cleanDetectedProducts(form.productosDetectados)
+      : [];
+    if (initial.length === 0) return;
+    setManualProducts((prev) => (prev.length ? prev : initial.slice(0, 10)));
+  }, []);
+
+  const combinedProducts = useMemo(() => {
+    const removedSet = new Set(removedAutoProducts.map(normalizeOneKeyword));
+    const auto = autoDetectedProducts.filter(
+      (p) => !removedSet.has(normalizeOneKeyword(p))
+    );
+    const merged = cleanDetectedProducts([...auto, ...manualProducts]);
+    return merged.slice(0, 10);
+  }, [autoDetectedProducts, manualProducts, removedAutoProducts]);
+
+  useEffect(() => {
+    const current = Array.isArray(form.productosDetectados)
+      ? cleanDetectedProducts(form.productosDetectados)
+      : [];
+    const next = combinedProducts;
+    const same =
+      current.length === next.length &&
+      current.every((v, i) => normalizeOneKeyword(v) === normalizeOneKeyword(next[i] || ""));
+    if (same) return;
+    setFieldRef.current("productosDetectados", next);
+  }, [combinedProducts, form.productosDetectados]);
 
   const suggestKeywords = useCallback(
     async (descripcion: string, nombre: string) => {
@@ -240,20 +595,9 @@ export default function PasoDescripcionImagenes({
       try {
         const texto = nom ? `${nom}. ${desc}` : desc;
 
-        // 1) Productos/servicios detectados (RPC, sin lógica local)
-        const { data: productosData, error: productosError } = await supabase.rpc(
-          "detectar_productos_servicios",
-          { texto_input: texto }
-        );
-
-        if (!productosError && Array.isArray(productosData)) {
-          const cleanProductos = (productosData as string[])
-            .map((p) => normalizeOneKeyword(String(p)))
-            .filter(Boolean)
-            .slice(0, 8);
-          setDetectedProducts(cleanProductos);
-          setField("productosDetectados", cleanProductos);
-        }
+        // 1) Productos/servicios detectados solo desde la descripción (prioridad palabras sueltas)
+        const productNgrams = extractProductNgrams(desc);
+        setAutoDetectedProducts(productNgrams);
 
         // 2) Subcategoría detectada (RPC dedicada)
         const { data: subcatData, error: subcatError } = await supabase.rpc(
@@ -261,7 +605,6 @@ export default function PasoDescripcionImagenes({
           { texto_input: texto }
         );
 
-        let subcategoriaId: string | null = null;
         let subcategoriaSlug: string | null = null;
 
         if (!subcatError && subcatData) {
@@ -271,7 +614,6 @@ export default function PasoDescripcionImagenes({
               : subcatData;
 
           if (raw && typeof raw === "object") {
-            subcategoriaId = (raw as any).subcategoria_id ?? null;
             subcategoriaSlug = (raw as any).subcategoria_slug ?? null;
           } else if (typeof raw === "string") {
             subcategoriaSlug = raw;
@@ -279,68 +621,8 @@ export default function PasoDescripcionImagenes({
         }
 
         setDetectedSubcategoria(subcategoriaSlug);
-
-        // 3) Obtener keywords asociadas a la subcategoría (máximo 10) solo si hay subcategoría_id
-        if (!subcategoriaId) {
-          setSuggestingKeywords(false);
-          return;
-        }
-
-        const { data: kwRows, error: kwError } = await supabase
-          .from("keywords_rubro")
-          .select("keywords")
-          .eq("subcategoria_id", subcategoriaId)
-          .eq("activo", true)
-          .limit(1)
-          .maybeSingle();
-
-        if (kwError || !kwRows || !Array.isArray(kwRows.keywords)) {
-          setSuggestingKeywords(false);
-          return;
-        }
-
-        const candidates = kwRows.keywords.map((k: string) => String(k));
-
-        const manualItems = keywordItemsRef.current.filter((k) => k.source === "manual");
-        const manualValues = manualItems.map((k) => k.value);
-
-        const { suggested, related } = getSuggestedKeywordsFromDescription(
-          texto,
-          candidates,
-          autoDismissedRef.current,
-          manualValues
-        );
-
-        setRelatedSuggestions(related);
-
-        if (suggested.length > 0) {
-          const existingAllSet = new Set(
-            keywordItemsRef.current.map((k) => k.value.toLowerCase())
-          );
-
-          const newAutos = suggested
-            .filter((v) => !existingAllSet.has(v))
-            .slice(0, Math.max(0, KEYWORDS_MAX - manualItems.length))
-            .map((value) => ({ value, source: "auto" as const }));
-
-          const merged = [...manualItems, ...newAutos];
-          const currentAuto = keywordItemsRef.current
-            .filter((k) => k.source === "auto")
-            .map((k) => k.value);
-          const newAutoValues = newAutos.map((a) => a.value);
-          const sameAutos =
-            currentAuto.length === newAutoValues.length &&
-            currentAuto.every(
-              (v, i) => v.toLowerCase() === newAutoValues[i]?.toLowerCase()
-            );
-          if (!sameAutos) {
-            setField("keywordItems", merged);
-          }
-        } else {
-          setField("keywordItems", manualItems);
-        }
       } catch {
-        // Silently ignore; user can type keywords manually
+        // ignore
       } finally {
         setSuggestingKeywords(false);
       }
@@ -357,17 +639,9 @@ export default function PasoDescripcionImagenes({
     const delay = 500;
 
     if (desc.length < MIN_DESCRIPCION_NEGOCIO) {
-      autoDismissedRef.current = [];
-      setAutoDismissedKeywords([]);
-      setRelatedSuggestions([]);
-      setDetectedProducts([]);
-      setField("productosDetectados", []);
+      setAutoDetectedProducts([]);
+      setDetectedSubcategoria(null);
       suggestTimeoutRef.current = setTimeout(() => {
-        const current = keywordItemsRef.current;
-        const manualOnly = current.filter((k) => k.source === "manual");
-        if (manualOnly.length !== current.length) {
-          setField("keywordItems", manualOnly);
-        }
         lastSuggestedForRef.current = "";
       }, delay);
       return () => {
@@ -375,9 +649,6 @@ export default function PasoDescripcionImagenes({
       };
     }
 
-    autoDismissedRef.current = [];
-    setAutoDismissedKeywords([]);
-    setRelatedSuggestions([]);
     suggestTimeoutRef.current = setTimeout(() => {
       suggestKeywordsRef.current(desc, form.nombre);
     }, delay);
@@ -426,45 +697,53 @@ export default function PasoDescripcionImagenes({
     return () => clearTimeout(timer);
   }, [form.descripcionNegocio]);
 
-  function removeDetectedProduct(value: string) {
-    const norm = normalizeKeywordForSearch(value);
+  function removeProductChip(value: string) {
+    const norm = normalizeOneKeyword(value);
     if (!norm) return;
-    const next = detectedProducts.filter((p) => p !== norm);
-    setDetectedProducts(next);
-    setField("productosDetectados", next);
+
+    const manualSet = new Set(manualProducts.map(normalizeOneKeyword));
+    if (manualSet.has(norm)) {
+      setManualProducts((prev) =>
+        prev.filter((p) => normalizeOneKeyword(p) !== norm)
+      );
+      return;
+    }
+
+    const autoSet = new Set(autoDetectedProducts.map(normalizeOneKeyword));
+    if (autoSet.has(norm)) {
+      setRemovedAutoProducts((prev) => {
+        const next = [...prev, value];
+        const cleaned = cleanDetectedProducts(next).slice(0, 50);
+        return cleaned;
+      });
+    }
   }
 
-  function removeKeyword(index: number) {
-    const item = form.keywordItems[index];
-    if (item?.source === "auto") {
-      const norm = normalizeKeywordForSearch(item.value);
-      if (norm) {
-        setAutoDismissedKeywords((prev) => [...prev, norm]);
-        autoDismissedRef.current = [...autoDismissedRef.current, norm];
+  function tryAddManualProducts(raw: string) {
+    const candidates = splitCandidates(raw);
+    if (candidates.length === 0) return;
+
+    setManualProducts((prev) => {
+      const currentKeys = new Set([
+        ...autoDetectedProducts.map(normalizeOneKeyword),
+        ...prev.map(normalizeOneKeyword),
+      ]);
+
+      const next = [...prev];
+      for (const c of candidates) {
+        const display = cleanChipDisplayValue(c);
+        const key = normalizeOneKeyword(display);
+        if (!key) continue;
+        if (isBlockedManualKeyword(display)) continue;
+        if (currentKeys.has(key)) continue;
+        if (autoDetectedProducts.length + next.length >= 10) break;
+        currentKeys.add(key);
+        next.push(display);
       }
-    }
-    const next = form.keywordItems.filter((_, i) => i !== index);
-    setField("keywordItems", next);
-  }
+      return cleanDetectedProducts(next).slice(0, 10);
+    });
 
-  function addKeyword(raw: string) {
-    const kw = normalizeKeywordForSearch(raw);
-    if (!kw) return;
-    const currentLower = form.keywordItems.map((k) => k.value.toLowerCase());
-    if (currentLower.includes(kw)) return;
-    if (form.keywordItems.length >= KEYWORDS_MAX) return;
-    setField("keywordItems", [...form.keywordItems, { value: kw, source: "manual" }]);
-    setKeywordInput("");
-  }
-
-  function handleKeywordKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      const el = e.target as HTMLInputElement;
-      const value = el.value.replace(/,/g, "").trim();
-      if (value) addKeyword(value);
-      setKeywordInput("");
-    }
+    setManualProductInput("");
   }
 
   return (
@@ -517,96 +796,29 @@ export default function PasoDescripcionImagenes({
       </div>
 
       <div style={{ marginBottom: 22 }}>
-        <label style={labelStyle}>Productos o servicios detectados</label>
+        <label className="block text-sm font-medium">
+          ¿Qué palabras usaría un cliente para encontrarte?
+        </label>
+        <div style={helperStyle}>Agrega hasta 10 palabras o frases cortas</div>
+        <input
+          type="text"
+          value={manualProductInput}
+          onChange={(e) => setManualProductInput(e.target.value)}
+          placeholder="Ej: gasfiter, destape cañerías, calefont, fugas de agua"
+          className="w-full border rounded p-2 mt-2"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === ",") {
+              e.preventDefault();
+              tryAddManualProducts(manualProductInput);
+            }
+          }}
+          onBlur={() => {
+            if (manualProductInput.trim()) tryAddManualProducts(manualProductInput);
+          }}
+        />
         <div style={helperStyle}>
-          Detectamos estos productos o servicios en tu descripción. Puedes eliminar los que no correspondan.
+          No pongas frases como "el mejor" o "barato". Enfócate en lo que haces.
         </div>
-        <div style={chipsContainerStyle}>
-          {detectedProducts.map((item) => (
-            <span key={item} style={chipStyle}>
-              {item}
-              <button
-                type="button"
-                aria-label={`Quitar ${item}`}
-                onClick={() => removeDetectedProduct(item)}
-                style={chipRemoveStyle}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {detectedSubcategoria && (
-        <div style={{ marginBottom: 16, fontSize: 13, color: "#4b5563" }}>
-          <strong>Subcategoría detectada:</strong> {detectedSubcategoria}
-        </div>
-      )}
-
-      <div style={{ marginBottom: 22 }}>
-        <label style={labelStyle}>Palabras clave sugeridas</label>
-
-        {/* Sugeridas automáticamente (chips actuales) */}
-        <div style={chipsContainerStyle}>
-          {form.keywordItems.map((item, index) => (
-            <span key={`${item.value}-${index}`} style={chipStyle}>
-              {item.value}
-              <button
-                type="button"
-                aria-label={`Quitar ${item.value}`}
-                onClick={() => removeKeyword(index)}
-                style={chipRemoveStyle}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-
-        {/* Agregar manualmente */}
-        {form.keywordItems.length < KEYWORDS_MAX && (
-          <div style={{ marginTop: 10 }}>
-            <div style={{ ...helperStyle, marginTop: 0, marginBottom: 4 }}>
-              Agregar manualmente:
-            </div>
-            <div style={chipsContainerStyle}>
-              <input
-                type="text"
-                value={keywordInput}
-                onChange={(e) => setKeywordInput(e.target.value)}
-                onKeyDown={handleKeywordKeyDown}
-                onBlur={() => {
-                  if (keywordInput.trim()) addKeyword(keywordInput);
-                }}
-                placeholder="Agregar palabra clave y presiona Enter (ej: empanadas, sopaipillas, tortas)"
-                style={chipInputStyle}
-              />
-            </div>
-          </div>
-        )}
-
-        <div style={helperStyle}>
-          Sugerimos palabras clave automáticamente según lo que escribiste. Puedes eliminar las que no representen tu negocio o agregar otras.
-        </div>
-        <div style={suggestingIndicatorRowStyle}>
-          {suggestingKeywords ? (
-            <span style={spinnerStyle} aria-hidden />
-          ) : null}
-        </div>
-        {relatedSuggestions.length > 0 && (
-          <div style={{ marginTop: 4, fontSize: 12, color: "#6b7280" }}>
-            Otras sugerencias relacionadas: {relatedSuggestions.join(", ")}
-          </div>
-        )}
-        {form.keywordItems.length > 0 && (
-          <div style={counterStyle}>
-            {form.keywordItems.length} de {KEYWORDS_MAX} palabras clave
-          </div>
-        )}
-        {errors.keywords ? (
-          <p style={errorStyle}>{errors.keywords}</p>
-        ) : null}
       </div>
 
       <div style={grid2}>
