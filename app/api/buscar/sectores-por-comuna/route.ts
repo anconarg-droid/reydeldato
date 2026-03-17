@@ -132,19 +132,8 @@ export async function GET(req: Request) {
     }
 
     const { data, error } = await supabase
-      .from("emprendedores")
-      .select(
-        `
-        sector_slug,
-        nivel_cobertura,
-        coverage_keys,
-        coverage_labels,
-        comunas!emprendedores_comuna_base_id_fkey (
-          nombre,
-          slug
-        )
-      `
-      )
+      .from("vw_emprendedores_algolia_final")
+      .select("categoria_slug, nivel_cobertura, coverage_keys, coverage_labels, comuna_base_slug, comuna_base_nombre, estado_publicacion")
       .eq("estado_publicacion", "publicado");
 
     if (error) {
@@ -155,9 +144,9 @@ export async function GET(req: Request) {
     }
 
     const rows: Row[] = (data || []).map((row: any) => ({
-      sector_slug: row.sector_slug ?? null,
-      comuna_base_slug: row.comunas?.slug ?? null,
-      comuna_base_nombre: row.comunas?.nombre ?? null,
+      sector_slug: row.categoria_slug ?? null,
+      comuna_base_slug: row.comuna_base_slug ?? null,
+      comuna_base_nombre: row.comuna_base_nombre ?? null,
       coverage_labels: row.coverage_labels ?? null,
       coverage_keys: row.coverage_keys ?? null,
       nivel_cobertura: row.nivel_cobertura ?? null,
