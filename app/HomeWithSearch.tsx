@@ -110,12 +110,30 @@ export default function HomeWithSearch({ sugerencias, categorias }: Props) {
     if (categoriaSlug) params.set("categoria", categoriaSlug);
     if (subcategoriaSlug) params.set("subcategoria", subcategoriaSlug);
     params.set("limit", "24");
-    fetch(`/api/search?${params.toString()}`)
+    fetch(`/api/buscar?${params.toString()}`)
       .then((res) => res.json())
       .then((data: SearchResponse) => {
-        if (data?.ok) {
-          setHits(data.hits || []);
-          setTotalHits(data.nbHits ?? 0);
+        if (data && typeof data === "object") {
+          const ok = (data as any).ok ?? false;
+          const items = Array.isArray((data as any).items)
+            ? (data as any).items
+            : Array.isArray((data as any).hits)
+              ? (data as any).hits
+              : [];
+          const total =
+            typeof (data as any).total === "number"
+              ? (data as any).total
+              : typeof (data as any).nbHits === "number"
+                ? (data as any).nbHits
+                : items.length;
+
+          if (ok) {
+            setHits(items);
+            setTotalHits(total);
+          } else {
+            setHits([]);
+            setTotalHits(0);
+          }
         } else {
           setHits([]);
           setTotalHits(0);

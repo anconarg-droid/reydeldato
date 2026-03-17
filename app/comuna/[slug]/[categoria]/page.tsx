@@ -78,16 +78,26 @@ async function searchByComunaAndCategoria(
   categoriaSlug: string
 ): Promise<SearchResponse> {
   const baseUrl = getBaseUrl();
-  const params = new URLSearchParams({
-    comuna: comunaSlug,
-    categoria: categoriaSlug,
-  });
-  const res = await fetch(`${baseUrl}/api/search?${params.toString()}`, {
+  const params = new URLSearchParams();
+  params.set("comuna", comunaSlug);
+  params.set("categoria", categoriaSlug);
+
+  const res = await fetch(`${baseUrl}/api/buscar?${params.toString()}`, {
     cache: "no-store",
   });
 
   try {
-    return (await res.json()) as SearchResponse;
+    const json = await res.json();
+    return {
+      ok: !!json?.ok,
+      hits: Array.isArray(json?.items) ? json.items : [],
+      nbHits:
+        typeof json?.total === "number"
+          ? json.total
+          : Array.isArray(json?.items)
+            ? json.items.length
+            : 0,
+    };
   } catch {
     return { ok: false, hits: [], nbHits: 0 };
   }
