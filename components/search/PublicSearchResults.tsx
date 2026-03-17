@@ -25,6 +25,8 @@ type SearchHit = {
   search_text?: string | null;
   public?: boolean;
 
+  whatsapp?: string | null;
+
   // legado / opcionales
   comuna_base_nombre?: string | null;
   comuna_base_slug?: string | null;
@@ -174,14 +176,15 @@ export default function PublicSearchResults({
     return (
       <div className="mt-4 space-y-3">
         <h2 className="text-lg font-bold text-slate-900">Buscando…</h2>
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, idx) => (
-            <div
-              key={idx}
-              className="h-20 rounded-lg border border-slate-200 bg-slate-100 animate-pulse"
-            />
-          ))}
-        </div>
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, idx) => (
+          <div key={idx} className="animate-pulse">
+            <div className="bg-slate-200 h-40 rounded-lg mb-3" />
+            <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
+            <div className="h-3 bg-slate-200 rounded w-1/2" />
+          </div>
+        ))}
+      </div>
       </div>
     );
   }
@@ -222,7 +225,7 @@ export default function PublicSearchResults({
   return (
     <section className="mt-4 space-y-4">
       <header className="flex items-baseline justify-between gap-2">
-        <h2 className="text-base sm:text-lg font-semibold text-slate-900">
+        <h2 className="text-sm text-slate-500 mb-3">
           {totalFinal === 0
             ? "Sin resultados"
             : totalFinal === 1
@@ -260,10 +263,10 @@ export default function PublicSearchResults({
             return (
               <div
                 key={key}
-                className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:border-slate-300 transition p-4 flex flex-col"
+                className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:-translate-y-1 transition p-3 flex flex-col"
               >
                 {/* Imagen */}
-                <div className="w-full h-40 bg-slate-100 rounded-lg overflow-hidden mb-3">
+                <div className="w-full h-32 bg-slate-100 rounded-lg overflow-hidden mb-3">
                   {item.foto_principal_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -272,43 +275,69 @@ export default function PublicSearchResults({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-300 text-4xl">
-                      🏪
+                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
+                      Sin imagen
                     </div>
                   )}
                 </div>
 
+                {/* Badge disponibilidad */}
+                <div className="text-[11px] text-blue-600 font-semibold mb-1">
+                  Disponible en tu comuna
+                </div>
+
                 {/* Nombre */}
-                <h3 className="font-semibold text-slate-900 text-base mb-1 line-clamp-2">
+                <h3 className="font-semibold text-slate-900 text-lg mb-1 line-clamp-2">
                   {nombre}
                 </h3>
 
                 {/* Comuna */}
-                <p className="text-sm text-slate-600 mb-1">
+                <p className="text-xs text-slate-600 mb-0.5">
                   {comunaTexto}
                 </p>
 
                 {/* Categoría */}
-                <p className="text-xs text-slate-400 mb-2">
+                <p className="text-[11px] text-slate-400 mb-2">
                   {categoriaTexto}
                 </p>
 
                 {/* Descripción */}
                 {item.descripcion_corta && (
-                  <p className="text-sm text-slate-600 mb-3 line-clamp-2">
+                  <p className="text-xs text-slate-600 mb-3 line-clamp-2">
                     {item.descripcion_corta}
                   </p>
                 )}
 
                 {/* CTA */}
-                <div className="mt-auto flex gap-2">
-                  {slug && (
-                    <Link
-                      href={`/emprendedor/${slug}`}
-                      className="inline-flex items-center justify-center text-center bg-slate-900 text-white text-sm py-2 px-3 rounded-md hover:bg-slate-800 transition"
-                    >
-                      Ver ficha
-                    </Link>
+                <div className="flex gap-2 mt-3">
+                  {item.whatsapp ? (
+                    <>
+                      <a
+                        href={`https://wa.me/${item.whatsapp.replace(/\D/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 text-center bg-green-600 text-white text-sm py-2 rounded-lg hover:bg-green-700 transition font-medium"
+                      >
+                        WhatsApp
+                      </a>
+                      {slug && (
+                        <a
+                          href={`/emprendedor/${slug}`}
+                          className="flex-1 text-center bg-slate-900 text-white text-sm py-2 rounded-lg hover:bg-slate-800 transition"
+                        >
+                          Ver ficha
+                        </a>
+                      )}
+                    </>
+                  ) : (
+                    slug && (
+                      <a
+                        href={`/emprendedor/${slug}`}
+                        className="w-full text-center bg-slate-900 text-white text-sm py-2 rounded-lg hover:bg-slate-800 transition"
+                      >
+                        Ver ficha
+                      </a>
+                    )
                   )}
                 </div>
               </div>

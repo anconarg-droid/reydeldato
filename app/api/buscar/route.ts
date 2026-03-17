@@ -37,7 +37,7 @@ type Row = {
   keywords: string[] | null;
   search_text: string | null;
   publicado: boolean | null;
-  estado_publicacion: string | null;
+  whatsapp: string | null;
 };
 
 export async function GET(req: Request) {
@@ -48,10 +48,7 @@ export async function GET(req: Request) {
     const comuna = s(searchParams.get("comuna"));
     const sector = s(searchParams.get("sector"));
     const categoria = s(searchParams.get("categoria"));
-    const limit = Math.max(
-      1,
-      Math.min(Number(searchParams.get("limit") || "30"), 200)
-    );
+    const limit = Math.max(1, Math.min(Number(searchParams.get("limit") || "30"), 200));
     const offset = Math.max(0, Number(searchParams.get("offset") || "0"));
 
     const hasAnyFilter = Boolean(q || comuna || sector || categoria);
@@ -64,8 +61,14 @@ export async function GET(req: Request) {
       });
     }
 
+    const SECTOR_TO_CATEGORIA: Record<string, string> = {
+      alimentacion: "alimentos",
+    };
+
     const categoriaFiltro = sector || categoria;
-    const categoriaNorm = categoriaFiltro ? norm(categoriaFiltro) : "";
+    const categoriaNormRaw = categoriaFiltro ? norm(categoriaFiltro) : "";
+    const categoriaNorm =
+      SECTOR_TO_CATEGORIA[categoriaNormRaw] || categoriaNormRaw;
     const comunaNorm = comuna ? norm(comuna).replace(/\s+/g, "-") : "";
     const qLike = q ? `%${q}%` : "";
 
@@ -74,20 +77,19 @@ export async function GET(req: Request) {
       nombre,
       descripcion_corta,
       descripcion_larga,
+      whatsapp,
       comuna_base_slug,
       comuna_base_nombre,
       categoria_slug,
       subcategoria_slug,
       keywords,
       search_text,
-      publicado,
-      estado_publicacion
+      publicado
     `;
 
     let query = supabase
       .from("vw_emprendedores_algolia_final")
-      .select(baseSelect, { count: "exact" })
-      .eq("estado_publicacion", "publicado");
+      .select(baseSelect, { count: "exact" });
 
     if (categoriaNorm) {
       query = query.eq("categoria_slug", categoriaNorm);
@@ -108,7 +110,6 @@ export async function GET(req: Request) {
 
     let res = await query;
 
-    // Fallback si comuna_base_slug no existe
     if (
       res.error &&
       comuna &&
@@ -116,8 +117,7 @@ export async function GET(req: Request) {
     ) {
       let q2 = supabase
         .from("vw_emprendedores_algolia_final")
-        .select(baseSelect, { count: "exact" })
-        .eq("estado_publicacion", "publicado");
+        .select(baseSelect, { count: "exact" });
 
       if (categoriaNorm) q2 = q2.eq("categoria_slug", categoriaNorm);
       if (qLike) q2 = q2.ilike("search_text", qLike);
@@ -130,7 +130,6 @@ export async function GET(req: Request) {
         .range(offset, offset + limit - 1);
     }
 
-    // Fallback si search_text no existe
     if (
       res.error &&
       qLike &&
@@ -138,8 +137,7 @@ export async function GET(req: Request) {
     ) {
       let q3 = supabase
         .from("vw_emprendedores_algolia_final")
-        .select(baseSelect, { count: "exact" })
-        .eq("estado_publicacion", "publicado");
+        .select(baseSelect, { count: "exact" });
 
       if (categoriaNorm) q3 = q3.eq("categoria_slug", categoriaNorm);
       if (comunaNorm) q3 = q3.eq("comuna_base_slug", comunaNorm);
@@ -177,6 +175,7 @@ export async function GET(req: Request) {
       descripcion_corta: s(r.descripcion_corta) || null,
       descripcion_larga: s(r.descripcion_larga) || null,
       foto_principal_url: null,
+      whatsapp: s(r.whatsapp) || null,
       comuna_slug: s(r.comuna_base_slug) || null,
       comuna_nombre: s(r.comuna_base_nombre) || null,
       categoria_slug_final: s(r.categoria_slug) || null,
