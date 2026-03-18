@@ -31,15 +31,6 @@ type RawRow = {
   publicado: boolean | null;
   categoria_slug: string | null;
   comuna_base_slug: string | null;
-  comuna_base_nombre?: string | null;
-  nivel_cobertura?: string | null;
-  coverage_keys?: string[] | null;
-  coverage_labels?: string[] | null;
-  foto_principal_url: string | null;
-  whatsapp: string | null;
-  instagram: string | null;
-  web: string | null;
-  email: string | null;
   search_text: string | null;
 };
 
@@ -104,8 +95,8 @@ export async function GET(req: Request) {
         nombre,
         descripcion_corta,
         descripcion_larga,
-        publicado,
         categoria_slug,
+        publicado,
         comuna_base_slug,
         search_text
       `,
@@ -139,7 +130,9 @@ export async function GET(req: Request) {
 
     const seed = getFiveMinuteSeed();
 
-    const enriched: SearchItem[] = rows.map((r) => {
+    const cleanRows = rows.filter((r) => Boolean(r.categoria_slug) && Boolean(r.comuna_base_slug));
+
+    const enriched: SearchItem[] = cleanRows.map((r) => {
       const bucket: TerritorialBucket | null = comuna
         ? resolveBucket(
             {
@@ -161,7 +154,7 @@ export async function GET(req: Request) {
         descripcion_larga: r.descripcion_larga ?? null,
         foto_principal_url: null,
         comuna_slug: s(r.comuna_base_slug) || null,
-        comuna_nombre: null,
+        comuna_nombre: s(r.comuna_base_slug) || null,
         categoria_slug_final: s(r.categoria_slug) || null,
         subcategoria_slug_final: null,
         whatsapp: null,
@@ -179,8 +172,16 @@ export async function GET(req: Request) {
       };
     });
 
-    // Si hay comuna, nos quedamos solo con los que tienen alguna relación territorial (no "general")
-    const scoped: SearchItem[] = enriched;
+    // Filtro por comuna (controlado):
+    // - Si hay matches exactos por comuna base, mostramos solo esos.
+    // - Si NO hay exactos, dejamos pasar resultados para modo "opciones cercanas".
+    const exactos = comuna && comuna.trim()
+      ? enriched.filter((item) => item.comuna_slug === comuna)
+      : [];
+    const scoped: SearchItem[] =
+      comuna && comuna.trim()
+        ? (exactos.length > 0 ? exactos : enriched)
+        : enriched;
 
     const bucketOrder: Record<TerritorialBucket, number> = {
       exacta: 0, // mismo tratamiento que "local" para producto
@@ -208,7 +209,7 @@ export async function GET(req: Request) {
     console.log("BUSCAR_BUCKETS", {
       exacta: sortedItems.filter((i) => i.bucket === "exacta").length,
       cobertura_comuna: sortedItems.filter((i) => i.bucket === "cobertura_comuna").length,
-      varias_regiones: sortedItems.filter((i) => i.bucket === "varias_regiones").length,
+      regional: sortedItems.filter((i) => i.bucket === "regional").length,
       nacional: sortedItems.filter((i) => i.bucket === "nacional").length,
       general: sortedItems.filter((i) => !i.bucket || i.bucket === "general").length,
     });

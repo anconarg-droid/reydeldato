@@ -242,6 +242,19 @@ export default function PublicSearchResults({
     (itemsFinal[0]?.comuna_nombre ?? itemsFinal[0]?.comuna_base_nombre) ||
     "";
 
+  const comunaBuscadaNorm = (comuna || data.comuna || "").trim().toLowerCase();
+
+  const hayExactos =
+    comunaBuscadaNorm.length > 0 &&
+    itemsFinal.some((item) => {
+      const slug = (item.comuna_slug || item.comuna_base_slug || "").trim().toLowerCase();
+      const nombre = (item.comuna_nombre || item.comuna_base_nombre || "").trim().toLowerCase();
+      return slug === comunaBuscadaNorm || nombre === comunaBuscadaNorm;
+    });
+
+  const mostrarMensajeFallback =
+    Boolean(comunaBuscadaNorm) && !hayExactos && itemsFinal.length > 0;
+
   return (
     <section className="mt-4 space-y-4">
       <header className="flex items-baseline justify-between gap-2">
@@ -267,7 +280,19 @@ export default function PublicSearchResults({
           o cambia la comuna.
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <>
+          {mostrarMensajeFallback && (
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-sm font-medium text-amber-900">
+                Aún no tenemos suficientes emprendimientos en {comunaLabel}.
+              </p>
+              <p className="mt-1 text-sm text-amber-800">
+                Te mostramos opciones cercanas mientras tanto.
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {itemsFinal.map((item) => {
             const key = s(item.id || item.slug || item.objectID);
             const slug = s(item.slug || item.id || item.objectID);
@@ -385,6 +410,7 @@ export default function PublicSearchResults({
             );
           })}
         </div>
+        </>
       )}
     </section>
   );
