@@ -19,12 +19,15 @@ SELECT
   e.estado_publicacion,
   (e.estado_publicacion = 'publicado') AS publicado,
 
+  -- Cobertura (alias contractuales para front/buckets)
   e.nivel_cobertura,
+  e.nivel_cobertura AS cobertura_tipo,
 
   -- Comuna base + región (público)
   cb.slug AS comuna_base_slug,
   cb.nombre AS comuna_base_nombre,
   reg.nombre AS region_nombre,
+  reg.slug AS region_slug,
 
   -- Taxonomía oficial para indexación (solo *_final como fuente)
   e.categoria_slug_final AS categoria_slug,
@@ -57,6 +60,13 @@ SELECT
     JOIN public.comunas c ON c.id = ecc.comuna_id
     WHERE ecc.emprendedor_id = e.id
   ) AS comunas_cobertura_slugs_arr,
+  -- Alias contractual: cobertura_comunas (slugs)
+  (
+    SELECT COALESCE(array_agg(c.slug ORDER BY c.slug), ARRAY[]::text[])
+    FROM public.emprendedor_comunas_cobertura ecc
+    JOIN public.comunas c ON c.id = ecc.comuna_id
+    WHERE ecc.emprendedor_id = e.id
+  ) AS cobertura_comunas,
 
   -- Cobertura por regiones (público; útil para filtros)
   (
@@ -75,12 +85,15 @@ SELECT
   -- Texto consolidado para búsquedas server-side, normalizado (sin tildes, minúsculas)
   LOWER(
     translate(
-      TRIM(
-        COALESCE(e.nombre, '') || ' ' ||
-        COALESCE(e.descripcion_corta, '') || ' ' ||
-        COALESCE(e.descripcion_larga, '') || ' ' ||
-        COALESCE(cat.nombre, '') || ' ' ||
-        COALESCE(cb.nombre, '')
+      CONCAT_WS(
+        ' ',
+        e.nombre,
+        e.descripcion_corta,
+        e.descripcion_larga,
+        cat.nombre,
+        subp.nombre,
+        cb.nombre,
+        array_to_string(COALESCE(e.keywords_finales, ARRAY[]::text[]), ' ')
       ),
       'áéíóúÁÉÍÓÚÑ',
       'aeiouaeiounn'

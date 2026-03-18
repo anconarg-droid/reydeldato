@@ -26,9 +26,9 @@ function chunk(xs: any[], size = 500) {
 function nivelRank(nivel: any) {
   const n = s(nivel).toLowerCase();
 
-  if (n === "solo_mi_comuna") return 0;
+  if (n === "comuna" || n === "solo_mi_comuna") return 0;
   if (n === "comunas") return 1;
-  if (n === "varias_regiones") return 2;
+  if (n === "regional" || n === "varias_regiones") return 2;
   if (n === "nacional") return 3;
 
   return 9;

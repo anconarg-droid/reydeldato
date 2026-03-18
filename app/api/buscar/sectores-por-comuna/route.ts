@@ -34,7 +34,7 @@ const SECTOR_LABELS: Record<string, string> = {
 type Bucket =
   | "exacta"
   | "cobertura_comuna"
-  | "varias_regiones"
+  | "regional"
   | "nacional"
   | "general";
 
@@ -58,9 +58,8 @@ function resolveBucket(
   item: {
     comuna_base_slug?: string | null;
     comuna_base_nombre?: string | null;
-    coverage_labels?: string[] | null;
-    coverage_keys?: string[] | null;
     nivel_cobertura?: string | null;
+    comunas_cobertura_slugs_arr?: string[] | null;
   },
   comunaBuscada: string
 ): Bucket {
@@ -71,42 +70,17 @@ function resolveBucket(
   if (!comunaSlugLike && !comunaNameLike) return "general";
 
   const comunaBaseSlug = norm(item.comuna_base_slug);
-  const comunaBaseNombre = norm(item.comuna_base_nombre);
-  const coverageLabels = arr(item.coverage_labels).map(norm);
-  const coverageKeys = arr(item.coverage_keys).map(norm);
-  const nivel = s(item.nivel_cobertura);
+  const nivel = norm(item.nivel_cobertura);
+  const coberturaComunas = arr(item.comunas_cobertura_slugs_arr).map(norm);
 
-  if (
-    (comunaSlugLike && comunaBaseSlug === comunaSlugLike) ||
-    (comunaNameLike && comunaBaseNombre === comunaNameLike)
-  ) {
-    return "exacta";
-  }
+  if (comunaSlugLike && comunaBaseSlug === comunaSlugLike) return "exacta";
 
-  if (
-    coverageLabels.includes(comunaSlugLike) ||
-    coverageLabels.includes(comunaNameLike)
-  ) {
+  if (nivel === "varias_comunas" && comunaSlugLike && coberturaComunas.includes(comunaSlugLike)) {
     return "cobertura_comuna";
   }
 
-  if (coverageKeys.includes(comunaSlugLike)) {
-    return "cobertura_comuna";
-  }
-
-  if (
-    coverageLabels.some(
-      (label) =>
-        (comunaSlugLike && label.includes(comunaSlugLike)) ||
-        (comunaNameLike && label.includes(comunaNameLike))
-    )
-  ) {
-    return "cobertura_comuna";
-  }
-
-  if (nivel === "varias_regiones") return "varias_regiones";
+  if (nivel === "regional" || nivel === "varias_regiones") return "regional";
   if (nivel === "nacional") return "nacional";
-
   return "general";
 }
 
@@ -114,9 +88,8 @@ type Row = {
   sector_slug: string | null;
   comuna_base_slug: string | null;
   comuna_base_nombre: string | null;
-  coverage_labels: string[] | null;
-  coverage_keys: string[] | null;
   nivel_cobertura: string | null;
+  comunas_cobertura_slugs_arr: string[] | null;
 };
 
 export async function GET(req: Request) {
@@ -133,8 +106,8 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabase
       .from("vw_emprendedores_algolia_final")
-      .select("categoria_slug, nivel_cobertura, coverage_keys, coverage_labels, comuna_base_slug, comuna_base_nombre, estado_publicacion")
-      .eq("estado_publicacion", "publicado");
+      .select("categoria_slug, nivel_cobertura, comunas_cobertura_slugs_arr, comuna_base_slug, comuna_base_nombre, estado_publicacion")
+      .eq("publicado", true);
 
     if (error) {
       return NextResponse.json(
@@ -147,9 +120,8 @@ export async function GET(req: Request) {
       sector_slug: row.categoria_slug ?? null,
       comuna_base_slug: row.comuna_base_slug ?? null,
       comuna_base_nombre: row.comuna_base_nombre ?? null,
-      coverage_labels: row.coverage_labels ?? null,
-      coverage_keys: row.coverage_keys ?? null,
       nivel_cobertura: row.nivel_cobertura ?? null,
+      comunas_cobertura_slugs_arr: row.comunas_cobertura_slugs_arr ?? null,
     }));
 
     const inComuna = rows.filter(

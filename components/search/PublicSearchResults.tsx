@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import ComunaEnPreparacion from "@/components/ComunaEnPreparacion";
 import ResultadoBadge from "@/components/ResultadoBadge";
 
@@ -33,12 +32,10 @@ type SearchHit = {
   comuna_base_slug?: string | null;
   categoria_slug?: string | null;
   subcategoria_slug?: string | null;
-  bucket?: "exacta" | "local" | "cobertura_comuna" | "regional" | "nacional" | "general";
+  bucket?: "exacta" | "cobertura_comuna" | "regional" | "nacional" | "general";
   coverage_keys?: string[] | null;
   coverage_labels?: string[] | null;
   nivel_cobertura?: string | null;
-  comuna_base_slug?: string | null;
-  comuna_base_nombre?: string | null;
 };
 
 type SearchResponse = {
@@ -242,18 +239,10 @@ export default function PublicSearchResults({
     (itemsFinal[0]?.comuna_nombre ?? itemsFinal[0]?.comuna_base_nombre) ||
     "";
 
-  const comunaBuscadaNorm = (comuna || data.comuna || "").trim().toLowerCase();
-
-  const hayExactos =
-    comunaBuscadaNorm.length > 0 &&
-    itemsFinal.some((item) => {
-      const slug = (item.comuna_slug || item.comuna_base_slug || "").trim().toLowerCase();
-      const nombre = (item.comuna_nombre || item.comuna_base_nombre || "").trim().toLowerCase();
-      return slug === comunaBuscadaNorm || nombre === comunaBuscadaNorm;
-    });
-
   const mostrarMensajeFallback =
-    Boolean(comunaBuscadaNorm) && !hayExactos && itemsFinal.length > 0;
+    Boolean((comuna || data.comuna || "").trim()) &&
+    !itemsFinal.some((item) => item.bucket === "exacta") &&
+    itemsFinal.length > 0;
 
   return (
     <section className="mt-4 space-y-4">
@@ -312,7 +301,7 @@ export default function PublicSearchResults({
               "";
 
             let motivo: string | undefined;
-            if (item.bucket === "local" || item.bucket === "exacta") {
+            if (item.bucket === "exacta") {
               motivo = "En tu comuna";
             } else if (
               item.bucket === "cobertura_comuna" ||

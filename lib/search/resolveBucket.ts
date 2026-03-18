@@ -23,64 +23,46 @@ function arr(v: unknown): string[] {
 
 export type ResolveBucketInput = {
   comuna_base_slug?: string | null;
-  comuna_base_nombre?: string | null;
-  coverage_labels?: string[] | null;
-  coverage_keys?: string[] | null;
   nivel_cobertura?: string | null;
+  coverage_keys?: string[] | null;
+  coverage_labels?: string[] | null;
 };
 
 /**
  * Lógica territorial compartida para agrupar resultados por:
  * - exacta (base en la comuna buscada)
  * - cobertura_comuna (atienden explícitamente la comuna)
- * - varias_regiones / nacional
+ * - regional / nacional
  * - general (sin relación directa con la comuna)
  */
 export function resolveBucket(
   item: ResolveBucketInput,
   comunaBuscada: string
 ): TerritorialBucket {
-  const comunaRaw = s(comunaBuscada);
-  const comunaSlugLike = norm(comunaRaw);
-  const comunaNameLike = norm(comunaRaw.replace(/-/g, " "));
+  const comuna = norm(comunaBuscada).replace(/\s+/g, "-");
+  if (!comuna) return "general";
 
-  if (!comunaSlugLike && !comunaNameLike) return "general";
+  const base = norm(item.comuna_base_slug).replace(/\s+/g, "-");
+  const nivel = norm(item.nivel_cobertura);
+  const keys = arr(item.coverage_keys).map((x) => norm(x).replace(/\s+/g, "-"));
+  const labels = arr(item.coverage_labels).map(norm);
 
-  const comunaBaseSlug = norm(item.comuna_base_slug);
-  const comunaBaseNombre = norm(item.comuna_base_nombre);
-  const coverageLabels = arr(item.coverage_labels).map(norm);
-  const coverageKeys = arr(item.coverage_keys).map(norm);
-  const nivel = s(item.nivel_cobertura);
+  const baseCoincide = base && base === comuna;
+  const esNivelComuna = nivel === "comuna" || nivel === "solo_mi_comuna";
 
-  if (
-    (comunaSlugLike && comunaBaseSlug === comunaSlugLike) ||
-    (comunaNameLike && comunaBaseNombre === comunaNameLike)
-  ) {
-    return "exacta";
+  // exacta SOLO si base coincide y nivel es "comuna" (compat: solo_mi_comuna)
+  if (baseCoincide && esNivelComuna) return "exacta";
+
+  // 2) Cobertura explícita en otras comunas
+  if (nivel === "varias_comunas") {
+    // Si la base coincide pero el nivel es varias_comunas, NO es exacta: cuenta como "Disponible".
+    if (baseCoincide) return "cobertura_comuna";
+    if (keys.includes(comuna)) return "cobertura_comuna";
+    if (labels.includes(norm(comunaBuscada))) return "cobertura_comuna";
   }
 
-  if (
-    coverageLabels.includes(comunaSlugLike) ||
-    coverageLabels.includes(comunaNameLike)
-  ) {
-    return "cobertura_comuna";
-  }
-
-  if (coverageKeys.includes(comunaSlugLike)) {
-    return "cobertura_comuna";
-  }
-
-  if (
-    coverageLabels.some(
-      (label) =>
-        (comunaSlugLike && label.includes(comunaSlugLike)) ||
-        (comunaNameLike && label.includes(comunaNameLike))
-    )
-  ) {
-    return "cobertura_comuna";
-  }
-
-  if (nivel === "varias_regiones" || nivel === "regional") return "regional";
+  // 3) Cobertura amplia
+  if (nivel === "regional" || nivel === "varias_regiones") return "regional";
   if (nivel === "nacional") return "nacional";
 
   return "general";

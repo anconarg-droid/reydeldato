@@ -6,9 +6,9 @@
   - Negocios con **base en la comuna** (`comuna_base_id = comunaId`).
   - Negocios cuya **cobertura incluye la comuna** (`coverage_labels` o `coverage_keys` contienen el slug de la comuna).
 - **No** se incluían explícitamente negocios con:
-  - `nivel_cobertura = 'varias_regiones'` (regional).
+  - `nivel_cobertura = 'regional'` (regional).
   - `nivel_cobertura = 'nacional'` (nacional).
-- El orden en memoria seguía siendo: exacta → cobertura_comuna → varias_regiones → nacional (según `resolveBucket` + `bucketRank`), pero al no traer regional/nacional en la query, en la práctica solo se veían base + “atienden la comuna”. El total “Encontramos X resultados” era solo esos dos grupos.
+- El orden en memoria seguía siendo: exacta → cobertura_comuna → regional → nacional (según `resolveBucket` + `bucketRank`), pero al no traer regional/nacional en la query, en la práctica solo se veían base + “atienden la comuna”. El total “Encontramos X resultados” era solo esos dos grupos.
 
 ---
 
@@ -20,7 +20,7 @@
   - Es decir, cuentan:
     1. Base en la comuna  
     2. Cobertura que incluye la comuna  
-    3. **Cobertura regional** (`nivel_cobertura = 'varias_regiones'`)  
+    3. **Cobertura regional** (`nivel_cobertura = 'regional'`)  
     4. **Cobertura nacional** (`nivel_cobertura = 'nacional'`).
 - Por tanto, los contadores ya consideraban los cuatro niveles; la diferencia estaba en la query de **resultados**, que no incluía regional ni nacional.
 
@@ -43,7 +43,7 @@
 
 | Archivo | Cambio |
 |--------|--------|
-| **`app/api/buscar/route.ts`** | Con comuna, se añadieron consultas para incluir **regional** y **nacional**: `nivel_cobertura = 'varias_regiones'` y `nivel_cobertura = 'nacional'`. Con subcategoría se añadieron las variantes que combinan ese nivel con `tags_slugs` / `subcategorias_slugs` (para que contadores y resultados sigan alineados). |
+| **`app/api/buscar/route.ts`** | Con comuna, se añadieron consultas para incluir **regional** y **nacional**: `nivel_cobertura = 'regional'` y `nivel_cobertura = 'nacional'`. Con subcategoría se añadieron las variantes que combinan ese nivel con `tags_slugs` / `subcategorias_slugs` (para que contadores y resultados sigan alineados). |
 | **`app/api/buscar/sector-por-tag/route.ts`** | **Nuevo.** GET `?tag=...` devuelve `{ sector_slug }` (categoría padre de la subcategoría), consultando un emprendedor publicado que tenga ese tag en `tags_slugs` o `subcategorias_slugs`. |
 | **`app/buscar/BuscarClient.tsx`** | Cuando hay **subcategoría activa** (ej. `/calera-de-tango/electricista`): se llama a `sector-por-tag` para obtener la categoría padre, se deja esa categoría **abierta** (`expandedSlug`) y se cargan sus subcategorías (tags) si no estaban cargadas, para que se vea la subcategoría activa marcada (☑) sin “desaparecer” del panel. |
 
@@ -57,7 +57,7 @@ Para una **comuna** buscada, la API considera “válidos” y trae (merge por `
 
 1. **Base en la comuna:** `comuna_base_id = id` de la comuna.
 2. **Atienden la comuna:** `coverage_labels` o `coverage_keys` contienen el slug de la comuna.
-3. **Regional:** `nivel_cobertura = 'varias_regiones'`.
+3. **Regional:** `nivel_cobertura = 'regional'`.
 4. **Nacional:** `nivel_cobertura = 'nacional'`.
 
 Si además hay **subcategoría** (ej. `electricista`), cada uno de esos “ramos” se filtra también por esa subcategoría (`tags_slugs` o `subcategorias_slugs` contienen el slug), de modo que los resultados por subcategoría sigan la misma regla (base + atienden + regional + nacional) y coincidan con el contador.

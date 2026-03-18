@@ -424,7 +424,7 @@ export default function PublicarClient({
       }
 
       if (
-        form.coberturaTipo === "varias_regiones" &&
+        form.coberturaTipo === "regional" &&
         !form.regionesCobertura.length
       ) {
         nextErrors.regionesCobertura =

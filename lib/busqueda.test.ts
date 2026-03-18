@@ -42,10 +42,10 @@ describe("classifyTier", () => {
     expect(r.tier).toBe("cobertura");
   });
 
-  it("devuelve regional cuando nivel es varias_regiones y regionId coincide", () => {
+  it("devuelve regional cuando nivel es regional (o legacy) y regionId coincide", () => {
     const hit: HitBusqueda = {
       comuna_base_slug: "providencia",
-      nivel_cobertura: "varias_regiones",
+      nivel_cobertura: "regional",
       region_ids: ["rm", "valparaiso"],
     };
     const r = classifyTier(hit, "calera-de-tango", "valparaiso");

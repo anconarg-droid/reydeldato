@@ -47,8 +47,9 @@ export async function POST(_req: NextRequest) {
       categoria_id: null,
       comuna_base_id: comunaBaseId,
       direccion: null,
-      nivel_cobertura: "solo_mi_comuna",
-      cobertura: "solo_mi_comuna",
+      // estándar nuevo (compat DB: la app acepta también "solo_mi_comuna")
+      nivel_cobertura: "comuna",
+      cobertura: "comuna",
       coverage_keys: [comunaSlug],
       coverage_labels: [comunaNombre],
       modalidades_atencion: [],

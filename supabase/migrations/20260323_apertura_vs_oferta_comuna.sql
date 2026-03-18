@@ -42,7 +42,7 @@ BEGIN
       )
       OR e.nivel_cobertura = 'nacional'
       OR (
-        e.nivel_cobertura = 'varias_regiones'
+        e.nivel_cobertura IN ('regional', 'varias_regiones')
         AND EXISTS (
           SELECT 1 FROM public.emprendedor_regiones_cobertura err
           WHERE err.emprendedor_id = e.id AND err.region_id = v_region_id

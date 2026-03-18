@@ -128,7 +128,7 @@ export default function PasoUbicacionCobertura({
   }, [regiones, regionBaseSlug]);
 
   const muestraComunas = form.coberturaTipo === "varias_comunas";
-  const muestraRegiones = form.coberturaTipo === "varias_regiones";
+  const muestraRegiones = form.coberturaTipo === "regional";
   const MAX_LOCALES = 3;
 
   const tieneLocalEnModalidades = form.modalidades.includes("local");
@@ -268,7 +268,7 @@ export default function PasoUbicacionCobertura({
               const value = e.target.value;
               setField("coberturaTipo", value);
               setField("comunasCobertura", []);
-              if (value === "varias_regiones") {
+              if (value === "regional") {
                 const region = comunaBaseObj?.region_id ? regiones.find((r) => r.id === comunaBaseObj.region_id) : null;
                 setField("regionesCobertura", region ? [region.slug] : []);
               } else {
@@ -280,7 +280,7 @@ export default function PasoUbicacionCobertura({
             <option value="">Selecciona cobertura</option>
             <option value="solo_mi_comuna">Solo mi comuna</option>
             <option value="varias_comunas">Varias comunas</option>
-            <option value="varias_regiones">Una o más regiones</option>
+            <option value="regional">Una o más regiones</option>
             <option value="nacional">Todo Chile</option>
           </select>
           <div style={sectionHelpStyle}>

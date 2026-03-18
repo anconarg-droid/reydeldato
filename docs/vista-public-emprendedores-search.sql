@@ -73,7 +73,7 @@ SELECT
 
   -- ----------------------------------------
   -- Cobertura
-  -- nivel: solo_mi_comuna | varias_comunas | varias_regiones | nacional
+  -- nivel: solo_mi_comuna | varias_comunas | regional | nacional
   -- Arrays de comunas/regiones cuando aplica.
   -- ----------------------------------------
   e.nivel_cobertura,

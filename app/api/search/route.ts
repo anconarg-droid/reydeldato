@@ -52,7 +52,7 @@ function getTier(
 
   if (base === comunaSlug) return "base";
   if (cobertura.includes(comunaSlug)) return "cobertura";
-  if (nivel === "varias_regiones") return "regional";
+  if (nivel === "regional" || nivel === "varias_regiones") return "regional";
   if (nivel === "nacional") return "nacional";
   return "general";
 }
@@ -205,7 +205,7 @@ function qualityScore(hit: {
   const nivel = s(hit.nivel_cobertura).toLowerCase();
   if (
     keys.length > 0 ||
-    ["solo_mi_comuna", "comunas", "varias_regiones", "nacional"].includes(nivel)
+    ["comuna", "solo_mi_comuna", "comunas", "regional", "varias_regiones", "nacional"].includes(nivel)
   ) {
     score += 2;
   }
@@ -429,7 +429,7 @@ function sortWithTerritorialAndQuality(
     const nivel = s(hit.nivel_cobertura).toLowerCase();
     if (base === comunaSlug) return true;
     if (cobertura.includes(comunaSlug)) return true;
-    if (nivel === "varias_regiones" || nivel === "nacional") return true;
+    if (nivel === "regional" || nivel === "varias_regiones" || nivel === "nacional") return true;
     return false;
   });
 

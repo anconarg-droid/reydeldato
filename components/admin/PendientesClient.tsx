@@ -65,7 +65,7 @@ function formatCoverage(
     return "Varias comunas";
   }
 
-  if (t === "varias_regiones") {
+  if (t === "regional" || t === "varias_regiones") {
     if (coverageLabels?.length) return coverageLabels.join(" · ");
     return "Una o más regiones";
   }

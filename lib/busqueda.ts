@@ -78,7 +78,7 @@ export function classifyTier(
 
   // 3) REGIONAL: cubre varias regiones y coincide con la región buscada
   if (
-    nivel === "varias_regiones" &&
+    (nivel === "regional" || nivel === "varias_regiones") &&
     regionId &&
     regiones.includes(regionId)
   ) {

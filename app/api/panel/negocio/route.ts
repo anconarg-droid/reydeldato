@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
       comunaBaseSlug: s(data.comuna_slug),
       coberturaTipo: ((): "solo_comuna" | "varias_comunas" | "regional" | "nacional" => {
         const nivel = s(data.cobertura_tipo).toLowerCase();
-        if (nivel === "solo_mi_comuna" || nivel === "solo_comuna") return "solo_comuna";
+        if (nivel === "comuna" || nivel === "solo_mi_comuna" || nivel === "solo_comuna") return "solo_comuna";
         if (nivel === "varias_comunas") return "varias_comunas";
         if (nivel === "varias_regiones" || nivel === "regional") return "regional";
         if (nivel === "nacional") return "nacional";

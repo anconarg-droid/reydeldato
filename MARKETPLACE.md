@@ -112,9 +112,9 @@ La lógica final de visibilidad (qué se muestra, en qué orden, quién está pu
 | Una categoría principal por emprendedor | `publicar`: una `categoria_slug`; subcategorías validadas con `categoria_id` en `/api/publicar`. |
 | Múltiples subcategorías dentro de esa categoría | Tabla puente `emprendedor_subcategorias`; validación “subcategorías que no pertenecen a la categoría” en publicar. |
 | Comuna base obligatoria | Validación en `/api/publicar` (comuna_base_slug) y en flujo de alta. |
-| Ranking: 1 comuna exacta, 2 atiende comuna, 3 regional, 4 nacional | `/api/buscar`: buckets `exacta` → `cobertura_comuna` → `varias_regiones` → `nacional`. `/api/search`: tiers `base` → `cobertura` → `regional` → `nacional`. |
+| Ranking: 1 comuna exacta, 2 atiende comuna, 3 regional, 4 nacional | `/api/buscar`: buckets `exacta` → `cobertura_comuna` → `regional` → `nacional`. `/api/search`: tiers `base` → `cobertura` → `regional` → `nacional`. |
 
-Valores de cobertura en código: `solo_mi_comuna`, `varias_comunas`, `varias_regiones`, `nacional`. Equivalencias con la doc: `solo_comuna` ≈ `solo_mi_comuna`, `regional` ≈ `varias_regiones`.
+Valores de cobertura en código: `solo_mi_comuna`, `varias_comunas`, `regional`, `nacional`. Compat legacy: `varias_regiones` ≈ `regional`.
 
 ---
 
@@ -671,7 +671,7 @@ Para búsquedas y filtros se usan:
 - Comuna base.
 - Lista de comunas de cobertura (si aplica).
 - Lista de regiones de cobertura (si aplica).
-- Nivel: `solo_mi_comuna` | `varias_comunas` | `varias_regiones` | `nacional`.
+- Nivel: `solo_mi_comuna` | `varias_comunas` | `regional` | `nacional` (legacy: `varias_regiones`).
 
 ---
 
@@ -686,7 +686,7 @@ Cuando alguien busca, por ejemplo, **“gasfiter en Calera de Tango”**, los re
    Emprendimientos con **base en otra comuna** pero que tienen **cobertura** en la comuna buscada (ej. varias comunas donde está Calera de Tango).
 
 3. **Cobertura regional**  
-   Emprendimientos con cobertura en **una o más regiones** que incluyan la zona (nivel `varias_regiones`).
+   Emprendimientos con cobertura en **una o más regiones** que incluyan la zona (nivel `regional`).
 
 4. **Cobertura nacional**  
    Emprendimientos que atienden **todo Chile** (nivel `nacional`).
@@ -695,7 +695,7 @@ Cuando alguien busca, por ejemplo, **“gasfiter en Calera de Tango”**, los re
    Resto que coincida con el texto de búsqueda pero sin coincidencia clara de comuna/cobertura.
 
 Implementación:
-- **API:** `app/api/buscar/route.ts` — orden por “bucket” (exacta → cobertura_comuna → varias_regiones → nacional → general) y por puntuación de texto.
+- **API:** `app/api/buscar/route.ts` — orden por “bucket” (exacta → cobertura_comuna → regional → nacional → general) y por puntuación de texto.
 - **Front:** `app/buscar/BuscarClient.tsx` — agrupa por bucket y muestra las secciones en ese orden.
 
 ---

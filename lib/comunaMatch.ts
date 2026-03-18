@@ -58,7 +58,7 @@ export function getComunaMatch(params: {
 
   const atiendePorCobertura =
     (nivel === "varias_comunas" && (keys.includes(comuna) || labels.some((l) => l === comuna || l.includes(comuna)))) ||
-    (nivel === "varias_regiones") ||
+    (nivel === "regional" || nivel === "varias_regiones") ||
     (nivel === "nacional");
 
   if (params.tieneLocalEnComuna) {
@@ -85,7 +85,7 @@ export function getComunaMatch(params: {
     };
   }
 
-  if (nivel === "varias_regiones") {
+  if (nivel === "regional" || nivel === "varias_regiones") {
     return {
       tiene_local_en_comuna: false,
       atiende_comuna: true,

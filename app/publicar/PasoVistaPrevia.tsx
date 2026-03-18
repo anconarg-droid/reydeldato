@@ -93,7 +93,7 @@ export default function PasoVistaPrevia({
       return comunasCoberturaNombres.join(" · ");
     }
 
-    if (form.coberturaTipo === "varias_regiones") {
+    if (form.coberturaTipo === "regional") {
       return regionesCoberturaNombres.join(" · ");
     }
 

@@ -7,7 +7,6 @@ export function coberturaTexto(nivel?: string, comunas?: string[]): string {
   const n = s(nivel).toLowerCase();
 
   if (n === "nacional") return "Atiende en todo Chile";
-  if (n === "regional") return "Toda la región";
   if (n === "solo_comuna") return "Solo en su comuna";
   if (n === "solo_mi_comuna") return "Solo en su comuna";
 

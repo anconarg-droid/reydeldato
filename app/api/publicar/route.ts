@@ -57,10 +57,14 @@ type Payload = {
   direccion?: string;
 
   nivel_cobertura:
+    | "comuna"
+    // compat transición
     | "solo_mi_comuna"
     | "varias_comunas"
-    | "varias_regiones"
-    | "nacional";
+    | "regional"
+    | "nacional"
+    // compat legacy
+    | "varias_regiones";
 
   comunas_cobertura_slugs?: string[];
   regiones_cobertura_slugs?: string[];
@@ -213,7 +217,14 @@ export async function POST(req: Request) {
     const comunaBaseSlug = s(body.comuna_base_slug);
     const direccion = s(body.direccion);
 
-    const nivelCobertura = s(body.nivel_cobertura);
+    const nivelCoberturaRaw = s(body.nivel_cobertura);
+    // Normalizar para guardar el nuevo valor oficial (manteniendo compat de entrada)
+    const nivelCobertura =
+      nivelCoberturaRaw === "varias_regiones"
+        ? "regional"
+        : nivelCoberturaRaw === "solo_mi_comuna"
+          ? "comuna"
+          : nivelCoberturaRaw;
     const modalidades = normalizeModalidades(body.modalidades);
 
     const categoriaSlug = s(body.categoria_slug);
@@ -513,11 +524,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (
-      !["solo_mi_comuna", "varias_comunas", "varias_regiones", "nacional"].includes(
-        nivelCobertura
-      )
-    ) {
+    if (!["comuna", "varias_comunas", "regional", "nacional"].includes(nivelCobertura)) {
       return NextResponse.json(
         { ok: false, error: "Cobertura inválida." },
         { status: 400 }
@@ -611,7 +618,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (nivelCobertura === "varias_regiones" && !regionesCoberturaSlugs.length) {
+    if (nivelCobertura === "regional" && !regionesCoberturaSlugs.length) {
       return NextResponse.json(
         { ok: false, error: "Debes seleccionar al menos una región de cobertura." },
         { status: 400 }
@@ -860,7 +867,7 @@ export async function POST(req: Request) {
 
     let regionesCobertura: Array<{ id: string; slug: string; nombre: string }> = [];
 
-    if (nivelCobertura === "varias_regiones") {
+    if (nivelCobertura === "regional") {
       const { data, error } = await supabase
         .from("regiones")
         .select("id,slug,nombre")
@@ -891,21 +898,17 @@ export async function POST(req: Request) {
     let coverageLabels: string[] = [];
     let coberturaTexto = "";
 
-    if (nivelCobertura === "solo_mi_comuna") {
+    if (nivelCobertura === "comuna") {
       coverageKeys = [comunaBase.slug];
       coverageLabels = [comunaBase.nombre];
-      coberturaTexto = "solo_mi_comuna";
+      coberturaTexto = "comuna";
     } else if (nivelCobertura === "varias_comunas") {
       coverageKeys = comunasCobertura.map((x) => x.slug);
       coverageLabels = comunasCobertura.map((x) => x.nombre);
       coberturaTexto = "varias_comunas";
-    } else if (nivelCobertura === "varias_regiones") {
-      coverageKeys = regionesCobertura.map((x) => x.slug);
-      coverageLabels = regionesCobertura.map((x) => x.nombre);
-      coberturaTexto = "varias_regiones";
+    } else if (nivelCobertura === "regional") {
+      coberturaTexto = "regional";
     } else {
-      coverageKeys = ["nacional"];
-      coverageLabels = ["Nacional"];
       coberturaTexto = "nacional";
     }
 
@@ -1074,8 +1077,9 @@ export async function POST(req: Request) {
       frase_negocio: fraseNegocio || null,
       nivel_cobertura: nivelCobertura,
       cobertura: coberturaTexto,
-      coverage_keys: coverageKeys,
-      coverage_labels: coverageLabels,
+      // Para regional/nacional no usamos coverage_keys/labels (evita datos conceptualmente sucios).
+      coverage_keys: nivelCobertura === "varias_comunas" || nivelCobertura === "comuna" ? coverageKeys : null,
+      coverage_labels: nivelCobertura === "varias_comunas" || nivelCobertura === "comuna" ? coverageLabels : null,
       modalidades_atencion: modalidades,
       subcategorias_slugs: hasLegacyTaxonomy ? subcategoriaSlugs : subcats.map((s) => s.slug),
       whatsapp,
