@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import BuscarClient from "@/app/buscar/BuscarClient";
@@ -91,6 +91,9 @@ export default async function ComunaPage({ params, searchParams }: PageProps) {
       />
     );
   }
+
+  // Regla final: comuna no abierta => llevar directo a la página de apertura.
+  return redirect(`/abrir-comuna/${slug}`);
 
   const total = Number((resumenRow as any)?.total_emprendedores) || 0;
   const faltan = Number((resumenRow as any)?.faltan_emprendedores_meta) || 40;
