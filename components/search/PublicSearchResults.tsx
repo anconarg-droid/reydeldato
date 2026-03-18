@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ComunaEnPreparacion from "@/components/ComunaEnPreparacion";
+import ResultadoBadge from "@/components/ResultadoBadge";
 
 type ProgresoItem = { nombre: string; actual: number; meta: number };
 
@@ -32,6 +33,12 @@ type SearchHit = {
   comuna_base_slug?: string | null;
   categoria_slug?: string | null;
   subcategoria_slug?: string | null;
+  bucket?: "exacta" | "local" | "cobertura_comuna" | "regional" | "nacional" | "general";
+  coverage_keys?: string[] | null;
+  coverage_labels?: string[] | null;
+  nivel_cobertura?: string | null;
+  comuna_base_slug?: string | null;
+  comuna_base_nombre?: string | null;
 };
 
 type SearchResponse = {
@@ -197,6 +204,18 @@ export default function PublicSearchResults({
     return null;
   }
 
+  const items: SearchHit[] = Array.isArray(data?.items) ? data.items : [];
+  const total: number =
+    typeof data?.total === "number" ? data.total : items.length;
+
+  // Logs temporales de depuración de UI
+  // eslint-disable-next-line no-console
+  console.log("SEARCH_UI_DATA", data);
+  // eslint-disable-next-line no-console
+  console.log("SEARCH_UI_ITEMS", items);
+  // eslint-disable-next-line no-console
+  console.log("SEARCH_UI_TOTAL", total);
+
   if (data.modo === "comuna_en_preparacion") {
     return (
       <div className="mt-6 max-w-2xl mx-auto">
@@ -212,9 +231,10 @@ export default function PublicSearchResults({
     );
   }
 
-  const itemsFinal: SearchHit[] = Array.isArray(data?.items) ? data.items : [];
-  const totalFinal =
-    typeof data?.total === "number" ? data.total : itemsFinal.length;
+  // Usar directamente los items devueltos por la API (sin deduplicar por nombre)
+  const itemsFinal: SearchHit[] = items;
+
+  const totalFinal = total;
 
   const comunaLabel =
     (comuna && comuna.trim()) ||
@@ -251,22 +271,39 @@ export default function PublicSearchResults({
           {itemsFinal.map((item) => {
             const key = s(item.id || item.slug || item.objectID);
             const slug = s(item.slug || item.id || item.objectID);
-            const nombre = item.nombre || "Emprendimiento sin nombre";
+            const nombre = item.nombre || "Emprendimiento";
+            const descripcion =
+              item.descripcion_corta ||
+              item.descripcion_larga ||
+              "Sin descripción disponible";
             const comunaTexto =
               item.comuna_nombre ||
-              item.comuna_base_nombre ||
+              (item.comuna_slug ? item.comuna_slug.replace(/-/g, " ") : "") ||
               comunaLabel ||
-              "Sin comuna";
+              "";
             const categoriaTexto =
-              item.categoria_slug_final || item.categoria_slug || "Sin categoría";
+              item.categoria_slug_final ||
+              item.categoria_slug ||
+              "";
+
+            let motivo: string | undefined;
+            if (item.bucket === "local" || item.bucket === "exacta") {
+              motivo = "En tu comuna";
+            } else if (
+              item.bucket === "cobertura_comuna" ||
+              item.bucket === "regional" ||
+              item.bucket === "nacional"
+            ) {
+              motivo = "Disponible en tu comuna";
+            }
 
             return (
               <div
                 key={key}
-                className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:-translate-y-1 transition p-3 flex flex-col"
+                className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition p-4 flex flex-col"
               >
                 {/* Imagen */}
-                <div className="w-full h-32 bg-slate-100 rounded-lg overflow-hidden mb-3">
+                <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-100 mb-3">
                   {item.foto_principal_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -275,38 +312,42 @@ export default function PublicSearchResults({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
+                    <div className="flex items-center justify-center h-full text-slate-400 text-xs">
                       Sin imagen
                     </div>
                   )}
                 </div>
 
-                {/* Badge disponibilidad */}
-                <div className="text-[11px] text-blue-600 font-semibold mb-1">
-                  Disponible en tu comuna
-                </div>
-
                 {/* Nombre */}
-                <h3 className="font-semibold text-slate-900 text-lg mb-1 line-clamp-2">
+                <h3 className="font-bold text-slate-900 text-lg mb-1 line-clamp-2">
                   {nombre}
                 </h3>
 
                 {/* Comuna */}
-                <p className="text-xs text-slate-600 mb-0.5">
-                  {comunaTexto}
-                </p>
-
-                {/* Categoría */}
-                <p className="text-[11px] text-slate-400 mb-2">
-                  {categoriaTexto}
-                </p>
-
-                {/* Descripción */}
-                {item.descripcion_corta && (
-                  <p className="text-xs text-slate-600 mb-3 line-clamp-2">
-                    {item.descripcion_corta}
+                {comunaTexto && (
+                  <p className="text-xs text-slate-500 mb-0.5">
+                    {comunaTexto}
                   </p>
                 )}
+
+                {/* Categoría */}
+                {categoriaTexto && (
+                  <p className="text-[11px] text-slate-400 mb-1.5">
+                    {categoriaTexto}
+                  </p>
+                )}
+
+                {/* Badge territorial */}
+                {motivo && (
+                  <div className="mb-2">
+                    <ResultadoBadge bucket={item.bucket} motivo={motivo} />
+                  </div>
+                )}
+
+                {/* Descripción */}
+                <p className="text-xs text-slate-600 mb-3 line-clamp-2 overflow-hidden text-ellipsis">
+                  {descripcion}
+                </p>
 
                 {/* CTA */}
                 <div className="flex gap-2 mt-3">
@@ -325,7 +366,7 @@ export default function PublicSearchResults({
                           href={`/emprendedor/${slug}`}
                           className="flex-1 text-center bg-slate-900 text-white text-sm py-2 rounded-lg hover:bg-slate-800 transition"
                         >
-                          Ver ficha
+                          Ver detalle
                         </a>
                       )}
                     </>
@@ -335,7 +376,7 @@ export default function PublicSearchResults({
                         href={`/emprendedor/${slug}`}
                         className="w-full text-center bg-slate-900 text-white text-sm py-2 rounded-lg hover:bg-slate-800 transition"
                       >
-                        Ver ficha
+                        Ver detalle
                       </a>
                     )
                   )}
