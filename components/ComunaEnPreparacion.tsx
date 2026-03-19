@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type ProgresoItem = {
   nombre: string;
@@ -13,10 +13,18 @@ export default function ComunaEnPreparacion({
   comunaSlug,
   comunaNombre,
   progreso,
+  mostrarProgreso = true,
+  prefillRubro,
+  prefillRubroLabel,
+  mostrarPublicarLink = true,
 }: {
   comunaSlug: string;
   comunaNombre: string;
   progreso: ProgresoItem[];
+  mostrarProgreso?: boolean;
+  prefillRubro?: string | null;
+  prefillRubroLabel?: string | null;
+  mostrarPublicarLink?: boolean;
 }) {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
@@ -25,8 +33,46 @@ export default function ComunaEnPreparacion({
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [rubro, setRubro] = useState("");
+  const [rubroVisible, setRubroVisible] = useState("");
   const [comentario, setComentario] = useState("");
   const [email, setEmail] = useState("");
+  const rubroRef = useRef<HTMLInputElement | null>(null);
+
+  function slugToLabel(slugInput: string): string {
+    const slug = String(slugInput ?? "").trim();
+    if (!slug) return "";
+
+    // Casos conocidos para mejorar legibilidad.
+    const known: Record<string, string> = {
+      comida_casera_colaciones: "Comida casera / colaciones",
+      gas_balones: "Gas en balones",
+      agua_purificada: "Agua purificada",
+    };
+    if (known[slug]) return known[slug];
+
+    // Regla general: "_" y "-" -> " ", luego capitalizar.
+    const normalized = slug.replace(/[_-]+/g, " ").trim();
+    return normalized
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => {
+        const lower = w.toLowerCase();
+        return lower ? lower.charAt(0).toUpperCase() + lower.slice(1) : "";
+      })
+      .join(" ");
+  }
+
+  useEffect(() => {
+    const nextSlug = String(prefillRubro ?? "").trim();
+    if (!nextSlug) return;
+
+    setRubro(nextSlug);
+    const labelFromProp = String(prefillRubroLabel ?? "").trim();
+    const nextLabel = labelFromProp || slugToLabel(nextSlug);
+    setRubroVisible(nextLabel);
+    // Mejorar conversión: enfocar el campo "Rubro" al preseleccionar desde CTA
+    setTimeout(() => rubroRef.current?.focus(), 0);
+  }, [prefillRubro, prefillRubroLabel]);
 
   const { covered, total, porcentaje } = useMemo(() => {
     const t = progreso.length || 1;
@@ -82,62 +128,69 @@ export default function ComunaEnPreparacion({
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-      <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
-        Tu comuna necesita tu ayuda para abrir Rey del Dato
-      </h2>
-      <p className="mt-3 text-slate-600 leading-relaxed">
-        Aún no abrimos Rey del Dato en <strong>{comunaNombre}</strong>.
-        <br />
-        Estamos reuniendo emprendimientos locales.
-      </p>
+      {mostrarProgreso ? (
+        <>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
+            Tu comuna necesita tu ayuda para abrir Rey del Dato
+          </h2>
+          <p className="mt-3 text-slate-600 leading-relaxed">
+            Aún no abrimos Rey del Dato en <strong>{comunaNombre}</strong>.
+            <br />
+            Estamos reuniendo emprendimientos locales.
+          </p>
 
-      <div className="mt-6">
-        <div className="flex items-center justify-between text-sm text-slate-700 mb-2">
-          <span>
-            Tu comuna lleva <strong>{porcentaje}%</strong> para abrir.
-          </span>
-          <span>
-            {covered} / {total} rubros cubiertos
-          </span>
-        </div>
-        <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
-          <div
-            className="h-full bg-slate-900"
-            style={{ width: `${Math.max(0, Math.min(100, porcentaje))}%` }}
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 space-y-3">
-        {progreso.map((p) => {
-          const ok = p.actual >= p.meta;
-          return (
-            <div key={p.nombre} className="flex items-center justify-between text-sm">
-              <span className="text-slate-800 font-semibold">{p.nombre}</span>
-              <span className="text-slate-600 tabular-nums">
-                {p.actual} / {p.meta} {ok ? "✔" : ""}
+          <div className="mt-6">
+            <div className="flex items-center justify-between text-sm text-slate-700 mb-2">
+              <span>
+                Tu comuna lleva <strong>{porcentaje}%</strong> para abrir.
+              </span>
+              <span>
+                {covered} / {total} rubros cubiertos
               </span>
             </div>
-          );
-        })}
-      </div>
+            <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
+              <div
+                className="h-full bg-slate-900"
+                style={{ width: `${Math.max(0, Math.min(100, porcentaje))}%` }}
+              />
+            </div>
+          </div>
 
-      {rubrosMasNecesarios.length > 0 && (
-        <div className="mt-8 border-t border-slate-200 pt-6">
-          <h3 className="text-lg font-bold text-slate-900 mb-2">
-            Rubros más necesarios en esta comuna
-          </h3>
-          <p className="text-sm text-slate-600 mb-2">
-            Estos rubros aún no tienen suficientes emprendimientos en{" "}
-            <strong>{comunaNombre}</strong>:
-          </p>
-          <ul className="list-disc list-inside text-sm text-slate-800 space-y-1">
-            {rubrosMasNecesarios.map((p) => (
-              <li key={p.nombre}>{p.nombre}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+          <div className="mt-6 space-y-3">
+            {progreso.map((p) => {
+              const ok = p.actual >= p.meta;
+              return (
+                <div
+                  key={p.nombre}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span className="text-slate-800 font-semibold">{p.nombre}</span>
+                  <span className="text-slate-600 tabular-nums">
+                    {p.actual} / {p.meta} {ok ? "✔" : ""}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {rubrosMasNecesarios.length > 0 && (
+            <div className="mt-8 border-t border-slate-200 pt-6">
+              <h3 className="text-lg font-bold text-slate-900 mb-2">
+                Rubros más necesarios en esta comuna
+              </h3>
+              <p className="text-sm text-slate-600 mb-2">
+                Estos rubros aún no tienen suficientes emprendimientos en{" "}
+                <strong>{comunaNombre}</strong>:
+              </p>
+              <ul className="list-disc list-inside text-sm text-slate-800 space-y-1">
+                {rubrosMasNecesarios.map((p) => (
+                  <li key={p.nombre}>{p.nombre}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      ) : null}
 
       <div className="mt-8 border-t border-slate-200 pt-6">
         <h3 className="text-lg font-bold text-slate-900">
@@ -168,9 +221,11 @@ export default function ComunaEnPreparacion({
               className="h-11 px-3 rounded-xl border border-slate-300"
             />
             <input
-              value={rubro}
+              value={prefillRubro ? rubroVisible : rubro}
               onChange={(e) => setRubro(e.target.value)}
               placeholder="Rubro"
+              ref={rubroRef}
+              readOnly={Boolean(prefillRubro)}
               className="h-11 px-3 rounded-xl border border-slate-300"
             />
             <input
@@ -205,12 +260,14 @@ export default function ComunaEnPreparacion({
       </div>
 
       <div className="mt-8">
-        <Link
-          href={`/publicar?comuna=${encodeURIComponent(comunaSlug)}`}
-          className="inline-flex items-center justify-center px-6 h-11 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition"
-        >
-          Publicar mi emprendimiento en {comunaNombre}
-        </Link>
+        {mostrarPublicarLink ? (
+          <Link
+            href={`/publicar?comuna=${encodeURIComponent(comunaSlug)}`}
+            className="inline-flex items-center justify-center px-6 h-11 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition"
+          >
+            Publicar mi emprendimiento en {comunaNombre}
+          </Link>
+        ) : null}
       </div>
     </div>
   );

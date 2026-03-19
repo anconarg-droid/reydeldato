@@ -1,6 +1,6 @@
 /**
- * Tags con más emprendimientos en una comuna (o global si no hay comuna).
- * Para placeholder y chips del buscador principal.
+ * Tags/categorías populares para el buscador.
+ * Usa solo columnas que sí existen en vw_emprendedores_algolia_final.
  */
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -20,11 +20,11 @@ type Bucket =
   | "nacional"
   | "general";
 
-function s(v: unknown) {
+function s(v: unknown): string {
   return String(v ?? "").trim();
 }
 
-function norm(v: unknown) {
+function norm(v: unknown): string {
   return s(v)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -36,53 +36,52 @@ function arr(v: unknown): string[] {
   return v.map((x) => s(x)).filter(Boolean);
 }
 
+/**
+ * coverage_keys viene con paths tipo:
+ * "/chile/metropolitana/maipu"
+ * Entonces verificamos por inclusión del slug buscado.
+ */
 function resolveBucket(
   item: {
     comuna_base_slug?: string | null;
-    comuna_base_nombre?: string | null;
-    coverage_labels?: string[] | null;
-    coverage_keys?: string[] | null;
     nivel_cobertura?: string | null;
-    comunas_cobertura_slugs_arr?: string[] | null;
+    coverage_keys?: string[] | null;
   },
   comunaBuscada: string
 ): Bucket {
-  const comunaRaw = s(comunaBuscada);
-  const comunaSlugLike = norm(comunaRaw);
-  const comunaNameLike = norm(comunaRaw.replace(/-/g, " "));
+  const buscada = norm(comunaBuscada);
+  if (!buscada) return "general";
 
-  if (!comunaSlugLike && !comunaNameLike) return "general";
-
-  const comunaBaseSlug = norm(item.comuna_base_slug);
+  const baseSlug = norm(item.comuna_base_slug);
   const nivel = norm(item.nivel_cobertura);
-  const coberturaComunas = arr(item.comunas_cobertura_slugs_arr).map(norm);
+  const coverageKeys = arr(item.coverage_keys).map(norm);
 
-  // exacta
-  if (comunaSlugLike && comunaBaseSlug === comunaSlugLike) return "exacta";
+  if (baseSlug === buscada) return "exacta";
 
-  // cobertura comunas
-  if (nivel === "varias_comunas" && comunaSlugLike && coberturaComunas.includes(comunaSlugLike)) {
+  if (
+    nivel === "varias_comunas" &&
+    coverageKeys.some((k) => k.includes(`/${buscada}`) || k.endsWith(buscada))
+  ) {
     return "cobertura_comuna";
   }
 
-  // regional / nacional
   if (nivel === "regional" || nivel === "varias_regiones") return "regional";
   if (nivel === "nacional") return "nacional";
+
   return "general";
 }
 
 function tagToLabel(tag: string): string {
-  const t = s(tag).replace(/_/g, " ").trim();
+  const t = s(tag).replace(/_/g, " ").replace(/-/g, " ").trim();
   if (!t) return tag;
   return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
 }
 
 type Row = {
-  tags_slugs: string[] | null;
+  categoria_slug: string | null;
   comuna_base_slug: string | null;
-  comuna_base_nombre: string | null;
   nivel_cobertura: string | null;
-  comunas_cobertura_slugs_arr: string[] | null;
+  coverage_keys: string[] | null;
 };
 
 export async function GET(req: Request) {
@@ -93,15 +92,13 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabase
       .from("vw_emprendedores_algolia_final")
-      .select(
-        `
+      .select(`
+        publicado,
         nivel_cobertura,
-        comuna_base_nombre,
         comuna_base_slug,
-        comunas_cobertura_slugs_arr,
-        subcategorias_slugs_arr
-      `
-      )
+        coverage_keys,
+        categoria_slug
+      `)
       .eq("publicado", true);
 
     if (error) {
@@ -112,11 +109,10 @@ export async function GET(req: Request) {
     }
 
     const rows: Row[] = (data || []).map((row: any) => ({
-      tags_slugs: row.subcategorias_slugs_arr ?? null,
+      categoria_slug: row.categoria_slug ?? null,
       comuna_base_slug: row.comuna_base_slug ?? null,
-      comuna_base_nombre: row.comuna_base_nombre ?? null,
       nivel_cobertura: row.nivel_cobertura ?? null,
-      comunas_cobertura_slugs_arr: row.comunas_cobertura_slugs_arr ?? null,
+      coverage_keys: row.coverage_keys ?? null,
     }));
 
     const inScope = comuna
@@ -124,11 +120,11 @@ export async function GET(req: Request) {
       : rows;
 
     const countByTag: Record<string, number> = {};
+
     for (const item of inScope) {
-      const tags = arr(item.tags_slugs).map((t) => norm(t)).filter(Boolean);
-      for (const tag of tags) {
-        countByTag[tag] = (countByTag[tag] || 0) + 1;
-      }
+      const tag = norm(item.categoria_slug);
+      if (!tag) continue;
+      countByTag[tag] = (countByTag[tag] || 0) + 1;
     }
 
     const tags = Object.entries(countByTag)
@@ -138,7 +134,7 @@ export async function GET(req: Request) {
         tagSlug: tag,
         count,
       }))
-      .sort((a, b) => b.count - a.count)
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
       .slice(0, limit);
 
     return NextResponse.json({ ok: true, tags });

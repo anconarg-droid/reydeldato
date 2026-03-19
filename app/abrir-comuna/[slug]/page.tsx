@@ -1,4 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
+import { notFound } from "next/navigation";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import AbrirComunaClient from "./AbrirComunaClient";
 
 export const dynamic = "force-dynamic";
@@ -16,72 +17,72 @@ export default async function AbrirComunaPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const slugNorm = slug.toLowerCase().trim().replace(/\s+/g, "-");
+  if (!slugNorm) notFound();
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = createSupabaseServerClient();
 
-  const comunaNombre = prettySlug(slug);
+  // Validar comuna existe
+  const { data: comunaRow } = await supabase
+    .from("comunas")
+    .select("slug, nombre, region_nombre")
+    .eq("slug", slugNorm)
+    .maybeSingle();
 
-  const [
-    { data: resumen },
-    { data: ultimosEmp },
-    { data: ultimosVec },
-    { data: activos },
-  ] = await Promise.all([
-    supabase
-      .from("vw_comunas_por_abrir")
-      .select("*")
-      .eq("comuna_slug", slug)
-      .maybeSingle(),
+  if (!comunaRow) notFound();
 
-    supabase
-      .from("comunas_pre_registro_emprendedores")
-      .select(
-        "id,nombre_contacto,nombre_emprendimiento,categoria_referencial,descripcion_corta,created_at"
-      )
-      .eq("comuna_slug", slug)
-      .order("created_at", { ascending: false })
-      .limit(12),
+  const comunaNombre = prettySlug(slugNorm);
 
-    supabase
-      .from("comunas_pre_registro_vecinos")
-      .select("id,contacto,tipo_contacto,created_at")
-      .eq("comuna_slug", slug)
-      .order("created_at", { ascending: false })
-      .limit(12),
+  // Leer desde vw_comunas_por_abrir los campos pedidos
+  const { data: vwRow } = await supabase
+    .from("vw_comunas_por_abrir")
+    .select("*")
+    .eq("comuna_slug", slugNorm)
+    .maybeSingle();
 
-    supabase
-      .from("comunas_activas")
-      .select("comuna_slug, comuna_nombre, activa")
-      .eq("comuna_slug", slug)
-      .eq("activa", true)
-      .maybeSingle(),
-  ]);
+  if (!vwRow) notFound();
 
-  const comunaActiva = !!activos;
+  const avancePorcentaje =
+    Number(
+      (vwRow as any)?.porcentaje_apertura ??
+        (vwRow as any)?.avance_porcentaje ??
+        0
+    ) || 0;
 
-  return (
-    <AbrirComunaClient
-      slug={slug}
-      comunaNombre={resumen?.comuna_nombre || comunaNombre}
-      comunaActiva={comunaActiva}
-      resumen={
-        resumen || {
-          comuna_slug: slug,
-          comuna_nombre: comunaNombre,
-          total_emprendedores: 0,
-          total_vecinos: 0,
-          total_interesados: 0,
-          avance_porcentaje: 0,
-          estado_apertura: "sin_movimiento",
-          faltan_emprendedores_meta: 40,
-          ultimo_registro_at: null,
-        }
-      }
-      ultimosEmprendedores={ultimosEmp || []}
-      ultimosVecinos={ultimosVec || []}
-    />
-  );
+  const estado =
+    String(
+      (vwRow as any)?.estado_apertura_simple ??
+        (vwRow as any)?.estado_apertura ??
+        (vwRow as any)?.estado ??
+        "sin_movimiento"
+    );
+
+  const categorias =
+    Array.isArray((vwRow as any)?.categorias) ? (vwRow as any).categorias : [];
+
+  const data = {
+    comuna_slug: String((vwRow as any)?.comuna_slug ?? slugNorm),
+    comuna_nombre: String((vwRow as any)?.comuna_nombre ?? comunaRow.nombre ?? comunaNombre),
+    region_nombre: (vwRow as any)?.region_nombre ?? null,
+
+    avance_porcentaje: avancePorcentaje,
+    total_emprendedores: Number((vwRow as any)?.total_emprendedores ?? 0) || 0,
+    categorias_totales: Number((vwRow as any)?.categorias_totales ?? categorias.length ?? 0) || 0,
+    categorias_cubiertas: Number((vwRow as any)?.categorias_cubiertas ?? 0) || 0,
+    categorias_faltantes: Number((vwRow as any)?.categorias_faltantes ?? 0) || 0,
+
+    estado,
+    categorias,
+
+    // Campos pedidos (para usar en cliente si ya están implementados ahí)
+    porcentaje_apertura: (vwRow as any)?.porcentaje_apertura ?? avancePorcentaje,
+    se_puede_abrir: (vwRow as any)?.se_puede_abrir ?? null,
+    estado_apertura: (vwRow as any)?.estado_apertura ?? null,
+    estado_apertura_simple: (vwRow as any)?.estado_apertura_simple ?? null,
+    mensaje_apertura: (vwRow as any)?.mensaje_apertura ?? null,
+    rubros_faltantes: (vwRow as any)?.rubros_faltantes ?? null,
+    rubros_detalle: (vwRow as any)?.rubros_detalle ?? null,
+  };
+
+  return <AbrirComunaClient data={data} />;
 }

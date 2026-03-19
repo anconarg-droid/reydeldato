@@ -34,6 +34,63 @@ function stableRotationKey(id: string, seed: number): number {
   return hash;
 }
 
+const QUERY_SYNONYMS: Record<string, string[]> = {
+  pan: ["panaderia", "amasanderia", "marraqueta", "hallulla", "pan amasado"],
+  panaderia: ["pan", "amasanderia", "marraqueta", "hallulla", "pan amasado"],
+  marraqueta: ["pan", "panaderia", "amasanderia", "hallulla"],
+  hallulla: ["pan", "panaderia", "amasanderia", "marraqueta"],
+  almuerzo: ["colaciones", "comida casera", "menu", "delivery almuerzo"],
+  colaciones: ["almuerzo", "comida casera", "menu"],
+  comida: ["colaciones", "comida casera", "almuerzo"],
+  mecanico: ["taller mecanico", "mecanico a domicilio", "automotriz"],
+  abogado: ["asesoria legal", "juridico"],
+  contador: ["contabilidad", "contador auditor", "asesoria tributaria"],
+};
+
+function includesNorm(haystack: unknown, needleNorm: string): boolean {
+  if (!needleNorm) return false;
+  return norm(haystack).includes(needleNorm);
+}
+
+function expandQueryTerms(qNorm: string): string[] {
+  if (!qNorm) return [];
+  const direct = QUERY_SYNONYMS[qNorm] ?? [];
+  return Array.from(new Set([qNorm, ...direct.map(norm)])).filter(Boolean);
+}
+
+function getSearchScore(
+  item: Pick<SearchItem, "nombre" | "subcategoria_slug" | "categoria_slug" | "search_text">,
+  qNorm: string,
+  expandedTerms: string[]
+): number {
+  if (!qNorm) return 0;
+
+  let score = 0;
+
+  // nombre: mejorar discriminación (exact > prefix > includes)
+  const nombreNorm = norm(item.nombre);
+  if (nombreNorm === qNorm) score += 120;
+  else if (nombreNorm.startsWith(qNorm)) score += 100;
+  else if (nombreNorm.includes(qNorm)) score += 60;
+
+  // sinónimos controlados: boost menor (solo en nombre)
+  for (const term of expandedTerms) {
+    if (!term || term === qNorm) continue;
+    if (nombreNorm.includes(term)) score += 20;
+  }
+
+  // subcategoria_slug: mantener +60
+  if (includesNorm(item.subcategoria_slug, qNorm)) score += 60;
+
+  // categoria_slug: mantener +30
+  if (includesNorm(item.categoria_slug, qNorm)) score += 30;
+
+  // search_text: reducir peso para evitar empates masivos
+  if (includesNorm(item.search_text, qNorm)) score += 2;
+
+  return score;
+}
+
 type SearchItem = {
   id: string;
   nombre: string;
@@ -54,6 +111,7 @@ type SearchItem = {
   coverage_keys: string[] | null;
   coverage_labels: string[] | null;
   bucket: "exacta" | "cobertura_comuna" | "regional" | "nacional" | "general" | null;
+  score: number;
 };
 
 function resolveBucket(item: {
@@ -104,10 +162,12 @@ export async function GET(req: Request) {
     const comunaNorm = norm(comuna);
     const categoriaNorm = norm(categoria);
     const subcategoriaNorm = norm(subcategoria);
+    const expandedTerms = expandQueryTerms(qNorm);
 
     console.log("BUSCAR_PARAMS", {
       q,
       qNorm,
+      expandedTerms,
       comuna,
       comunaNorm,
       categoria,
@@ -156,7 +216,12 @@ export async function GET(req: Request) {
       query = query.eq("subcategoria_slug", subcategoriaNorm);
     }
 
-    const res = await query.range(offset, offset + limit - 1);
+    // Cuando viene `comuna`, evitamos paginar "temprano" en SQL.
+    // Traemos una ventana amplia y luego aplicamos `slice` después de filtrar/ordenar en memoria.
+    const fetchFrom = comunaNorm ? 0 : offset;
+    const fetchTo = comunaNorm ? 499 : offset + limit - 1;
+
+    const res = await query.range(fetchFrom, fetchTo);
 
     console.log("BUSCAR_RESULT", {
       error: res.error,
@@ -187,8 +252,10 @@ export async function GET(req: Request) {
           )
         : null;
 
-      return {
-        id: s(r.id),
+      const id = s(r.id);
+
+      const item: SearchItem = {
+        id,
         nombre: s(r.nombre) || "Emprendimiento",
         descripcion_corta: r.descripcion_corta ?? null,
         descripcion_larga: r.descripcion_larga ?? null,
@@ -207,7 +274,11 @@ export async function GET(req: Request) {
         coverage_keys: Array.isArray(r.coverage_keys) ? r.coverage_keys : null,
         coverage_labels: Array.isArray(r.coverage_labels) ? r.coverage_labels : null,
         bucket,
+        score: 0,
       };
+
+      item.score = getSearchScore(item, qNorm, expandedTerms);
+      return item;
     });
 
     if (comunaNorm) {
@@ -232,6 +303,8 @@ export async function GET(req: Request) {
       const diff = bucketOrder[aBucket] - bucketOrder[bBucket];
       if (diff !== 0) return diff;
 
+      if (a.score !== b.score) return b.score - a.score;
+
       // Rotación justa dentro de cada bloque usando semilla de 5 minutos
       const aKey = stableRotationKey(a.id, seed);
       const bKey = stableRotationKey(b.id, seed);
@@ -239,6 +312,13 @@ export async function GET(req: Request) {
 
       return 0;
     });
+
+    const totalAfterTerritorialFilter = comunaNorm ? items.length : null;
+
+    // Aplicar paginación final solo cuando viene comuna
+    if (comunaNorm) {
+      items = items.slice(offset, offset + limit);
+    }
 
     console.log("BUSCAR_BUCKETS", {
       exacta: items.filter((i) => i.bucket === "exacta").length,
@@ -250,7 +330,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      total: items.length,
+      total: totalAfterTerritorialFilter ?? items.length,
       items,
     });
   } catch (error) {

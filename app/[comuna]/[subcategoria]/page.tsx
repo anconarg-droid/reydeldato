@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import BuscarClient from "@/app/buscar/BuscarClient";
-import ComunaEnPreparacion from "@/components/ComunaEnPreparacion";
 
 type PageProps = {
   params: Promise<{ comuna: string; subcategoria: string }>;
@@ -57,9 +56,9 @@ export default async function ComunaSubcategoriaPage({ params }: PageProps) {
   const supabase = createSupabaseServerClient();
 
   const [
-    { data: activaRow },
-    { data: resumenRow },
     { data: comunaRow },
+    { data: activaRow },
+    { data: subcategoriaRow },
   ] = await Promise.all([
     supabase
       .from("comunas_activas")
@@ -67,27 +66,28 @@ export default async function ComunaSubcategoriaPage({ params }: PageProps) {
       .eq("comuna_slug", comuna)
       .maybeSingle(),
     supabase
-      .from("vw_comunas_por_abrir")
-      .select("comuna_slug, comuna_nombre, total_emprendedores, faltan_emprendedores_meta")
-      .eq("comuna_slug", comuna)
-      .maybeSingle(),
-    supabase
       .from("comunas")
       .select("slug, nombre")
       .eq("slug", comuna)
       .maybeSingle(),
+    supabase
+      .from("subcategorias")
+      .select("slug")
+      .eq("slug", subcategoria)
+      .maybeSingle(),
   ]);
+
+  if (!comunaRow || !subcategoriaRow) {
+    notFound();
+  }
 
   const comunaNombre =
     s(activaRow?.comuna_nombre) ||
-    s((resumenRow as any)?.comuna_nombre) ||
-    s((comunaRow as any)?.nombre) ||
+    s(comunaRow.nombre) ||
     comuna.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  const activa = activaRow?.activa === true;
 
-  if (!activaRow && !resumenRow && !comunaRow) {
-    notFound();
-  }
+  // Regla final: gate solo por `comunas_activas.activa`
+  const activa = activaRow?.activa === true;
 
   if (activa) {
     return (
@@ -101,22 +101,4 @@ export default async function ComunaSubcategoriaPage({ params }: PageProps) {
 
   // Regla final: comuna no abierta => llevar directo a la página de apertura.
   return redirect(`/abrir-comuna/${comuna}`);
-
-  const total = Number((resumenRow as any)?.total_emprendedores) || 0;
-  const faltan = Number((resumenRow as any)?.faltan_emprendedores_meta) || 40;
-  const progreso = [
-    { nombre: "Emprendimientos", actual: total, meta: Math.max(total + 1, total + faltan) },
-  ];
-
-  return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <ComunaEnPreparacion
-          comunaSlug={comuna}
-          comunaNombre={comunaNombre}
-          progreso={progreso}
-        />
-      </div>
-    </main>
-  );
 }

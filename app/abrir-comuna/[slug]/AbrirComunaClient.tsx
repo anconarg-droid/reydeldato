@@ -1,26 +1,40 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import ComunaEnPreparacion from "@/components/ComunaEnPreparacion";
 
-type CategoriaEstado = {
-  categoria_id?: string | null;
-  categoria_nombre: string;
-  categoria_slug?: string | null;
-  total_inscritos: number;
-  categoria_cubierta: boolean;
+type RubroItem = {
+  rubro?: string | null;
+  nombre?: string | null;
+  subcategoria_slug?: string | null;
+  subcategoria_nombre?: string | null;
+  faltan?: number | null;
+  faltan_minimo?: number | null;
+  peso?: number | null;
+  objetivo?: number | null;
+  minimo?: number | null;
+  nivel?: number | null;
+  prioridad?: string | null;
 };
 
 type AbrirComunaData = {
   comuna_slug: string;
   comuna_nombre: string;
   region_nombre?: string | null;
-  avance_porcentaje: number;
-  total_emprendedores: number;
-  categorias_totales: number;
-  categorias_cubiertas: number;
-  categorias_faltantes: number;
-  estado: string;
-  categorias?: CategoriaEstado[];
+  porcentaje_apertura?: number;
+  se_puede_abrir?: boolean | null;
+  estado_apertura?: string | null;
+  estado_apertura_simple?: string | null;
+  mensaje_apertura?: string | null;
+  rubros_faltantes?: RubroItem[] | null;
+  rubros_detalle?: RubroItem[] | null;
+  // compat con data anterior (si existe en tu vista)
+  avance_porcentaje?: number;
+  total_emprendedores?: number;
+  categorias_totales?: number;
+  categorias_cubiertas?: number;
+  categorias_faltantes?: number;
 };
 
 function getEstadoVisual(estado?: string) {
@@ -77,327 +91,353 @@ export default function AbrirComunaClient({
       </div>
     );
   }
-  const [copiado, setCopiado] = useState(false);
+
+  const estadoParaBadge =
+    data.estado_apertura_simple || data.estado_apertura || "sin_movimiento";
 
   const estadoVisual = useMemo(
-  () => getEstadoVisual(data?.estado || "sin_movimiento"),
-  [data?.estado]
-);
+    () => getEstadoVisual(estadoParaBadge || "sin_movimiento"),
+    [estadoParaBadge]
+  );
 
-  const shareText = useMemo(() => {
-    return `Ayúdanos a activar ${data.comuna_nombre} en Rey del Dato. Revisa el avance y comparte esta página.`;
-  }, [data.comuna_nombre]);
+  const porcentaje = Number(data.porcentaje_apertura ?? data.avance_porcentaje ?? 0) || 0;
+  const porcentajeClamped = Math.max(0, Math.min(100, porcentaje));
 
-  const compartir = useCallback(async () => {
-    if (typeof window === "undefined") return;
+  const heroMessage = useMemo(() => {
+    if (data.mensaje_apertura) return data.mensaje_apertura;
+    if (data.se_puede_abrir === true) {
+      return `Ya estás muy cerca de abrir Rey del Dato en ${data.comuna_nombre}. Publica o recomienda un negocio para completar los rubros que faltan.`;
+    }
+    if (data.estado_apertura_simple === "sin_cobertura") {
+      return `Aún no abrimos Rey del Dato en ${data.comuna_nombre}. Necesitamos emprendimientos en los rubros faltantes para empezar.`;
+    }
+    if (data.estado_apertura_simple === "en_apertura") {
+      return `Rey del Dato se está preparando para abrir en ${data.comuna_nombre}. Completa los rubros faltantes para lograr la apertura.`;
+    }
+    return `Revisa el avance de apertura en ${data.comuna_nombre} y ayúdanos con los rubros faltantes.`;
+  }, [data.comuna_nombre, data.estado_apertura_simple, data.mensaje_apertura, data.se_puede_abrir]);
 
-    const url = window.location.href;
+  const normalizeRubro = useCallback((r: RubroItem) => {
+    // Shape nueva que pediste para `rubros_faltantes`:
+    // { rubro: string, faltan: number, peso: number }
+    if (typeof r.rubro === "string" && r.rubro.trim()) {
+      const subcategoria_slug = r.rubro;
+      const subcategoria_nombre = r.nombre ?? r.rubro;
+      const faltan = Number(r.faltan ?? 0) || 0;
+      const peso = Number(r.peso ?? 0) || 0;
+      return {
+        subcategoria_slug,
+        subcategoria_nombre,
+        faltan,
+        peso,
+        nivel: r.nivel,
+        prioridad: r.prioridad,
+      };
+    }
 
+    const subcategoria_slug =
+      r.subcategoria_slug ?? (r as any).subcategoriaSlug ?? (r as any).slug ?? null;
+    const subcategoria_nombre =
+      r.subcategoria_nombre ?? r.nombre ?? (r as any).subcategoriaNombre ?? null;
+    const faltan =
+      Number(r.faltan_minimo ?? r.faltan ?? (r as any).faltanMinimo ?? 0) || 0;
+    const pesoRaw =
+      r.peso ??
+      r.objetivo ??
+      r.minimo ??
+      (typeof r.nivel === "number" ? (r.nivel === 1 ? 100000 : 1000) : null) ??
+      0;
+    const peso = Number(pesoRaw) || 0;
+    return { subcategoria_slug, subcategoria_nombre, faltan, peso, nivel: r.nivel, prioridad: r.prioridad };
+  }, []);
+
+  const rubrosFaltantes = useMemo(() => {
+    const list = (data.rubros_faltantes ?? []) as RubroItem[];
+    return list
+      .map(normalizeRubro)
+      .filter((x) => x.faltan > 0)
+      .sort((a, b) => b.peso - a.peso);
+  }, [data.rubros_faltantes, normalizeRubro]);
+
+  const rubrosCubiertos = useMemo(() => {
+    const list = (data.rubros_detalle ?? []) as RubroItem[];
+    if (!Array.isArray(list) || list.length === 0) return [];
+    return list
+      .map(normalizeRubro)
+      .filter((x) => x.faltan <= 0)
+      .sort((a, b) => b.peso - a.peso);
+  }, [data.rubros_detalle, normalizeRubro]);
+
+  const [prefillRubroSlug, setPrefillRubroSlug] = useState<string | null>(null);
+  const [prefillRubroLabel, setPrefillRubroLabel] = useState<string | null>(null);
+  const recommendationFormId = "abrir-comuna-form-recomendar";
+
+  const scrollToRecommendationForm = useCallback(() => {
+    const el = document.getElementById(recommendationFormId);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleRecomendar = useCallback(
+    (rubroSlug: string, rubroLabel?: string) => {
+      setPrefillRubroSlug(rubroSlug);
+      setPrefillRubroLabel(rubroLabel ?? null);
+      scrollToRecommendationForm();
+    },
+    [scrollToRecommendationForm]
+  );
+
+  // Formulario "avísame cuando abra"
+  const [contacto, setContacto] = useState("");
+  const [sendingAviso, setSendingAviso] = useState(false);
+  const [doneAviso, setDoneAviso] = useState(false);
+  const [errorAviso, setErrorAviso] = useState("");
+
+  const submitAviso = useCallback(async () => {
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `Abrir ${data.comuna_nombre} en Rey del Dato`,
-          text: shareText,
-          url,
-        });
+      setSendingAviso(true);
+      setErrorAviso("");
+      setDoneAviso(false);
+      const res = await fetch("/api/abrir-comuna/vecino", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          comuna_slug: data.comuna_slug,
+          comuna_nombre: data.comuna_nombre,
+          contacto,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.ok) {
+        setErrorAviso(json?.error || "No se pudo enviar.");
         return;
       }
-
-      await navigator.clipboard.writeText(url);
-      setCopiado(true);
-
-      setTimeout(() => {
-        setCopiado(false);
-      }, 1800);
-    } catch (error) {
-      console.error("Error compartiendo:", error);
+      setDoneAviso(true);
+    } catch (e) {
+      setErrorAviso("No se pudo enviar.");
+    } finally {
+      setSendingAviso(false);
     }
-  }, [data.comuna_nombre, shareText]);
-
-  const categorias = data.categorias || [];
+  }, [contacto, data.comuna_nombre, data.comuna_slug]);
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#f8fafc",
-      }}
-    >
-      <section
-        style={{
-          maxWidth: 980,
-          margin: "0 auto",
-          padding: "36px 20px 60px",
-        }}
-      >
-        <div
-          style={{
-            marginBottom: 24,
-          }}
-        >
+    <main className="min-h-screen bg-slate-50">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        {/* 1) Hero superior */}
+        <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
           <div
+            className="inline-flex items-center gap-2 border rounded-full px-3 py-1 mb-4"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              border: `1px solid ${estadoVisual.border}`,
+              borderColor: estadoVisual.border,
               background: estadoVisual.bg,
               color: estadoVisual.color,
-              borderRadius: 999,
-              padding: "8px 12px",
-              fontWeight: 800,
-              fontSize: 14,
-              marginBottom: 14,
             }}
           >
             <span>{estadoVisual.emoji}</span>
-            <span>{estadoVisual.label}</span>
+            <span className="text-xs sm:text-sm font-extrabold">{estadoVisual.label}</span>
           </div>
 
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 42,
-              fontWeight: 900,
-              lineHeight: 1.05,
-              color: "#111827",
-            }}
-          >
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900">
             Abramos {data.comuna_nombre}
           </h1>
 
-          <p
-            style={{
-              margin: "12px 0 0",
-              color: "#4b5563",
-              fontSize: 17,
-              lineHeight: 1.7,
-              maxWidth: 760,
-            }}
-          >
-            Rey del Dato todavía no está completamente activo en{" "}
-            <strong>{data.comuna_nombre}</strong>
-            {data.region_nombre ? `, ${data.region_nombre}` : ""}. Aquí puedes
-            ver el avance real de la comuna y compartir esta página para moverla
-            más rápido.
-          </p>
-        </div>
-
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, minmax(0,1fr))",
-            gap: 14,
-            marginBottom: 26,
-          }}
-        >
-          <div style={metricCardStyle}>
-            <div style={metricNumberStyle}>{data.avance_porcentaje}%</div>
-            <div style={metricLabelStyle}>Avance total</div>
-          </div>
-
-          <div style={metricCardStyle}>
-            <div style={metricNumberStyle}>{data.categorias_cubiertas}</div>
-            <div style={metricLabelStyle}>Categorías cubiertas</div>
-          </div>
-
-          <div style={metricCardStyle}>
-            <div style={metricNumberStyle}>{data.categorias_faltantes}</div>
-            <div style={metricLabelStyle}>Categorías faltantes</div>
-          </div>
-
-          <div style={metricCardStyle}>
-            <div style={metricNumberStyle}>{data.total_emprendedores}</div>
-            <div style={metricLabelStyle}>Emprendimientos</div>
-          </div>
-        </section>
-
-        <section
-          style={{
-            border: "1px solid #e5e7eb",
-            borderRadius: 22,
-            background: "#fff",
-            padding: 20,
-            marginBottom: 26,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "end",
-              gap: 16,
-              flexWrap: "wrap",
-              marginBottom: 14,
-            }}
-          >
-            <div>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: 28,
-                  fontWeight: 900,
-                  color: "#111827",
-                }}
-              >
-                Progreso de la comuna
-              </h2>
-
-              <p
-                style={{
-                  margin: "8px 0 0",
-                  color: "#6b7280",
-                  fontSize: 15,
-                }}
-              >
-                {data.categorias_cubiertas} de {data.categorias_totales}{" "}
-                categorías ya tienen movimiento.
-              </p>
+          <div className="mt-4">
+            <div className="flex items-end gap-2">
+              <div className="text-4xl sm:text-5xl font-black text-slate-900 tabular-nums">
+                {porcentajeClamped}%
+              </div>
+              <div className="pb-1 text-sm sm:text-base font-semibold text-slate-600">
+                de progreso de apertura
+              </div>
             </div>
 
-            <button
-              onClick={compartir}
-              type="button"
-              style={{
-                border: "none",
-                background: "#22c55e",
-                color: "#fff",
-                borderRadius: 12,
-                padding: "12px 18px",
-                fontWeight: 800,
-                cursor: "pointer",
-              }}
-            >
-              {copiado ? "Link copiado" : "Compartir esta comuna"}
-            </button>
-          </div>
+            <div className="mt-3 h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-slate-900"
+                style={{ width: `${porcentajeClamped}%` }}
+              />
+            </div>
 
-          <div
-            style={{
-              width: "100%",
-              height: 14,
-              borderRadius: 999,
-              background: "#e5e7eb",
-              overflow: "hidden",
-              marginBottom: 10,
-            }}
-          >
-            <div
-              style={{
-                width: `${Math.max(0, Math.min(100, data.avance_porcentaje || 0))}%`,
-                height: "100%",
-                background: "#111827",
-                borderRadius: 999,
-              }}
-            />
-          </div>
-
-          <div
-            style={{
-              fontSize: 14,
-              color: "#4b5563",
-            }}
-          >
-            Avance actual: <strong>{data.avance_porcentaje}%</strong>
+            <p className="mt-3 text-slate-600 leading-relaxed">{heroMessage}</p>
           </div>
         </section>
 
-        <section
-          style={{
-            border: "1px solid #e5e7eb",
-            borderRadius: 22,
-            background: "#fff",
-            padding: 20,
-          }}
-        >
-          <h2
-            style={{
-              margin: "0 0 14px",
-              fontSize: 28,
-              fontWeight: 900,
-              color: "#111827",
-            }}
-          >
-            Estado por categoría
+        {/* 2) Qué significa abrir una comuna */}
+        <section className="mt-5 sm:mt-7">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+            ¿Qué significa abrir una comuna?
+          </h2>
+          <p className="mt-2 text-sm sm:text-base text-slate-600 leading-relaxed">
+            Abrir Rey del Dato en tu comuna significa que ya reunimos suficientes emprendimientos
+            de los rubros clave. Mientras no está activa, te mostramos exactamente qué rubros faltan
+            para que la comuna pueda abrir. Tu acción cuenta: publicar o recomendar mueve la apertura.
+          </p>
+        </section>
+
+        {/* 3) Rubros faltantes */}
+        <section className="mt-6 sm:mt-8">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+            Rubros faltantes (ordenados por prioridad)
           </h2>
 
-          <div style={{ display: "grid", gap: 12 }}>
-            {categorias.map((item, index) => {
-              const completa = item.categoria_cubierta;
-
-              return (
-                <div
-                  key={`${item.categoria_slug || item.categoria_nombre}-${index}`}
-                  style={{
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 16,
-                    padding: 14,
-                    background: completa ? "#f0fdf4" : "#fafafa",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 16,
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontWeight: 900,
-                        color: "#111827",
-                        fontSize: 17,
-                      }}
-                    >
-                      {item.categoria_nombre}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 14,
-                        color: "#6b7280",
-                      }}
-                    >
-                      {item.total_inscritos} emprendimiento
-                      {item.total_inscritos === 1 ? "" : "s"}
-                    </div>
-                  </div>
-
+          <div className="mt-3 grid gap-3">
+            {rubrosFaltantes.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-sm text-slate-600">
+                  No hay rubros faltantes en este momento. Revisa los rubros cubiertos abajo.
+                </p>
+              </div>
+            ) : (
+              rubrosFaltantes.map((r) => {
+                const nombre = r.subcategoria_nombre || "Rubro";
+                const slug = r.subcategoria_slug;
+                return (
                   <div
-                    style={{
-                      minWidth: 120,
-                      textAlign: "right",
-                      fontWeight: 900,
-                      color: completa ? "#166534" : "#92400e",
-                    }}
+                    key={`${slug}-${nombre}`}
+                    className="rounded-2xl border border-slate-200 bg-white p-4"
                   >
-                    {completa ? "✅ Cubierta" : "⏳ Falta mover"}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-extrabold text-slate-900 truncate">{nombre}</div>
+                        <div className="mt-1 text-sm text-slate-600">
+                          Faltan <span className="font-extrabold tabular-nums text-slate-900">{r.faltan}</span>
+                        </div>
+                      </div>
+
+                      {typeof r.nivel === "number" && (r.nivel === 1 || r.nivel === 2) ? (
+                        <div className="text-xs font-extrabold px-2 py-1 rounded-full bg-slate-100 text-slate-700 whitespace-nowrap">
+                          Nivel {r.nivel}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Link
+                        href={
+                          slug
+                            ? `/publicar?comuna=${encodeURIComponent(data.comuna_slug)}&subcategoria=${encodeURIComponent(slug)}`
+                            : `/publicar?comuna=${encodeURIComponent(data.comuna_slug)}`
+                        }
+                        className="inline-flex items-center justify-center rounded-xl px-4 h-11 bg-slate-900 text-white font-semibold text-sm hover:bg-slate-800 transition"
+                      >
+                        Publicar como {nombre}
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRecomendar(r.subcategoria_slug ?? "", nombre)}
+                        className="inline-flex items-center justify-center rounded-xl px-4 h-11 border border-slate-300 bg-white text-slate-900 font-semibold text-sm hover:bg-slate-50 transition"
+                      >
+                        Recomendar {nombre}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </section>
-      </section>
+
+        {/* 4) CTA doble */}
+        <section className="mt-6 sm:mt-7">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Link
+              href={`/publicar?comuna=${encodeURIComponent(data.comuna_slug)}`}
+              className="inline-flex items-center justify-center rounded-2xl px-5 h-12 bg-slate-900 text-white font-extrabold hover:bg-slate-800 transition"
+            >
+              Publicar mi emprendimiento
+            </Link>
+            <button
+              type="button"
+              onClick={scrollToRecommendationForm}
+              className="inline-flex items-center justify-center rounded-2xl px-5 h-12 border border-slate-300 bg-white text-slate-900 font-extrabold hover:bg-slate-50 transition"
+            >
+              Recomendar emprendedor
+            </button>
+          </div>
+        </section>
+
+        {/* 5) Formulario de recomendación simple */}
+        <section id={recommendationFormId} className="mt-6 sm:mt-7">
+          <ComunaEnPreparacion
+            comunaSlug={data.comuna_slug}
+            comunaNombre={data.comuna_nombre}
+            progreso={[]}
+            mostrarProgreso={false}
+            prefillRubro={prefillRubroSlug}
+            prefillRubroLabel={prefillRubroLabel}
+            mostrarPublicarLink={false}
+          />
+        </section>
+
+        {/* 6) Formulario avísame cuando abra esta comuna */}
+        <section className="mt-6 sm:mt-7">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
+            <h2 className="text-xl font-extrabold text-slate-900">
+              Avísame cuando abra esta comuna
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+              Déjanos un WhatsApp o un email y te avisaremos cuando Rey del Dato esté activo en {data.comuna_nombre}.
+            </p>
+
+            {doneAviso ? (
+              <div className="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold">
+                ¡Listo! Te avisaremos cuando abra.
+              </div>
+            ) : (
+              <div className="mt-4 grid gap-3">
+                <input
+                  value={contacto}
+                  onChange={(e) => setContacto(e.target.value)}
+                  placeholder="WhatsApp o email"
+                  className="h-11 px-3 rounded-xl border border-slate-300"
+                />
+
+                {errorAviso ? (
+                  <div className="text-sm text-red-600 font-semibold">{errorAviso}</div>
+                ) : null}
+
+                <button
+                  type="button"
+                  disabled={sendingAviso}
+                  onClick={submitAviso}
+                  className="h-11 rounded-xl bg-slate-900 text-white font-extrabold hover:bg-slate-800 disabled:opacity-60 transition"
+                >
+                  {sendingAviso ? "Enviando..." : "Enviar"}
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* 7) Rubros ya cubiertos (colapsable) */}
+        <section className="mt-6 sm:mt-7">
+          <details>
+            <summary className="cursor-pointer font-extrabold text-slate-900">
+              Rubros ya cubiertos ({rubrosCubiertos.length})
+            </summary>
+            <div className="mt-3 grid gap-2">
+              {rubrosCubiertos.length === 0 ? (
+                <div className="text-sm text-slate-600">No hay rubros cubiertos para mostrar.</div>
+              ) : (
+                rubrosCubiertos.map((r) => {
+                  const nombre = r.subcategoria_nombre || "Rubro";
+                  return (
+                    <div
+                      key={`${r.subcategoria_slug}-${nombre}`}
+                      className="rounded-xl border border-slate-200 bg-white p-3 flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-extrabold text-slate-900 truncate">{nombre}</div>
+                      </div>
+                      <div className="font-extrabold text-emerald-700 whitespace-nowrap">✅ Cubierto</div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </details>
+        </section>
+      </div>
     </main>
   );
 }
-
-const metricCardStyle: React.CSSProperties = {
-  border: "1px solid #e5e7eb",
-  borderRadius: 18,
-  padding: 18,
-  background: "#fff",
-};
-
-const metricNumberStyle: React.CSSProperties = {
-  fontSize: 30,
-  fontWeight: 900,
-  color: "#111827",
-  lineHeight: 1,
-};
-
-const metricLabelStyle: React.CSSProperties = {
-  marginTop: 8,
-  fontSize: 14,
-  color: "#6b7280",
-};
