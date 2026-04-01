@@ -8,6 +8,7 @@ import type {
   Region,
   Subcategoria,
 } from "./PublicarClient";
+import { MIN_DESCRIPCION_NEGOCIO } from "./PublicarClient";
 
 export default function PasoVistaPrevia({
   form,
@@ -18,6 +19,7 @@ export default function PasoVistaPrevia({
   prevStep,
   submitForm,
   saving,
+  mode = "advanced",
 }: {
   form: FormData;
   categorias: Categoria[];
@@ -27,6 +29,7 @@ export default function PasoVistaPrevia({
   prevStep: () => void;
   submitForm: () => void;
   saving: boolean;
+  mode?: "simple" | "advanced";
 }) {
   const categoria = useMemo(() => {
     return categorias.find((c) => c.slug === form.categoriaSlug) || null;
@@ -90,11 +93,15 @@ export default function PasoVistaPrevia({
     }
 
     if (form.coberturaTipo === "varias_comunas") {
-      return comunasCoberturaNombres.join(" · ");
+      return comunasCoberturaNombres.length
+        ? comunasCoberturaNombres.join(" · ")
+        : "Varias comunas";
     }
 
-    if (form.coberturaTipo === "regional") {
-      return regionesCoberturaNombres.join(" · ");
+    if (form.coberturaTipo === "varias_regiones") {
+      return regionesCoberturaNombres.length
+        ? regionesCoberturaNombres.join(" · ")
+        : "Varias regiones";
     }
 
     if (form.coberturaTipo === "nacional") {
@@ -109,12 +116,67 @@ export default function PasoVistaPrevia({
     regionesCoberturaNombres,
   ]);
 
+  const descripcionValida =
+    form.descripcionNegocio.trim().length >= MIN_DESCRIPCION_NEGOCIO;
+  const fotoValida = !!form.fotoPrincipal;
+  const comunaValida = !!form.comunaBase;
+  const coberturaValida = !!form.coberturaTipo;
+  const modalidadesValidas = form.modalidades.length > 0;
+
+  const puedeEnviar =
+    descripcionValida &&
+    fotoValida &&
+    comunaValida &&
+    coberturaValida &&
+    modalidadesValidas;
+
+  const faltantes: string[] = [];
+  if (!descripcionValida) {
+    faltantes.push(
+      `Descripción mínima (${MIN_DESCRIPCION_NEGOCIO - form.descripcionNegocio.trim().length} caracteres faltantes)`
+    );
+  }
+  if (!fotoValida) faltantes.push("Foto principal");
+  if (!comunaValida) faltantes.push("Comuna base");
+  if (!coberturaValida) faltantes.push("Cobertura");
+  if (!modalidadesValidas) faltantes.push("Cómo atiendes a tus clientes");
+
   return (
     <div style={cardStyle}>
-      <h2 style={sectionTitle}>Vista previa</h2>
+      <h2 style={sectionTitle}>
+        {mode === "advanced" ? "Revisa y guarda tu ficha" : "Vista previa"}
+      </h2>
 
       <div style={infoBoxStyle}>
-        Revisa cómo se verá tu emprendimiento antes de enviarlo para revisión.
+        {mode === "advanced"
+          ? "Aquí puedes revisar cómo se ve tu ficha antes de guardar los cambios."
+          : "Aquí revisas cómo se verá tu emprendimiento antes de enviarlo a revisión."}
+      </div>
+
+      <div style={puedeEnviar ? checklistOkBoxStyle : checklistWarnBoxStyle}>
+        <div style={checklistTitleStyle}>
+          {mode === "advanced"
+            ? puedeEnviar
+              ? "Ya puedes guardar los cambios"
+              : "Antes de guardar te falta completar:"
+            : puedeEnviar
+              ? "Ya puedes enviar tu emprendimiento"
+              : "Antes de enviar te falta completar:"}
+        </div>
+
+        {puedeEnviar ? (
+          <div style={checklistTextStyle}>
+            {mode === "advanced"
+              ? "Ya completaste lo necesario para guardar una versión más completa de tu ficha."
+              : "Ya completaste lo mínimo para mandar tu ficha a revisión."}
+          </div>
+        ) : (
+          <ul style={checklistListStyle}>
+            {faltantes.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div style={previewGridStyle}>
@@ -124,7 +186,11 @@ export default function PasoVistaPrevia({
           <article style={searchCardStyle}>
             <div style={imageMockStyle}>
               {fotoPrincipalUrl ? (
-                <img src={fotoPrincipalUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img
+                  src={fotoPrincipalUrl}
+                  alt=""
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
               ) : (
                 "Foto principal"
               )}
@@ -134,8 +200,9 @@ export default function PasoVistaPrevia({
               <div style={badgeStyle}>
                 {comunaBase ? `📍 ${comunaBase.nombre}` : "📍 Tu comuna"}
               </div>
+
               {coberturaTexto ? (
-                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
+                <div style={smallMetaStyle}>
                   También atiende en: {coberturaTexto}
                 </div>
               ) : null}
@@ -149,6 +216,7 @@ export default function PasoVistaPrevia({
                   {categoria ? (
                     <div style={metaStyle}>{categoria.nombre}</div>
                   ) : null}
+
                   {subcategoriasSeleccionadas.length ? (
                     <div style={chipsWrapStyle}>
                       {subcategoriasSeleccionadas.slice(0, 3).map((sub) => (
@@ -160,15 +228,21 @@ export default function PasoVistaPrevia({
                   ) : null}
                 </>
               ) : (
-                <div style={metaStyle}>Categoría: en revisión</div>
+                <div style={metaStyle}>Categoría: en revisión automática</div>
               )}
 
               {modalidadesTexto.length > 0 ? (
-                <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 8 }}>
+                <div style={modalidadesInlineStyle}>
                   {form.modalidades.map((m) => {
-                    if (m === "local") return <span key={m}>🏪 Local físico </span>;
-                    if (m === "presencial") return <span key={m}>🚚 Atención a domicilio </span>;
-                    if (m === "online") return <span key={m}>💻 Online </span>;
+                    if (m === "local") {
+                      return <span key={m}>🏪 Local físico </span>;
+                    }
+                    if (m === "presencial") {
+                      return <span key={m}>🚚 Atención a domicilio </span>;
+                    }
+                    if (m === "online") {
+                      return <span key={m}>💻 Online </span>;
+                    }
                     return null;
                   })}
                 </div>
@@ -194,7 +268,11 @@ export default function PasoVistaPrevia({
           <section style={detailCardStyle}>
             <div style={heroImageMockStyle}>
               {fotoPrincipalUrl ? (
-                <img src={fotoPrincipalUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img
+                  src={fotoPrincipalUrl}
+                  alt=""
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
               ) : (
                 "Foto principal"
               )}
@@ -204,31 +282,32 @@ export default function PasoVistaPrevia({
               <h3 style={detailTitleStyle}>
                 {form.nombre || "Nombre de tu emprendimiento"}
               </h3>
+
               {form.fraseNegocio.trim() ? (
-                <p style={{ fontSize: 15, color: "#4b5563", fontWeight: 600, marginBottom: 12 }}>
-                  {form.fraseNegocio.trim()}
-                </p>
+                <p style={fraseStyle}>{form.fraseNegocio.trim()}</p>
               ) : null}
 
               <div style={detailMetaWrapStyle}>
                 {comunaBase ? (
                   <span style={detailMetaItemStyle}>📍 {comunaBase.nombre}</span>
-                ) : null}
+                ) : (
+                  <span style={detailMetaItemMutedStyle}>Comuna pendiente</span>
+                )}
 
                 {categoria ? (
                   <span style={detailMetaItemStyle}>{categoria.nombre}</span>
                 ) : (
-                  <span style={detailMetaItemStyle}>Categoría: en revisión</span>
+                  <span style={detailMetaItemMutedStyle}>
+                    Categoría en revisión automática
+                  </span>
                 )}
               </div>
 
               <div style={ctaRowStyle}>
                 <span style={greenFakeButtonStyle}>WhatsApp</span>
-
                 {form.instagram ? (
                   <span style={lightFakeButtonStyle}>Instagram</span>
                 ) : null}
-
                 {form.web ? (
                   <span style={lightFakeButtonStyle}>Sitio web</span>
                 ) : null}
@@ -239,13 +318,16 @@ export default function PasoVistaPrevia({
                 <p style={sectionPreviewTextStyle}>
                   {form.fraseNegocio.trim() ? (
                     <>
-                      <span style={{ fontWeight: 700 }}>{form.fraseNegocio.trim()}</span>
+                      <span style={{ fontWeight: 700 }}>
+                        {form.fraseNegocio.trim()}
+                      </span>
                       <br />
                       <br />
                       {form.descripcionNegocio.trim() || "—"}
                     </>
                   ) : (
-                    form.descripcionNegocio.trim() || "Aquí aparecerá la descripción de tu emprendimiento."
+                    form.descripcionNegocio.trim() ||
+                    "Aquí aparecerá la descripción de tu emprendimiento."
                   )}
                 </p>
               </div>
@@ -265,10 +347,14 @@ export default function PasoVistaPrevia({
                   <div style={sectionPreviewTextStyle}>
                     {form.locales!.map((loc, i) => {
                       const comuna = comunas.find((c) => c.slug === loc.comuna_slug);
-                      const comunaNombre = (comuna?.nombre ?? loc.comuna_slug) || "";
+                      const comunaNombre =
+                        (comuna?.nombre ?? loc.comuna_slug) || "";
+
                       return (
                         <p key={i} style={{ marginBottom: 6 }}>
-                          📍 {loc.direccion.trim() || "—"} {comunaNombre ? `– ${comunaNombre}` : ""}
+                          📍 {loc.direccion.trim() || "—"}
+                          {comunaNombre ? ` – ${comunaNombre}` : ""}
+                          {loc.es_principal ? " (principal)" : ""}
                         </p>
                       );
                     })}
@@ -295,7 +381,16 @@ export default function PasoVistaPrevia({
                   <div style={galleryMockGridStyle}>
                     {galeriaUrls.map((url, i) => (
                       <div key={i} style={galleryItemMockStyle}>
-                        <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 10 }} />
+                        <img
+                          src={url}
+                          alt=""
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            borderRadius: 10,
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -308,23 +403,33 @@ export default function PasoVistaPrevia({
 
       <div style={footerStyle}>
         <p style={submitMessageStyle}>
-          Revisaremos tu emprendimiento antes de publicarlo para asegurar que la información sea clara y útil.
+          Revisaremos tu emprendimiento antes de publicarlo para asegurar que la
+          información sea clara y útil para quienes busquen en su comuna.
         </p>
+
         <div style={footerButtonsWrapStyle}>
           <button type="button" onClick={prevStep} style={secondaryButtonStyle}>
             Volver
           </button>
+
           <button
             type="button"
             onClick={submitForm}
-            disabled={saving}
+            disabled={saving || !puedeEnviar}
             style={{
               ...primaryButtonStyle,
-              opacity: saving ? 0.6 : 1,
-              cursor: saving ? "not-allowed" : "pointer",
+              opacity: saving || !puedeEnviar ? 0.55 : 1,
+              cursor:
+                saving || !puedeEnviar ? "not-allowed" : "pointer",
             }}
           >
-            {saving ? "Enviando..." : "Enviar para revisión"}
+            {saving
+              ? mode === "advanced"
+                ? "Guardando..."
+                : "Enviando..."
+              : mode === "advanced"
+                ? "Guardar cambios"
+                : "Enviar para revisión"}
           </button>
         </div>
       </div>
@@ -357,6 +462,42 @@ const infoBoxStyle: React.CSSProperties = {
   padding: 14,
   fontSize: 14,
   lineHeight: 1.55,
+};
+
+const checklistWarnBoxStyle: React.CSSProperties = {
+  marginBottom: 18,
+  background: "#fff7ed",
+  border: "1px solid #fdba74",
+  color: "#9a3412",
+  borderRadius: 14,
+  padding: 14,
+};
+
+const checklistOkBoxStyle: React.CSSProperties = {
+  marginBottom: 18,
+  background: "#ecfdf5",
+  border: "1px solid #86efac",
+  color: "#166534",
+  borderRadius: 14,
+  padding: 14,
+};
+
+const checklistTitleStyle: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 900,
+  marginBottom: 8,
+};
+
+const checklistTextStyle: React.CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.5,
+};
+
+const checklistListStyle: React.CSSProperties = {
+  margin: 0,
+  paddingLeft: 18,
+  fontSize: 13,
+  lineHeight: 1.6,
 };
 
 const previewGridStyle: React.CSSProperties = {
@@ -405,6 +546,12 @@ const badgeStyle: React.CSSProperties = {
   marginBottom: 8,
 };
 
+const smallMetaStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: "#6b7280",
+  marginBottom: 6,
+};
+
 const cardTitleStyle: React.CSSProperties = {
   margin: "0 0 6px",
   fontSize: 24,
@@ -433,6 +580,12 @@ const chipStyle: React.CSSProperties = {
   borderRadius: 999,
   padding: "6px 10px",
   fontWeight: 700,
+};
+
+const modalidadesInlineStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: "#4b5563",
+  marginBottom: 8,
 };
 
 const descStyle: React.CSSProperties = {
@@ -517,6 +670,13 @@ const detailTitleStyle: React.CSSProperties = {
   color: "#111827",
 };
 
+const fraseStyle: React.CSSProperties = {
+  fontSize: 15,
+  color: "#4b5563",
+  fontWeight: 600,
+  marginBottom: 12,
+};
+
 const detailMetaWrapStyle: React.CSSProperties = {
   display: "flex",
   flexWrap: "wrap",
@@ -527,6 +687,12 @@ const detailMetaWrapStyle: React.CSSProperties = {
 const detailMetaItemStyle: React.CSSProperties = {
   fontSize: 14,
   color: "#4b5563",
+  fontWeight: 700,
+};
+
+const detailMetaItemMutedStyle: React.CSSProperties = {
+  fontSize: 14,
+  color: "#9ca3af",
   fontWeight: 700,
 };
 

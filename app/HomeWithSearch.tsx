@@ -30,8 +30,13 @@ type Hit = {
 
 type SearchResponse = {
   ok: boolean;
-  nbHits: number;
-  hits: Hit[];
+  total?: number;
+  nbHits?: number;
+  meta?: { comuna?: string; total?: number };
+  items?: Hit[];
+  hits?: Hit[];
+  deTuComuna?: Hit[];
+  otrasComunas?: Hit[];
   page?: number;
   nbPages?: number;
 };
@@ -114,18 +119,43 @@ export default function HomeWithSearch({ sugerencias, categorias }: Props) {
       .then((res) => res.json())
       .then((data: SearchResponse) => {
         if (data && typeof data === "object") {
-          const ok = (data as any).ok ?? false;
-          const items = Array.isArray((data as any).items)
-            ? (data as any).items
-            : Array.isArray((data as any).hits)
-              ? (data as any).hits
-              : [];
+          const ok = data.ok ?? false;
+          const hasItemsKey = Array.isArray(data.items);
+          const usedLegacyHits = !hasItemsKey && Array.isArray(data.hits);
+          const usedLegacySplit =
+            !hasItemsKey &&
+            (Array.isArray(data.deTuComuna) || Array.isArray(data.otrasComunas));
+
+          if (
+            process.env.NODE_ENV !== "production" &&
+            ok &&
+            !hasItemsKey &&
+            (usedLegacyHits || usedLegacySplit)
+          ) {
+            console.warn(
+              "[/api/buscar] respuesta sin `items`; usando fallback legacy",
+              {
+                usedLegacyHits,
+                usedLegacySplit,
+              }
+            );
+          }
+
+          const items = Array.isArray(data.items)
+            ? data.items
+            : Array.isArray(data.hits)
+              ? data.hits
+              : Array.isArray(data.deTuComuna) || Array.isArray(data.otrasComunas)
+                ? [...(data.deTuComuna ?? []), ...(data.otrasComunas ?? [])]
+                : [];
           const total =
-            typeof (data as any).total === "number"
-              ? (data as any).total
-              : typeof (data as any).nbHits === "number"
-                ? (data as any).nbHits
-                : items.length;
+            typeof data.meta?.total === "number"
+              ? data.meta.total
+              : typeof data.total === "number"
+                ? data.total
+                : typeof data.nbHits === "number"
+                  ? data.nbHits
+                  : items.length;
 
           if (ok) {
             setHits(items);

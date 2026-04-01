@@ -5,6 +5,8 @@
  * No usar clics/visitas como criterio principal (evitar efecto bola de nieve).
  */
 
+import { tieneFichaCompleta } from "@/lib/tieneFichaCompleta";
+
 function slugNorm(s: string): string {
   return String(s ?? "")
     .trim()
@@ -60,20 +62,19 @@ export function stableRotationKey(id: string, seed: number): number {
 
 export type ItemWithPlan = {
   plan_activo?: boolean | null;
+  plan_expira_at?: string | null;
   trial_expira_at?: string | null;
   trial_expira?: string | null;
 };
 
-/** Perfil completo = plan activo o trial vigente. */
+/** Perfil completo: misma regla que tarjeta, búsqueda y ficha pública. */
 export function isFullProfile(item: ItemWithPlan): boolean {
-  if (item.plan_activo === true) return true;
-  const expira = item.trial_expira_at ?? item.trial_expira ?? null;
-  if (!expira) return false;
-  try {
-    return new Date(expira).toISOString() > new Date().toISOString();
-  } catch {
-    return false;
-  }
+  return tieneFichaCompleta({
+    planActivo: item.plan_activo === true,
+    planExpiraAt: item.plan_expira_at ?? null,
+    trialExpiraAt: item.trial_expira_at ?? null,
+    trialExpira: item.trial_expira ?? null,
+  });
 }
 
 /**

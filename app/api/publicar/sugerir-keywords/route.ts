@@ -102,10 +102,11 @@ export async function POST(req: NextRequest) {
     }
 
     const raw = Array.isArray(parsed.keywords) ? parsed.keywords : [];
-    const keywords = [...new Set(raw.map((k) => normalizeKeyword(String(k))).filter(Boolean)].slice(
-      0,
-      SUGERIR_MAX
-    );
+    const keywords = [
+      ...new Set(
+        raw.map((k) => normalizeKeyword(String(k))).filter(Boolean)
+      ),
+    ].slice(0, SUGERIR_MAX);
 
     if (keywords.length < SUGERIR_MIN) {
       return NextResponse.json(

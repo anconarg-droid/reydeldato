@@ -11,6 +11,12 @@ export const ANALYTICS_EVENT_TYPES = [
   "page_view_comuna",
   "page_view_profile",
   "search_result_impression",
+  /** Clic en “Ver ficha / detalle” desde tarjeta de listado (no confundir con page_view_profile). */
+  "card_view_click",
+  /** Conversión real: borrador creado en /publicar */
+  "draft_created",
+  /** Inicio de publicación (CTA "Publica tu negocio"). */
+  "start_publicacion",
   "whatsapp_click",
   "instagram_click",
   "website_click",

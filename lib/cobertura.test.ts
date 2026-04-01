@@ -1,5 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { coberturaTexto, coberturaBadge } from "./cobertura";
+import { coberturaTexto, coberturaBadge, normalizeCoberturaTipoDb } from "./cobertura";
+
+describe("normalizeCoberturaTipoDb", () => {
+  it("mapea alias legacy al enum de DB", () => {
+    expect(normalizeCoberturaTipoDb("solo_mi_comuna")).toBe("solo_comuna");
+    expect(normalizeCoberturaTipoDb("regional")).toBe("varias_regiones");
+  });
+
+  it("deja valores ya alineados con DB", () => {
+    expect(normalizeCoberturaTipoDb("varias_comunas")).toBe("varias_comunas");
+    expect(normalizeCoberturaTipoDb("nacional")).toBe("nacional");
+  });
+});
 
 describe("coberturaTexto", () => {
   it("nacional devuelve texto de todo Chile", () => {

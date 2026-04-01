@@ -15,7 +15,10 @@ const badgeBase = {
 };
 
 /**
- * Badge reutilizable: "Con local en [comuna]", "En tu comuna" (base) o "Atiende [comuna]" (coverage).
+ * Badge reutilizable (copy estable):
+ * - Base exacta en la comuna buscada: "De tu comuna"
+ * - Cobertura externa que atiende la comuna: "Atiende tu comuna"
+ * - Local físico (cuando aplica): "Con local en [comuna]"
  */
 export default function CoverageBadge({ type, comunaBuscada }: Props) {
   if (type === "local_en_comuna") {
@@ -45,10 +48,10 @@ export default function CoverageBadge({ type, comunaBuscada }: Props) {
           border: "1px solid #93C5FD",
           borderRadius: "12px",
         }}
-        aria-label="Ubicado en tu comuna"
+        aria-label="De tu comuna"
       >
         <span aria-hidden>📍</span>
-        En tu comuna
+        De tu comuna
       </span>
     );
   }
@@ -62,10 +65,10 @@ export default function CoverageBadge({ type, comunaBuscada }: Props) {
         border: "1px solid #B7E4C7",
         borderRadius: "14px",
       }}
-      aria-label={`Atiende ${comunaBuscada}`}
+      aria-label="Atiende tu comuna"
     >
       <span aria-hidden>✔</span>
-      Atiende {comunaBuscada}
+      Atiende tu comuna
     </span>
   );
 }

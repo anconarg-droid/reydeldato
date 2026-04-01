@@ -127,3 +127,63 @@
     transform: rotate(360deg);
   }
 }
+
+/*
+  Fallback de estilos:
+  En algunos entornos, Tailwind v4 + Turbopack no está generando utilidades,
+  y la UI queda “sin diseño”. Estos estilos mínimos cubren las clases más
+  usadas en `/[comuna]` y `/resultados` para que se vea presentable.
+*/
+
+/* Layout helpers */
+.min-h-screen { min-height: 100vh; }
+.bg-white { background-color: #ffffff; }
+.text-slate-900 { color: #0f172a; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.max-w-5xl { max-width: 64rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+
+/* Typography */
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+.font-semibold { font-weight: 600; }
+.font-extrabold { font-weight: 800; }
+.tracking-tight { letter-spacing: -0.025em; }
+.text-slate-600 { color: #475569; }
+.text-sky-700 { color: #0369a1; }
+.underline { text-decoration: underline; }
+.underline-offset-4 { text-underline-offset: 4px; }
+
+/* Simple spacing for "space-y-4" */
+.space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+
+/* Basic grid helpers (good enough for home/search headers) */
+.grid { display: grid; }
+.gap-x-3 { column-gap: 0.75rem; }
+.gap-y-2 { row-gap: 0.5rem; }
+.w-full { width: 100%; }
+.min-w-0 { min-width: 0; }
+.rounded-xl { border-radius: 0.75rem; }
+.rounded-lg { border-radius: 0.5rem; }
+.border { border-width: 1px; border-style: solid; }
+.border-slate-200 { border-color: #e2e8f0; }
+.border-slate-300 { border-color: #cbd5e1; }
+.bg-slate-50\/80 { background-color: rgba(248, 250, 252, 0.8); }
+
+/* Buttons/inputs */
+.h-11 { height: 2.75rem; }
+.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+.text-white { color: #fff; }
+.bg-slate-900 { background-color: #0f172a; }
+.hover\:bg-slate-800:hover { background-color: #1e293b; }
+
+@media (min-width: 640px) {
+  .sm\:text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+}

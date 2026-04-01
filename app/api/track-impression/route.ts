@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const session_id = body?.session_id ? s(body.session_id) : null;
 
     const cleanSlugs = slugs
-      .map((s) => String(s || "").trim())
+      .map((slug: unknown) => String(slug || "").trim())
       .filter(Boolean);
 
     if (!cleanSlugs.length) {

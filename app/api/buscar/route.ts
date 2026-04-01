@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { normalizeText } from "@/lib/search/normalizeText";
+import { splitByTerritorialBucket, territorialLevelFromRpcRow } from "@/lib/search/territorialLevelFromRpcRow";
+import { rotateDeterministic } from "@/lib/search/deterministicRotation";
+import { tieneFichaCompleta } from "@/lib/tieneFichaCompleta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,336 +13,430 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-function s(v: unknown) {
-  return String(v ?? "").trim();
+function s(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  return String(v).trim();
 }
 
-function norm(v: unknown) {
-  return s(v)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
+/** subcategorias.id es integer: solo acepta dígitos (sin decimales ni espacios). */
+function parseSubcategoriaIdParam(v: string): number | null {
+  const t = v.trim();
+  if (!t || !/^\d+$/.test(t)) return null;
+  const n = Number.parseInt(t, 10);
+  if (n <= 0 || !Number.isSafeInteger(n)) return null;
+  return n;
 }
 
-function getFiveMinuteSeed(): number {
-  return Math.floor(Date.now() / (5 * 60 * 1000));
+type BloqueCliente = "de_tu_comuna" | "atienden_tu_comuna";
+
+function isTrue(v: unknown): boolean {
+  if (v === true) return true;
+  if (v === false || v == null) return false;
+  const s = String(v).trim().toLowerCase();
+  return s === "true" || s === "1" || s === "t" || s === "yes" || s === "y";
 }
 
-function stableRotationKey(id: string, seed: number): number {
-  const input = `${id}:${seed}`;
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    hash = (hash * 31 + input.charCodeAt(i)) | 0;
+function computeEsFichaCompletaFromRow(row: Record<string, unknown>): boolean {
+  return tieneFichaCompleta({
+    planActivo: isTrue(row.plan_activo),
+    planExpiraAt:
+      row.plan_expira_at == null ? null : String(row.plan_expira_at),
+    trialExpiraAt:
+      row.trial_expira_at == null ? null : String(row.trial_expira_at),
+    // Nota: en el schema actual usamos `trial_expira_at`; `trial_expira` no existe en DB.
+    trialExpira: null,
+  });
+}
+
+/** Listados: recién publicados (~30 días). */
+function esEmprendedorNuevo(createdAt: unknown): boolean {
+  if (createdAt == null) return false;
+  const d = new Date(String(createdAt));
+  if (Number.isNaN(d.getTime())) return false;
+  const ageMs = Date.now() - d.getTime();
+  if (ageMs < 0) return false;
+  const days = ageMs / 86_400_000;
+  return days <= 30;
+}
+
+function computeEsFichaCompleta(
+  row: Record<string, unknown>,
+  hydrated: Record<string, unknown> | null
+): boolean {
+  const plan_activo = hydrated?.plan_activo ?? row.plan_activo;
+  const plan_expira_at = hydrated?.plan_expira_at ?? row.plan_expira_at;
+  const trial_expira_at =
+    hydrated?.trial_expira_at ??
+    (hydrated as any)?.trialExpiraAt ??
+    row.trial_expira_at ??
+    (row as any)?.trialExpiraAt;
+
+  return tieneFichaCompleta({
+    planActivo: isTrue(plan_activo),
+    planExpiraAt: plan_expira_at == null ? null : String(plan_expira_at),
+    trialExpiraAt: trial_expira_at == null ? null : String(trial_expira_at),
+    trialExpira: null,
+  });
+}
+
+function mapRpcRowToSearchItem(
+  row: Record<string, unknown>,
+  bloque: BloqueCliente,
+  comunaCtx: { slug: string; nombre: string },
+  comunaBaseById: Map<number, string>,
+  hydratedById: Map<string, Record<string, unknown>>
+) {
+  const id = String(row.id ?? "");
+  const hydrated = hydratedById.get(id) ?? null;
+  const nivel = territorialLevelFromRpcRow(row);
+  const comunaIdRow = Number(row.comuna_id ?? 0);
+  const comunaBaseNombre =
+    comunaIdRow > 0 ? s(comunaBaseById.get(comunaIdRow)) : "";
+  const rankingFromRpc = row.ranking_score;
+  const rankingScore = Number.isFinite(Number(rankingFromRpc))
+    ? Number(rankingFromRpc)
+    : nivel >= 1 && nivel <= 4
+      ? 5 - nivel
+      : 0;
+
+  const out: Record<string, unknown> = {
+    id,
+    slug: String(row.slug ?? ""),
+    nombre: String(row.nombre_emprendimiento ?? ""),
+    frase:
+      row.frase_negocio != null
+        ? String(row.frase_negocio)
+        : hydrated?.frase_negocio != null
+          ? String(hydrated.frase_negocio)
+          : "",
+    descripcion:
+      row.descripcion_libre != null
+        ? String(row.descripcion_libre)
+        : hydrated?.descripcion_libre != null
+          ? String(hydrated.descripcion_libre)
+          : "",
+    // Imagen: algunas fuentes/RPCs legacy pueden no exponer `foto_principal_url`.
+    // Intentamos variaciones comunes antes de caer al placeholder del frontend.
+    fotoPrincipalUrl:
+      row.foto_principal_url != null
+        ? String(row.foto_principal_url)
+        : hydrated?.foto_principal_url != null
+          ? String(hydrated.foto_principal_url)
+        : (row as any).fotoPrincipalUrl != null
+          ? String((row as any).fotoPrincipalUrl)
+          : (row as any).foto_url != null
+            ? String((row as any).foto_url)
+            : "",
+    whatsappPrincipal:
+      row.whatsapp_principal == null ? "" : String(row.whatsapp_principal),
+    comunaId: Number(row.comuna_id ?? 0),
+    comunaSlug: comunaCtx.slug,
+    comunaNombre: comunaCtx.nombre,
+    coberturaTipo: row.cobertura_tipo == null ? "" : String(row.cobertura_tipo),
+    prioridad: nivel,
+    rankingScore,
+    score: nivel,
+    bloque,
+    comunaBaseNombre,
+  };
+  const esFichaCompleta = computeEsFichaCompleta(row, hydrated);
+  out.esFichaCompleta = esFichaCompleta;
+  out.estadoFicha = esFichaCompleta ? "ficha_completa" : "ficha_basica";
+  if (process.env.NODE_ENV !== "production") {
+    const slug = String(row.slug ?? "");
+    if (slug.startsWith("test-score")) {
+      (out as any).__debug = {
+        hasHydrated: !!hydrated,
+        hydrated_plan_activo: hydrated?.plan_activo ?? null,
+        hydrated_trial_expira_at: hydrated?.trial_expira_at ?? null,
+        hydrated_plan_expira_at: hydrated?.plan_expira_at ?? null,
+        row_plan_activo: (row as any).plan_activo ?? null,
+        row_trial_expira_at: (row as any).trial_expira_at ?? null,
+        row_plan_expira_at: (row as any).plan_expira_at ?? null,
+      };
+    }
   }
-  return hash;
-}
 
-const QUERY_SYNONYMS: Record<string, string[]> = {
-  pan: ["panaderia", "amasanderia", "marraqueta", "hallulla", "pan amasado"],
-  panaderia: ["pan", "amasanderia", "marraqueta", "hallulla", "pan amasado"],
-  marraqueta: ["pan", "panaderia", "amasanderia", "hallulla"],
-  hallulla: ["pan", "panaderia", "amasanderia", "marraqueta"],
-  almuerzo: ["colaciones", "comida casera", "menu", "delivery almuerzo"],
-  colaciones: ["almuerzo", "comida casera", "menu"],
-  comida: ["colaciones", "comida casera", "almuerzo"],
-  mecanico: ["taller mecanico", "mecanico a domicilio", "automotriz"],
-  abogado: ["asesoria legal", "juridico"],
-  contador: ["contabilidad", "contador auditor", "asesoria tributaria"],
-};
+  if (Array.isArray(row.subcategorias_slugs)) {
+    out.subcategoriasSlugs = row.subcategorias_slugs;
+  }
+  if (Array.isArray(row.subcategorias_nombres)) {
+    out.subcategoriasNombres = row.subcategorias_nombres;
+  }
+  out.categoriaNombre =
+    row.categoria_nombre == null ? "" : String(row.categoria_nombre);
 
-function includesNorm(haystack: unknown, needleNorm: string): boolean {
-  if (!needleNorm) return false;
-  return norm(haystack).includes(needleNorm);
-}
-
-function expandQueryTerms(qNorm: string): string[] {
-  if (!qNorm) return [];
-  const direct = QUERY_SYNONYMS[qNorm] ?? [];
-  return Array.from(new Set([qNorm, ...direct.map(norm)])).filter(Boolean);
-}
-
-function getSearchScore(
-  item: Pick<SearchItem, "nombre" | "subcategoria_slug" | "categoria_slug" | "search_text">,
-  qNorm: string,
-  expandedTerms: string[]
-): number {
-  if (!qNorm) return 0;
-
-  let score = 0;
-
-  // nombre: mejorar discriminación (exact > prefix > includes)
-  const nombreNorm = norm(item.nombre);
-  if (nombreNorm === qNorm) score += 120;
-  else if (nombreNorm.startsWith(qNorm)) score += 100;
-  else if (nombreNorm.includes(qNorm)) score += 60;
-
-  // sinónimos controlados: boost menor (solo en nombre)
-  for (const term of expandedTerms) {
-    if (!term || term === qNorm) continue;
-    if (nombreNorm.includes(term)) score += 20;
+  const comunasArr = row.comunas_cobertura;
+  if (Array.isArray(comunasArr)) {
+    out.comunasCobertura = comunasArr.map((x) => String(x));
+  } else {
+    out.comunasCobertura = [];
+  }
+  const regionesArr = row.regiones_cobertura;
+  if (Array.isArray(regionesArr)) {
+    out.regionesCobertura = regionesArr.map((x) => String(x));
+  } else {
+    out.regionesCobertura = [];
   }
 
-  // subcategoria_slug: mantener +60
-  if (includesNorm(item.subcategoria_slug, qNorm)) score += 60;
+  const createdRaw =
+    hydrated?.created_at ?? (row as { created_at?: unknown }).created_at;
+  out.esNuevo = esEmprendedorNuevo(createdRaw);
 
-  // categoria_slug: mantener +30
-  if (includesNorm(item.categoria_slug, qNorm)) score += 30;
-
-  // search_text: reducir peso para evitar empates masivos
-  if (includesNorm(item.search_text, qNorm)) score += 2;
-
-  return score;
-}
-
-type SearchItem = {
-  id: string;
-  nombre: string;
-  descripcion_corta: string | null;
-  descripcion_larga: string | null;
-  foto_principal_url: string | null;
-  comuna_slug: string | null;
-  comuna_nombre: string | null;
-  categoria_slug: string | null;
-  subcategoria_slug: string | null;
-  whatsapp: string | null;
-  instagram: string | null;
-  web: string | null;
-  email: string | null;
-  public: boolean;
-  search_text: string | null;
-  nivel_cobertura: string | null;
-  coverage_keys: string[] | null;
-  coverage_labels: string[] | null;
-  bucket: "exacta" | "cobertura_comuna" | "regional" | "nacional" | "general" | null;
-  score: number;
-};
-
-function resolveBucket(item: {
-  comuna_base_slug?: string | null;
-  nivel_cobertura?: string | null;
-  coverage_keys?: string[] | null;
-}, comunaBuscada: string): SearchItem["bucket"] {
-  const comuna = norm(comunaBuscada);
-  const base = norm(item.comuna_base_slug);
-  const nivel = norm(item.nivel_cobertura);
-  const keys = Array.isArray(item.coverage_keys)
-    ? item.coverage_keys.map((x) => norm(x))
-    : [];
-
-  if (!comuna) return null;
-
-  // BLOQUE 1: base en la comuna buscada (independiente de nivel_cobertura)
-  if (base === comuna) {
-    return "exacta";
-  }
-
-  // BLOQUE 2: no son de la comuna, pero sí atienden esa comuna
-  const atiendePorCobertura =
-    (nivel === "varias_comunas" && keys.includes(comuna)) ||
-    nivel === "regional" ||
-    nivel === "nacional";
-
-  if (atiendePorCobertura) {
-    return "cobertura_comuna";
-  }
-
-  // No tienen relación con la comuna buscada
-  return "general";
+  return out;
 }
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const q = s(searchParams.get("q"));
-    const comuna = s(searchParams.get("comuna"));
-    const categoria = s(searchParams.get("categoria"));
-    const subcategoria = s(searchParams.get("subcategoria"));
-    const limit = Math.max(1, Math.min(Number(searchParams.get("limit") || "30"), 200));
-    const offset = Math.max(0, Number(searchParams.get("offset") || "0"));
+    const comunaSlug = s(searchParams.get("comuna"));
+    const qRaw = s(searchParams.get("q"));
+    const qNorm = normalizeText(searchParams.get("q"));
 
-    const qNorm = norm(q);
-    const comunaNorm = norm(comuna);
-    const categoriaNorm = norm(categoria);
-    const subcategoriaNorm = norm(subcategoria);
-    const expandedTerms = expandQueryTerms(qNorm);
-
-    console.log("BUSCAR_PARAMS", {
-      q,
-      qNorm,
-      expandedTerms,
-      comuna,
-      comunaNorm,
-      categoria,
-      categoriaNorm,
-      subcategoria,
-      subcategoriaNorm,
-      limit,
-      offset,
-    });
-
-    let query = supabase
-      .from("emprendedores")
-      .select(
-        `
-        id,
-        nombre,
-        descripcion_corta,
-        descripcion_larga,
-        foto_principal_url,
-        comuna_base_slug,
-        categoria_slug,
-        subcategoria_slug,
-        whatsapp,
-        instagram,
-        web,
-        email,
-        publicado,
-        search_text,
-        nivel_cobertura,
-        coverage_keys,
-        coverage_labels
-        `,
-        { count: "exact" }
-      )
-      .eq("publicado", true);
-
-    if (qNorm) {
-      query = query.ilike("search_text", `%${qNorm}%`);
-    }
-
-    if (categoriaNorm) {
-      query = query.eq("categoria_slug", categoriaNorm);
-    }
-
-    if (subcategoriaNorm) {
-      query = query.eq("subcategoria_slug", subcategoriaNorm);
-    }
-
-    // Cuando viene `comuna`, evitamos paginar "temprano" en SQL.
-    // Traemos una ventana amplia y luego aplicamos `slice` después de filtrar/ordenar en memoria.
-    const fetchFrom = comunaNorm ? 0 : offset;
-    const fetchTo = comunaNorm ? 499 : offset + limit - 1;
-
-    const res = await query.range(fetchFrom, fetchTo);
-
-    console.log("BUSCAR_RESULT", {
-      error: res.error,
-      count: res.count,
-      rows: Array.isArray(res.data) ? res.data.length : null,
-      firstRow: Array.isArray(res.data) && res.data.length > 0 ? res.data[0] : null,
-    });
-
-    if (res.error) {
+    if (!comunaSlug) {
       return NextResponse.json(
-        { ok: false, error: res.error.message },
-        { status: 500 }
+        { ok: false, error: "Falta comuna" },
+        { status: 400 }
       );
     }
 
-    const rows = Array.isArray(res.data) ? res.data : [];
-    const seed = getFiveMinuteSeed();
+    const { data: comuna, error: comunaError } = await supabase
+      .from("comunas")
+      .select("id, slug, nombre, region_id, regiones(slug)")
+      .eq("slug", comunaSlug)
+      .single();
 
-    let items: SearchItem[] = rows.map((r: any) => {
-      const bucket = comunaNorm
-        ? resolveBucket(
-            {
-              comuna_base_slug: r.comuna_base_slug,
-              nivel_cobertura: r.nivel_cobertura,
-              coverage_keys: r.coverage_keys,
-            },
-            comunaNorm
+    if (comunaError || !comuna) {
+      return NextResponse.json(
+        { ok: false, error: "Comuna no encontrada" },
+        { status: 404 }
+      );
+    }
+
+    // Preferir RPC v2 (incluye foto_principal_url y subcategorías), con fallback a v1 si no existe.
+    const regionSlug = String((comuna as any)?.regiones?.slug ?? "");
+    let resultados: any[] = [];
+    const { data: dataV2, error: errV2 } = await supabase.rpc(
+      "buscar_emprendedores_por_cobertura_v2",
+      {
+        p_comuna_id: comuna.id,
+        p_comuna_slug: comuna.slug,
+        p_region_slug: regionSlug,
+      }
+    );
+    if (!errV2 && Array.isArray(dataV2)) {
+      resultados = dataV2 as any[];
+    } else {
+      const { data, error } = await supabase.rpc(
+        "buscar_emprendedores_por_cobertura",
+        {
+          comuna_buscada_id: comuna.id,
+          comuna_buscada_slug: comuna.slug,
+        }
+      );
+
+      if (error) {
+        return NextResponse.json(
+          { ok: false, error: error.message },
+          { status: 500 }
+        );
+      }
+      resultados = Array.isArray(data) ? (data as any[]) : [];
+    }
+
+    const subSlugParam = s(searchParams.get("subcategoria"));
+    const subIdParam = s(searchParams.get("subcategoria_id"));
+    let subcategoriaResolved = false;
+    let resolvedSubcategoriaId: string | null = null;
+
+    let subUuid: string | null = null;
+    const subIdParsed = parseSubcategoriaIdParam(subIdParam);
+    if (subIdParsed != null) {
+      subUuid = String(subIdParsed);
+    } else if (subSlugParam) {
+      const { data: subRow, error: subErr } = await supabase
+        .from("subcategorias")
+        .select("id")
+        .eq("slug", subSlugParam.toLowerCase())
+        .maybeSingle();
+      if (subErr) {
+        return NextResponse.json(
+          { ok: false, error: subErr.message },
+          { status: 500 }
+        );
+      }
+      if (subRow?.id) subUuid = String(subRow.id);
+    }
+
+    if (subUuid) {
+      subcategoriaResolved = true;
+      resolvedSubcategoriaId = subUuid;
+      const resultadoIds = resultados
+        .map((r: any) => r?.id)
+        .filter((id: unknown) => id != null && String(id).length > 0);
+
+      if (resultadoIds.length === 0) {
+        resultados = [];
+      } else {
+        const { data: links, error: linkErr } = await supabase
+          .from("emprendedor_subcategorias")
+          .select("emprendedor_id")
+          .eq("subcategoria_id", subUuid)
+          .in("emprendedor_id", resultadoIds as string[]);
+
+        if (linkErr) {
+          return NextResponse.json(
+            { ok: false, error: linkErr.message },
+            { status: 500 }
+          );
+        }
+
+        const allowed = new Set(
+          (links ?? []).map((l: { emprendedor_id: string }) =>
+            String(l.emprendedor_id)
           )
-        : null;
-
-      const id = s(r.id);
-
-      const item: SearchItem = {
-        id,
-        nombre: s(r.nombre) || "Emprendimiento",
-        descripcion_corta: r.descripcion_corta ?? null,
-        descripcion_larga: r.descripcion_larga ?? null,
-        foto_principal_url: r.foto_principal_url ?? null,
-        comuna_slug: r.comuna_base_slug ?? null,
-        comuna_nombre: r.comuna_base_slug ?? null,
-        categoria_slug: r.categoria_slug ?? null,
-        subcategoria_slug: r.subcategoria_slug ?? null,
-        whatsapp: r.whatsapp ?? null,
-        instagram: r.instagram ?? null,
-        web: r.web ?? null,
-        email: r.email ?? null,
-        public: r.publicado === true,
-        search_text: r.search_text ?? null,
-        nivel_cobertura: r.nivel_cobertura ?? null,
-        coverage_keys: Array.isArray(r.coverage_keys) ? r.coverage_keys : null,
-        coverage_labels: Array.isArray(r.coverage_labels) ? r.coverage_labels : null,
-        bucket,
-        score: 0,
-      };
-
-      item.score = getSearchScore(item, qNorm, expandedTerms);
-      return item;
-    });
-
-    if (comunaNorm) {
-      // Regla de producto: en búsquedas por comuna solo existen 2 bloques.
-      items = items.filter(
-        (item) => item.bucket === "exacta" || item.bucket === "cobertura_comuna"
-      );
+        );
+        resultados = resultados.filter((item: any) =>
+          allowed.has(String(item?.id))
+        );
+      }
     }
 
-    const bucketOrder: Record<NonNullable<SearchItem["bucket"]>, number> = {
-      exacta: 0,
-      cobertura_comuna: 1,
-      regional: 2,
-      nacional: 3,
-      general: 4,
-    };
+    const textNorm =
+      qNorm ||
+      (!subcategoriaResolved && subSlugParam
+        ? normalizeText(subSlugParam)
+        : "");
 
-    items.sort((a, b) => {
-      const aBucket = a.bucket ?? "general";
-      const bBucket = b.bucket ?? "general";
-
-      const diff = bucketOrder[aBucket] - bucketOrder[bBucket];
-      if (diff !== 0) return diff;
-
-      if (a.score !== b.score) return b.score - a.score;
-
-      // Rotación justa dentro de cada bloque usando semilla de 5 minutos
-      const aKey = stableRotationKey(a.id, seed);
-      const bKey = stableRotationKey(b.id, seed);
-      if (aKey !== bKey) return aKey - bKey;
-
-      return 0;
-    });
-
-    const totalAfterTerritorialFilter = comunaNorm ? items.length : null;
-
-    // Aplicar paginación final solo cuando viene comuna
-    if (comunaNorm) {
-      items = items.slice(offset, offset + limit);
+    if (textNorm) {
+      resultados = resultados.filter((item: any) => {
+        const nombre = normalizeText(item?.nombre_emprendimiento);
+        const frase = normalizeText(item?.frase_negocio);
+        const descripcion = normalizeText(item?.descripcion_libre);
+        return (
+          nombre.includes(textNorm) ||
+          frase.includes(textNorm) ||
+          descripcion.includes(textNorm)
+        );
+      });
     }
 
-    console.log("BUSCAR_BUCKETS", {
-      exacta: items.filter((i) => i.bucket === "exacta").length,
-      cobertura_comuna: items.filter((i) => i.bucket === "cobertura_comuna").length,
-      regional: items.filter((i) => i.bucket === "regional").length,
-      nacional: items.filter((i) => i.bucket === "nacional").length,
-      general: items.filter((i) => i.bucket === "general" || !i.bucket).length,
-    });
+    // Hidratación: asegurar imagen + estado de ficha incluso si el RPC no trae campos.
+    const hydratedById = new Map<string, Record<string, unknown>>();
+    const ids = resultados
+      .map((r: any) => String(r?.id ?? ""))
+      .filter((v: string) => v.length > 0);
+    if (ids.length > 0) {
+      const { data: emps, error: empsErr } = await supabase
+        .from("emprendedores")
+        .select(
+          "id,foto_principal_url,frase_negocio,descripcion_libre,plan_activo,plan_expira_at,trial_expira_at,created_at"
+        )
+        .in("id", ids.slice(0, 300));
+      if (empsErr) {
+        return NextResponse.json(
+          { ok: false, error: empsErr.message },
+          { status: 500 }
+        );
+      }
+      for (const e of (emps ?? []) as any[]) {
+        const id = String(e?.id ?? "");
+        if (!id) continue;
+        hydratedById.set(id, e as Record<string, unknown>);
+      }
+    }
+
+    const comunaIdBuscada = Number(comuna.id ?? 0);
+    const rows = resultados as Record<string, unknown>[];
+    const baseExacta: Record<string, unknown>[] = [];
+    const resto: Record<string, unknown>[] = [];
+
+    for (const row of rows) {
+      // PROTECCIÓN EXPLÍCITA: si comuna_base (comuna_id) == comuna buscada, NUNCA puede caer en "atienden".
+      // Esto evita bugs por score/ranking incompleto o inconsistencia temporal del RPC.
+      const cid = Number((row as any)?.comuna_id ?? 0);
+      if (comunaIdBuscada > 0 && cid === comunaIdBuscada) {
+        baseExacta.push(row);
+      } else {
+        resto.push(row);
+      }
+    }
+
+    const { deMiComuna, atiendenMiComuna } = splitByTerritorialBucket(resto);
+    const deMiComunaFinal = [...baseExacta, ...deMiComuna];
+
+    const deMiComunaRot = rotateDeterministic(
+      deMiComunaFinal,
+      (row) => String((row as any)?.slug ?? (row as any)?.id ?? ""),
+      5 * 60 * 1000
+    );
+    const atiendenMiComunaRot = rotateDeterministic(
+      atiendenMiComuna,
+      (row) => String((row as any)?.slug ?? (row as any)?.id ?? ""),
+      5 * 60 * 1000
+    );
+
+    const comunaCtx = { slug: String(comuna.slug), nombre: String(comuna.nombre) };
+
+    const comunaIds = new Set<number>();
+    for (const row of resultados as Record<string, unknown>[]) {
+      const cid = Number(row.comuna_id ?? 0);
+      if (cid > 0) comunaIds.add(cid);
+    }
+    const comunaBaseById = new Map<number, string>();
+    if (comunaIds.size > 0) {
+      const { data: comunasNombre } = await supabase
+        .from("comunas")
+        .select("id, nombre")
+        .in("id", [...comunaIds]);
+      for (const c of comunasNombre ?? []) {
+        const row = c as { id?: unknown; nombre?: unknown };
+        const id = Number(row.id ?? 0);
+        if (id > 0) comunaBaseById.set(id, s(row.nombre));
+      }
+    }
+
+    const items = [
+      ...deMiComunaRot.map((row: Record<string, unknown>) =>
+        mapRpcRowToSearchItem(row, "de_tu_comuna", comunaCtx, comunaBaseById, hydratedById)
+      ),
+      ...atiendenMiComunaRot.map((row: Record<string, unknown>) =>
+        mapRpcRowToSearchItem(row, "atienden_tu_comuna", comunaCtx, comunaBaseById, hydratedById)
+      ),
+    ];
+
+    const total = items.length;
 
     return NextResponse.json({
       ok: true,
-      total: totalAfterTerritorialFilter ?? items.length,
       items,
+      total,
+      deMiComuna: deMiComunaRot,
+      atiendenMiComuna: atiendenMiComunaRot,
+      meta: {
+        comuna: comuna.slug,
+        comunaSlug: comuna.slug,
+        comunaNombre: comuna.nombre,
+        q: qRaw,
+        page: 1,
+        limit: total,
+        offset: 0,
+        total,
+        modo:
+          textNorm || subcategoriaResolved ? "busqueda_con_texto" : "solo_comuna",
+        subcategoriaResolved,
+        subcategoriaId: resolvedSubcategoriaId,
+        subcategoriaSlug: subSlugParam || null,
+        totalDeMiComuna: deMiComunaRot.length,
+        totalAtiendenMiComuna: atiendenMiComunaRot.length,
+      },
     });
   } catch (error) {
-    console.error("GET /api/buscar fatal:", error);
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Error inesperado en búsqueda.",
+        error: error instanceof Error ? error.message : "Error inesperado",
       },
       { status: 500 }
     );

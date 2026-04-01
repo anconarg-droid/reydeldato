@@ -3,7 +3,8 @@
  * Fuente de verdad: solo plan_activo, plan_expira_at, trial_expira_at (no plan, estado ni publicado).
  */
 
-import { getPlanEstado, type PlanEstadoInput } from "./planEstado";
+import type { PlanEstadoInput } from "./planEstado";
+import { tieneFichaCompleta } from "./tieneFichaCompleta";
 
 function parseDate(v: string | null | undefined): Date | null {
   if (v == null || String(v).trim() === "") return null;
@@ -32,7 +33,7 @@ export type GetProfileStateInput = PlanEstadoInput & {
 /**
  * Calcula el estado del perfil para UI. Solo usa la fuente de verdad:
  * planActivo, planExpiraAt, trialExpiraAt (trialExpira como fallback).
- * isFullProfile = (estado === 'trial' || estado === 'perfil_completo').
+ * isFullProfile = tieneFichaCompleta (plan pagado vigente o trial vigente); alineado con tarjeta y búsqueda.
  */
 export function getProfileState(
   createdAt: string | null | undefined,
@@ -50,15 +51,13 @@ export function getProfileState(
   const isNew = createdDaysAgo <= NEW_PROFILE_DAYS;
   const showNewBadge = createdDaysAgo <= NEW_BADGE_DAYS;
 
-  const estado = getPlanEstado({
-    trialExpiraAt: options?.trialExpiraAt ?? options?.trialExpira,
-    trialExpira: options?.trialExpira,
+  const isFullProfile = tieneFichaCompleta({
     planActivo: options?.planActivo,
     planExpiraAt: options?.planExpiraAt,
+    trialExpiraAt: options?.trialExpiraAt ?? options?.trialExpira,
+    trialExpira: options?.trialExpira,
   });
-
-  const isFullProfile = estado === "trial" || estado === "perfil_completo";
-  const isBasicProfile = estado === "perfil_basico";
+  const isBasicProfile = !isFullProfile;
 
   return {
     isNew,

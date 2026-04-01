@@ -75,12 +75,15 @@ export default function ComunaEnPreparacion({
   }, [prefillRubro, prefillRubroLabel]);
 
   const { covered, total, porcentaje } = useMemo(() => {
-    const t = progreso.length || 1;
-    const c = progreso.filter((x) => x.actual >= x.meta).length;
+    const t = Array.isArray(progreso) ? progreso.length : 0;
+    const c = Array.isArray(progreso)
+      ? progreso.filter((x) => Number(x.actual) >= Number(x.meta)).length
+      : 0;
+
     return {
       covered: c,
       total: t,
-      porcentaje: Math.round((c / t) * 100),
+      porcentaje: t > 0 ? Math.round((c / t) * 100) : 0,
     };
   }, [progreso]);
 
@@ -144,9 +147,13 @@ export default function ComunaEnPreparacion({
               <span>
                 Tu comuna lleva <strong>{porcentaje}%</strong> para abrir.
               </span>
-              <span>
-                {covered} / {total} rubros cubiertos
-              </span>
+              {total > 0 ? (
+                <span>
+                  {covered} / {total} rubros cubiertos
+                </span>
+              ) : (
+                <span>Sin detalle de rubros todavía</span>
+              )}
             </div>
             <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
               <div
@@ -156,22 +163,24 @@ export default function ComunaEnPreparacion({
             </div>
           </div>
 
-          <div className="mt-6 space-y-3">
-            {progreso.map((p) => {
-              const ok = p.actual >= p.meta;
-              return (
-                <div
-                  key={p.nombre}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span className="text-slate-800 font-semibold">{p.nombre}</span>
-                  <span className="text-slate-600 tabular-nums">
-                    {p.actual} / {p.meta} {ok ? "✔" : ""}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {progreso.length > 0 ? (
+            <div className="mt-6 space-y-3">
+              {progreso.map((p) => {
+                const ok = p.actual >= p.meta;
+                return (
+                  <div
+                    key={p.nombre}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="text-slate-800 font-semibold">{p.nombre}</span>
+                    <span className="text-slate-600 tabular-nums">
+                      {p.actual} / {p.meta} {ok ? "✔" : ""}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
 
           {rubrosMasNecesarios.length > 0 && (
             <div className="mt-8 border-t border-slate-200 pt-6">
@@ -194,7 +203,7 @@ export default function ComunaEnPreparacion({
 
       <div className="mt-8 border-t border-slate-200 pt-6">
         <h3 className="text-lg font-bold text-slate-900">
-          ¿Conoces emprendedores en esta comuna?
+          ¿Quieres ayudar a abrir {comunaNombre} más rápido?
         </h3>
         <p className="text-slate-600 mt-1">
           Déjanos datos de emprendedores que conozcas o tu propio negocio.

@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { normalizeText } from "@/lib/search/normalizeText";
 import PublicSearchResults from "@/components/search/PublicSearchResults";
+
+type TipoFichaFiltro = "todas" | "completas" | "basicas";
 import { parseSearchIntent } from "@/lib/search/parseSearchIntent";
 import SearchAutocompleteDropdown, {
   type AutocompleteSuggestion,
@@ -13,10 +16,16 @@ import { getRegionShort } from "@/utils/regionShort";
 
 type ComunaSuggestion = { nombre: string; slug: string; region_nombre?: string };
 
+type ComunaResolved = {
+  id: number;
+  slug: string;
+  nombre: string;
+  region_nombre?: string;
+};
+
 function prettyQuery(raw: string): string {
   const q = (raw || "").trim();
   if (!q) return "";
-  // Capitalizar la primera palabra y dejar el resto tal cual para no sorprender al usuario
   return q.charAt(0).toUpperCase() + q.slice(1);
 }
 
@@ -61,9 +70,7 @@ function RubrosCarousel({
       const el = scrollRef.current;
       if (!el) return;
       setCanScrollLeft(el.scrollLeft > 2);
-      setCanScrollRight(
-        el.scrollLeft < el.scrollWidth - el.clientWidth - 2
-      );
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
     },
     []
   );
@@ -254,6 +261,32 @@ function ComunaQuickFilters({
   );
 }
 
+function TipoFichaSelect({
+  value,
+  onChange,
+}: {
+  value: TipoFichaFiltro;
+  onChange: (v: TipoFichaFiltro) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2 items-center">
+      <label htmlFor="tipo-ficha-buscar" className="text-xs font-medium text-slate-500 uppercase tracking-wide mr-1">
+        Ficha:
+      </label>
+      <select
+        id="tipo-ficha-buscar"
+        value={value}
+        onChange={(e) => onChange(e.target.value as TipoFichaFiltro)}
+        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1 min-w-[11rem]"
+      >
+        <option value="todas">Todas</option>
+        <option value="completas">Solo completas</option>
+        <option value="basicas">Solo básicas</option>
+      </select>
+    </div>
+  );
+}
+
 type TagConteo = { tagSlug: string; label: string; count: number };
 
 function CategoriasExpandiblesComuna({
@@ -275,7 +308,6 @@ function CategoriasExpandiblesComuna({
   const [loadingSector, setLoadingSector] = useState<string | null>(null);
   const expandedForSubcatRef = useRef<string | null>(null);
 
-  // Cuando hay subcategoría activa, mantener abierta la categoría padre y cargar sus tags. Esa categoría no se puede contraer mientras siga algo marcado.
   useEffect(() => {
     if (!subcategoriaActiva?.trim()) {
       expandedForSubcatRef.current = null;
@@ -297,13 +329,15 @@ function CategoriasExpandiblesComuna({
         )
           .then((r) => r.json())
           .then((d: { ok?: boolean; tags?: TagConteo[] }) => {
-            if (d?.ok && Array.isArray(d.tags)) {
-              setTagsBySector((prev) => ({ ...prev, [data.sector_slug!]: d.tags }));
+            const list = d.tags;
+            if (d?.ok && Array.isArray(list)) {
+              const sector = data.sector_slug!;
+              setTagsBySector((prev) => ({ ...prev, [sector]: list }));
             }
           })
           .finally(() => setLoadingSector(null));
       });
-  }, [subcategoriaActiva, comuna]);
+  }, [subcategoriaActiva, comuna, tagsBySector]);
 
   const toggleSector = useCallback(
     (slug: string) => {
@@ -325,8 +359,9 @@ function CategoriasExpandiblesComuna({
       )
         .then((res) => res.json())
         .then((data: { ok?: boolean; tags?: TagConteo[] }) => {
-          if (data?.ok && Array.isArray(data.tags)) {
-            setTagsBySector((prev) => ({ ...prev, [slug]: data.tags }));
+          const tags = data?.tags;
+          if (data?.ok && Array.isArray(tags)) {
+            setTagsBySector((prev) => ({ ...prev, [slug]: tags }));
           }
         })
         .finally(() => setLoadingSector(null));
@@ -377,8 +412,12 @@ function CategoriasExpandiblesComuna({
                   <div className="text-sm text-slate-500 py-1">Cargando…</div>
                 ) : subcategorias && subcategorias.length > 0 ? (
                   subcategorias.map((tag) => {
-                    const isActive = subcategoriaActiva && tag.tagSlug.toLowerCase() === subcategoriaActiva.toLowerCase();
-                    const href = isActive ? `/${encodeURIComponent(comuna)}` : buildSubcategoriaUrl(tag.tagSlug);
+                    const isActive =
+                      subcategoriaActiva &&
+                      tag.tagSlug.toLowerCase() === subcategoriaActiva.toLowerCase();
+                    const href = isActive
+                      ? `/${encodeURIComponent(comuna)}`
+                      : buildSubcategoriaUrl(tag.tagSlug);
                     return (
                       <Link
                         key={tag.tagSlug}
@@ -391,7 +430,10 @@ function CategoriasExpandiblesComuna({
                               : "text-slate-700 hover:text-sky-700"
                         }`}
                       >
-                        <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-slate-300 bg-white text-xs" aria-hidden>
+                        <span
+                          className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-slate-300 bg-white text-xs"
+                          aria-hidden
+                        >
                           {isActive ? "☑" : "☐"}
                         </span>
                         {tag.label} ({tag.count})
@@ -399,7 +441,9 @@ function CategoriasExpandiblesComuna({
                     );
                   })
                 ) : (
-                  <div className="text-sm text-slate-500 py-1">Sin subcategorías en esta comuna</div>
+                  <div className="text-sm text-slate-500 py-1">
+                    Sin subcategorías en esta comuna
+                  </div>
                 )}
               </div>
             )}
@@ -410,12 +454,21 @@ function CategoriasExpandiblesComuna({
   );
 }
 
-function ResultsFade({ resultKey, children }: { resultKey: string; children: React.ReactNode }) {
+function ResultsFade({
+  resultKey,
+  children,
+}: {
+  resultKey: string;
+  children: React.ReactNode;
+}) {
   const [visible, setVisible] = useState(false);
+
   useEffect(() => {
+    setVisible(false);
     const id = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(id);
   }, [resultKey]);
+
   return (
     <div
       key={resultKey}
@@ -427,44 +480,83 @@ function ResultsFade({ resultKey, children }: { resultKey: string; children: Rea
 }
 
 type BuscarClientProps = {
-  /** Cuando se renderiza desde /[comuna], la comuna viene del path. */
+  comuna?: string;
   initialComuna?: string;
   initialComunaNombre?: string;
-  /** Cuando se renderiza desde /[comuna]/[rubro_slug], el sector viene del path. */
   initialSector?: string;
-  /** Cuando se renderiza desde /[comuna]/[subcategoria], la subcategoría viene del path. */
   initialSubcategoria?: string;
+  /** UUID en public.subcategorias; filtro por emprendedor_subcategorías en /api/buscar */
+  initialSubcategoriaId?: string | null;
+  initialSubcategoriaNombre?: string | null;
 };
 
 export default function BuscarClient({
+  comuna: comunaProp,
   initialComuna,
   initialComunaNombre,
   initialSector,
   initialSubcategoria,
+  initialSubcategoriaId,
+  initialSubcategoriaNombre,
 }: BuscarClientProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const q = searchParams.get("q") ?? "";
+  /** Texto libre solo desde ?q= (input del usuario / historial), nunca el slug del path. */
+  const qFromSearchParams = q.trim();
   const comunaFromUrl = searchParams.get("comuna") ?? "";
-  const comuna = (initialComuna ?? comunaFromUrl).trim();
+  const comunaRaw = (comunaProp ?? initialComuna ?? comunaFromUrl).trim();
   const sector = (initialSector ?? searchParams.get("sector") ?? "").trim();
-  const subcategoria = (initialSubcategoria ?? searchParams.get("subcategoria") ?? "").trim();
+  const subcategoriaFromQuery = (searchParams.get("subcategoria") ?? "").trim();
   const tipo = searchParams.get("tipo_actividad") ?? "";
 
-  // Redirigir /buscar?comuna=X (solo comuna) a /[comuna]
-  useEffect(() => {
-    if (initialComuna) return;
-    if (!comunaFromUrl.trim() || q.trim() || sector.trim() || tipo.trim()) return;
-    router.replace(`/${comunaFromUrl.trim()}`);
-  }, [initialComuna, comunaFromUrl, q, sector, tipo, router]);
+  const pathParts = useMemo(
+    () => (pathname ?? "").split("/").filter(Boolean),
+    [pathname]
+  );
+  /** Respaldo si algo fallara al hidratar props del server (evita lista completa sin filtro de rubro). */
+  const subcategoriaFromPathname =
+    initialComuna &&
+    pathParts[0]?.toLowerCase() === String(initialComuna).trim().toLowerCase() &&
+    pathParts.length >= 2
+      ? decodeURIComponent(pathParts[1])
+      : "";
+  const pathSubcategoriaSlug = (
+    initialSubcategoria ??
+    subcategoriaFromPathname ??
+    ""
+  ).trim();
+  const subcategoria = pathSubcategoriaSlug || subcategoriaFromQuery;
+
+  /** Para /[comuna]/[subcategoria]: no enviar q si solo repite el slug (evita búsqueda por texto dominante). */
+  let qForApi = qFromSearchParams;
+  if (
+    pathSubcategoriaSlug &&
+    qForApi &&
+    normalizeText(qForApi) === normalizeText(pathSubcategoriaSlug)
+  ) {
+    qForApi = "";
+  }
+
+  const qEfectiva =
+    qFromSearchParams || pathSubcategoriaSlug || subcategoriaFromQuery || "";
+  const hasBusquedaTextual =
+    qFromSearchParams.length > 0 ||
+    pathSubcategoriaSlug.length > 0 ||
+    subcategoriaFromQuery.length > 0;
+
+  const [resolvedComuna, setResolvedComuna] = useState<ComunaResolved | null>(null);
+
+  const comuna = resolvedComuna?.slug || comunaRaw;
 
   const [qInput, setQInput] = useState(() => prettyQuery(q));
   const [comunaInput, setComunaInput] = useState(() =>
-    comuna ? prettyComunaSlug(comuna) : ""
+    comunaRaw ? prettyComunaSlug(comunaRaw) : ""
   );
   const [selectedComunaSlug, setSelectedComunaSlug] = useState<string | null>(() =>
-    comuna ? comuna : null
+    comunaRaw ? comunaRaw : null
   );
   const [openComuna, setOpenComuna] = useState(false);
   const [comunaSuggestions, setComunaSuggestions] = useState<ComunaSuggestion[]>([]);
@@ -472,6 +564,7 @@ export default function BuscarClient({
   const [openQuerySuggestions, setOpenQuerySuggestions] = useState(false);
   const [querySuggestions, setQuerySuggestions] = useState<AutocompleteSuggestion[]>([]);
   const [highlightQueryIndex, setHighlightQueryIndex] = useState(-1);
+
   const queryBoxRef = useRef<HTMLDivElement>(null);
   const comunaBoxRef = useRef<HTMLDivElement>(null);
   const comunaDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -479,7 +572,7 @@ export default function BuscarClient({
 
   const hasFilters =
     !!initialComuna ||
-    q.trim().length > 0 ||
+    qFromSearchParams.length > 0 ||
     comuna.trim().length > 0 ||
     sector.trim().length > 0 ||
     subcategoria.trim().length > 0 ||
@@ -487,20 +580,57 @@ export default function BuscarClient({
 
   const comunaLabel = useMemo(() => {
     if (initialComunaNombre) return initialComunaNombre;
+    if (resolvedComuna?.nombre) return resolvedComuna.nombre;
     if (!comuna) return "";
     return prettyComunaSlug(comuna);
-  }, [comuna, initialComunaNombre]);
+  }, [comuna, initialComunaNombre, resolvedComuna]);
 
-  // Sincronizar inputs desde URL al cargar o al navegar
   useEffect(() => {
     setQInput(prettyQuery(q));
   }, [q]);
+
   useEffect(() => {
     if (showComunaPicker) return;
     setComunaInput(comunaLabel);
     setSelectedComunaSlug(comuna || null);
     setOpenComuna(false);
-  }, [comuna, comunaLabel, showComunaPicker]);
+  }, [comuna, comunaLabel, showComunaPicker, resolvedComuna]);
+
+  useEffect(() => {
+    const raw = (comunaProp ?? initialComuna ?? comunaFromUrl).trim();
+
+    if (!raw) {
+      setResolvedComuna(null);
+      return;
+    }
+
+    if (!/^\d+$/.test(raw)) {
+      setResolvedComuna(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    fetch(`/api/suggest/comunas-by-id?id=${encodeURIComponent(raw)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+
+        if (data?.ok && data.comuna) {
+          setResolvedComuna(data.comuna);
+          setSelectedComunaSlug(data.comuna.slug || raw);
+        } else {
+          setResolvedComuna(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedComuna(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [comunaProp, initialComuna, comunaFromUrl]);
 
   const sectorLabel = useMemo(() => {
     if (!sector) return "";
@@ -508,15 +638,15 @@ export default function BuscarClient({
   }, [sector]);
 
   const subcategoriaLabel = useMemo(() => {
+    if (initialSubcategoriaNombre?.trim()) return initialSubcategoriaNombre.trim();
     if (!subcategoria) return "";
     return subcategoria
       .split("-")
       .filter(Boolean)
       .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
       .join(" ");
-  }, [subcategoria]);
+  }, [initialSubcategoriaNombre, subcategoria]);
 
-  /** Plural para título de página con subcategoría: "Electricista" → "Electricistas". */
   const subcategoriaLabelPlural = useMemo(() => {
     const L = subcategoriaLabel.trim();
     if (!L) return "";
@@ -526,7 +656,6 @@ export default function BuscarClient({
   }, [subcategoriaLabel]);
 
   const isComunaPage = comuna.trim().length > 0;
-  const soloComunaView = isComunaPage && !q.trim();
   const busquedaView = q.trim().length > 0;
 
   const [sectoresPorComuna, setSectoresPorComuna] = useState<SectorConteo[]>([]);
@@ -537,10 +666,10 @@ export default function BuscarClient({
   const [tagsPorSector, setTagsPorSector] = useState<TagPorSector[]>([]);
   const [loadingTagsPorSector, setLoadingTagsPorSector] = useState(false);
   const [quickFilter, setQuickFilter] = useState<QuickFilterValue>("todos");
+  const [tipoFicha, setTipoFicha] = useState<TipoFichaFiltro>("todas");
 
   const sectorActivo = sector.trim().length > 0;
 
-  // Autocomplete del input principal (intent/comuna/sector); solo estado local
   useEffect(() => {
     const term = qInput.trim();
     if (term.length < 2) {
@@ -557,6 +686,7 @@ export default function BuscarClient({
       const termNorm = term.toLowerCase().trim();
       const qFromUrlNorm = (q || "").toLowerCase().trim();
       const isSyncedFromUrl = termNorm === qFromUrlNorm;
+
       fetch(`/api/autocomplete?${params.toString()}`)
         .then((res) => res.json())
         .then((data: { ok?: boolean; suggestions?: AutocompleteSuggestion[] }) => {
@@ -570,12 +700,12 @@ export default function BuscarClient({
         })
         .catch(() => setQuerySuggestions([]));
     }, 200);
+
     return () => {
       if (queryDebounceRef.current) clearTimeout(queryDebounceRef.current);
     };
   }, [qInput, selectedComunaSlug, q]);
 
-  // Autocomplete de comuna: solo estado local; no abrir dropdown si el valor ya es el seleccionado (ej. cargado desde URL)
   useEffect(() => {
     const term = comunaInput.trim();
     if (term.length < 2) {
@@ -583,9 +713,11 @@ export default function BuscarClient({
       setOpenComuna(false);
       return;
     }
+
     const selectedLabel = selectedComunaSlug ? prettyComunaSlug(selectedComunaSlug) : "";
     const isShowingSelectedComuna =
       !!selectedComunaSlug && term.toLowerCase() === selectedLabel.toLowerCase();
+
     if (comunaDebounceRef.current) clearTimeout(comunaDebounceRef.current);
     comunaDebounceRef.current = setTimeout(() => {
       fetch(`/api/suggest/comunas?q=${encodeURIComponent(term)}`)
@@ -600,19 +732,26 @@ export default function BuscarClient({
         })
         .catch(() => setComunaSuggestions([]));
     }, 200);
+
     return () => {
       if (comunaDebounceRef.current) clearTimeout(comunaDebounceRef.current);
     };
   }, [comunaInput, selectedComunaSlug]);
 
-  const handleClickOutside = useCallback((e: MouseEvent) => {
-    const target = e.target as Node;
-    if (queryBoxRef.current && !queryBoxRef.current.contains(target)) setOpenQuerySuggestions(false);
-    if (comunaBoxRef.current && !comunaBoxRef.current.contains(target)) {
-      setOpenComuna(false);
-      if (initialComuna && showComunaPicker) setShowComunaPicker(false);
-    }
-  }, [initialComuna, showComunaPicker]);
+  const handleClickOutside = useCallback(
+    (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (queryBoxRef.current && !queryBoxRef.current.contains(target)) {
+        setOpenQuerySuggestions(false);
+      }
+      if (comunaBoxRef.current && !comunaBoxRef.current.contains(target)) {
+        setOpenComuna(false);
+        if (initialComuna && showComunaPicker) setShowComunaPicker(false);
+      }
+    },
+    [initialComuna, showComunaPicker]
+  );
+
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -625,31 +764,20 @@ export default function BuscarClient({
       (parsed.comunaSlug || selectedComunaSlug || comuna.trim() || "").trim();
     const sectorSlug = (parsed.sectorSlug || sector.trim() || "").trim();
 
-    // Si la intención reconoce una subcategoría/rubro y hay comuna,
-    // resolver SIEMPRE como búsqueda estructurada por subcategoría.
     if (comunaSlug && sectorSlug && finalQ) {
       const subcatSlug = finalQ.toLowerCase().replace(/\s+/g, "-");
-
-      // En página de comuna usamos subcategoria por query param para mantener navegación fluida;
-      // en /buscar redirigimos a la ruta estructurada.
-      if (initialComuna) {
-        router.push(
-          `/${encodeURIComponent(comunaSlug)}?subcategoria=${encodeURIComponent(subcatSlug)}`
-        );
-      } else {
-        router.push(`/${encodeURIComponent(comunaSlug)}/${encodeURIComponent(subcatSlug)}`);
-      }
+      router.push(`/${encodeURIComponent(comunaSlug)}/${encodeURIComponent(subcatSlug)}`);
       return;
     }
 
-    // Fallback: búsqueda libre en /buscar
     const params = new URLSearchParams();
     if (finalQ) params.set("q", finalQ);
     if (comunaSlug) params.set("comuna", comunaSlug);
     if (sectorSlug) params.set("sector", sectorSlug);
     if (tipo.trim()) params.set("tipo_actividad", tipo.trim());
+
     router.push(params.toString() ? `/buscar?${params.toString()}` : "/buscar");
-  }, [qInput, selectedComunaSlug, comuna, sector, tipo, initialComuna, router]);
+  }, [qInput, selectedComunaSlug, comuna, sector, tipo, router]);
 
   useEffect(() => {
     if (!comuna.trim()) {
@@ -658,6 +786,7 @@ export default function BuscarClient({
     }
     let cancelled = false;
     setLoadingSectores(true);
+
     fetch(`/api/buscar/sectores-por-comuna?comuna=${encodeURIComponent(comuna.trim())}`)
       .then((res) => res.json())
       .then((data) => {
@@ -670,6 +799,7 @@ export default function BuscarClient({
       .finally(() => {
         if (!cancelled) setLoadingSectores(false);
       });
+
     return () => {
       cancelled = true;
     };
@@ -682,9 +812,8 @@ export default function BuscarClient({
     }
     let cancelled = false;
     setLoadingServiciosTop(true);
-    fetch(
-      `/api/buscar/tags-populares?comuna=${encodeURIComponent(comuna.trim())}&limit=8`
-    )
+
+    fetch(`/api/buscar/tags-populares?comuna=${encodeURIComponent(comuna.trim())}&limit=8`)
       .then((res) => res.json())
       .then((data: { ok?: boolean; tags?: TagPorSector[] }) => {
         if (cancelled || !data?.ok || !Array.isArray(data.tags)) return;
@@ -696,6 +825,7 @@ export default function BuscarClient({
       .finally(() => {
         if (!cancelled) setLoadingServiciosTop(false);
       });
+
     return () => {
       cancelled = true;
     };
@@ -708,9 +838,8 @@ export default function BuscarClient({
     }
     let cancelled = false;
     setLoadingTagsPorSector(true);
-    fetch(
-      `/api/buscar/tags-por-sector?sector=${encodeURIComponent(sector.trim())}&limit=8`
-    )
+
+    fetch(`/api/buscar/tags-por-sector?sector=${encodeURIComponent(sector.trim())}&limit=8`)
       .then((res) => res.json())
       .then((data: { ok?: boolean; tags?: TagPorSector[] }) => {
         if (cancelled || !data?.ok || !Array.isArray(data.tags)) return;
@@ -722,6 +851,7 @@ export default function BuscarClient({
       .finally(() => {
         if (!cancelled) setLoadingTagsPorSector(false);
       });
+
     return () => {
       cancelled = true;
     };
@@ -732,42 +862,13 @@ export default function BuscarClient({
   }, [q]);
 
   const headerTitle = useMemo(() => {
-    const busqueda = q.trim();
+    const busqueda = qEfectiva.trim();
     if (busqueda && comunaLabel) return `Buscando ${busqueda} en ${comunaLabel}`;
     if (comunaLabel) return `Buscando en ${comunaLabel}`;
     if (busqueda) return `Buscando ${busqueda}`;
     return "Buscar";
-  }, [q, comunaLabel]);
+  }, [qEfectiva, comunaLabel]);
 
-  const applyFilters = (updates: {
-    comuna?: string;
-    sector?: string;
-    tipo_actividad?: string;
-  }) => {
-    const params = new URLSearchParams();
-    const nextQ = q.trim();
-    const nextComuna = updates.comuna !== undefined ? (updates.comuna || "").trim() : comuna.trim();
-    const nextSector = updates.sector !== undefined ? (updates.sector || "").trim() : sector.trim();
-    const nextTipo =
-      updates.tipo_actividad !== undefined ? (updates.tipo_actividad || "").trim() : tipo.trim();
-
-    if (nextQ) params.set("q", nextQ);
-    if (nextComuna) params.set("comuna", nextComuna);
-    if (nextSector) params.set("sector", nextSector);
-    if (nextTipo) params.set("tipo_actividad", nextTipo);
-
-    const qs = params.toString();
-    router.push(qs ? `/buscar?${qs}` : "/buscar");
-  };
-
-  const buildSearchUrl = (query: string, comunaSlug: string) => {
-    const params = new URLSearchParams();
-    if (query.trim()) params.set("q", query.trim());
-    if (comunaSlug) params.set("comuna", comunaSlug);
-    return `/buscar?${params.toString()}`;
-  };
-
-  /** URL para chips de refinamiento: conserva sector, comuna y todos los filtros; solo reemplaza q. */
   const buildChipUrl = (chipQ: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("q", chipQ.trim());
@@ -786,11 +887,9 @@ export default function BuscarClient({
 
   const buildSubcategoriaUrl = (subcategoriaSlug: string) => {
     if (!comuna) return "/buscar";
-    if (initialComuna) return `/${encodeURIComponent(comuna)}?subcategoria=${encodeURIComponent(subcategoriaSlug)}`;
     return `/${encodeURIComponent(comuna)}/${encodeURIComponent(subcategoriaSlug)}`;
   };
 
-  /** Dentro de una comuna: si la sugerencia es subcategoría (intent/intent_comuna), navegar a ruta estructurada; si no, usar url de búsqueda libre. */
   const resolveSuggestionUrl = useCallback(
     (suggestion: AutocompleteSuggestion): string => {
       if (suggestion.type === "intent" && comuna) {
@@ -804,11 +903,6 @@ export default function BuscarClient({
     [comuna]
   );
 
-  /**
-   * Al seleccionar una sugerencia:
-   * - intent_comuna en /buscar → separar servicio y comuna y ejecutar búsqueda limpia.
-   * - resto de casos → navegar usando resolveSuggestionUrl (rutas estructuradas o /buscar).
-   */
   const handleSuggestionSelect = useCallback(
     (suggestion: AutocompleteSuggestion) => {
       setOpenQuerySuggestions(false);
@@ -825,7 +919,6 @@ export default function BuscarClient({
         if (nextQ) params.set("q", nextQ);
         if (suggestion.comuna) params.set("comuna", suggestion.comuna);
 
-        // Mantener el input limpio y separar correctamente servicio y comuna
         setQInput(nextQ);
         router.push(`/buscar?${params.toString()}`);
         return;
@@ -842,28 +935,14 @@ export default function BuscarClient({
       slug: s.slug,
       label: s.label,
       count: bySlug.get(s.slug) ?? 0,
-    }))
-      .sort((a, b) => {
-        const aHas = a.count > 0;
-        const bHas = b.count > 0;
-        if (aHas !== bHas) return aHas ? -1 : 1; // con resultados primero
-        if (b.count !== a.count) return b.count - a.count; // desc por count
-        return a.label.localeCompare(b.label, "es"); // estable/legible
-      });
+    })).sort((a, b) => {
+      const aHas = a.count > 0;
+      const bHas = b.count > 0;
+      if (aHas !== bHas) return aHas ? -1 : 1;
+      if (b.count !== a.count) return b.count - a.count;
+      return a.label.localeCompare(b.label, "es");
+    });
   }, [sectoresPorComuna]);
-
-  const buildSearchUrlWithSector = (query: string) => {
-    const params = new URLSearchParams();
-    if (query.trim()) params.set("q", query.trim());
-    if (sector) params.set("sector", sector);
-    if (comuna) params.set("comuna", comuna);
-    return `/buscar?${params.toString()}`;
-  };
-
-  const otrosSectores = useMemo(
-    () => SECTORES.filter((s) => s.slug !== sector),
-    [sector]
-  );
 
   const pageViewType = initialComuna ? "page_view_comuna" : "page_view_search";
   const comunaSlugForTrack = initialComuna || (comuna.trim() || null);
@@ -874,12 +953,14 @@ export default function BuscarClient({
         eventType={pageViewType}
         comuna_slug={comunaSlugForTrack || null}
       />
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <header className="mb-2 sm:mb-3">
           <nav className="flex items-center gap-2 text-sm text-slate-600 mb-2" aria-label="Breadcrumb">
             <a href="/" className="font-medium text-sky-700 hover:text-sky-800">
               Inicio
             </a>
+
             {hasFilters && comuna ? (
               <>
                 <span aria-hidden>/</span>
@@ -889,15 +970,20 @@ export default function BuscarClient({
                 >
                   {comunaLabel}
                 </a>
+
                 {subcategoria ? (
                   <>
                     <span aria-hidden>/</span>
-                    <span className="font-semibold text-slate-900">{subcategoriaLabel || subcategoria}</span>
+                    <span className="font-semibold text-slate-900">
+                      {subcategoriaLabel || subcategoria}
+                    </span>
                   </>
                 ) : sector ? (
                   <>
                     <span aria-hidden>/</span>
-                    <span className="font-semibold text-slate-900">{sectorLabel || sector}</span>
+                    <span className="font-semibold text-slate-900">
+                      {sectorLabel || sector}
+                    </span>
                   </>
                 ) : null}
               </>
@@ -913,6 +999,7 @@ export default function BuscarClient({
               </>
             )}
           </nav>
+
           <div className="mt-1 mb-2">
             <a
               href="/"
@@ -921,6 +1008,7 @@ export default function BuscarClient({
               ← Volver al inicio
             </a>
           </div>
+
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
             {headerTitle}
           </h1>
@@ -933,8 +1021,7 @@ export default function BuscarClient({
                 Comienza desde el buscador principal
               </h2>
               <p className="text-sm text-slate-600 mb-5">
-                Elige una comuna para explorar emprendimientos o escribe lo que
-                buscas en el buscador de la página de inicio.
+                Elige una comuna para explorar emprendimientos o escribe lo que buscas en el buscador de la página de inicio.
               </p>
               <a
                 href="/"
@@ -947,7 +1034,9 @@ export default function BuscarClient({
         ) : (
           <section className="space-y-4">
             <form
-              className={`rounded-2xl border border-slate-200 bg-white/80 px-4 py-4 sm:px-6 sm:py-5 shadow-sm ${initialComuna ? "space-y-5" : "flex flex-wrap gap-4 items-end"}`}
+              className={`rounded-2xl border border-slate-200 bg-white/80 px-4 py-4 sm:px-6 sm:py-5 shadow-sm ${
+                initialComuna ? "space-y-5" : "flex flex-wrap gap-4 items-end"
+              }`}
               onSubmit={(e) => {
                 e.preventDefault();
                 runSearch();
@@ -965,11 +1054,13 @@ export default function BuscarClient({
                         Buscando en
                       </p>
                     )}
+
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                       <span className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2" aria-hidden>
                         <span>📍</span>
                         {comunaLabel || comuna}
                       </span>
+
                       {!showComunaPicker ? (
                         <button
                           type="button"
@@ -985,6 +1076,7 @@ export default function BuscarClient({
                       ) : null}
                     </div>
                   </div>
+
                   {showComunaPicker ? (
                     <div ref={comunaBoxRef} className="relative">
                       <label className="text-[11px] font-semibold tracking-wide uppercase text-slate-500 mb-1 block">
@@ -1037,7 +1129,11 @@ export default function BuscarClient({
                     value={comunaInput}
                     onChange={(e) => setComunaInput(e.target.value)}
                     onFocus={() => {
-                      const yaEsLaSeleccionada = selectedComunaSlug && comunaInput.trim() && comunaLabel && comunaInput.trim().toLowerCase() === comunaLabel.toLowerCase();
+                      const yaEsLaSeleccionada =
+                        selectedComunaSlug &&
+                        comunaInput.trim() &&
+                        comunaLabel &&
+                        comunaInput.trim().toLowerCase() === comunaLabel.toLowerCase();
                       if (yaEsLaSeleccionada) return;
                       if (comunaSuggestions.length > 0) setOpenComuna(true);
                     }}
@@ -1074,77 +1170,82 @@ export default function BuscarClient({
                     : "¿Qué servicio buscas?"}
                 </label>
                 <div className={`flex flex-1 min-w-0 ${initialComuna ? "gap-2 items-end" : ""}`}>
-                <div ref={queryBoxRef} className="flex flex-col flex-1 min-w-0 relative">
-                <input
-                  type="text"
-                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 placeholder:text-slate-400"
-                  placeholder="Ej: gasfiter, panadería, clases de inglés"
-                  value={qInput}
-                  onChange={(e) => {
-                    setQInput(e.target.value);
-                    setOpenQuerySuggestions(true);
-                  }}
-                  onFocus={() => querySuggestions.length > 0 && setOpenQuerySuggestions(true)}
-                  onKeyDown={(e) => {
-                    if (!openQuerySuggestions || querySuggestions.length === 0) {
-                      if (e.key === "Enter") runSearch();
-                      return;
-                    }
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      setHighlightQueryIndex((i) =>
-                        i < querySuggestions.length - 1 ? i + 1 : 0
-                      );
-                      return;
-                    }
-                    if (e.key === "ArrowUp") {
-                      e.preventDefault();
-                      setHighlightQueryIndex((i) =>
-                        i > 0 ? i - 1 : querySuggestions.length - 1
-                      );
-                      return;
-                    }
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      if (highlightQueryIndex >= 0 && highlightQueryIndex < querySuggestions.length) {
-                        handleSuggestionSelect(querySuggestions[highlightQueryIndex]);
-                      } else runSearch();
-                      return;
-                    }
-                    if (e.key === "Escape") {
-                      e.preventDefault();
-                      setOpenQuerySuggestions(false);
-                      setHighlightQueryIndex(-1);
-                    }
-                  }}
-                />
-                <SearchAutocompleteDropdown
-                  suggestions={querySuggestions}
-                  open={openQuerySuggestions && querySuggestions.length > 0}
-                  highlightIndex={highlightQueryIndex}
-                  onSelect={(suggestion) => {
-                    handleSuggestionSelect(suggestion);
-                  }}
-                  onClose={() => {
-                    setOpenQuerySuggestions(false);
-                    setHighlightQueryIndex(-1);
-                  }}
-                  onHighlightChange={setHighlightQueryIndex}
-                  containerRef={queryBoxRef}
-                />
-              </div>
-              <button
-                type="submit"
-                className="h-9 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 shrink-0"
-              >
-                Buscar
-              </button>
+                  <div ref={queryBoxRef} className="flex flex-col flex-1 min-w-0 relative">
+                    <input
+                      type="text"
+                      className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 placeholder:text-slate-400"
+                      placeholder="Ej: gasfiter, panadería, clases de inglés"
+                      value={qInput}
+                      onChange={(e) => {
+                        setQInput(e.target.value);
+                        setOpenQuerySuggestions(true);
+                      }}
+                      onFocus={() => querySuggestions.length > 0 && setOpenQuerySuggestions(true)}
+                      onKeyDown={(e) => {
+                        if (!openQuerySuggestions || querySuggestions.length === 0) {
+                          if (e.key === "Enter") runSearch();
+                          return;
+                        }
+                        if (e.key === "ArrowDown") {
+                          e.preventDefault();
+                          setHighlightQueryIndex((i) =>
+                            i < querySuggestions.length - 1 ? i + 1 : 0
+                          );
+                          return;
+                        }
+                        if (e.key === "ArrowUp") {
+                          e.preventDefault();
+                          setHighlightQueryIndex((i) =>
+                            i > 0 ? i - 1 : querySuggestions.length - 1
+                          );
+                          return;
+                        }
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (
+                            highlightQueryIndex >= 0 &&
+                            highlightQueryIndex < querySuggestions.length
+                          ) {
+                            handleSuggestionSelect(querySuggestions[highlightQueryIndex]);
+                          } else {
+                            runSearch();
+                          }
+                          return;
+                        }
+                        if (e.key === "Escape") {
+                          e.preventDefault();
+                          setOpenQuerySuggestions(false);
+                          setHighlightQueryIndex(-1);
+                        }
+                      }}
+                    />
+                    <SearchAutocompleteDropdown
+                      suggestions={querySuggestions}
+                      open={openQuerySuggestions && querySuggestions.length > 0}
+                      highlightIndex={highlightQueryIndex}
+                      onSelect={(suggestion) => {
+                        handleSuggestionSelect(suggestion);
+                      }}
+                      onClose={() => {
+                        setOpenQuerySuggestions(false);
+                        setHighlightQueryIndex(-1);
+                      }}
+                      onHighlightChange={setHighlightQueryIndex}
+                      containerRef={queryBoxRef}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="h-9 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 shrink-0"
+                  >
+                    Buscar
+                  </button>
                 </div>
               </div>
             </form>
 
-            {/* Servicios más buscados en esta comuna (top subcategorías por cantidad) */}
-            {comuna && (
+            {comuna && !hasBusquedaTextual && (
               <section className="space-y-2">
                 <h2 className="text-sm font-semibold text-slate-700">
                   {comunaLabel
@@ -1177,110 +1278,108 @@ export default function BuscarClient({
             )}
 
             {comuna ? (
-              <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
-                {/* Columna izquierda: categorías (en móvil va debajo de resultados) */}
-                <aside className="w-full lg:w-72 lg:shrink-0 lg:sticky lg:top-24 order-2 lg:order-1">
-                  <section className="space-y-2">
-                    <h2 className="text-sm font-semibold text-slate-700">
-                      Categorías en esta comuna
-                    </h2>
-                    {loadingSectores ? (
-                      <div className="flex gap-2 flex-wrap">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <div
-                            key={i}
-                            className="h-10 w-full max-w-xs rounded-lg bg-slate-200 animate-pulse"
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <CategoriasExpandiblesComuna
-                        comuna={comuna}
-                        sectoresConCount={sectoresConCount}
-                        sectorActivo={sector}
-                        subcategoriaActiva={subcategoria || undefined}
-                        buildSubcategoriaUrl={buildSubcategoriaUrl}
-                      />
-                    )}
-                  </section>
-                </aside>
-                {/* Columna derecha: filtros + resultados (fade al cambiar subcategoría) */}
-                <div className="flex-1 min-w-0 w-full order-1 lg:order-2">
-                  <ResultsFade resultKey={subcategoria || "all"}>
-                    <div className="space-y-4">
-                  {(comuna || subcategoria) && (
-                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Filtros activos
-                      </p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {comuna && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
-                            Comuna: <span className="font-medium">{comunaLabel || comuna}</span>
-                          </span>
-                        )}
-                        {subcategoria && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1 text-sm text-sky-800 border border-sky-200">
-                            Subcategoría: <span className="font-medium">{subcategoriaLabel || subcategoria}</span>
-                            <Link
-                              href={`/${encodeURIComponent(comuna)}`}
-                              className="ml-0.5 rounded-full p-0.5 hover:bg-sky-200/70 text-sky-700 focus:outline-none"
-                              title="Quitar filtro de subcategoría"
-                              aria-label="Quitar filtro de subcategoría"
-                            >
-                              <span aria-hidden>×</span>
-                            </Link>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <ComunaQuickFilters
-                    active={quickFilter}
-                    onSelect={setQuickFilter}
-                  />
+              hasBusquedaTextual ? (
+                <section className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-center sm:gap-4">
+                    <ComunaQuickFilters active={quickFilter} onSelect={setQuickFilter} />
+                    <TipoFichaSelect value={tipoFicha} onChange={setTipoFicha} />
+                  </div>
+
                   <PublicSearchResults
-                    query={q}
                     comuna={comuna}
-                    sectorSlug={sector}
-                    subcategoriaSlug={subcategoria}
-                    tipoActividad={tipo}
-                    orderBy={quickFilter}
-                    onSuggestedTerms={setSuggestedTerms}
+                    q={qForApi}
+                    subcategoriaSlug={subcategoria || undefined}
+                    subcategoriaId={initialSubcategoriaId ?? undefined}
                   />
-                  {busquedaView && suggestedTerms.length > 0 && (
-                    <section className="space-y-2 pt-2">
-                      <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                        Quizás buscabas
+                </section>
+              ) : (
+                <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+                  <aside className="w-full lg:w-72 lg:shrink-0 lg:sticky lg:top-24 order-2 lg:order-1">
+                    <section className="space-y-2">
+                      <h2 className="text-sm font-semibold text-slate-700">
+                        Categorías en esta comuna
                       </h2>
-                      <div className="flex flex-wrap gap-2">
-                        {suggestedTerms.slice(0, 6).map((term) => (
-                          <Link
-                            key={term}
-                            href={buildChipUrl(term)}
-                            className="rounded-full px-3 py-1.5 text-sm font-medium bg-slate-100 text-slate-700 hover:bg-sky-100 hover:text-sky-800 border border-slate-200 transition-colors"
-                          >
-                            {term}
-                          </Link>
-                        ))}
-                      </div>
+                      {loadingSectores ? (
+                        <div className="flex gap-2 flex-wrap">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <div
+                              key={i}
+                              className="h-10 w-full max-w-xs rounded-lg bg-slate-200 animate-pulse"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <CategoriasExpandiblesComuna
+                          comuna={comuna}
+                          sectoresConCount={sectoresConCount}
+                          sectorActivo={sector}
+                          subcategoriaActiva={subcategoria || undefined}
+                          buildSubcategoriaUrl={buildSubcategoriaUrl}
+                        />
+                      )}
                     </section>
-                  )}
-                    </div>
-                  </ResultsFade>
+                  </aside>
+
+                  <div className="flex-1 min-w-0 w-full order-1 lg:order-2">
+                    <ResultsFade resultKey={subcategoria || "all"}>
+                      <div className="space-y-4">
+                        {(comuna || subcategoria) && (
+                          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                              Filtros activos
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {comuna && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
+                                  Comuna: <span className="font-medium">{comunaLabel || comuna}</span>
+                                </span>
+                              )}
+                              {subcategoria && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1 text-sm text-sky-800 border border-sky-200">
+                                  Subcategoría: <span className="font-medium">{subcategoriaLabel || subcategoria}</span>
+                                  <Link
+                                    href={`/${encodeURIComponent(comuna)}`}
+                                    className="ml-0.5 rounded-full p-0.5 hover:bg-sky-200/70 text-sky-700 focus:outline-none"
+                                    title="Quitar filtro de subcategoría"
+                                    aria-label="Quitar filtro de subcategoría"
+                                  >
+                                    <span aria-hidden>×</span>
+                                  </Link>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-center sm:gap-4">
+                          <ComunaQuickFilters active={quickFilter} onSelect={setQuickFilter} />
+                          <TipoFichaSelect value={tipoFicha} onChange={setTipoFicha} />
+                        </div>
+
+                        <PublicSearchResults
+                          comuna={comuna}
+                          q={qForApi}
+                          subcategoriaSlug={subcategoria || undefined}
+                          subcategoriaId={initialSubcategoriaId ?? undefined}
+                        />
+                      </div>
+                    </ResultsFade>
+                  </div>
                 </div>
-              </div>
+              )
             ) : (
               <>
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-center sm:gap-4 mb-2">
+                  <ComunaQuickFilters active={quickFilter} onSelect={setQuickFilter} />
+                  <TipoFichaSelect value={tipoFicha} onChange={setTipoFicha} />
+                </div>
                 <PublicSearchResults
-                  query={q}
                   comuna={comuna}
-                  sectorSlug={sector}
-                  subcategoriaSlug={subcategoria}
-                  tipoActividad={tipo}
-                  orderBy={quickFilter}
-                  onSuggestedTerms={setSuggestedTerms}
+                  q={qForApi}
+                  subcategoriaSlug={subcategoria || undefined}
+                  subcategoriaId={initialSubcategoriaId ?? undefined}
                 />
+
                 {busquedaView && suggestedTerms.length > 0 && (
                   <section className="space-y-2 pt-2">
                     <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">

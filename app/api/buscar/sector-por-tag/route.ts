@@ -4,6 +4,7 @@
  */
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { normalizarSlug } from "@/lib/slugify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,18 +18,10 @@ function s(v: unknown) {
   return String(v ?? "").trim();
 }
 
-function norm(v: string) {
-  return s(v)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, "-");
-}
-
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const tag = norm(searchParams.get("tag") || "");
+    const tag = normalizarSlug(searchParams.get("tag") || "");
 
     if (!tag) {
       return NextResponse.json({ ok: true, sector_slug: null });

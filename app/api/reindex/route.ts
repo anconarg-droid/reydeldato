@@ -116,7 +116,6 @@ function transformRow(row: any) {
     responsable_publico: s(row.responsable_publico),
 
     plan: s(row.plan),
-    estado: s(row.estado),
     estado_publicacion: estadoPublicacion,
     publicado: estadoPublicacion === "publicado",
 
@@ -248,7 +247,6 @@ export async function GET() {
         "mostrar_responsable",
         "responsable_publico",
         "plan",
-        "estado",
         "estado_publicacion",
         "publicado",
         "subcategorias_nombres_arr",

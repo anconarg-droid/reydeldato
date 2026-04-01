@@ -1,30 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ComunaAutocomplete from "@/components/ComunaAutocomplete";
 
-type Picked = {
-  id: string;
-  nombre: string;
+type CatalogComuna = {
   slug: string;
-  region: null | { id: string; nombre: string; slug: string };
-  country: null | { id: string; nombre: string; slug: string };
+  nombre: string;
+  region_nombre?: string | null;
+  region_id?: string | null;
 };
 
 export default function HomeSearch() {
   const [q, setQ] = useState("");
-  const [comunaText, setComunaText] = useState("");
-  const [picked, setPicked] = useState<Picked | null>(null);
+  const [comunaSlug, setComunaSlug] = useState("");
+  const [catalogComunas, setCatalogComunas] = useState<CatalogComuna[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/publicar/catalogo");
+        const data = await res.json();
+        if (!cancelled && data?.ok && Array.isArray(data.comunas)) {
+          setCatalogComunas(data.comunas);
+        }
+      } catch {
+        if (!cancelled) setCatalogComunas([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const comunaOptions = useMemo(
+    () =>
+      catalogComunas.map((c) => ({
+        slug: c.slug,
+        nombre: c.nombre,
+        region_nombre: c.region_nombre ?? null,
+      })),
+    [catalogComunas]
+  );
 
   const goBuscar = () => {
     const params = new URLSearchParams();
     if (q.trim()) params.set("q", q.trim());
 
-    // ✅ la búsqueda real se hace por slug (estable)
-    if (picked?.slug) params.set("comuna", picked.slug);
+    if (comunaSlug.trim()) params.set("comuna", comunaSlug.trim());
 
-    // ✅ si quieres mandar regionId también (útil para tu /api/buscar)
-    if (picked?.region?.id) params.set("regionId", picked.region.id);
+    const row = catalogComunas.find((c) => c.slug === comunaSlug);
+    if (row?.region_id) params.set("regionId", String(row.region_id));
 
     window.location.href = `/buscar?${params.toString()}`;
   };
@@ -51,11 +77,9 @@ export default function HomeSearch() {
         />
 
         <ComunaAutocomplete
-          value={comunaText}
-          onSelect={(sel, typed) => {
-            setPicked(sel as any);
-            setComunaText(typed);
-          }}
+          name="comuna_ui_demo"
+          options={comunaOptions}
+          onSelectedSlugChange={setComunaSlug}
           placeholder="Comuna (ej: San..., Calera..., Maipú...)"
         />
 
@@ -77,12 +101,6 @@ export default function HomeSearch() {
 
       <div style={{ marginTop: 10, fontSize: 12, opacity: 0.75 }}>
         Tip: si eliges comuna, el sistema prioriza locales; luego expande a región/nacional según tu lógica.
-      </div>
-
-      <div style={{ marginTop: 18 }}>
-        <a href="/buscar?debug=1" style={{ opacity: 0.7 }}>
-          Ir a buscador de pruebas (debug)
-        </a>
       </div>
     </main>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatDateTimeEsCL } from "@/lib/formatDateTimeEsCL";
 
 type Item = {
   id: string;
@@ -205,7 +206,7 @@ export default function AdminEmprendimientosClient({ initialItems }: Props) {
               <div style={{ fontWeight: 800, color: "#111827" }}>{item.nombre}</div>
               {item.updated_at ? (
                 <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
-                  Actualizado: {new Date(item.updated_at).toLocaleString()}
+                  Actualizado: {formatDateTimeEsCL(item.updated_at)}
                 </div>
               ) : null}
             </div>

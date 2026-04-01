@@ -1,78 +1,114 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-
-export const runtime = "nodejs";
-
-function s(v: any): string {
-  if (v === null || v === undefined) return "";
-  return String(v).trim();
-}
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { panelInsightCase } from "@/lib/panelInsightCase";
 
 export async function GET(req: Request) {
   try {
-    const url = new URL(req.url);
-    const id = s(url.searchParams.get("id"));
-    const range = s(url.searchParams.get("range")).toLowerCase() || "total";
+    const { searchParams } = new URL(req.url);
+    const slug = searchParams.get("slug");
+    const idParam = searchParams.get("id");
+    const rangeRaw = searchParams.get("range");
+    const range =
+      rangeRaw === "7d" || rangeRaw === "30d" || rangeRaw === "all"
+        ? rangeRaw
+        : "all";
 
-    if (!id) {
+    if (!slug && !idParam) {
       return NextResponse.json(
-        { ok: false, message: "Falta id" },
+        { ok: false, error: "Missing slug or id" },
         { status: 400 }
       );
     }
 
-    const { data: item, error: itemError } = await supabase
-      .from("emprendedores")
-      .select("id, nombre, slug, estado, plan")
-      .eq("id", id)
-      .maybeSingle();
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    if (itemError) throw itemError;
+    let emprendedor_id: string;
 
-    if (!item) {
-      return NextResponse.json(
-        { ok: false, message: "No encontramos el emprendimiento" },
-        { status: 404 }
-      );
+    if (idParam) {
+      const { data: byId, error: byIdErr } = await supabase
+        .from("emprendedores")
+        .select("id")
+        .eq("id", idParam)
+        .maybeSingle();
+      if (byIdErr || !byId) {
+        return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+      }
+      emprendedor_id = byId.id;
+    } else {
+      const { data: emp, error: empError } = await supabase
+        .from("emprendedores")
+        .select("id")
+        .eq("slug", slug as string)
+        .single();
+
+      if (empError || !emp) {
+        return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+      }
+
+      emprendedor_id = emp.id;
     }
 
-    const { data: statsRow, error: statsError } = await supabase
-      .from("emprendedor_stats")
-      .select("page_view_profile, whatsapp_click, instagram_click, website_click")
-      .eq("emprendedor_id", id)
-      .maybeSingle();
-
-    if (statsError) {
-      throw statsError;
+    const now = new Date();
+    let startDate: Date | null = null;
+    if (range === "7d") {
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 7);
+    } else if (range === "30d") {
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 30);
     }
 
-    const vistas_ficha = Number(statsRow?.page_view_profile ?? 0);
-    const click_whatsapp = Number(statsRow?.whatsapp_click ?? 0);
-    const click_instagram = Number(statsRow?.instagram_click ?? 0);
-    const click_web = Number(statsRow?.website_click ?? 0);
+    // 2. traer eventos
+    let eventsQuery = supabase
+      .from("analytics_events")
+      .select("event_type")
+      .eq("emprendedor_id", emprendedor_id);
+
+    if (startDate) {
+      eventsQuery = eventsQuery.gte("created_at", startDate.toISOString());
+    }
+
+    const { data: events, error: eventsError } = await eventsQuery;
+
+    if (eventsError) {
+      return NextResponse.json({ ok: false, error: "Error loading events" }, { status: 500 });
+    }
+
+    // 3. agrupar métricas
+    let impresiones = 0;
+    let visitas = 0;
+    let click_whatsapp = 0;
+    let click_ficha = 0;
+
+    for (const e of events || []) {
+      if (e.event_type === "search_result_impression") impresiones++;
+      if (e.event_type === "page_view_profile") visitas++;
+      if (e.event_type === "whatsapp_click") click_whatsapp++;
+      if (e.event_type === "card_view_click") click_ficha++;
+    }
+
+    const insight_case = panelInsightCase({
+      impresiones,
+      visitas,
+      click_whatsapp,
+    });
 
     return NextResponse.json({
       ok: true,
-      item,
-      stats: {
-        vistas_ficha,
+      data: {
+        impresiones,
+        visitas,
         click_whatsapp,
-        click_instagram,
-        click_web,
+        click_ficha,
+        insight_case,
       },
     });
-  } catch (e: any) {
-    return NextResponse.json(
-      {
-        ok: false,
-        message: e?.message || "No se pudo cargar el panel",
-      },
-      { status: 500 }
-    );
+
+  } catch (e) {
+    console.error("PANEL ERROR:", e);
+    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
   }
 }

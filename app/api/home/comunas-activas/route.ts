@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  abiertaPorMinimosFromVwRow,
+  comunaPublicaAbierta,
+} from "@/lib/comunaPublicaAbierta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,56 +13,148 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const out: R[] = [];
+  let idx = 0;
+  const pool = Array.from({ length: Math.max(1, limit) }).map(async () => {
+    while (idx < items.length) {
+      const current = items[idx++];
+      out.push(await fn(current));
+    }
+  });
+  await Promise.all(pool);
+  return out;
+}
+
 export async function GET() {
   try {
-    const { data: activas, error: errActivas } = await supabase
-      .from("comunas_activas")
-      .select("comuna_slug, comuna_nombre, orden")
-      .eq("activa", true)
-      .order("orden", { ascending: true })
-      .order("comuna_nombre", { ascending: true });
+    /**
+     * Comunas con resultados (home): solo comuna_publica_abierta =
+     * forzar_abierta OR abierta_por_minimos(vw_apertura_comuna_v2).
+     * No usar solo comunas_config / comunas_activas (evita doble listado con “en preparación”).
+     */
+    type Candidate = {
+      id: number;
+      slug: string;
+      nombre: string;
+      forzar_abierta: boolean;
+      motivo_apertura_override: string | null;
+      abierta_por_minimos: boolean;
+      comuna_publica_abierta: boolean;
+    };
 
-    if (errActivas) {
+    const { data: comunasRows, error: comunasErr } = await supabase
+      .from("comunas")
+      .select("id, slug, nombre, forzar_abierta, motivo_apertura_override")
+      .order("nombre", { ascending: true });
+
+    if (comunasErr) {
       return NextResponse.json(
-        { ok: false, error: errActivas.message, items: [] },
+        { ok: false, error: comunasErr.message, items: [] },
         { status: 500 }
       );
     }
 
-    const slugs = (activas || []).map((r: any) => String(r.comuna_slug || "").trim()).filter(Boolean);
-    if (slugs.length === 0) {
+    const { data: vwRows, error: vwErr } = await supabase
+      .from("vw_apertura_comuna_v2")
+      .select("comuna_slug, porcentaje_apertura");
+
+    if (vwErr) {
+      return NextResponse.json(
+        { ok: false, error: vwErr.message, items: [] },
+        { status: 500 }
+      );
+    }
+
+    const vwBySlug = new Map<string, { porcentaje_apertura: number }>();
+    for (const r of vwRows || []) {
+      const row = r as Record<string, unknown>;
+      const slug = String(row.comuna_slug || "").trim();
+      if (!slug) continue;
+      vwBySlug.set(slug, {
+        porcentaje_apertura: Number(row.porcentaje_apertura ?? 0),
+      });
+    }
+
+    const candidates: Candidate[] = (comunasRows || [])
+      .map((c: Record<string, unknown>) => {
+        const slug = String(c.slug || "").trim();
+        const vw = vwBySlug.get(slug) ?? null;
+        const forzar = Boolean(c.forzar_abierta);
+        const abierta_por_minimos = abiertaPorMinimosFromVwRow(vw);
+        const comuna_publica_abierta = comunaPublicaAbierta(forzar, vw);
+        return {
+          id: Number(c.id ?? 0),
+          slug,
+          nombre: String(c.nombre || "").trim(),
+          forzar_abierta: forzar,
+          motivo_apertura_override:
+            c.motivo_apertura_override == null
+              ? null
+              : String(c.motivo_apertura_override),
+          abierta_por_minimos,
+          comuna_publica_abierta,
+        };
+      })
+      .filter(
+        (c) =>
+          c.id > 0 &&
+          c.slug &&
+          c.nombre &&
+          c.comuna_publica_abierta
+      );
+
+    if (candidates.length === 0) {
       return NextResponse.json({ ok: true, items: [] });
     }
 
-    const { data: comunasRows } = await supabase.from("comunas").select("id, slug, nombre").in("slug", slugs);
-    const idBySlug = new Map<string, string>();
-    const nombreBySlug = new Map<string, string>();
-    for (const c of comunasRows || []) {
-      const slug = String(c.slug || "").trim();
-      idBySlug.set(slug, c.id);
-      nombreBySlug.set(slug, c.nombre || slug);
-    }
+    // 2) Conteo fuente de verdad: mismo RPC que usa /resultados (via /api/buscar).
+    //    Nos quedamos SOLO con comunas con count > 0.
+    const MAX_ITEMS = 12;
+    const counted = await mapWithConcurrency(
+      candidates,
+      4,
+      async (c): Promise<{
+        slug: string;
+        nombre: string;
+        count: number;
+        abierta_por_minimos: boolean;
+        forzar_abierta: boolean;
+        comuna_publica_abierta: boolean;
+        motivo_apertura_override: string | null;
+      }> => {
+        const { data, error } = await supabase.rpc("buscar_emprendedores_por_cobertura", {
+          comuna_buscada_id: c.id,
+          comuna_buscada_slug: c.slug,
+        });
+        if (error)
+          return {
+            slug: c.slug,
+            nombre: c.nombre,
+            count: 0,
+            abierta_por_minimos: c.abierta_por_minimos,
+            forzar_abierta: c.forzar_abierta,
+            comuna_publica_abierta: c.comuna_publica_abierta,
+            motivo_apertura_override: c.motivo_apertura_override,
+          };
+        return {
+          slug: c.slug,
+          nombre: c.nombre,
+          count: Array.isArray(data) ? data.length : 0,
+          abierta_por_minimos: c.abierta_por_minimos,
+          forzar_abierta: c.forzar_abierta,
+          comuna_publica_abierta: c.comuna_publica_abierta,
+          motivo_apertura_override: c.motivo_apertura_override,
+        };
+      }
+    );
 
-    const { data: counts } = await supabase
-      .from("emprendedores")
-      .select("comuna_base_id")
-      .eq("estado_publicacion", "publicado");
-
-    const countByComunaId = new Map<string, number>();
-    for (const row of counts || []) {
-      const id = String(row.comuna_base_id || "");
-      if (!id) continue;
-      countByComunaId.set(id, (countByComunaId.get(id) || 0) + 1);
-    }
-
-    const items = (activas || []).map((r: any) => {
-      const slug = String(r.comuna_slug || "").trim();
-      const nombre = String(r.comuna_nombre || nombreBySlug.get(slug) || slug).trim();
-      const id = idBySlug.get(slug);
-      const count = id ? countByComunaId.get(id) || 0 : 0;
-      return { slug, nombre, count };
-    });
-
+    // Bloque “Comunas con resultados”: públicas abiertas y con oferta visible (> 0)
+    const items = counted.filter((x) => (x.count || 0) > 0).slice(0, MAX_ITEMS);
     return NextResponse.json({ ok: true, items });
   } catch (e: any) {
     return NextResponse.json(

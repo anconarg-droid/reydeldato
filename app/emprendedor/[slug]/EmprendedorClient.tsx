@@ -14,6 +14,8 @@ type Emprendedor = {
   id: string;
   slug: string;
   nombre: string;
+  /** Dirección única cuando no hay fila en `locales` (legacy / API). */
+  direccion?: string;
   /** Frase corta opcional; se muestra debajo del nombre. */
   frase_negocio?: string;
   descripcion_corta: string;
@@ -168,6 +170,8 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
   }
 
   async function track(event: string, origen = "ficha") {
+    const i = item;
+    if (!i) return;
     try {
       await fetch("/api/track", {
         method: "POST",
@@ -175,8 +179,8 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          emprendimiento_id: item.id,
-          slug: item.slug,
+          emprendimiento_id: i.id,
+          slug: i.slug,
           event,
           origen,
         }),
@@ -210,13 +214,6 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
         ? item.web
         : `https://${item.web}`;
       window.open(web, "_blank");
-    }
-  };
-
-  const clickEmail = async () => {
-    await track("click_email", "ficha");
-    if (item.email) {
-      window.location.href = `mailto:${item.email}`;
     }
   };
 
@@ -330,15 +327,6 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
               </button>
             )}
 
-            {item.email && (
-              <button
-                onClick={clickEmail}
-                className="rounded-2xl bg-gray-700 px-5 py-3 text-base font-bold text-white"
-              >
-                Email
-              </button>
-            )}
-
             <button
               onClick={compartir}
               className="rounded-2xl border border-gray-300 bg-white px-5 py-3 text-base font-bold text-gray-900"
@@ -447,7 +435,7 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
               Cobertura
             </h2>
             <p className="text-lg leading-8 text-gray-700">
-              {item.comunas_cobertura_nombres?.replaceAll("|", ",")}
+              {item.comunas_cobertura_nombres.join(", ")}
             </p>
           </div>
         )}

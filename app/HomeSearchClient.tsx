@@ -9,6 +9,7 @@ import { getRegionShort } from "@/utils/regionShort";
 import SearchAutocompleteDropdown, {
   type AutocompleteSuggestion,
 } from "@/components/SearchAutocompleteDropdown";
+import HomeMasBuscado from "@/components/home/HomeMasBuscado";
 
 type ComunaSuggestion = {
   nombre: string;
@@ -20,7 +21,6 @@ type TagPopular = { tag: string; tagSlug: string; count: number };
 
 type Props = {
   sugerencias: string[];
-  /** Comuna desde URL (?comuna=slug) para placeholder y chips por comuna */
   initialComunaSlug?: string | null;
 };
 
@@ -32,9 +32,14 @@ function norm(v: string) {
     .trim();
 }
 
-const PLACEHOLDER_DEFAULT = "Ej: gasfiter, panadería, fletes";
+function slugify(v: string) {
+  return norm(v).replace(/\s+/g, "-");
+}
 
-function prettyComunaSlug(raw: string): string {
+const SEARCH_QUERY_PLACEHOLDER =
+  "¿Qué necesitas? Ej: gasfiter, peluquera, mecánico";
+
+function prettyComunaSlug(raw: string) {
   const v = String(raw ?? "").trim();
   if (!v) return "";
   if (v.includes(" ")) return v;
@@ -45,7 +50,10 @@ function prettyComunaSlug(raw: string): string {
     .join(" ");
 }
 
-export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Props) {
+export default function HomeSearchClient({
+  sugerencias,
+  initialComunaSlug,
+}: Props) {
   const router = useRouter();
 
   const [q, setQ] = useState("");
@@ -62,8 +70,6 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
   const [loadingComuna, setLoadingComuna] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [popularTags, setPopularTags] = useState<TagPopular[]>([]);
-  const [totalGlobal, setTotalGlobal] = useState<number | null>(null);
-  const [totalComuna, setTotalComuna] = useState<number | null>(null);
 
   const queryBoxRef = useRef<HTMLDivElement>(null);
   const comunaBoxRef = useRef<HTMLDivElement>(null);
@@ -71,48 +77,6 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
   const comunaDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const effectiveComunaSlug = selectedComunaSlug || initialComunaSlug || null;
-
-  // Cargar total global de emprendimientos publicados para el botón de la home
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/stats/emprendedores")
-      .then((res) => res.json())
-      .then((data: { ok?: boolean; total?: number }) => {
-        if (cancelled) return;
-        if (data?.ok && typeof data.total === "number") {
-          setTotalGlobal(data.total);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setTotalGlobal(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Cargar total por comuna cuando haya comuna efectiva
-  useEffect(() => {
-    if (!effectiveComunaSlug) {
-      setTotalComuna(null);
-      return;
-    }
-    let cancelled = false;
-    fetch(`/api/stats/emprendedores?comuna=${encodeURIComponent(effectiveComunaSlug)}`)
-      .then((res) => res.json())
-      .then((data: { ok?: boolean; total?: number }) => {
-        if (cancelled) return;
-        if (data?.ok && typeof data.total === "number") {
-          setTotalComuna(data.total);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setTotalComuna(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [effectiveComunaSlug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,75 +97,58 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
     };
   }, [effectiveComunaSlug]);
 
-  const placeholderText = useMemo(() => {
-    if (popularTags.length >= 2) {
-      return "Ej: " + popularTags.slice(0, 3).map((t) => t.tag).join(", ");
-    }
-    return PLACEHOLDER_DEFAULT;
-  }, [popularTags]);
-
-  const buttonLabel = useMemo(
-    () => (effectiveComunaSlug ? "Buscar en mi comuna" : "Buscar emprendimientos"),
-    [effectiveComunaSlug]
-  );
-
-  const statsLabel = useMemo(() => {
-    if (effectiveComunaSlug && totalComuna != null) {
-      const n = totalComuna;
-      const sufijo = n === 1 ? "emprendimiento publicado" : "emprendimientos publicados";
-      return `${n.toLocaleString("es-CL")} ${sufijo} en esta comuna`;
-    }
-    if (!effectiveComunaSlug && totalGlobal != null) {
-      const n = totalGlobal;
-      const sufijo = n === 1 ? "emprendimiento publicado" : "emprendimientos publicados";
-      return `${n.toLocaleString("es-CL")} ${sufijo} en Rey del Dato`;
-    }
-    return null;
-  }, [effectiveComunaSlug, totalComuna, totalGlobal]);
-
-  /**
-   * Selección de sugerencia desde autocomplete en home:
-   * - intent_comuna estructurado → navegar a /[comuna]/[servicio] y dejar inputs limpios.
-   * - resto → solo llenar q/comuna y dejar que el botón Buscar resuelva.
-   */
   const handleSuggestionSelect = useCallback(
     (suggestion: AutocompleteSuggestion) => {
       setOpenQuery(false);
       setHighlightIndex(-1);
 
+      if (suggestion.type === "comuna" && suggestion.comuna) {
+        setSelectedComunaSlug(suggestion.comuna);
+        setComunaInput(prettyComunaSlug(suggestion.comuna));
+        router.push(`/${encodeURIComponent(suggestion.comuna)}`);
+        return;
+      }
+
       if (suggestion.type === "intent_comuna" && suggestion.value && suggestion.comuna) {
-        const servicio = suggestion.value.trim();
+        const servicio = slugify(suggestion.value);
         const comunaSlug = suggestion.comuna;
-        const comunaPretty = prettyComunaSlug(comunaSlug);
 
-        // Inputs limpios
-        setQ(servicio.charAt(0).toUpperCase() + servicio.slice(1));
+        setQ(
+          suggestion.value
+            .split("-")
+            .filter(Boolean)
+            .map((w) => (w.length ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
+            .join(" ")
+        );
         setSelectedComunaSlug(comunaSlug);
-        setComunaInput(comunaPretty);
+        setComunaInput(prettyComunaSlug(comunaSlug));
 
-        // Ruta estructurada /[comuna]/[subcategoria]
         router.push(`/${encodeURIComponent(comunaSlug)}/${encodeURIComponent(servicio)}`);
         return;
       }
 
-      // Comportamiento anterior para el resto de sugerencias
+      if (suggestion.type === "intent" && selectedComunaSlug && suggestion.value) {
+        const servicio = slugify(suggestion.value);
+        setQ(suggestion.label);
+        router.push(`/${encodeURIComponent(selectedComunaSlug)}/${encodeURIComponent(servicio)}`);
+        return;
+      }
+
       setQ(suggestion.label);
       if ("comuna" in suggestion && suggestion.comuna) {
         setSelectedComunaSlug(suggestion.comuna);
         setComunaInput(prettyComunaSlug(suggestion.comuna));
       }
     },
-    [router]
+    [router, selectedComunaSlug]
   );
 
-  // Autocomplete V1: intent, intent_comuna, comuna, sector. Sin emprendimientos.
   const sugerenciasFiltradas = useMemo(() => {
     const query = norm(q);
     if (!query) return suggestions;
 
     if (suggestions.length) return suggestions;
 
-    // Fallback: sugerencias estáticas como intents
     return sugerencias
       .filter((item) => norm(item).includes(query))
       .slice(0, 8)
@@ -213,7 +160,6 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
       }));
   }, [q, suggestions, sugerencias]);
 
-  // Autocomplete V1: /api/autocomplete (solo sugerencias, sin negocios)
   useEffect(() => {
     const term = q.trim();
     if (term.length < 2) {
@@ -244,7 +190,6 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
     };
   }, [q, selectedComunaSlug]);
 
-  // Autocomplete comuna: buscar por inicio y mostrar región
   useEffect(() => {
     const term = comunaInput.trim();
     if (term.length < 2) {
@@ -284,56 +229,88 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [handleClickOutside]);
 
-  function irABuscar() {
+  const irABuscar = useCallback(() => {
     const raw = q.trim();
     const parsed = parseSearchIntent(raw);
 
-    const finalQ = parsed.finalQuery.trim();
-    const finalComunaSlug =
-      (selectedComunaSlug || parsed.comunaSlug || "").trim() ||
-      (comunaInput.trim() ? initialComunaSlug || "" : "");
+    const detected =
+      raw.toLowerCase().includes(" en ") || !selectedComunaSlug
+        ? detectComunaFromQuery(raw)
+        : { q: raw, comunaSlug: null };
 
-    // Si la intención reconoce un rubro/subcategoría y hay comuna, usar ruta estructurada
+    const finalComunaSlug = (
+      selectedComunaSlug ||
+      parsed.comunaSlug ||
+      detected.comunaSlug ||
+      ""
+    ).trim();
+
+    // Si detectamos comuna dentro del texto, usamos la query limpia
+    const cleanedFromDetect = detected.q.trim();
+    const finalQ = (parsed.finalQuery.trim() || cleanedFromDetect || "").trim();
+
+    // Caso 1: comuna + rubro/subcategoría reconocida => ruta estructurada
     if (finalComunaSlug && parsed.sectorSlug && finalQ) {
-      const slug = finalQ.toLowerCase().replace(/\s+/g, "-");
-      const prettyServicio =
-        slug
-          .split("-")
-          .filter(Boolean)
-          .map((w) => (w.length ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : ""))
-          .join(" ") || finalQ;
-      const prettyComuna = prettyComunaSlug(finalComunaSlug);
+      const subcategoriaSlug = slugify(finalQ);
 
-      // Mantener inputs limpios y separados
+      const prettyServicio =
+        finalQ
+          .split(" ")
+          .filter(Boolean)
+          .map((w) =>
+            w.length
+              ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+              : ""
+          )
+          .join(" ") || finalQ;
+
       setQ(prettyServicio);
       setSelectedComunaSlug(finalComunaSlug);
-      setComunaInput(prettyComuna);
+      setComunaInput(prettyComunaSlug(finalComunaSlug));
 
-      router.push(`/${encodeURIComponent(finalComunaSlug)}/${encodeURIComponent(slug)}`);
+      router.push(
+        `/${encodeURIComponent(finalComunaSlug)}/${encodeURIComponent(subcategoriaSlug)}`
+      );
       return;
     }
 
-    // Fallback: búsqueda libre en /buscar con parámetros
-    const finalComuna = finalComunaSlug || comunaInput.trim() || "";
-    const params = new URLSearchParams();
-    if (finalQ) params.set("q", finalQ);
-    if (parsed.sectorSlug) params.set("sector", parsed.sectorSlug);
-    if (finalComuna) params.set("comuna", finalComuna);
+    // Caso 2: solo comuna
+    if (finalComunaSlug && !finalQ && !parsed.sectorSlug) {
+      setSelectedComunaSlug(finalComunaSlug);
+      setComunaInput(prettyComunaSlug(finalComunaSlug));
+      router.push(`/${encodeURIComponent(finalComunaSlug)}`);
+      return;
+    }
 
-    router.push(`/buscar?${params.toString()}`);
-  }
+    // Caso 3: comuna + texto, pero parseSearchIntent no reconoció sector
+    if (finalComunaSlug && finalQ) {
+      const subcategoriaSlug = slugify(finalQ);
+
+      setSelectedComunaSlug(finalComunaSlug);
+      setComunaInput(prettyComunaSlug(finalComunaSlug));
+
+      router.push(
+        `/${encodeURIComponent(finalComunaSlug)}/${encodeURIComponent(subcategoriaSlug)}`
+      );
+      return;
+    }
+
+    // Caso 4: búsqueda libre
+    if (finalQ) {
+      const params = new URLSearchParams();
+      params.set("q", finalQ);
+      router.push(`/buscar?${params.toString()}`);
+      return;
+    }
+
+    router.push("/");
+  }, [q, router, selectedComunaSlug]);
 
   return (
-    <section style={{ width: "100%", maxWidth: 980, margin: "0 auto" }}>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) 260px 140px",
-          gap: 12,
-          alignItems: "stretch",
-        }}
-      >
-        <div ref={queryBoxRef} style={{ position: "relative" }}>
+    <section className="w-full mx-auto">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+        <div className="grid w-full grid-cols-1 gap-3 items-stretch sm:grid-cols-[minmax(0,7fr)_minmax(0,3fr)_auto] sm:items-center">
+        <div ref={queryBoxRef} className="relative min-w-0">
           <input
             value={q}
             onChange={(e) => {
@@ -370,9 +347,7 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
               } else if (e.key === "Enter") {
                 e.preventDefault();
                 if (highlightIndex >= 0 && highlightIndex < sugerenciasFiltradas.length) {
-                  router.push(sugerenciasFiltradas[highlightIndex].url);
-                  setOpenQuery(false);
-                  setHighlightIndex(-1);
+                  handleSuggestionSelect(sugerenciasFiltradas[highlightIndex]);
                 } else {
                   setOpenQuery(false);
                   irABuscar();
@@ -383,16 +358,8 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
                 setHighlightIndex(-1);
               }
             }}
-            placeholder={placeholderText}
-            style={{
-              width: "100%",
-              height: 56,
-              borderRadius: 16,
-              border: "1px solid #d1d5db",
-              padding: "0 16px",
-              fontSize: 16,
-              background: "#fff",
-            }}
+            placeholder={SEARCH_QUERY_PLACEHOLDER}
+            className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 text-base text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
           />
 
           <SearchAutocompleteDropdown
@@ -409,7 +376,7 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
           />
         </div>
 
-        <div ref={comunaBoxRef} style={{ position: "relative" }}>
+        <div ref={comunaBoxRef} className="relative min-w-0">
           <input
             value={comunaInput}
             onChange={(e) => {
@@ -426,16 +393,10 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
                 irABuscar();
               }
             }}
-            placeholder="Comuna"
-            style={{
-              width: "100%",
-              height: 56,
-              borderRadius: 16,
-              border: "1px solid #d1d5db",
-              padding: "0 16px",
-              fontSize: 16,
-              background: "#fff",
-            }}
+            placeholder="¿En qué comuna?"
+            aria-autocomplete="list"
+            aria-label="Comuna: escribe al menos 2 letras para ver sugerencias"
+            className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 text-base text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
           />
 
           {openComuna && (comunaSuggestions.length > 0 || loadingComuna) && (
@@ -495,39 +456,35 @@ export default function HomeSearchClient({ sugerencias, initialComunaSlug }: Pro
 
         <button
           type="button"
-          onClick={() => irABuscar()}
-          style={{
-            height: 56,
-            borderRadius: 16,
-            border: "none",
-            background: "#111827",
-            color: "#fff",
-            fontSize: 16,
-            fontWeight: 800,
-            cursor: "pointer",
-          }}
+          onClick={irABuscar}
+          className="h-14 w-full shrink-0 whitespace-nowrap rounded-lg bg-black px-6 text-base font-medium text-white shadow-md transition-all duration-200 hover:bg-zinc-900 active:scale-95 sm:h-[56px] sm:w-auto"
         >
-          {buttonLabel}
+          Buscar ahora
         </button>
       </div>
+      </div>
 
-      {statsLabel && (
-        <p className="mt-2 text-center text-xs sm:text-sm text-slate-500">
-          {statsLabel}
-        </p>
-      )}
+      <p className="mt-5 text-center text-sm leading-relaxed text-slate-600 px-1 sm:px-2">
+        <span className="font-semibold text-slate-800">Prueba con:</span>{" "}
+        <span className="text-slate-600">
+          Gasfiter en Maipú · Clases de matemáticas · Fletes
+        </span>
+      </p>
+
+      <HomeMasBuscado comunaSlug={effectiveComunaSlug} className="mt-8 sm:mt-10" />
 
       {popularTags.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-2 mt-4">
+        <div className="mt-6 sm:mt-8 flex flex-wrap justify-center gap-2">
           {popularTags.slice(0, 5).map((t) => {
-            const params = new URLSearchParams();
-            params.set("q", t.tag);
-            if (effectiveComunaSlug) params.set("comuna", effectiveComunaSlug);
+            const href = effectiveComunaSlug
+              ? `/${encodeURIComponent(effectiveComunaSlug)}/${encodeURIComponent(t.tagSlug)}`
+              : `/buscar?q=${encodeURIComponent(t.tag)}`;
+
             return (
               <Link
                 key={t.tagSlug}
-                href={`/buscar?${params.toString()}`}
-                className="px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-800 text-sm font-semibold hover:bg-slate-50 hover:border-slate-300 transition shadow-sm"
+                href={href}
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:scale-95"
               >
                 {t.tag}
               </Link>

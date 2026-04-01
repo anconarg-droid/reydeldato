@@ -49,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .from("emprendedores")
     .select("slug, comuna_base_slug, subcategorias_slugs, updated_at")
     .eq("publicado", true)
-    .eq("estado", "aprobado");
+    .eq("estado_publicacion", "publicado");
 
   const fichaPages: MetadataRoute.Sitemap =
     (emprendedores ?? []).map((item: any) => ({

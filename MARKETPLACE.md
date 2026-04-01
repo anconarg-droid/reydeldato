@@ -209,7 +209,7 @@ Permite: **una categoría principal por emprendedor** y **múltiples subcategor�
 
 ---
 
-### Tabla `emprendedor_cobertura_comunas`
+### Tabla `emprendedor_comunas_cobertura`
 
 Solo para casos donde atiende **varias comunas** específicas.
 
@@ -299,7 +299,7 @@ Campo **`tipo_cobertura`** con valores controlados:
 Además:
 
 - **`comuna_base_id`** = comuna donde está el negocio (obligatoria).
-- **Tabla `emprendedor_cobertura_comunas`** — solo cuando `tipo_cobertura = varias_comunas`: filas por cada comuna que atiende además de la base.
+- **Tabla `emprendedor_comunas_cobertura`** — solo cuando `tipo_cobertura = varias_comunas`: filas por cada comuna que atiende además de la base.
 
 ---
 

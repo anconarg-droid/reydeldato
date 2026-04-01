@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.25)"/>
+      <stop offset="1" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="600" fill="url(#g)"/>
+  <!-- Textura suave para que no se vea “plano” -->
+  <circle cx="220" cy="140" r="220" fill="url(#g2)" opacity="0.9"/>
+  <circle cx="1020" cy="520" r="280" fill="url(#g2)" opacity="0.8"/>
+  <!-- Overlay oscuro (el componente igual pone overlay encima) -->
+  <rect x="0" y="0" width="1200" height="600" fill="rgba(0,0,0,0.18)"/>
+  <g fill="#ffffff" opacity="0.92" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" text-anchor="middle">
+    <text x="600" y="290" font-size="42" font-weight="800">Comuna</text>
+    <text x="600" y="340" font-size="18" font-weight="600" opacity="0.85">Imagen provisional</text>
+  </g>
+</svg>
+

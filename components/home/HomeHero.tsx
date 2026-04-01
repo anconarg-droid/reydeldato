@@ -9,15 +9,18 @@ export default function HomeHero() {
   const initialComunaSlug = searchParams.get("comuna") ?? null;
 
   return (
-    <section className="max-w-4xl mx-auto px-4 pt-10 pb-12 sm:pt-14 sm:pb-16 text-center">
-      <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-        Encuentra emprendimientos locales en tu comuna
+    <section className="max-w-7xl mx-auto px-4 pt-12 pb-10 text-center sm:pt-16 sm:pb-12 md:pt-20 md:pb-14 bg-gradient-to-b from-slate-50 to-white">
+      <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+        Encuentra servicios en tu comuna en segundos
       </h1>
-      <p className="mt-4 text-slate-600 text-base sm:text-lg">
-        Escribe qué necesitas y elige tu comuna para descubrir negocios cercanos.
+      <p className="mt-5 max-w-2xl mx-auto text-slate-600 text-base sm:text-lg sm:mt-6">
+        Contacta directo por WhatsApp, sin intermediarios
+      </p>
+      <p className="mt-3 text-sm text-slate-500 sm:mt-4">
+        Resultados reales en tu comuna
       </p>
 
-      <div className="mt-8 sm:mt-10 flex justify-center">
+      <div className="mt-10 sm:mt-12 md:mt-14 mx-auto w-full max-w-5xl rounded-2xl bg-slate-50 p-4 sm:p-6 md:p-8">
         <HomeSearchClient
           sugerencias={[...CHIPS_HERO]}
           initialComunaSlug={initialComunaSlug}

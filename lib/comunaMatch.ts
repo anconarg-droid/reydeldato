@@ -16,13 +16,10 @@ export type ComunaMatchResult = {
   comuna_match_source: ComunaMatchSource | null;
 };
 
+import { normalizarSlug } from "@/lib/slugify";
+
 function norm(s: string): string {
-  return String(s ?? "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "-");
+  return normalizarSlug(s);
 }
 
 function arr(v: unknown): string[] {
@@ -54,7 +51,7 @@ export function getComunaMatch(params: {
   const baseSlug = norm(params.comunaBaseSlug ?? "");
   const nivel = norm(params.nivelCobertura ?? "");
   const keys = arr(params.coverageKeys).map(norm);
-  const labels = arr(params.coverageLabels).map((l) => norm(l).replace(/\s+/g, "-"));
+  const labels = arr(params.coverageLabels).map(norm);
 
   const atiendePorCobertura =
     (nivel === "varias_comunas" && (keys.includes(comuna) || labels.some((l) => l === comuna || l.includes(comuna)))) ||

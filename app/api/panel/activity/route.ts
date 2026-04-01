@@ -19,6 +19,7 @@ function mapEventTypeToCanal(eventType: string): string {
   if (eventType === "website_click") return "web";
   if (eventType === "email_click") return "email";
   if (eventType === "page_view_profile") return "ficha";
+  if (eventType === "card_view_click") return "ver_ficha_listado";
   return "otros";
 }
 

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 function reqEnv(name: string): string {
   const v = process.env[name];
@@ -39,7 +39,10 @@ function slugify(text: string): string {
 type ComunaRow = { id: string; slug: string; nombre: string; region_id: string | null };
 type RegionRow = { id: string; slug: string; nombre: string };
 
-async function getComunaBySlug(supabase: ReturnType<typeof createClient>, slug: string): Promise<ComunaRow> {
+async function getComunaBySlug(
+  supabase: SupabaseClient<any, "public", any>,
+  slug: string
+): Promise<ComunaRow> {
   const { data, error } = await supabase
     .from("comunas")
     .select("id, slug, nombre, region_id")
@@ -52,7 +55,10 @@ async function getComunaBySlug(supabase: ReturnType<typeof createClient>, slug: 
   return data as ComunaRow;
 }
 
-async function getRegionById(supabase: ReturnType<typeof createClient>, id: string): Promise<RegionRow> {
+async function getRegionById(
+  supabase: SupabaseClient<any, "public", any>,
+  id: string
+): Promise<RegionRow> {
   const { data, error } = await supabase
     .from("regiones")
     .select("id, slug, nombre")

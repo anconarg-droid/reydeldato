@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAlgoliaAdminIndex } from "@/lib/algoliaServer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { slugify } from "@/lib/slugify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,8 +21,9 @@ function s(v: unknown): string {
   return String(v).trim();
 }
 
-function normSlug(v: string): string {
-  return s(v).toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+/** Slug normalizado (minúsculas, sin acentos, guiones). Mismo criterio que `slugify`. */
+function normSlug(value: unknown): string {
+  return slugify(s(value));
 }
 
 function arr(v: unknown): string[] {
@@ -46,7 +48,7 @@ function getTier(
   comunaSlug: string
 ): Tier {
   if (!comunaSlug) return "general";
-  const base = normSlug(s(hit.comuna_base_slug));
+  const base = slugify(s(hit.comuna_base_slug));
   const cobertura = arr(hit.comunas_cobertura_slugs_arr);
   const nivel = s(hit.nivel_cobertura).toLowerCase();
 
@@ -74,7 +76,7 @@ function rankTerritorial(
 ): number {
   if (!comunaSlug) return 0;
 
-  const base = normSlug(s(hit.comuna_base_slug));
+  const base = slugify(s(hit.comuna_base_slug));
   const keys = arr(hit.coverage_keys);
   const nivel = s(hit.nivel_cobertura).toLowerCase();
 

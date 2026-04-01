@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getSessionId } from "@/lib/sessionId";
 
 export default function TrackSearch({
   q,

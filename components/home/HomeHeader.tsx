@@ -5,7 +5,7 @@ import Link from "next/link";
 export default function HomeHeader() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between min-h-14 sm:min-h-16 py-3 sm:py-4">
           <Link
             href="/"
@@ -20,21 +20,18 @@ export default function HomeHeader() {
             >
               Inicio
             </Link>
-            <Link
-              href="/cobertura"
-              className="text-slate-600 hover:text-slate-900 font-medium"
-            >
+            <Link href="/comunas" className="text-slate-600 hover:text-slate-900 font-medium">
               Comunas
             </Link>
-            <span
-              className="text-slate-400 font-medium hidden sm:inline"
-              title="Próximamente"
+            <Link
+              href="/informacion-util"
+              className="text-slate-600 hover:text-slate-900 font-medium hidden sm:inline"
             >
               Información útil
-            </span>
+            </Link>
             <Link
               href="/publicar"
-              className="sm:ml-2 h-9 px-4 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition inline-flex items-center justify-center shrink-0"
+              className="sm:ml-2 h-9 px-4 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition inline-flex items-center justify-center shrink-0"
             >
               Publica tu emprendimiento
             </Link>

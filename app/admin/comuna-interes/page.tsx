@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { formatDateTimeEsCL } from "@/lib/formatDateTimeEsCL";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +8,12 @@ export default async function AdminComunaInteresPage({
 }: {
   searchParams?: Promise<{ comuna?: string; desde?: string; hasta?: string }>;
 }) {
-  const sp = (await (searchParams || Promise.resolve({}))) || {};
+  const sp =
+    (await (searchParams ?? Promise.resolve({}))) as {
+      comuna?: string;
+      desde?: string;
+      hasta?: string;
+    };
   const comunaFilter = (sp.comuna || "").trim();
   const desde = (sp.desde || "").trim();
   const hasta = (sp.hasta || "").trim();
@@ -217,7 +223,7 @@ export default async function AdminComunaInteresPage({
                 <div>
                   <div>{row.email}</div>
                   <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
-                    {row.created_at ? new Date(row.created_at).toLocaleString() : ""}
+                    {row.created_at ? formatDateTimeEsCL(row.created_at) : ""}
                   </div>
                 </div>
               </div>

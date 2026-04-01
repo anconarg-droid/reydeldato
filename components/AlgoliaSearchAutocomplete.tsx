@@ -253,8 +253,14 @@ export default function AlgoliaSearchAutocomplete({
                   {r.nombre}
                 </div>
                 <div className="text-xs text-slate-500">
-                  {r.type === "categoria" ? "Categoría" : "Subcategoría"}
-                  {typeof r.count === "number" ? ` · ${r.count}` : ""}
+                  {r.type === "query"
+                    ? "Búsqueda libre"
+                    : r.type === "categoria"
+                      ? "Categoría"
+                      : "Subcategoría"}
+                  {r.type !== "query" && typeof r.count === "number"
+                    ? ` · ${r.count}`
+                    : ""}
                 </div>
               </button>
             ))}

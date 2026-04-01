@@ -30,7 +30,6 @@ export async function GET() {
         coverage_labels,
         foto_principal_url,
         galeria_urls,
-        estado,
         estado_publicacion,
         publicado,
         created_at,
@@ -45,7 +44,7 @@ export async function GET() {
           slug
         )
       `)
-      .eq("estado", "pendiente_revision")
+      .or("estado_publicacion.eq.pendiente_aprobacion,estado.eq.pendiente_revision")
       .order("created_at", { ascending: false });
 
     if (error) {

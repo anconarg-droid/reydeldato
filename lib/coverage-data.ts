@@ -17,6 +17,21 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  *    - No usa categorias ni keywords; solo subcategoria_principal_id para la grilla de rubros.
  */
 
+/**
+ * @deprecated (APERTURA legacy)
+ * `lib/coverage-data.ts` mezcla fuentes v1 para “apertura” (incluye `vw_comunas_por_abrir`
+ * y columnas legacy en `comunas` como `meta_emprendimientos` / `emprendimientos_registrados`).
+ *
+ * Fuente de verdad oficial de APERTURA (consolidación v2):
+ * - vw_apertura_comuna_v2
+ * - vw_faltantes_comuna_v2
+ * - vw_conteo_comuna_rubro_contado_v2
+ * - endpoint `GET /api/comunas/estado`
+ *
+ * Nota: este módulo puede seguir existiendo temporalmente para la página `/cobertura`,
+ * pero NO debe ser usado para determinar estado/porcentaje de apertura “oficial”.
+ */
+
 /** Fila de vw_comunas_por_abrir (columnas reales en Supabase) */
 type ComunaPorAbrirRow = {
   comuna_slug: string;
@@ -413,7 +428,10 @@ export async function getCoverageData(
       .from("vw_resumen_regiones_apertura")
       .select("region_id, region_nombre, total_comunas, comunas_con_emprendimientos, comunas_en_apertura, comunas_sin_cobertura, porcentaje_cobertura_region")
       .order("total_comunas", { ascending: false }),
-    supabase.from("regiones").select("id, slug").then((r) => r.data ?? []),
+    supabase
+      .from("regiones")
+      .select("id, slug")
+      .then((r) => ({ data: r.data ?? [] })),
   ]);
 
   if (errComunas) {

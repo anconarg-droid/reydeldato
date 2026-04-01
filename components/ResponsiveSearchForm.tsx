@@ -24,6 +24,14 @@ type SimpleOption = {
   slug: string;
 };
 
+function comunaLabelFromSlug(
+  slug: string,
+  options: ComunaOption[]
+): string {
+  const row = options.find((o) => o.slug === slug);
+  return row?.nombre ?? slug;
+}
+
 function useViewport() {
   const [width, setWidth] = useState<number>(1200);
 
@@ -68,6 +76,16 @@ export default function ResponsiveSearchForm({
     Boolean(categoria || subcategoria)
   );
 
+  const [comunaField, setComunaField] = useState(() =>
+    comunaLabelFromSlug(comuna, comunaOptions)
+  );
+  const [comunaSlugField, setComunaSlugField] = useState(comuna);
+
+  useEffect(() => {
+    setComunaField(comunaLabelFromSlug(comuna, comunaOptions));
+    setComunaSlugField(comuna);
+  }, [comuna, comunaOptions]);
+
   const hasAnyFilter = Boolean(q || comuna || categoria || subcategoria);
 
   const desktopGridStyle: React.CSSProperties = isTablet
@@ -111,7 +129,7 @@ export default function ResponsiveSearchForm({
             ¿Qué necesitas?
           </label>
 
-          <SearchAutocomplete initialValue={q} suggestions={suggestions} />
+          <SearchAutocomplete initialQuery={q} />
         </div>
 
         <div>
@@ -127,9 +145,13 @@ export default function ResponsiveSearchForm({
           </label>
 
           <SearchComunaAutocomplete
-            initialValue={comuna}
-            options={comunaOptions}
+            value={comunaField}
+            onSelect={(item, raw) => {
+              setComunaField(raw);
+              setComunaSlugField(item?.slug ?? "");
+            }}
           />
+          <input type="hidden" name="comuna" value={comunaSlugField} />
         </div>
 
         <button
@@ -326,7 +348,7 @@ export default function ResponsiveSearchForm({
           ¿Qué necesitas?
         </label>
 
-        <SearchAutocomplete initialValue={q} suggestions={suggestions} />
+        <SearchAutocomplete initialQuery={q} />
       </div>
 
       <div>
@@ -341,7 +363,14 @@ export default function ResponsiveSearchForm({
           Comuna
         </label>
 
-        <SearchComunaAutocomplete initialValue={comuna} options={comunaOptions} />
+        <SearchComunaAutocomplete
+          value={comunaField}
+          onSelect={(item, raw) => {
+            setComunaField(raw);
+            setComunaSlugField(item?.slug ?? "");
+          }}
+        />
+        <input type="hidden" name="comuna" value={comunaSlugField} />
       </div>
 
       <div>

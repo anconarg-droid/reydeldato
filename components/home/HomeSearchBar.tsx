@@ -93,6 +93,14 @@ export default function HomeSearchBar({ comunas }: Props) {
       return;
     }
 
+    if (comunaResolved && qValue) {
+      setOpen(false);
+      router.push(
+        `/${encodeURIComponent(comunaResolved.slug)}?q=${encodeURIComponent(qValue)}`
+      );
+      return;
+    }
+
     const params = new URLSearchParams();
 
     if (qValue) params.set("q", qValue);

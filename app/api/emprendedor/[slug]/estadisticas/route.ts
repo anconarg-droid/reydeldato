@@ -40,6 +40,7 @@ function sumarEventosFromAnalytics(rows: { event_type?: string }[]): Conteos {
     const t = s(row?.event_type);
     if (t === "page_view_profile") out.view_ficha += 1;
     else if (t === "search_result_impression") out.impresiones_resultados += 1;
+    else if (t === "card_view_click") out.clics_tarjeta += 1;
     else if (t === "whatsapp_click") out.click_whatsapp += 1;
     else if (t === "instagram_click") out.click_instagram += 1;
     else if (t === "website_click") out.click_web += 1;

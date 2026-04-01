@@ -6,23 +6,56 @@
 /**
  * Normaliza un número de WhatsApp/teléfono chileno al formato 569XXXXXXXX.
  * Acepta: 912345678, +56912345678, 56912345678 (con o sin espacios).
- * - Quita espacios y +
- * - Si empieza con 9 y tiene 9 dígitos → agrega 56
- * - Si empieza con 56 y tiene 11 dígitos → válido
- * Devuelve "" si no cumple formato móvil chileno.
+ * Si no encaja en los casos típicos, devuelve solo los dígitos (`v`) para que
+ * `isValidChileMobile` pueda rechazarlo.
  */
-export function normalizeChilePhone(phone: string): string {
-  const digits = String(phone ?? "").replace(/\s/g, "").replace(/^\+/, "").replace(/\D/g, "");
-  if (digits.length === 9 && digits.startsWith("9")) {
-    return `56${digits}`;
+export function normalizeChilePhone(input: string): string {
+  let v = String(input ?? "").replace(/\D/g, "");
+
+  if (v.startsWith("9") && v.length === 9) {
+    // 56 + 912345678 → 56912345678 (11 dígitos). No "569" + v (serían 12).
+    return "56" + v;
   }
-  if (digits.length === 11 && digits.startsWith("56")) {
-    return digits;
+
+  if (v.startsWith("56") && v.length === 11) {
+    return v;
   }
-  return "";
+
+  return v;
 }
 
 /** Indica si la cadena normalizada es un móvil chileno válido (569XXXXXXXX). */
 export function isValidChileMobile(normalized: string): boolean {
   return normalized.length === 11 && normalized.startsWith("56");
+}
+
+/**
+ * Validación estricta de WhatsApp móvil Chile.
+ *
+ * Entrada válida (con separadores comunes): 9XXXXXXXX, 569XXXXXXXX, +569XXXXXXXX, 56 9XXXXXXXX
+ * Salida normalizada: 569XXXXXXXX
+ */
+export function normalizeAndValidateChileWhatsappStrict(input: string): {
+  ok: boolean;
+  normalized: string;
+} {
+  const raw = String(input ?? "").trim();
+  if (!raw) return { ok: false, normalized: "" };
+
+  // Solo permitimos separadores comunes; cualquier otro caracter se rechaza.
+  if (/[^0-9\s\-()+]/.test(raw)) return { ok: false, normalized: "" };
+
+  const digits = raw.replace(/\D/g, "");
+
+  // Caso 1: 9XXXXXXXX (9 dígitos, parte con 9) → 56 + número
+  if (digits.length === 9 && digits.startsWith("9")) {
+    return { ok: true, normalized: `56${digits}` };
+  }
+
+  // Caso 2/3: 56 + 9XXXXXXXX (11 dígitos, parte con 56 y 3er dígito = 9)
+  if (digits.length === 11 && digits.startsWith("56") && digits[2] === "9") {
+    return { ok: true, normalized: digits };
+  }
+
+  return { ok: false, normalized: "" };
 }

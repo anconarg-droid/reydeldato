@@ -27,10 +27,26 @@ export async function POST(req: NextRequest) {
     const sector_slug = body?.sector_slug != null ? s(body.sector_slug) : null;
     const q = body?.q != null ? s(body.q) : null;
     const session_id = body?.session_id != null ? s(body.session_id) : null;
-    const metadata =
-      body?.metadata && typeof body.metadata === "object"
-        ? body.metadata
-        : { slug: slug || null, comuna_slug, sector_slug, q, session_id };
+    const rawMeta =
+      body?.metadata &&
+      typeof body.metadata === "object" &&
+      !Array.isArray(body.metadata)
+        ? (body.metadata as Record<string, unknown>)
+        : {};
+
+    const metadata: Record<string, unknown> = {
+      ...rawMeta,
+      slug: slug || null,
+      comuna_slug,
+      sector_slug,
+      q,
+      session_id,
+    };
+
+    /** Payloads viejos u externos: solo slug + event_type sin metadata.source */
+    if (event_type === "card_view_click" && !s(metadata.source)) {
+      metadata.source = "unknown";
+    }
 
     if (!event_type || !isValidEventType(event_type)) {
       return NextResponse.json(
@@ -58,7 +74,7 @@ export async function POST(req: NextRequest) {
       emprendedor_id: emprendedor_id || undefined,
       slug: slug || undefined,
       session_id: session_id || undefined,
-      metadata: { ...metadata, slug: slug || null, comuna_slug, sector_slug, q, session_id },
+      metadata,
     });
 
     if (!result.ok) {

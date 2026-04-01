@@ -1,406 +1,389 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import ComunaEnPreparacion from "@/components/ComunaEnPreparacion";
-import ResultadoBadge from "@/components/ResultadoBadge";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { normalizeText } from "@/lib/search/normalizeText";
+import { buildAtiendeLine } from "@/lib/search/atiendeResumenLabel";
+import TrackImpressions from "@/components/TrackImpressions";
+import EmprendedorSearchCard, {
+  type EmprendedorSearchCardProps,
+} from "@/components/search/EmprendedorSearchCard";
 
-type ProgresoItem = { nombre: string; actual: number; meta: number };
+type SearchItem = {
+  id: string;
+  nombre: string;
+  slug: string;
+  frase: string;
+  descripcion?: string;
+  fotoPrincipalUrl: string;
+  whatsappPrincipal: string;
+  comunaId: number;
+  comunaSlug: string;
+  comunaNombre: string;
+  coberturaTipo: string;
+  prioridad: number;
+  rankingScore: number;
+  bloque: "de_tu_comuna" | "atienden_tu_comuna";
+  /** Nombre de la comuna base del emprendimiento; la búsqueda usa `comunaNombre` como comuna buscada. */
+  comunaBaseNombre?: string;
+  esFichaCompleta?: boolean;
+  estadoFicha?: "ficha_completa" | "ficha_basica";
+  subcategoriasSlugs?: string[];
+  subcategoriasNombres?: string[];
+  categoriaNombre?: string;
+  comunasCobertura?: string[];
+  regionesCobertura?: string[];
+  esNuevo?: boolean;
+};
 
-type SearchHit = {
-  objectID?: string;
-  id?: string;
-  slug?: string;
-  nombre?: string;
-  descripcion_corta?: string | null;
-  descripcion_larga?: string | null;
-
-  comuna_nombre?: string | null;
-  comuna_slug?: string | null;
-
-  categoria_slug_final?: string | null;
-  subcategoria_slug_final?: string | null;
-
-  foto_principal_url?: string | null;
-  keywords?: string[] | null;
-  search_text?: string | null;
-  public?: boolean;
-
-  whatsapp?: string | null;
-
-  // legado / opcionales
-  comuna_base_nombre?: string | null;
-  comuna_base_slug?: string | null;
-  categoria_slug?: string | null;
-  subcategoria_slug?: string | null;
-  bucket?: "exacta" | "cobertura_comuna" | "regional" | "nacional" | "general";
-  coverage_keys?: string[] | null;
-  coverage_labels?: string[] | null;
-  nivel_cobertura?: string | null;
+type SearchMeta = {
+  comunaSlug: string;
+  comunaNombre: string;
+  q: string;
+  page: number;
+  limit: number;
+  offset: number;
+  total: number;
+  modo: "busqueda_con_texto" | "solo_comuna";
+  subcategoriaSlug?: string | null;
+  subcategoriaId?: string | null;
 };
 
 type SearchResponse = {
   ok: boolean;
+  items: SearchItem[];
   total: number;
-  items: SearchHit[];
-  q?: string;
-  comuna?: string | null;
-  suggested_terms?: string[];
-  modo?: "comuna_en_preparacion";
-  comuna_slug?: string;
-  progreso?: ProgresoItem[];
+  meta: SearchMeta;
 };
 
-export type QuickFilterOrderBy = "todos" | "perfil_completo" | "nuevos";
+function searchItemToCardProps(
+  item: SearchItem,
+  meta: SearchMeta | null,
+  analyticsSource: EmprendedorSearchCardProps["analyticsSource"]
+): EmprendedorSearchCardProps {
+  const baseNombre =
+    String(item.comunaBaseNombre || "").trim() ||
+    String(item.comunaNombre || "").trim() ||
+    "—";
+  const slugCtx = String(meta?.comunaSlug || item.comunaSlug || "");
+  const nombreCtx = String(meta?.comunaNombre || item.comunaNombre || "");
+  const atiendeLine = buildAtiendeLine({
+    coberturaTipo: item.coberturaTipo,
+    comunasCobertura: item.comunasCobertura,
+    regionesCobertura: item.regionesCobertura,
+    comunaBuscadaSlug: slugCtx,
+    comunaBuscadaNombre: nombreCtx,
+  });
+  const esFichaCompleta =
+    item.esFichaCompleta === true || item.estadoFicha === "ficha_completa";
 
-type Props = {
-  query: string;
-  comuna?: string;
-  sectorSlug?: string;
-  tipoActividad?: string;
-  subcategoriaSlug?: string;
-  orderBy?: QuickFilterOrderBy;
-  onSuggestedTerms?: (terms: string[]) => void;
-};
+  return {
+    slug: item.slug,
+    nombre: item.nombre,
+    fotoPrincipalUrl: item.fotoPrincipalUrl,
+    whatsappPrincipal: item.whatsappPrincipal,
+    esFichaCompleta,
+    estadoFicha: item.estadoFicha,
+    bloqueTerritorial: item.bloque,
+    frase: item.frase,
+    descripcionLibre: item.descripcion ?? "",
+    subcategoriasNombres: item.subcategoriasNombres,
+    subcategoriasSlugs: item.subcategoriasSlugs,
+    categoriaNombre: item.categoriaNombre,
+    comunaBaseNombre: baseNombre,
+    atiendeLine,
+    esNuevo: item.esNuevo === true,
+    analyticsSource,
+  };
+}
 
-function s(v: unknown): string {
-  if (v === null || v === undefined) return "";
-  return String(v).trim();
+function ResultadosGrid({
+  items,
+  meta,
+  analyticsSource,
+}: {
+  items: SearchItem[];
+  meta: SearchMeta | null;
+  analyticsSource: EmprendedorSearchCardProps["analyticsSource"];
+}) {
+  if (!items.length) {
+    return (
+      <div
+        style={{
+          border: "1px solid #e5e7eb",
+          borderRadius: 20,
+          background: "#fff",
+          padding: 18,
+          color: "#6b7280",
+          fontSize: 15,
+        }}
+      >
+        No encontramos resultados.
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns:
+          "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
+        gap: 16,
+      }}
+    >
+      {items.map((item) => (
+        <EmprendedorSearchCard
+          key={item.id}
+          {...searchItemToCardProps(item, meta, analyticsSource)}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function PublicSearchResults({
-  query,
   comuna,
-  sectorSlug,
-  tipoActividad,
+  q = "",
   subcategoriaSlug,
-  orderBy = "todos",
-  onSuggestedTerms,
-}: Props) {
+  subcategoriaId,
+}: {
+  comuna: string;
+  q?: string;
+  /** Slug en public.subcategorias; el API resuelve y filtra o hace fallback texto */
+  subcategoriaSlug?: string;
+  subcategoriaId?: string | null;
+}) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<SearchResponse | null>(null);
-
-  const hasFilters =
-    !!query.trim() ||
-    !!(comuna && comuna.trim()) ||
-    !!(sectorSlug && sectorSlug.trim()) ||
-    !!(subcategoriaSlug && subcategoriaSlug.trim()) ||
-    !!(tipoActividad && tipoActividad.trim());
+  const [items, setItems] = useState<SearchItem[]>([]);
+  const [meta, setMeta] = useState<SearchMeta | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!hasFilters) {
-      setData(null);
-      setLoading(false);
-      setError(null);
-      return;
-    }
+    let mounted = true;
 
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-
-    async function run() {
+    async function load() {
       try {
+        setLoading(true);
+        setError("");
+
         const params = new URLSearchParams();
-        if (query.trim()) params.set("q", query.trim());
-        if (comuna && comuna.trim()) params.set("comuna", comuna.trim());
-        if (sectorSlug && sectorSlug.trim()) params.set("sector", sectorSlug.trim());
-        if (subcategoriaSlug && subcategoriaSlug.trim()) {
-          params.set("subcategoria", subcategoriaSlug.trim());
+        params.set("comuna", comuna);
+        const slug = subcategoriaSlug?.trim();
+        let qSend = q.trim();
+        if (
+          slug &&
+          qSend &&
+          normalizeText(qSend) === normalizeText(slug)
+        ) {
+          qSend = "";
         }
-        if (tipoActividad && tipoActividad.trim()) {
-          params.set("tipo_actividad", tipoActividad.trim());
-        }
-        if (orderBy && orderBy !== "todos") {
-          params.set("order", orderBy);
-        }
+        if (qSend) params.set("q", qSend);
+        if (slug) params.set("subcategoria", slug);
+        const sid = subcategoriaId?.trim();
+        if (sid) params.set("subcategoria_id", sid);
 
         const res = await fetch(`/api/buscar?${params.toString()}`, {
-          signal: controller.signal,
           cache: "no-store",
         });
 
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text || `Error HTTP ${res.status}`);
+        const json: SearchResponse = await res.json();
+
+        if (!res.ok || !json?.ok) {
+          throw new Error("No se pudo cargar la búsqueda.");
         }
 
-        const json = await res.json();
-        // eslint-disable-next-line no-console
-        console.log("BUSCAR API RESPONSE:", json);
+        if (!mounted) return;
 
-        // NORMALIZACIÓN CRÍTICA
-        const normalizedData: SearchResponse = {
-          ok: !!json.ok,
-          items: Array.isArray(json.items)
-            ? json.items
-            : Array.isArray(json.data)
-              ? json.data
-              : [],
-          total:
-            typeof json.total === "number"
-              ? json.total
-              : Array.isArray(json.items)
-                ? json.items.length
-                : Array.isArray(json.data)
-                  ? json.data.length
-                  : 0,
-          q: json.q,
-          comuna: json.comuna ?? null,
-          suggested_terms: Array.isArray(json.suggested_terms)
-            ? json.suggested_terms
-            : undefined,
-          modo: json.modo,
-          comuna_slug: json.comuna_slug,
-          progreso: json.progreso,
-        };
-
-        setData(normalizedData);
-
-        if (onSuggestedTerms && Array.isArray(normalizedData.suggested_terms)) {
-          onSuggestedTerms(normalizedData.suggested_terms);
-        }
-      } catch (err: any) {
-        if (err?.name === "AbortError") return;
-        setError(err?.message || "Error al buscar");
+        const nextItems = Array.isArray(json.items) ? json.items : [];
+        setItems(nextItems);
+        setMeta(json.meta || null);
+      } catch (err) {
+        if (!mounted) return;
+        setError(err instanceof Error ? err.message : "Error inesperado.");
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     }
 
-    run();
-    return () => controller.abort();
-  }, [hasFilters, query, comuna, sectorSlug, subcategoriaSlug, tipoActividad, orderBy, onSuggestedTerms]);
+    load();
 
-  if (!hasFilters) {
-    return null;
-  }
+    return () => {
+      mounted = false;
+    };
+  }, [comuna, q, subcategoriaSlug, subcategoriaId]);
+
+  const deTuComuna = useMemo(
+    () => items.filter((i) => i.bloque === "de_tu_comuna"),
+    [items]
+  );
+
+  const atiendenTuComuna = useMemo(
+    () => items.filter((i) => i.bloque === "atienden_tu_comuna"),
+    [items]
+  );
 
   if (loading) {
-    return (
-      <div className="mt-4 space-y-3">
-        <h2 className="text-lg font-bold text-slate-900">Buscando…</h2>
-      <div className="space-y-3">
-        {Array.from({ length: 3 }).map((_, idx) => (
-          <div key={idx} className="animate-pulse">
-            <div className="bg-slate-200 h-40 rounded-lg mb-3" />
-            <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
-            <div className="h-3 bg-slate-200 rounded w-1/2" />
-          </div>
-        ))}
-      </div>
-      </div>
-    );
+    return <div>Cargando resultados...</div>;
   }
 
   if (error) {
-    return <div className="text-sm text-red-600">Error al buscar: {error}</div>;
-  }
-
-  if (!data) {
-    return null;
-  }
-
-  const items: SearchHit[] = Array.isArray(data?.items) ? data.items : [];
-  const total: number =
-    typeof data?.total === "number" ? data.total : items.length;
-
-  // Logs temporales de depuración de UI
-  // eslint-disable-next-line no-console
-  console.log("SEARCH_UI_DATA", data);
-  // eslint-disable-next-line no-console
-  console.log("SEARCH_UI_ITEMS", items);
-  // eslint-disable-next-line no-console
-  console.log("SEARCH_UI_TOTAL", total);
-
-  if (data.modo === "comuna_en_preparacion") {
     return (
-      <div className="mt-6 max-w-2xl mx-auto">
-        <p className="text-sm text-slate-600 mb-4">
-          Rey del Dato aún no está disponible en <strong>{data.comuna}</strong>.
-        </p>
-        <ComunaEnPreparacion
-          comunaSlug={data.comuna_slug}
-          comunaNombre={data.comuna}
-          progreso={data.progreso ?? [{ nombre: "Emprendimientos", actual: 0, meta: 40 }]}
-        />
+      <div
+        style={{
+          border: "1px solid #fecaca",
+          background: "#fef2f2",
+          color: "#b91c1c",
+          borderRadius: 16,
+          padding: 14,
+        }}
+      >
+        {error}
       </div>
     );
   }
 
-  // Usar directamente los items devueltos por la API (sin deduplicar por nombre)
-  const itemsFinal: SearchHit[] = items;
-
-  const totalFinal = total;
-
-  const comunaLabel =
-    (comuna && comuna.trim()) ||
-    data.comuna ||
-    (itemsFinal[0]?.comuna_nombre ?? itemsFinal[0]?.comuna_base_nombre) ||
-    "";
-
-  const mostrarMensajeFallback =
-    Boolean((comuna || data.comuna || "").trim()) &&
-    !itemsFinal.some((item) => item.bucket === "exacta") &&
-    itemsFinal.length > 0;
-
   return (
-    <section className="mt-4 space-y-4">
-      <header className="flex items-baseline justify-between gap-2">
-        <h2 className="text-sm text-slate-500 mb-3">
-          {totalFinal === 0
-            ? "Sin resultados"
-            : totalFinal === 1
-              ? "1 resultado"
-              : `${totalFinal} resultados`}
-          {query.trim()
-            ? ` para “${query.trim()}”${
-                comunaLabel ? ` en ${comunaLabel}` : ""
-              }`
-            : comunaLabel
-              ? ` en ${comunaLabel}`
-              : ""}
-        </h2>
-      </header>
+    <section style={{ display: "grid", gap: 24 }}>
+      {/* Cards: EmprendedorSearchCard (misma base que búsqueda global en ResultadosClient). */}
+      <TrackImpressions
+        slugs={items.map((i) => i.slug)}
+        comuna_slug={meta?.comunaSlug || comuna}
+        q={meta?.q || q}
+      />
 
-      {itemsFinal.length === 0 ? (
-        <p className="text-sm text-slate-600">
-          No encontramos resultados para esta búsqueda. Prueba con otra palabra
-          o cambia la comuna.
-        </p>
-      ) : (
+      {/* Fuente de verdad: siempre mostrar bloques cuando hay comuna (con o sin texto). */}
+      {true ? (
         <>
-          {mostrarMensajeFallback && (
-            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-sm font-medium text-amber-900">
-                Aún no tenemos suficientes emprendimientos en {comunaLabel}.
+          {deTuComuna.length > 0 && (
+            <section style={{ display: "grid", gap: 14 }}>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 22,
+                  fontWeight: 900,
+                  color: "#111827",
+                }}
+              >
+                En tu comuna ({deTuComuna.length})
+              </h2>
+              <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>
+                Negocios con base en {meta?.comunaNombre || comuna}
               </p>
-              <p className="mt-1 text-sm text-amber-800">
-                Te mostramos opciones cercanas mientras tanto.
+              <ResultadosGrid
+                items={deTuComuna}
+                meta={meta}
+                analyticsSource="comuna"
+              />
+            </section>
+          )}
+          {deTuComuna.length === 0 && atiendenTuComuna.length > 0 && (
+            <div
+              style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 20,
+                background: "#fff",
+                padding: 18,
+              }}
+            >
+              <h3 style={{ margin: "0 0 6px 0", fontSize: 18, fontWeight: 900, color: "#111827" }}>
+                Aún no hay resultados en tu comuna
+              </h3>
+              <p style={{ margin: 0, fontSize: 14, color: "#6b7280", lineHeight: 1.5 }}>
+                Pero estos emprendimientos sí pueden atenderte:
               </p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {itemsFinal.map((item) => {
-            const key = s(item.id || item.slug || item.objectID);
-            const slug = s(item.slug || item.id || item.objectID);
-            const nombre = item.nombre || "Emprendimiento";
-            const descripcion =
-              item.descripcion_corta ||
-              item.descripcion_larga ||
-              "Sin descripción disponible";
-            const comunaTexto =
-              item.comuna_nombre ||
-              (item.comuna_slug ? item.comuna_slug.replace(/-/g, " ") : "") ||
-              comunaLabel ||
-              "";
-            const categoriaTexto =
-              item.categoria_slug_final ||
-              item.categoria_slug ||
-              "";
-
-            let motivo: string | undefined;
-            if (item.bucket === "exacta") {
-              motivo = "En tu comuna";
-            } else if (
-              item.bucket === "cobertura_comuna" ||
-              item.bucket === "regional" ||
-              item.bucket === "nacional"
-            ) {
-              motivo = "Disponible en tu comuna";
-            }
-
-            return (
-              <div
-                key={key}
-                className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition p-4 flex flex-col"
-              >
-                {/* Imagen */}
-                <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-100 mb-3">
-                  {item.foto_principal_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.foto_principal_url}
-                      alt={nombre}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-slate-400 text-xs">
-                      Sin imagen
-                    </div>
-                  )}
-                </div>
-
-                {/* Nombre */}
-                <h3 className="font-bold text-slate-900 text-lg mb-1 line-clamp-2">
-                  {nombre}
-                </h3>
-
-                {/* Comuna */}
-                {comunaTexto && (
-                  <p className="text-xs text-slate-500 mb-0.5">
-                    {comunaTexto}
-                  </p>
-                )}
-
-                {/* Categoría */}
-                {categoriaTexto && (
-                  <p className="text-[11px] text-slate-400 mb-1.5">
-                    {categoriaTexto}
-                  </p>
-                )}
-
-                {/* Badge territorial */}
-                {motivo && (
-                  <div className="mb-2">
-                    <ResultadoBadge bucket={item.bucket} motivo={motivo} />
-                  </div>
-                )}
-
-                {/* Descripción */}
-                <p className="text-xs text-slate-600 mb-3 line-clamp-2 overflow-hidden text-ellipsis">
-                  {descripcion}
-                </p>
-
-                {/* CTA */}
-                <div className="flex gap-2 mt-3">
-                  {item.whatsapp ? (
-                    <>
-                      <a
-                        href={`https://wa.me/${item.whatsapp.replace(/\D/g, "")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 text-center bg-green-600 text-white text-sm py-2 rounded-lg hover:bg-green-700 transition font-medium"
-                      >
-                        WhatsApp
-                      </a>
-                      {slug && (
-                        <a
-                          href={`/emprendedor/${slug}`}
-                          className="flex-1 text-center bg-slate-900 text-white text-sm py-2 rounded-lg hover:bg-slate-800 transition"
-                        >
-                          Ver detalle
-                        </a>
-                      )}
-                    </>
-                  ) : (
-                    slug && (
-                      <a
-                        href={`/emprendedor/${slug}`}
-                        className="w-full text-center bg-slate-900 text-white text-sm py-2 rounded-lg hover:bg-slate-800 transition"
-                      >
-                        Ver detalle
-                      </a>
-                    )
-                  )}
-                </div>
+          {deTuComuna.length === 0 && atiendenTuComuna.length === 0 && (
+            <div
+              style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 20,
+                background: "#fff",
+                padding: 18,
+              }}
+            >
+              <h3 style={{ margin: "0 0 6px 0", fontSize: 18, fontWeight: 900, color: "#111827" }}>
+                No encontramos resultados
+              </h3>
+              <p style={{ margin: 0, fontSize: 14, color: "#6b7280", lineHeight: 1.5 }}>
+                Intenta buscar con otras palabras o sin filtrar por comuna.
+              </p>
+              <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const qNorm = normalizeText(q);
+                    router.push(qNorm ? `/resultados?q=${encodeURIComponent(qNorm)}` : "/resultados");
+                  }}
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    background: "#fff",
+                    borderRadius: 12,
+                    padding: "10px 12px",
+                    fontWeight: 800,
+                    fontSize: 14,
+                    color: "#0f172a",
+                    cursor: "pointer",
+                  }}
+                >
+                  Quitar comuna
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push("/resultados")}
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    background: "#f8fafc",
+                    borderRadius: 12,
+                    padding: "10px 12px",
+                    fontWeight: 800,
+                    fontSize: 14,
+                    color: "#0f172a",
+                    cursor: "pointer",
+                  }}
+                >
+                  Limpiar búsqueda
+                </button>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          )}
+
+          {atiendenTuComuna.length > 0 && (
+            <section style={{ display: "grid", gap: 14 }}>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 22,
+                  fontWeight: 900,
+                  color: "#111827",
+                }}
+              >
+                Atienden tu comuna ({atiendenTuComuna.length})
+              </h2>
+              <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>
+                Emprendimientos de otras comunas que atienden en {meta?.comunaNombre || comuna}
+              </p>
+              <ResultadosGrid
+                items={atiendenTuComuna}
+                meta={meta}
+                analyticsSource="comuna"
+              />
+            </section>
+          )}
+
+          {deTuComuna.length === 0 &&
+            atiendenTuComuna.length === 0 && (
+              <ResultadosGrid
+                items={[]}
+                meta={meta}
+                analyticsSource="comuna"
+              />
+            )}
         </>
-      )}
+      ) : null}
     </section>
   );
 }

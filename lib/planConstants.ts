@@ -4,6 +4,13 @@
  * Los planes NO alteran el ranking del buscador; solo la completitud de la ficha.
  */
 
+/** Niveles de ficha para UI y reglas de visualización. */
+export const PLANES = {
+  BASICO: "basico",
+  COMPLETO: "completo",
+} as const;
+export type PlanUi = (typeof PLANES)[keyof typeof PLANES];
+
 /** Único tipo de plan (producto). */
 export const PLAN_TIPO = "perfil_completo" as const;
 export type PlanTipo = typeof PLAN_TIPO;

@@ -1,98 +1,60 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
 import { recordEvent } from "@/lib/analytics/recordEvent";
+import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-const FIELD_MAP: Record<string, string> = {
-  whatsapp: "click_whatsapp",
-  instagram: "click_instagram",
-  web: "click_web",
-  email: "click_email",
-};
-
-const EVENT_TYPE_MAP: Record<string, "whatsapp_click" | "instagram_click" | "website_click" | "email_click"> = {
-  whatsapp: "whatsapp_click",
-  instagram: "instagram_click",
-  web: "website_click",
-  email: "email_click",
-};
-
-const recentClickEvents = new Map<string, number>();
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.ip ||
-    req.headers.get("x-real-ip") ||
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    "unknown"
-  );
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const { slug, type } = body;
 
-    const slug = String(body.slug || "").trim();
-    const type = String(body.type || "").trim();
-
-    if (!slug || !FIELD_MAP[type]) {
-      return NextResponse.json({ ok: false, error: "Parametros invalidos" }, { status: 400 });
+    if (!slug || !type) {
+      return NextResponse.json({ ok: false, error: "Missing data" }, { status: 400 });
     }
 
-    const ip = getClientIp(req);
-    const key = `${ip}|${slug}|${type}`;
-    const now = Date.now();
-    const last = recentClickEvents.get(key) || 0;
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    if (now - last < 10_000) {
-      // Ignorar múltiples clicks muy rápidos del mismo visitante/canal
-      return NextResponse.json({ ok: true });
-    }
-    recentClickEvents.set(key, now);
-
-    const field = FIELD_MAP[type];
-
-    const { data: item, error: findError } = await supabase
+    const { data: emp } = await supabase
       .from("emprendedores")
-      .select(`id, ${field}`)
+      .select("id")
       .eq("slug", slug)
       .single();
 
-    if (findError || !item) {
-      console.error("No se encontró emprendimiento:", findError);
-      return NextResponse.json({ ok: false }, { status: 404 });
+    if (!emp) {
+      return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
     }
 
-    const current = Number(item[field] || 0);
+    let event_type = "";
 
-    const { error: updateError } = await supabase
-      .from("emprendedores")
-      .update({ [field]: current + 1 })
-      .eq("slug", slug);
+    if (type === "whatsapp") event_type = "whatsapp_click";
+    if (type === "instagram") event_type = "instagram_click";
+    if (type === "web") event_type = "website_click";
+    if (type === "email") event_type = "email_click";
 
-    if (updateError) {
-      console.error("Error actualizando:", updateError);
-      return NextResponse.json({ ok: false }, { status: 500 });
+    if (!event_type) {
+      return NextResponse.json({ ok: false, error: "Invalid type" }, { status: 400 });
     }
 
-    const analyticsEventType = EVENT_TYPE_MAP[type];
-    if (analyticsEventType) {
-      await recordEvent(supabase, {
-        event_type: analyticsEventType,
-        emprendedor_id: item.id,
-        slug,
-        metadata: { slug, type },
-      });
+    const result = await recordEvent(supabase, {
+      event_type,
+      emprendedor_id: emp.id,
+      slug,
+      metadata: { slug, type },
+    });
+
+    if (!result.ok) {
+      console.error("TRACK CLICK recordEvent:", result.error);
+      return NextResponse.json(
+        { ok: false, error: result.error ?? "recordEvent failed" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ ok: true });
-
-  } catch (err) {
-    console.error("track-click error:", err);
-    return NextResponse.json({ ok: false }, { status: 500 });
+  } catch (e) {
+    console.error("TRACK CLICK ERROR:", e);
+    return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });
   }
 }

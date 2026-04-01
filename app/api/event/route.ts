@@ -27,8 +27,12 @@ export async function POST(req: NextRequest) {
     const sector_slug = body?.sector_slug ? s(body.sector_slug) : null;
     const q = body?.q != null ? s(body.q) : null;
     const session_id = body?.session_id ? s(body.session_id) : null;
-    const metadata =
-      body?.metadata && typeof body.metadata === "object" ? body.metadata : null;
+    const rawMeta =
+      body?.metadata &&
+      typeof body.metadata === "object" &&
+      !Array.isArray(body.metadata)
+        ? (body.metadata as Record<string, unknown>)
+        : {};
 
     if (!event_type || !isValidEventType(event_type)) {
       return NextResponse.json(
@@ -51,19 +55,25 @@ export async function POST(req: NextRequest) {
       emprendedor_id = emp?.id ?? null;
     }
 
+    const mergedMeta: Record<string, unknown> = {
+      slug: slug || null,
+      comuna_slug: comuna_slug || null,
+      sector_slug: sector_slug || null,
+      q: q || null,
+      session_id: session_id || null,
+      ...rawMeta,
+    };
+
+    if (event_type === "card_view_click" && !s(mergedMeta.source)) {
+      mergedMeta.source = "unknown";
+    }
+
     const result = await recordEvent(supabase, {
       event_type,
       emprendedor_id: emprendedor_id ?? undefined,
       slug: slug || undefined,
       session_id: session_id || undefined,
-      metadata: {
-        slug: slug || null,
-        comuna_slug: comuna_slug || null,
-        sector_slug: sector_slug || null,
-        q: q || null,
-        session_id: session_id || null,
-        ...(metadata || {}),
-      },
+      metadata: mergedMeta,
     });
 
     if (!result.ok) {

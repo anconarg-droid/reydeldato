@@ -15,7 +15,13 @@ type Item = {
   categoria_slug?: string;
   whatsapp?: string;
   _matchLabel?: string;
-  _bucket?: number;
+  _bucket?:
+    | "local"
+    | "exacta"
+    | "cobertura_comuna"
+    | "regional"
+    | "nacional"
+    | "general";
   _band?: number;
   _shuffle?: number;
   _textScore?: number;

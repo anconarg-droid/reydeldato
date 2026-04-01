@@ -18,13 +18,17 @@ export default function EmprendedorFichaLinks({
   instagram,
   web,
 }: Props) {
-  const whatsappUrl = buildWhatsappUrl(whatsapp);
-  const instagramUrl = buildInstagramUrl(instagram);
-  const websiteUrl = buildWebsiteUrl(web);
+  const wa = whatsapp ?? undefined;
+  const ig = instagram ?? undefined;
+  const site = web ?? undefined;
 
-  const whatsappText = formatWhatsappDisplay(whatsapp);
-  const instagramText = formatInstagramDisplay(instagram);
-  const websiteText = formatWebsiteDisplay(web);
+  const whatsappUrl = buildWhatsappUrl(wa);
+  const instagramUrl = buildInstagramUrl(ig);
+  const websiteUrl = buildWebsiteUrl(site);
+
+  const whatsappText = formatWhatsappDisplay(wa);
+  const instagramText = formatInstagramDisplay(ig);
+  const websiteText = formatWebsiteDisplay(site);
 
   return (
     <div

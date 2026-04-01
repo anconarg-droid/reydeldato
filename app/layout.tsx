@@ -34,8 +34,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className="font-sans antialiased">
+    <html lang="es">
+      <body
+        className="font-sans antialiased"
+        style={{
+          fontFamily:
+            "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+        }}
+      >
         {children}
       </body>
     </html>

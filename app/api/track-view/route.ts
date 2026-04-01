@@ -10,10 +10,11 @@ const supabase = createClient(
 const recentViewEvents = new Map<string, number>();
 
 function getClientIp(req: NextRequest): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  const first = fwd?.split(",")[0]?.trim();
   return (
-    req.ip ||
     req.headers.get("x-real-ip") ||
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    first ||
     "unknown"
   );
 }

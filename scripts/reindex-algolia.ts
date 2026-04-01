@@ -9,6 +9,8 @@ type ViewRow = {
   descripcion_corta: string | null;
   descripcion_larga: string | null;
   foto_principal_url: string | null;
+  whatsapp?: string | null;
+  instagram?: string | null;
 
   categoria_id: string | null;
   categoria_nombre: string | null;
@@ -142,7 +144,7 @@ async function main() {
     const res = await index.replaceAllObjects(objects, {
       autoGenerateObjectIDIfNotExist: false,
     });
-    console.log("[reindex-algolia] Algolia taskID:", res.taskID);
+    console.log("[reindex-algolia] Algolia taskIDs:", res.taskIDs);
     console.log("[reindex-algolia] Done.");
   } catch (err) {
     console.error("[reindex-algolia] Error sending data to Algolia:", err);

@@ -19,6 +19,8 @@ type Props = {
   options: ComunaOption[];
   placeholder?: string;
   label?: string;
+  /** Notifica cuando cambia el slug elegido (vacío si no hay match). */
+  onSelectedSlugChange?: (slug: string) => void;
 };
 
 export default function ComunaAutocomplete({
@@ -27,8 +29,11 @@ export default function ComunaAutocomplete({
   options,
   placeholder = "Escribe tu comuna (ej: Maipú, Calera de Tango)",
   label = "Comuna",
+  onSelectedSlugChange,
 }: Props) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const onSlugCb = useRef(onSelectedSlugChange);
+  onSlugCb.current = onSelectedSlugChange;
 
   const selectedFromSlug = useMemo(() => {
     return options.find((o) => norm(o.slug) === norm(defaultValue)) || null;
@@ -43,6 +48,10 @@ export default function ComunaAutocomplete({
     setInputValue(match?.nombre || defaultValue || "");
     setSelectedSlug(defaultValue || "");
   }, [defaultValue, options]);
+
+  useEffect(() => {
+    onSlugCb.current?.(selectedSlug);
+  }, [selectedSlug]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
