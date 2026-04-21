@@ -66,6 +66,8 @@ import {
   getLineaTaxonomiaCard,
 } from "@/lib/search/emprendedorSearchCardHelpers";
 
+export const dynamic = "force-dynamic";
+
 function capitalizeFirstLetterForDisplay(input: string): string {
   const t = String(input ?? "");
   if (!t) return t;
@@ -709,6 +711,11 @@ export default async function Page({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
+  if (process.env.NODE_ENV === "development" || process.env.LOG_FICHA_DEBUG === "1") {
+    // Log temporal para 500s en producción (Vercel logs).
+    // No cambia la lógica; solo ayuda a ver qué slug llega.
+    console.log("[ficha-page] slug_param", { slug });
+  }
   const sp = (await searchParams) ?? {};
   const item = await getEmprendedor(slug);
 
