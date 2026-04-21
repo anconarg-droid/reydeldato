@@ -1,3 +1,8 @@
+/**
+ * @deprecated Usa `GET /api/reindex/emprendedores` o `lib/scripts/reindex-algolia.ts`.
+ * Este script lee `public_emprendedores_search`, que no está versionada en migraciones del repo
+ * y puede no existir en la base.
+ */
 import "dotenv/config";
 import algoliasearch from "algoliasearch";
 import { createClient } from "@supabase/supabase-js";

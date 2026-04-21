@@ -19,8 +19,8 @@ El único "Guardar borrador" que aparece en el código está en **`app/component
 
 ## 3. Columnas en `emprendedores`
 
-- **`estado`**: **Sí existe.** Se usa en admin: `estado = 'pendiente_revision'` (pendientes) y `estado = 'aprobado'` (sitemap, etc.). No se usa en el flujo de `/api/publicar`; ahí solo se setea `estado_publicacion` (publicado / pendiente_verificacion). Para borradores hay que usar también `estado = 'borrador'`.
-- **`estado_publicacion`**: Existe; valores conocidos: publicado, pendiente_verificacion, rechazado.
+- **`estado`**: **Sí existe.** Se usa en admin: `estado = 'pendiente_revision'` (pendientes) y `estado = 'aprobado'` (sitemap, etc.). No se usa en el flujo de `/api/publicar`; ahí solo se setea `estado_publicacion` (publicado / en_revision). Para borradores hay que usar también `estado = 'borrador'`.
+- **`estado_publicacion`**: Existe; valores: borrador, en_revision, publicado, suspendido, rechazado.
 - **`form_completo`**: **No existe** en el esquema actual. Hay que agregarla.
 - **`ultimo_avance`**: **No existe.** Hay que agregarla (p. ej. `timestamptz` para última actualización del borrador).
 - **`origen_registro`**: **No existe.** Hay que agregarla (p. ej. `'form_publicar'`, `'panel'`, etc.).

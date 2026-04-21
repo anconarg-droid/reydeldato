@@ -1,13 +1,13 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import AdminSinonimosClient from "@/components/admin/AdminSinonimosClient";
 
 export default async function AdminSinonimosPage() {
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
 
   const { data, error } = await supabase
     .from("busqueda_sinonimos")
-    .select("id, termino, sinonimos, activo")
-    .order("termino");
+    .select("id, termino_input, termino_canonico, activo")
+    .order("termino_input");
 
   return (
     <main style={{ padding: "32px 20px", background: "#f8fafc", minHeight: "100vh" }}>

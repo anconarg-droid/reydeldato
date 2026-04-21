@@ -1,30 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
-function cleanTerm(value: string) {
-  return (value ?? "")
-    .toString()
+function cleanTermInput(value: unknown): string {
+  return String(value ?? "")
     .trim()
     .toLowerCase();
 }
 
-function parseSinonimos(input: any): string[] {
-  if (!input) return [];
-
-  if (Array.isArray(input)) {
-    return input
-      .map((s) => cleanTerm(s))
-      .filter(Boolean);
-  }
-
-  if (typeof input === "string") {
-    return input
-      .split(",")
-      .map((s) => cleanTerm(s))
-      .filter(Boolean);
-  }
-
-  return [];
+function trimCanonico(value: unknown): string {
+  return String(value ?? "").trim();
 }
 
 /**
@@ -32,12 +16,12 @@ function parseSinonimos(input: any): string[] {
  */
 export async function GET() {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServerPublicClient();
 
     const { data, error } = await supabase
       .from("busqueda_sinonimos")
-      .select("*")
-      .order("termino");
+      .select("id, termino_input, termino_canonico, activo")
+      .order("termino_input");
 
     if (error) {
       return NextResponse.json(
@@ -65,23 +49,29 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const termino = cleanTerm(body.termino);
-    const sinonimos = parseSinonimos(body.sinonimos);
+    const termino_input = cleanTermInput(body.termino_input);
+    const termino_canonico = trimCanonico(body.termino_canonico);
 
-    if (!termino) {
+    if (!termino_input) {
       return NextResponse.json(
-        { ok: false, error: "termino requerido" },
+        { ok: false, error: "termino_input requerido" },
+        { status: 400 }
+      );
+    }
+    if (!termino_canonico) {
+      return NextResponse.json(
+        { ok: false, error: "termino_canonico requerido" },
         { status: 400 }
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServerPublicClient();
 
     const { data, error } = await supabase
       .from("busqueda_sinonimos")
       .insert({
-        termino,
-        sinonimos,
+        termino_input,
+        termino_canonico,
         activo: true,
       })
       .select()
@@ -114,23 +104,25 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
 
     const id = body.id;
-    const termino = cleanTerm(body.termino);
-    const sinonimos = parseSinonimos(body.sinonimos);
     const activo = body.activo;
 
-    if (!id) {
+    if (id === undefined || id === null || id === "") {
       return NextResponse.json(
         { ok: false, error: "id requerido" },
         { status: 400 }
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServerPublicClient();
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
-    if (termino) updateData.termino = termino;
-    if (sinonimos) updateData.sinonimos = sinonimos;
+    if (body.termino_input !== undefined) {
+      updateData.termino_input = cleanTermInput(body.termino_input);
+    }
+    if (body.termino_canonico !== undefined) {
+      updateData.termino_canonico = trimCanonico(body.termino_canonico);
+    }
     if (typeof activo === "boolean") updateData.activo = activo;
 
     const { data, error } = await supabase
@@ -174,7 +166,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServerPublicClient();
 
     const { error } = await supabase
       .from("busqueda_sinonimos")

@@ -111,18 +111,16 @@ async function main() {
     sitio_web: null,
     web: null,
     mostrar_responsable: true,
-    modalidades_atencion: ["presencial"],
+    modalidades_atencion: ["domicilio"],
     keywords: ["prueba", "seed", "qa"],
     keywords_finales: ["prueba", "seed", "qa"],
     keywords_usuario: ["prueba", "seed", "qa"],
     keywords_usuario_json: ["prueba", "seed", "qa"],
     estado: "ok",
     estado_publicacion: "publicado",
-    publicado: true,
     form_completo: true,
     origen_registro: "seed_script",
     categoria_id: (categoriaRow as any).id as string,
-    subcategoria_principal_id: (subRow as any).id as string,
     subcategorias_slugs: [(subRow as any).slug as string],
     categoria_slug_final: (categoriaRow as any).slug as string,
     subcategoria_slug_final: (subRow as any).slug as string,
@@ -208,6 +206,14 @@ async function main() {
     }
 
     const emprendedorId = (inserted as any).id as string;
+
+    const { error: subRelErr } = await supabase.from("emprendedor_subcategorias").insert({
+      emprendedor_id: emprendedorId,
+      subcategoria_id: (subRow as any).id as string,
+    });
+    if (subRelErr) {
+      throw new Error(`Error insertando emprendedor_subcategorias (${seed.key}): ${subRelErr.message}`);
+    }
 
     if (seed.comunas_cobertura.length) {
       const rows = seed.comunas_cobertura.map((c) => ({

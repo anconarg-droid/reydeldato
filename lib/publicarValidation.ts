@@ -1,15 +1,28 @@
 // lib/publicarValidation.ts
-import { normalizeAndFilterKeyword } from "@/lib/keywordValidation";
+import {
+  normalizeDescripcionCorta,
+  normalizeDescripcionLarga,
+  validateDescripcionCortaPublicacion,
+  validateDescripcionLarga,
+} from "@/lib/descripcionProductoForm";
+import { normalizeAndValidateChileWhatsappStrict } from "@/utils/phone";
+import { parseLocalesPatchInput } from "@/lib/emprendedorLocalesDb";
+import {
+  normalizeKeywordsUsuarioListFromMixed,
+} from "@/lib/keywordsUsuarioPostulacion";
 export type CoberturaTipo = "comuna" | "varias" | "region" | "nacional";
-export type ModalidadAtencion = "local" | "domicilio" | "online";
+export type ModalidadAtencion =
+  | "local"
+  | "local_fisico"
+  | "delivery"
+  | "domicilio"
+  | "online";
 
 export type PublicarPayload = {
   nombre: string;
   whatsapp: string;
   comuna_base_id: number;
   descripcion_corta: string;
-  /** Opcional: keywords separadas por coma o lista. No visible públicamente. */
-  keywords_usuario?: string[] | string | null;
   cobertura_tipo: CoberturaTipo;
   cobertura_comunas?: number[] | null;
   modalidades?: ModalidadAtencion[] | null;
@@ -27,8 +40,7 @@ export type PublicarPayload = {
 };
 
 function isValidWhatsapp(value: string) {
-  const clean = value.replace(/\s+/g, "");
-  return /^\+?\d{9,15}$/.test(clean);
+  return normalizeAndValidateChileWhatsappStrict(String(value ?? "").trim()).ok;
 }
 
 export function validateNuevoPayload(input: unknown) {
@@ -38,15 +50,22 @@ export function validateNuevoPayload(input: unknown) {
   if (!data?.nombre?.trim()) errors.push("nombre es obligatorio");
   if (!data?.whatsapp?.trim()) errors.push("whatsapp es obligatorio");
   if (!data?.comuna_base_id) errors.push("comuna_base_id es obligatorio");
-  if (!data?.descripcion_corta?.trim()) errors.push("descripcion_corta es obligatoria");
   if (!data?.cobertura_tipo) errors.push("cobertura_tipo es obligatorio");
 
-  if (data?.descripcion_corta?.trim()?.length < 40) {
-    errors.push("descripcion_corta debe tener al menos 40 caracteres");
+  const cortaNorm = normalizeDescripcionCorta(String(data?.descripcion_corta ?? ""));
+  errors.push(...validateDescripcionCortaPublicacion(cortaNorm));
+
+  const largaRaw = data?.descripcion_libre;
+  if (largaRaw != null && String(largaRaw).trim() !== "") {
+    errors.push(
+      ...validateDescripcionLarga(normalizeDescripcionLarga(String(largaRaw))),
+    );
   }
 
   if (data?.whatsapp && !isValidWhatsapp(data.whatsapp)) {
-    errors.push("whatsapp no tiene formato válido");
+    errors.push(
+      "whatsapp: usá un celular chileno (912345678, 56912345678 o +56912345678, sin dígitos de más)"
+    );
   }
 
   if (data?.cobertura_tipo === "varias") {
@@ -86,14 +105,15 @@ export function validatePatchPayload(input: unknown) {
     "nombre_emprendimiento",
     "whatsapp",
     "whatsapp_principal",
+    "whatsapp_secundario",
     "comuna_base_id",
     "descripcion_libre",
+    "descripcion_larga",
     "sitio_web",
     "nombre_responsable",
     "mostrar_responsable_publico",
     "categoria_id",
     "subcategorias_ids",
-    "keywords_usuario",
   ];
 
   const extraKeys = Object.keys(data || {}).filter((k) => !allowedKeys.includes(k));
@@ -127,6 +147,7 @@ const BORRADOR_PATCH_STRING_KEYS = new Set([
   "nombre_emprendimiento",
   "whatsapp",
   "whatsapp_principal",
+  "whatsapp_secundario",
   "descripcion_libre",
   "sitio_web",
   "nombre_responsable",
@@ -144,32 +165,7 @@ const BORRADOR_PATCH_STRING_ARRAY_KEYS = new Set([
   "regiones_cobertura",
   "modalidades",
   "modalidades_atencion",
-  "keywords_usuario",
 ]);
-
-function optionalStringOrStringArray(v: unknown): string[] | undefined {
-  if (typeof v === "string") return [v];
-  if (!Array.isArray(v)) return undefined;
-  return v.every((x) => typeof x === "string") ? [...v] : undefined;
-}
-
-function normalizeKeywordsUsuario(raw: unknown): string[] | undefined {
-  const list = optionalStringOrStringArray(raw);
-  if (!list) return undefined;
-
-  const joined = list.length === 1 ? String(list[0] ?? "") : list.join(",");
-  const parts = joined
-    .split(",")
-    .map((x) => String(x ?? "").trim())
-    .filter(Boolean);
-
-  const out: string[] = [];
-  for (const p of parts) {
-    const norm = normalizeAndFilterKeyword(p);
-    if (norm) out.push(norm);
-  }
-  return [...new Set(out)].slice(0, 20);
-}
 
 function optionalInt(v: unknown): number | undefined {
   if (typeof v === "number" && Number.isFinite(v)) return Math.trunc(v);
@@ -236,6 +232,13 @@ export function extractBorradorPatchFromBody(
   }
   if (
     normalized.descripcion_libre === undefined &&
+    "descripcion_larga" in normalized &&
+    normalized.descripcion_larga !== undefined
+  ) {
+    normalized.descripcion_libre = normalized.descripcion_larga;
+  }
+  if (
+    normalized.descripcion_libre === undefined &&
     "descripcionNegocio" in normalized &&
     normalized.descripcionNegocio !== undefined
   ) {
@@ -255,6 +258,20 @@ export function extractBorradorPatchFromBody(
   ) {
     normalized.mostrar_responsable_publico = !normalized.ocultarResponsable;
   }
+  if (
+    normalized.keywords_usuario === undefined &&
+    "keywordsUsuario" in normalized &&
+    normalized.keywordsUsuario !== undefined
+  ) {
+    normalized.keywords_usuario = normalized.keywordsUsuario;
+  }
+  if (
+    normalized.keywords_usuario === undefined &&
+    "keywords_usuario_json" in normalized &&
+    normalized.keywords_usuario_json !== undefined
+  ) {
+    normalized.keywords_usuario = normalized.keywords_usuario_json;
+  }
 
   const out: Record<string, unknown> = {};
 
@@ -262,14 +279,42 @@ export function extractBorradorPatchFromBody(
     const value = normalized[key];
     if (value === undefined) continue;
 
-    if (key === "mostrar_responsable_publico") {
-      if (typeof value === "boolean") out[key] = value;
+    if (key === "whatsapp_secundario") {
+      if (value === null) {
+        out[key] = null;
+        continue;
+      }
+      if (typeof value === "string") out[key] = value;
       continue;
     }
 
+    if (key === "locales") {
+      if (!Array.isArray(value)) continue;
+      if (value.length === 0) {
+        out[key] = [];
+        continue;
+      }
+      if (parseLocalesPatchInput(value) === null) continue;
+      out[key] = value;
+      continue;
+    }
+
+    if (key === "keywords_usuario_json") {
+      continue;
+    }
+
+    /**
+     * `postulaciones_emprendedores`: solo persiste `keywords_usuario` (text[]). No escribir
+     * `keywords_usuario_json` en esa tabla (columna inexistente en el esquema actual).
+     */
     if (key === "keywords_usuario") {
-      const kws = normalizeKeywordsUsuario(value);
-      if (kws && kws.length > 0) out[key] = kws;
+      const norm = normalizeKeywordsUsuarioListFromMixed(value);
+      out.keywords_usuario = norm;
+      continue;
+    }
+
+    if (key === "mostrar_responsable_publico") {
+      if (typeof value === "boolean") out[key] = value;
       continue;
     }
 

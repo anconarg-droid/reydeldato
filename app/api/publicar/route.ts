@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  normalizeDescripcionCorta,
+  normalizeDescripcionLarga,
+  primeraValidacionDescripcion,
+  validateDescripcionCortaPublicacionBasica,
+  validateDescripcionLarga,
+} from "@/lib/descripcionProductoForm";
+import { POSTULACIONES_MODERACION_SELECT } from "@/lib/loadPostulacionesModeracion";
+import { validateRequiredPublicEmail } from "@/lib/validateEmail";
+import { sendEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,19 +39,6 @@ function dedupe(list: string[]): string[] {
   return [...new Set(list.map((x) => s(x)).filter(Boolean))];
 }
 
-function isMissingKeywordsUsuarioColumn(err: {
-  message?: string;
-  code?: string;
-}): boolean {
-  const m = String(err.message ?? "").toLowerCase();
-  return (
-    err.code === "PGRST204" ||
-    (m.includes("schema cache") &&
-      m.includes("keywords") &&
-      m.includes("usuario"))
-  );
-}
-
 function normalizeCoberturaTipo(raw: string): CoberturaTipo | "" {
   const x = s(raw).toLowerCase();
 
@@ -55,22 +52,19 @@ function normalizeCoberturaTipo(raw: string): CoberturaTipo | "" {
   return "";
 }
 
-function normalizeModalidades(raw: unknown): string[] {
-  const values = arr(raw).map((x) => x.toLowerCase());
-
-  const mapped = values
-    .map((x) => {
-      if (x === "local_fisico" || x === "local") return "local";
-      if (x === "domicilio" || x === "presencial") return "presencial";
-      if (x === "online") return "online";
-      return "";
-    })
-    .filter(Boolean);
-
-  return dedupe(mapped);
+/** `comunas.id` puede ser bigint o UUID según esquema. */
+function parseComunaBaseId(raw: unknown): number | string | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  const t = s(raw);
+  if (!t) return null;
+  if (/^\d+$/.test(t)) return Number(t);
+  return t;
 }
 
-async function resolveRegionSlugFromComunaId(comunaId: number): Promise<string> {
+async function resolveRegionSlugFromComunaId(
+  comunaId: number | string
+): Promise<string> {
   const { data: comuna, error: comunaError } = await supabase
     .from("comunas")
     .select("region_id")
@@ -81,12 +75,15 @@ async function resolveRegionSlugFromComunaId(comunaId: number): Promise<string> 
     throw new Error(`Error obteniendo regi?n de comuna: ${comunaError.message}`);
   }
 
+  const rid = (comuna as { region_id?: unknown } | null)?.region_id;
   const regionId =
-    comuna && typeof (comuna as { region_id?: unknown }).region_id === "number"
-      ? (comuna as { region_id: number }).region_id
-      : null;
+    rid === null || rid === undefined || rid === ""
+      ? null
+      : typeof rid === "number"
+        ? rid
+        : Number(rid);
 
-  if (!regionId) return "";
+  if (regionId == null || !Number.isFinite(regionId)) return "";
 
   const { data: region, error: regionError } = await supabase
     .from("regiones")
@@ -115,9 +112,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const aceptaLegal = body?.acepta_terminos_privacidad === true;
+    if (!aceptaLegal) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Debes aceptar los Términos y Condiciones y la Política de Privacidad para publicar.",
+        },
+        { status: 400 }
+      );
+    }
+
     const { data: draft, error: draftError } = await supabase
       .from("postulaciones_emprendedores")
-      .select("*")
+      .select(POSTULACIONES_MODERACION_SELECT)
       .eq("id", draftId)
       .maybeSingle();
 
@@ -135,7 +144,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const row = draft as Record<string, unknown>;
+    const row = draft as unknown as Record<string, unknown>;
 
     if (s(row.estado).toLowerCase() === "aprobada") {
       return NextResponse.json(
@@ -145,26 +154,30 @@ export async function POST(req: NextRequest) {
     }
 
     const nombreEmprendimiento = s(row.nombre_emprendimiento);
-    const fraseNegocio = s(row.frase_negocio);
+    const fraseNegocioNorm = normalizeDescripcionCorta(s(row.frase_negocio));
     const whatsappPrincipal = s(row.whatsapp_principal);
-    const keywordsUsuario = arr(row.keywords_usuario);
-
-    const comunaBaseId =
-      row.comuna_base_id === null || row.comuna_base_id === undefined
-        ? null
-        : Number(row.comuna_base_id);
+    const comunaBaseId = parseComunaBaseId(row.comuna_base_id);
 
     const coberturaTipo = normalizeCoberturaTipo(s(row.cobertura_tipo));
     let comunasCobertura = dedupe(arr(row.comunas_cobertura));
     let regionesCobertura = dedupe(arr(row.regiones_cobertura));
 
-    // Validaci?n ficha b?sica m?nima
+    // Publicación básica: solo datos mínimos (no locales, dirección, modalidades ni ficha completa).
     if (!nombreEmprendimiento) {
       return NextResponse.json(
         { ok: false, error: "Falta nombre_emprendimiento" },
         { status: 400 }
       );
     }
+
+    const emailCheck = validateRequiredPublicEmail(s(row.email));
+    if (!emailCheck.ok) {
+      return NextResponse.json(
+        { ok: false, error: emailCheck.message },
+        { status: 400 }
+      );
+    }
+    const emailNorm = emailCheck.normalized;
 
     if (!whatsappPrincipal) {
       return NextResponse.json(
@@ -173,14 +186,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!fraseNegocio) {
+    const errCorta = validateDescripcionCortaPublicacionBasica(fraseNegocioNorm);
+    const msgCorta = primeraValidacionDescripcion(errCorta);
+    if (msgCorta) {
       return NextResponse.json(
-        { ok: false, error: "Falta frase_negocio" },
+        { ok: false, error: msgCorta, errors: errCorta },
         { status: 400 }
       );
     }
 
-    if (!comunaBaseId || !Number.isFinite(comunaBaseId)) {
+    const descLibreRaw = s(row.descripcion_libre);
+    if (descLibreRaw) {
+      const largaN = normalizeDescripcionLarga(descLibreRaw);
+      const errLarga = validateDescripcionLarga(largaN);
+      const msgLarga = primeraValidacionDescripcion(errLarga);
+      if (msgLarga) {
+        return NextResponse.json(
+          { ok: false, error: msgLarga, errors: errLarga },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (comunaBaseId === null) {
       return NextResponse.json(
         { ok: false, error: "Falta comuna_base_id v?lido" },
         { status: 400 }
@@ -200,6 +228,15 @@ export async function POST(req: NextRequest) {
       regionesCobertura = [];
     } else if (coberturaTipo === "varias_comunas") {
       regionesCobertura = [];
+      if (!comunasCobertura.length) {
+        const { data: cbRow } = await supabase
+          .from("comunas")
+          .select("slug")
+          .eq("id", comunaBaseId)
+          .maybeSingle();
+        const baseSlug = s((cbRow as { slug?: unknown } | null)?.slug);
+        if (baseSlug) comunasCobertura = [baseSlug];
+      }
     } else if (coberturaTipo === "varias_regiones") {
       comunasCobertura = [];
       if (!regionesCobertura.length) {
@@ -211,12 +248,12 @@ export async function POST(req: NextRequest) {
       regionesCobertura = [];
     }
 
-    const draftUpdateBase = {
+    const draftUpdateBase: Record<string, unknown> = {
       estado: "pendiente_revision" as const,
       nombre_emprendimiento: nombreEmprendimiento,
+      email: emailNorm,
       whatsapp_principal: whatsappPrincipal,
-      frase_negocio: fraseNegocio,
-      keywords_usuario: keywordsUsuario.length ? keywordsUsuario : null,
+      frase_negocio: fraseNegocioNorm,
       comuna_base_id: comunaBaseId,
       cobertura_tipo: coberturaTipo,
       comunas_cobertura: comunasCobertura,
@@ -225,26 +262,10 @@ export async function POST(req: NextRequest) {
       subcategorias_ids: null,
     };
 
-    let { error: updateDraftError } = await supabase
+    const { error: updateDraftError } = await supabase
       .from("postulaciones_emprendedores")
       .update(draftUpdateBase)
       .eq("id", draftId);
-
-    if (
-      updateDraftError &&
-      draftUpdateBase.keywords_usuario != null &&
-      isMissingKeywordsUsuarioColumn(updateDraftError)
-    ) {
-      console.warn(
-        "[POST publicar] Sin columna keywords_usuario; actualización sin ese campo. Migración: 20260330010100_postulaciones_keywords_usuario.sql"
-      );
-      const { keywords_usuario: _k, ...sinKw } = draftUpdateBase;
-      const retry = await supabase
-        .from("postulaciones_emprendedores")
-        .update(sinKw)
-        .eq("id", draftId);
-      updateDraftError = retry.error;
-    }
 
     if (updateDraftError) {
       return NextResponse.json(
@@ -253,11 +274,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Email de confirmación (no bloquea el flujo si falla).
+    try {
+      const safeNombre = nombreEmprendimiento || "tu emprendimiento";
+      await sendEmail({
+        to: emailNorm,
+        subject: "Recibimos tu emprendimiento — Rey del Dato",
+        html: `<p>Hola,</p>
+<p>Recibimos tu emprendimiento <strong>${safeNombre}</strong>.</p>
+<p>Lo revisaremos y te avisaremos por email cuando tu negocio esté publicado.</p>
+<p>Gracias por confiar en Rey del Dato.</p>`,
+      });
+    } catch {
+      // Errores ya se registran dentro de sendEmail; nunca romper flujo.
+    }
+
     return NextResponse.json({
       ok: true,
       draft_id: draftId,
       estado: "pendiente_revision",
-      message: "Postulación enviada a revisión",
+      message:
+        "Tu emprendimiento está en revisión. Te avisaremos cuando esté publicado.",
     });
   } catch (error) {
     return NextResponse.json(

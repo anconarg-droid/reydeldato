@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { VW_APERTURA_COMUNA_V2, VW_FALTANTES_COMUNA_V2 } from "@/lib/aperturaComunaContrato";
 import {
   abiertaPorMinimosFromVwRow,
   comunaPublicaAbierta,
@@ -16,8 +17,15 @@ function computeEstado(porcentaje: number): EstadoComuna {
   return "abierta";
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const contextComunaSlug = (
+      req.nextUrl.searchParams.get("comuna") ||
+      req.nextUrl.searchParams.get("context_comuna_slug") ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
@@ -63,8 +71,10 @@ export async function GET() {
     }
 
     const { data: baseRows, error: baseErr } = await supabase
-      .from("vw_apertura_comuna_v2")
-      .select("comuna_slug, comuna_nombre, porcentaje_apertura")
+      .from(VW_APERTURA_COMUNA_V2)
+      .select(
+        "comuna_slug, comuna_nombre, porcentaje_apertura, total_requerido, total_cumplido, abierta"
+      )
       .order("porcentaje_apertura", { ascending: false });
 
     if (baseErr) {
@@ -79,6 +89,9 @@ export async function GET() {
         comuna_slug: String(r.comuna_slug || "").trim(),
         comuna_nombre: String(r.comuna_nombre || "").trim(),
         porcentaje_apertura: Number(r.porcentaje_apertura || 0),
+        total_requerido: Number(r.total_requerido ?? NaN),
+        total_cumplido: Number(r.total_cumplido ?? NaN),
+        abierta: r.abierta,
       }))
       .filter(
         (r) =>
@@ -97,7 +110,10 @@ export async function GET() {
           forzar: false,
           motivo: null,
         };
-        const vwRow = { porcentaje_apertura: c.porcentaje_apertura };
+        const vwRow = {
+          porcentaje_apertura: c.porcentaje_apertura,
+          abierta: (c as { abierta?: unknown }).abierta,
+        };
         const abierta_por_minimos = abiertaPorMinimosFromVwRow(vwRow);
         const comuna_publica_abierta = comunaPublicaAbierta(ov.forzar, vwRow);
         return {
@@ -120,9 +136,34 @@ export async function GET() {
       Array<{ subcategoria: string; faltan: number }>
     >();
 
+    const regionSlugByComunaSlug = new Map<string, string>();
+    if (slugs.length > 0) {
+      const { data: regionRows } = await supabase
+        .from("comunas")
+        .select("slug, regiones(slug)")
+        .in("slug", slugs);
+      for (const row of (regionRows || []) as any[]) {
+        const s = String(row.slug || "").trim();
+        const rs = String(row.regiones?.slug || "").trim();
+        if (s && rs) regionSlugByComunaSlug.set(s, rs);
+      }
+    }
+
+    let contextRegionSlug: string | null = null;
+    if (contextComunaSlug) {
+      const { data: ctxComuna } = await supabase
+        .from("comunas")
+        .select("regiones(slug)")
+        .eq("slug", contextComunaSlug)
+        .maybeSingle();
+      contextRegionSlug = String(
+        (ctxComuna as { regiones?: { slug?: string } | null } | null)?.regiones?.slug ?? ""
+      ).trim() || null;
+    }
+
     if (slugs.length > 0) {
       const { data: rubrosRows } = await supabase
-        .from("vw_faltantes_comuna_v2")
+        .from(VW_FALTANTES_COMUNA_V2)
         .select("comuna_slug, subcategoria_nombre, faltantes")
         .in("comuna_slug", slugs);
 
@@ -141,10 +182,15 @@ export async function GET() {
       const faltantes = (faltantesBySlug.get(c.comuna_slug) ?? [])
         .sort((a, b) => b.faltan - a.faltan)
         .slice(0, 10);
+      const tr = Number(c.total_requerido ?? NaN);
+      const tc = Number(c.total_cumplido ?? NaN);
       return {
         comuna_slug: c.comuna_slug,
         comuna_nombre: c.comuna_nombre,
         porcentaje_apertura: c.porcentaje_apertura,
+        total_requerido: Number.isFinite(tr) && tr > 0 ? Math.floor(tr) : null,
+        total_cumplido: Number.isFinite(tc) && tc >= 0 ? Math.floor(tc) : null,
+        region_slug: regionSlugByComunaSlug.get(c.comuna_slug) ?? null,
         estado: computeEstado(c.porcentaje_apertura),
         faltantes,
         abierta_por_minimos: c.abierta_por_minimos,
@@ -154,14 +200,32 @@ export async function GET() {
       };
     });
 
+    if (contextComunaSlug) {
+      const tier = (row: (typeof out)[0]) => {
+        if (row.comuna_slug === contextComunaSlug) return 2;
+        if (
+          contextRegionSlug &&
+          row.region_slug &&
+          row.region_slug === contextRegionSlug
+        )
+          return 1;
+        return 0;
+      };
+      out.sort((a, b) => {
+        const d = tier(b) - tier(a);
+        if (d !== 0) return d;
+        return b.porcentaje_apertura - a.porcentaje_apertura;
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       items: out,
       meta: {
         fuente: "supabase_views_v2",
-        vistas: ["vw_apertura_comuna_v2", "vw_faltantes_comuna_v2"],
+        vistas: [VW_APERTURA_COMUNA_V2, VW_FALTANTES_COMUNA_V2],
         regla_publica:
-          "comuna_publica_abierta = forzar_abierta OR abierta_por_minimos (porcentaje_apertura >= 100)",
+          "comuna_publica_abierta = forzar_abierta OR vw.abierta (todos los rubros_apertura activos cumplen mínimo)",
       },
     });
   } catch (error) {

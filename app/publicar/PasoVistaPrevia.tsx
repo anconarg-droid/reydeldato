@@ -9,6 +9,15 @@ import type {
   Subcategoria,
 } from "./PublicarClient";
 import { MIN_DESCRIPCION_NEGOCIO } from "./PublicarClient";
+import {
+  DESCRIPCION_CORTA_MAX,
+  normalizeDescripcionCorta,
+  validateDescripcionCortaPublicacion,
+} from "@/lib/descripcionProductoForm";
+import {
+  etiquetaModalidadAtencion,
+  modalidadAtencionInputToDb,
+} from "@/lib/modalidadesAtencion";
 
 export default function PasoVistaPrevia({
   form,
@@ -56,12 +65,7 @@ export default function PasoVistaPrevia({
   }, [regiones, form.regionesCobertura]);
 
   const modalidadesTexto = useMemo(() => {
-    return form.modalidades.map((m) => {
-      if (m === "local") return "Local físico";
-      if (m === "presencial") return "Atención a domicilio";
-      if (m === "online") return "Online";
-      return m;
-    });
+    return form.modalidades.map((m) => etiquetaModalidadAtencion(m));
   }, [form.modalidades]);
 
   const [fotoPrincipalUrl, setFotoPrincipalUrl] = useState<string | null>(null);
@@ -77,7 +81,7 @@ export default function PasoVistaPrevia({
   }, [form.fotoPrincipal]);
 
   useEffect(() => {
-    const files = form.galeria.slice(0, 6);
+    const files = form.galeria.slice(0, 8);
     if (files.length === 0) {
       setGaleriaUrls([]);
       return;
@@ -105,7 +109,7 @@ export default function PasoVistaPrevia({
     }
 
     if (form.coberturaTipo === "nacional") {
-      return "Todo Chile";
+      return "Nacional";
     }
 
     return "";
@@ -117,7 +121,9 @@ export default function PasoVistaPrevia({
   ]);
 
   const descripcionValida =
-    form.descripcionNegocio.trim().length >= MIN_DESCRIPCION_NEGOCIO;
+    validateDescripcionCortaPublicacion(
+      normalizeDescripcionCorta(form.descripcionNegocio),
+    ).length === 0;
   const fotoValida = !!form.fotoPrincipal;
   const comunaValida = !!form.comunaBase;
   const coberturaValida = !!form.coberturaTipo;
@@ -132,9 +138,18 @@ export default function PasoVistaPrevia({
 
   const faltantes: string[] = [];
   if (!descripcionValida) {
-    faltantes.push(
-      `Descripción mínima (${MIN_DESCRIPCION_NEGOCIO - form.descripcionNegocio.trim().length} caracteres faltantes)`
-    );
+    const n = normalizeDescripcionCorta(form.descripcionNegocio);
+    if (n.length < MIN_DESCRIPCION_NEGOCIO) {
+      faltantes.push(
+        `Resumen para búsquedas: Máx. ${DESCRIPCION_CORTA_MAX} caracteres — sé claro y directo · te faltan ${MIN_DESCRIPCION_NEGOCIO - n.length}`,
+      );
+    } else if (n.length > DESCRIPCION_CORTA_MAX) {
+      faltantes.push(
+        `Resumen para búsquedas: Máx. ${DESCRIPCION_CORTA_MAX} caracteres — sé claro y directo · te sobran ${n.length - DESCRIPCION_CORTA_MAX}`,
+      );
+    } else {
+      faltantes.push("Revisá el resumen para búsquedas (una frase clara).");
+    }
   }
   if (!fotoValida) faltantes.push("Foto principal");
   if (!comunaValida) faltantes.push("Comuna base");
@@ -234,16 +249,25 @@ export default function PasoVistaPrevia({
               {modalidadesTexto.length > 0 ? (
                 <div style={modalidadesInlineStyle}>
                   {form.modalidades.map((m) => {
-                    if (m === "local") {
-                      return <span key={m}>🏪 Local físico </span>;
-                    }
-                    if (m === "presencial") {
-                      return <span key={m}>🚚 Atención a domicilio </span>;
-                    }
-                    if (m === "online") {
-                      return <span key={m}>💻 Online </span>;
-                    }
-                    return null;
+                    const canon = modalidadAtencionInputToDb(m) || m;
+                    const emoji =
+                      canon === "local_fisico"
+                        ? "🏪"
+                        : canon === "delivery"
+                          ? "🚚"
+                          : canon === "domicilio"
+                            ? "🏠"
+                            : canon === "presencial_terreno"
+                              ? "🚚"
+                              : canon === "online"
+                                ? "💻"
+                                : "•";
+                    const label = etiquetaModalidadAtencion(m);
+                    return (
+                      <span key={`${canon}-${m}`}>
+                        {emoji} {label}{" "}
+                      </span>
+                    );
                   })}
                 </div>
               ) : null}

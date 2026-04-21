@@ -4,23 +4,40 @@ export default function HomeFooter() {
   return (
     <footer className="border-t border-slate-200 bg-slate-50 mt-16">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex flex-wrap gap-6 text-sm">
-          <Link href="/" className="text-slate-600 hover:text-slate-900">
+        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm" aria-label="Enlaces principales">
+          <Link href="/que-es" className="text-slate-600 hover:text-slate-900">
             Qué es Rey del Dato
           </Link>
           <Link href="/publicar" className="text-slate-600 hover:text-slate-900">
             Cómo publicar
           </Link>
-          <a href="mailto:contacto@reydeldato.cl" className="text-slate-600 hover:text-slate-900">
+          <Link href="/contacto" className="text-slate-600 hover:text-slate-900">
             Contacto
-          </a>
-          <Link href="/comunas" className="text-slate-600 hover:text-slate-900">
-            Comunas abiertas
           </Link>
-        </div>
-        <p className="mt-4 text-xs text-slate-500">
-          © Rey del Dato. Emprendimientos locales cerca de ti.
-        </p>
+          <Link href="/informacion-util" className="text-slate-600 hover:text-slate-900">
+            Información útil
+          </Link>
+        </nav>
+
+        <nav
+          className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm"
+          aria-label="Información legal"
+        >
+          <Link href="/terminos" className="text-slate-600 hover:text-slate-900">
+            Términos y condiciones
+          </Link>
+          <Link href="/privacidad" className="text-slate-600 hover:text-slate-900">
+            Política de privacidad
+          </Link>
+          <Link href="/datos" className="text-slate-600 hover:text-slate-900">
+            Tratamiento de datos
+          </Link>
+          <Link href="/legal" className="text-slate-600 hover:text-slate-900">
+            Información legal
+          </Link>
+        </nav>
+
+        <p className="mt-5 text-xs text-slate-500">© Rey del Dato SpA · RUT 78.403.835-1</p>
       </div>
     </footer>
   );

@@ -32,6 +32,8 @@
   ],
   "exclude": [
     "node_modules",
-    "components/v0-home/ui"
+    "components/v0-home/ui",
+    "incoming",
+    "scripts"
   ]
 }

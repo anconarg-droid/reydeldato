@@ -279,6 +279,7 @@ const FRASES_COMPUESTAS: Array<{
   canonical: string;
 }> = [
   { match: ["local", "fisico"], canonical: "local_fisico" },
+  { match: ["delivery"], canonical: "delivery" },
   { match: ["a", "domicilio"], canonical: "domicilio" },
   { match: ["sitio", "web"], canonical: "sitio_web" },
   { match: ["redes", "sociales"], canonical: "redes_sociales" },

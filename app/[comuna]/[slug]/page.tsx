@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { supabaseAdmin, supabase } from "@/lib/supabase";
 import { slugify } from "@/lib/slugify";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +14,12 @@ export default async function ComunaSlugRedirectPage({ params }: PageProps) {
   const raw = decodeURIComponent(slug).trim();
   const slugNorm = slugify(raw);
 
-  const db = supabaseAdmin ?? supabase;
+  const db = createSupabaseServerPublicClient();
   const { data: sub } = await db
     .from("subcategorias")
     .select("slug")
     .eq("slug", slugNorm.toLowerCase())
+    .eq("activo", true)
     .maybeSingle();
 
   if (sub?.slug) {

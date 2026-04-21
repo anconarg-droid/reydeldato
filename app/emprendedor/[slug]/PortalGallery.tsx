@@ -2,25 +2,33 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
-import PlaceholderCard from "./PlaceholderCard";
+import {
+  getPlaceholderSinFotoSub,
+  getPlaceholderSinFotoTitulo,
+} from "@/lib/productRules";
 
 /** Filtro suave para uniformar luminancia y color entre fotos distintas. */
 const IMG_FILTER = "brightness(0.98) contrast(1.05) saturate(1.05)";
 
-const imgCoverStyled: CSSProperties = {
+/** Alto máximo del visor principal (listing / portal: protagonista sin infinito). */
+const HERO_MAX_HEIGHT_PX = 520;
+/** Mínimo útil en móvil. */
+const HERO_MIN_HEIGHT_PX = 260;
+
+const imgThumbCover: CSSProperties = {
   width: "100%",
   height: "100%",
   objectFit: "cover",
   filter: IMG_FILTER,
 };
 
-/** Degradado ligero: viñeta muy suave arriba y base un poco más oscura (leyenda). */
+/** Viñeta suave para leyendas sobre la foto (jerarquía tipo marketplace). */
 const overlayHeroGradient: CSSProperties = {
   position: "absolute",
   inset: 0,
   pointerEvents: "none",
   background:
-    "linear-gradient(180deg, rgba(15,23,42,0.06) 0%, transparent 32%, transparent 58%, rgba(15,23,42,0.14) 100%)",
+    "linear-gradient(180deg, rgba(15,23,42,0.35) 0%, transparent 28%, transparent 62%, rgba(15,23,42,0.45) 100%)",
 };
 
 const URL_PENALIZA_LOGO: RegExp[] = [
@@ -121,56 +129,28 @@ export function ordenFotosParaHero(fotoPrincipal: string, galeria: string[]): st
     .map((x) => x.url);
 }
 
+export type PlaceholderFichaCompletaProps = {
+  /** Servicios en el domicilio del cliente (no delivery de productos). */
+  atencionDomicilio: boolean;
+  /** Envío / reparto de productos. */
+  delivery: boolean;
+  /** Solo `presencial_terreno` en BD, sin delivery/domicilio explícitos. */
+  legacyTerreno?: boolean;
+  disponibleEnComuna: boolean;
+  contactoWhatsapp: boolean;
+};
+
 type Props = {
   fotoPrincipal?: string;
   galeria?: string[];
-  nombreNegocio?: string;
-  subcategoriaLabel?: string;
-  categoriaLabel?: string;
-  comunaLabel?: string;
+  /** Ficha completa: placeholder con checklist de valor (sin fotos). */
+  placeholderFichaCompleta?: PlaceholderFichaCompletaProps | null;
 };
-
-/** Emoji grande según rubro (categoría + nombre); fallback tienda genérica. */
-function iconoRubroGrande(categoria: string, nombreNegocio: string): string {
-  const t = `${categoria} ${nombreNegocio}`.toLowerCase().normalize("NFC");
-  const rules: [RegExp, string][] = [
-    [/plomer|gasfiter|grifer|fuga/i, "🔧"],
-    [/electric|lumin|lampara/i, "⚡"],
-    [/carpinter|muebl|ebanist/i, "🪵"],
-    [/pintur|brocha/i, "🎨"],
-    [/limpiez|aseo|aseadora/i, "✨"],
-    [/jard|paisaj|planta|riego/i, "🌿"],
-    [/bellez|peluqu|barber|uñas|spa|estétic/i, "💇"],
-    [/panad|pastel|reposter|comida|cocina|restaurant|caf[eé]/i, "🥖"],
-    [/transport|mudanz|courier|delivery|envío/i, "🚐"],
-    [/construc|obra|maestro|albañil|yeso/i, "🏗️"],
-    [/infant|niñ|juguete/i, "🧸"],
-    [/mascot|veterin|pet/i, "🐾"],
-    [/abogad|legal|notari/i, "⚖️"],
-    [/contab|impuest|finanz/i, "📊"],
-    [/tecno|comput|software|web|digital/i, "💻"],
-    [/ropa|moda|textil/i, "👕"],
-    [/foto|video|audiov/i, "📷"],
-    [/salud|fisioter|kinesio|nutri|medic/i, "💊"],
-    [/cerraj|seguridad/i, "🔑"],
-    [/cerram|ventana|alumin/i, "🪟"],
-    [/metal|soldad|herrer/i, "⚙️"],
-    [/autom|mecán|neumát|lubric/i, "🚗"],
-    [/hogar|repar|manten/i, "🏠"],
-  ];
-  for (const [re, icon] of rules) {
-    if (re.test(t)) return icon;
-  }
-  return "🏪";
-}
 
 export default function PortalGallery({
   fotoPrincipal,
   galeria,
-  nombreNegocio = "",
-  subcategoriaLabel = "",
-  categoriaLabel = "",
-  comunaLabel = "",
+  placeholderFichaCompleta = null,
 }: Props) {
   const galFirma = Array.isArray(galeria) ? galeria.join("\u0001") : "";
 
@@ -190,8 +170,7 @@ export default function PortalGallery({
   }, [fotoPrincipal, galFirma]);
 
   const sinFotos = fotos.length === 0;
-  /** Con 0 o 1 sola imagen no se muestra columna lateral (evita huecos). */
-  const mostrarColumnaMiniaturas = fotos.length > 1;
+  const mostrarMiniaturasDebajo = fotos.length > 1;
 
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
@@ -211,147 +190,223 @@ export default function PortalGallery({
     setIndex((i) => (i - 1 + fotos.length) % fotos.length);
   }
 
-  const nombre = (nombreNegocio.trim() || "Emprendimiento").normalize("NFC");
-  const subc = subcategoriaLabel.trim().normalize("NFC");
-  const cat = categoriaLabel.trim().normalize("NFC");
-  const rubroMiniatura = subc || cat || "Servicio";
-  const comuna = comunaLabel.trim().normalize("NFC");
-  const emojiHuecoMini = iconoRubroGrande(rubroMiniatura, nombre);
-  
-  const leyendaFotos =
-    sinFotos ? "Sin fotos" : fotos.length === 1 ? "1 foto" : `${fotos.length} fotos`;
+  const leyendaGaleria =
+    !sinFotos && fotos.length > 1
+      ? `Galería · ${fotos.length} fotos`
+      : !sinFotos
+        ? "Foto principal"
+        : "";
+
+  const heroFrameStyle: CSSProperties = {
+    position: "relative",
+    width: "100%",
+    minHeight: HERO_MIN_HEIGHT_PX,
+    maxHeight: HERO_MAX_HEIGHT_PX,
+    aspectRatio: "4 / 3",
+    background: !tieneImagenes ? "#f8fafc" : "#0f172a",
+    cursor: fotos.length > 0 ? "pointer" : "default",
+    isolation: "isolate",
+  };
 
   return (
     <>
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: mostrarColumnaMiniaturas ? "1fr 120px" : "1fr",
-          gap: 12,
-        }}
+        className={
+          tieneImagenes
+            ? "rounded-2xl overflow-hidden border border-slate-200/90 bg-slate-950 shadow-[0_20px_50px_-28px_rgba(15,23,42,0.45),0_0_0_1px_rgba(15,23,42,0.06)]"
+            : "rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-50/90 shadow-[0_12px_40px_-18px_rgba(15,23,42,0.14)] ring-1 ring-slate-200/60"
+        }
       >
         <div
-          onClick={() => fotos.length > 0 && setOpen(true)}
-          className={tieneImagenes ? "group overflow-hidden" : "overflow-hidden"}
-          style={{
-            position: "relative",
-            borderRadius: 20,
-            overflow: "hidden",
-            border: !tieneImagenes ? "none" : "1px solid #e5e7eb",
-            width: "100%",
-            aspectRatio: "16 / 9",
-            background: !tieneImagenes
-              ? "transparent"
-              : "linear-gradient(180deg, #fafafa 0%, #f3f4f6 100%)",
-            cursor: fotos.length > 0 ? "pointer" : "default",
-            isolation: "isolate",
-          }}
+          className={
+            mostrarMiniaturasDebajo
+              ? "flex flex-col lg:flex-row lg:items-stretch min-w-0"
+              : "min-w-0"
+          }
         >
-          {!tieneImagenes ? (
+          <div className="relative min-w-0 flex-1">
             <div
+              onClick={() => fotos.length > 0 && setOpen(true)}
+              className={tieneImagenes ? "group relative overflow-hidden" : "relative overflow-hidden"}
               style={{
-                position: "absolute",
-                inset: 0,
-                zIndex: 0,
-                borderRadius: 20,
-                overflow: "hidden",
-                background:
-                  "linear-gradient(165deg, #eef2ff 0%, #faf5ff 42%, #fff8f0 100%)",
+                ...heroFrameStyle,
+                border: !tieneImagenes ? "1px dashed #cbd5e1" : undefined,
+                boxShadow: tieneImagenes ? "inset 0 0 0 1px rgba(255,255,255,0.06)" : undefined,
               }}
             >
-              <PlaceholderCard
-                subcategoria={subcategoriaLabel}
-                categoria={categoriaLabel}
-                comuna={comuna}
-                nombreNegocio={nombre}
-              />
-            </div>
+          {!tieneImagenes ? (
+            placeholderFichaCompleta ? (
+              <div
+                className="absolute inset-0 z-0 flex flex-col items-stretch justify-center px-6 py-8 sm:px-10 bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 border-0"
+              >
+                <div className="w-full max-w-md mx-auto">
+                  <p className="m-0 text-center text-base font-extrabold text-slate-700 tracking-wide">
+                    Sin imágenes
+                  </p>
+                  <p className="mt-3 mb-4 text-center text-sm font-semibold text-slate-500">
+                    Este servicio incluye:
+                  </p>
+                  <ul className="m-0 p-0 list-none space-y-2.5 text-left">
+                    {placeholderFichaCompleta.legacyTerreno &&
+                    !placeholderFichaCompleta.delivery &&
+                    !placeholderFichaCompleta.atencionDomicilio ? (
+                      <li className="flex gap-2.5 text-[14px] font-medium text-slate-700 leading-snug">
+                        <span className="shrink-0 text-emerald-600 font-bold" aria-hidden>
+                          ✔
+                        </span>
+                        A domicilio / Delivery
+                      </li>
+                    ) : null}
+                    {placeholderFichaCompleta.delivery ? (
+                      <li className="flex gap-2.5 text-[14px] font-medium text-slate-700 leading-snug">
+                        <span className="shrink-0 text-emerald-600 font-bold" aria-hidden>
+                          ✔
+                        </span>
+                        Delivery
+                      </li>
+                    ) : null}
+                    {placeholderFichaCompleta.atencionDomicilio ? (
+                      <li className="flex gap-2.5 text-[14px] font-medium text-slate-700 leading-snug">
+                        <span className="shrink-0 text-emerald-600 font-bold" aria-hidden>
+                          ✔
+                        </span>
+                        A domicilio
+                      </li>
+                    ) : null}
+                    {placeholderFichaCompleta.disponibleEnComuna ? (
+                      <li className="flex gap-2.5 text-[14px] font-medium text-slate-700 leading-snug">
+                        <span className="shrink-0 text-emerald-600 font-bold" aria-hidden>
+                          ✔
+                        </span>
+                        Disponible en tu comuna
+                      </li>
+                    ) : null}
+                    {placeholderFichaCompleta.contactoWhatsapp ? (
+                      <li className="flex gap-2.5 text-[14px] font-medium text-slate-700 leading-snug">
+                        <span className="shrink-0 text-emerald-600 font-bold" aria-hidden>
+                          ✔
+                        </span>
+                        Contacto directo por WhatsApp
+                      </li>
+                    ) : null}
+                    {!(
+                      placeholderFichaCompleta.delivery ||
+                      placeholderFichaCompleta.atencionDomicilio ||
+                      placeholderFichaCompleta.legacyTerreno
+                    ) &&
+                    !placeholderFichaCompleta.disponibleEnComuna &&
+                    !placeholderFichaCompleta.contactoWhatsapp ? (
+                      <li className="text-sm text-slate-500 text-center">
+                        Consulta disponibilidad al cotizar.
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: 0,
+                  borderRadius: 20,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "24px 20px",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 15,
+                    fontWeight: 800,
+                    color: "#64748b",
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {getPlaceholderSinFotoTitulo()}
+                </p>
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    fontSize: 14,
+                    color: "#94a3b8",
+                    lineHeight: 1.45,
+                    maxWidth: 280,
+                  }}
+                >
+                  {getPlaceholderSinFotoSub()}
+                </p>
+              </div>
+            )
           ) : (
             <>
               <img
                 src={actual}
                 alt=""
-                className="h-full w-full transition-transform duration-300 group-hover:scale-105"
-                style={imgCoverStyled}
+                className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.02]"
+                style={{ filter: IMG_FILTER }}
+                decoding="async"
+                fetchPriority="high"
               />
               <div style={overlayHeroGradient} aria-hidden />
             </>
           )}
 
-          {!tieneImagenes ? null : (
-            <div
-              style={{
-                position: "absolute",
-                bottom: 12,
-                left: 12,
-                zIndex: 1,
-                background: "rgba(0,0,0,.6)",
-                color: "#fff",
-                padding: "6px 10px",
-                borderRadius: 999,
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              {leyendaFotos}
+          {tieneImagenes && leyendaGaleria ? (
+            <div className="pointer-events-none absolute left-3 top-3 z-[1] max-w-[min(100%-1.5rem,18rem)] truncate rounded-full border border-white/20 bg-slate-950/50 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-white shadow-sm backdrop-blur-md">
+              {leyendaGaleria}
             </div>
-          )}
-        </div>
+          ) : null}
 
-        {mostrarColumnaMiniaturas ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateRows: "repeat(4,1fr)",
-              gap: 10,
-              alignSelf: "stretch",
-            }}
-          >
-            {Array.from({ length: 4 }).map((_, i) => {
-              const foto = fotos[i];
-
-              return (
-                <div
-                  key={i}
-                  suppressHydrationWarning
-                  onClick={() => foto && setIndex(i)}
-                  style={{
-                    borderRadius: 16,
-                    overflow: "hidden",
-                    border: sinFotos
-                      ? i === index
-                        ? "2px solid #6366f1"
-                        : "1px solid rgba(255,255,255,0.55)"
-                      : i === index
-                        ? "2px solid #2563eb"
-                        : "1px solid #e5e7eb",
-                    cursor: foto ? "pointer" : "default",
-                    background: sinFotos
-                      ? "rgba(255,255,255,0.4)"
-                      : "#f3f4f6",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: sinFotos ? "#4338ca" : "#9ca3af",
-                    minHeight: 0,
-                  }}
-                >
-                  {foto ? (
-                    <img
-                      src={foto}
-                      alt=""
-                      style={imgCoverStyled}
-                    />
-                ) : (
-                  emojiHuecoMini
-                )}
-                </div>
-              );
-            })}
+          {tieneImagenes ? (
+            <p className="pointer-events-none absolute bottom-3 right-3 z-[1] m-0 hidden text-[11px] font-semibold text-white/80 sm:block">
+              Clic para ampliar
+            </p>
+          ) : null}
+            </div>
           </div>
-        ) : null}
+
+          {mostrarMiniaturasDebajo ? (
+            <div
+              className="flex max-h-[108px] min-h-0 shrink-0 flex-row gap-2 overflow-x-auto overflow-y-hidden border-t border-slate-800 bg-slate-900/98 p-2.5 lg:max-h-none lg:w-[104px] lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:border-l lg:border-t-0 lg:p-2"
+              style={{ scrollbarWidth: "thin" }}
+              role="list"
+              aria-label="Miniaturas de la galería"
+            >
+              {fotos.map((url, i) => (
+                <button
+                  key={`${i}-${url.slice(0, 48)}`}
+                  type="button"
+                  role="listitem"
+                  aria-label={`Mostrar foto ${i + 1} de ${fotos.length}`}
+                  aria-current={i === index ? "true" : undefined}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIndex(i);
+                  }}
+                  className={
+                    i === index
+                      ? "shrink-0 overflow-hidden rounded-lg border-2 border-emerald-400 bg-slate-800 p-0 shadow-[0_0_0_2px_rgba(52,211,153,0.35)] ring-1 ring-white/10 lg:aspect-[4/3] lg:w-full lg:max-w-none lg:shrink-0 h-[72px] w-[96px] lg:h-auto"
+                      : "shrink-0 overflow-hidden rounded-lg border border-white/15 bg-slate-800/80 p-0 opacity-85 transition-opacity hover:border-white/30 hover:opacity-100 lg:aspect-[4/3] lg:w-full lg:max-w-none lg:shrink-0 h-[72px] w-[96px] lg:h-auto"
+                  }
+                >
+                  <img
+                    src={url}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover object-center"
+                    style={imgThumbCover}
+                  />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {open && actual ? (

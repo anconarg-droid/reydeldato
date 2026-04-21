@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { countGaleriaPivotByEmprendedorIds, normalizeEmprendedorId } from "@/lib/emprendedorGaleriaPivot";
+import { fichaPublicaEsMejoradaDesdeBusqueda } from "@/lib/estadoFicha";
 
 export const runtime = "nodejs";
 
@@ -28,9 +30,10 @@ function pickFoto(row: any): string {
 export async function GET() {
   try {
     const { data, error } = await supabase
-      .from("vw_emprendedores_algolia_final")
+      .from("vw_emprendedores_publico")
       .select("*")
-      .limit(8);
+      .eq("estado_publicacion", "publicado")
+      .limit(48);
 
     if (error) {
       return NextResponse.json(
@@ -42,7 +45,22 @@ export async function GET() {
       );
     }
 
-    const items = Array.isArray(data) ? data : [];
+    const rows = Array.isArray(data) ? data : [];
+    const pivotMap = await countGaleriaPivotByEmprendedorIds(
+      supabase,
+      rows.map((r: { id?: unknown }) => r.id)
+    );
+    const items = rows
+      .filter((row: unknown) => {
+        const r = row as Record<string, unknown>;
+        const k = normalizeEmprendedorId(r.id);
+        return fichaPublicaEsMejoradaDesdeBusqueda(
+          r,
+          null,
+          pivotMap.get(k) ?? 0
+        );
+      })
+      .slice(0, 8);
 
     return NextResponse.json({
       ok: true,

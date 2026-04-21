@@ -20,15 +20,21 @@ function hrefForTerm(comunaSlug: string | null, q: string): string {
 export default function HomeMasBuscado({ comunaSlug, className = "" }: Props) {
   return (
     <div className={className}>
-      <h2 className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:text-center">
-        Lo más buscado
+      <h2
+        id="home-mas-buscado-heading"
+        className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:text-center"
+      >
+        Lo más buscado en tu comuna
       </h2>
-      <ul className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
+      <ul
+        className="mt-3 grid grid-cols-3 gap-2"
+        aria-labelledby="home-mas-buscado-heading"
+      >
         {HOME_MAS_BUSCADO_ITEMS.map((item) => (
           <li key={item.q}>
             <Link
               href={hrefForTerm(comunaSlug, item.q)}
-              className="flex min-h-[52px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-3.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-95"
+              className="flex min-h-[40px] items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-2 text-center text-xs font-semibold leading-snug text-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-95"
             >
               {item.label}
             </Link>

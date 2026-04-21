@@ -3,9 +3,9 @@
 import { useState } from "react";
 
 type SinonimoItem = {
-  id: string;
-  termino: string;
-  sinonimos: string[];
+  id: number | string;
+  termino_input: string;
+  termino_canonico: string;
   activo: boolean;
 };
 
@@ -15,14 +15,14 @@ export default function AdminSinonimosClient({
   initialItems: SinonimoItem[];
 }) {
   const [items, setItems] = useState<SinonimoItem[]>(initialItems);
-  const [termino, setTermino] = useState("");
-  const [sinonimos, setSinonimos] = useState("");
+  const [terminoInput, setTerminoInput] = useState("");
+  const [terminoCanonico, setTerminoCanonico] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTermino, setEditTermino] = useState("");
-  const [editSinonimos, setEditSinonimos] = useState("");
+  const [editTerminoInput, setEditTerminoInput] = useState("");
+  const [editTerminoCanonico, setEditTerminoCanonico] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
   async function handleCreate(e: React.FormEvent) {
@@ -37,8 +37,8 @@ export default function AdminSinonimosClient({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          termino,
-          sinonimos,
+          termino_input: terminoInput,
+          termino_canonico: terminoCanonico,
         }),
       });
 
@@ -50,8 +50,8 @@ export default function AdminSinonimosClient({
       }
 
       setItems((prev) => [data.item, ...prev]);
-      setTermino("");
-      setSinonimos("");
+      setTerminoInput("");
+      setTerminoCanonico("");
       setMessage("Sinónimo creado correctamente.");
     } catch {
       setMessage("Error de red al crear.");
@@ -88,12 +88,12 @@ export default function AdminSinonimosClient({
     }
   }
 
-  async function deleteItem(id: string) {
+  async function deleteItem(id: number | string) {
     const ok = window.confirm("¿Eliminar este término?");
     if (!ok) return;
 
     try {
-      const res = await fetch(`/api/admin/sinonimos?id=${id}`, {
+      const res = await fetch(`/api/admin/sinonimos?id=${encodeURIComponent(String(id))}`, {
         method: "DELETE",
       });
 
@@ -111,21 +111,19 @@ export default function AdminSinonimosClient({
   }
 
   function startEdit(item: SinonimoItem) {
-    setEditingId(item.id);
-    setEditTermino(item.termino);
-    setEditSinonimos(
-      Array.isArray(item.sinonimos) ? item.sinonimos.join(", ") : ""
-    );
+    setEditingId(String(item.id));
+    setEditTerminoInput(item.termino_input);
+    setEditTerminoCanonico(item.termino_canonico);
     setMessage("");
   }
 
   function cancelEdit() {
     setEditingId(null);
-    setEditTermino("");
-    setEditSinonimos("");
+    setEditTerminoInput("");
+    setEditTerminoCanonico("");
   }
 
-  async function saveEdit(id: string) {
+  async function saveEdit(id: number | string) {
     setSavingEdit(true);
     setMessage("");
 
@@ -137,8 +135,8 @@ export default function AdminSinonimosClient({
         },
         body: JSON.stringify({
           id,
-          termino: editTermino,
-          sinonimos: editSinonimos,
+          termino_input: editTerminoInput,
+          termino_canonico: editTerminoCanonico,
         }),
       });
 
@@ -154,8 +152,8 @@ export default function AdminSinonimosClient({
       );
 
       setEditingId(null);
-      setEditTermino("");
-      setEditSinonimos("");
+      setEditTerminoInput("");
+      setEditTerminoCanonico("");
       setMessage("Cambios guardados.");
     } catch {
       setMessage("Error de red al guardar.");
@@ -197,7 +195,7 @@ export default function AdminSinonimosClient({
         >
           <div>
             <label
-              htmlFor="termino"
+              htmlFor="termino_input"
               style={{
                 display: "block",
                 marginBottom: 6,
@@ -206,13 +204,13 @@ export default function AdminSinonimosClient({
                 color: "#111827",
               }}
             >
-              Término
+              Qué escribe el usuario
             </label>
             <input
-              id="termino"
-              value={termino}
-              onChange={(e) => setTermino(e.target.value)}
-              placeholder="ej: conejo"
+              id="termino_input"
+              value={terminoInput}
+              onChange={(e) => setTerminoInput(e.target.value)}
+              placeholder="ej: gasfiter"
               style={{
                 width: "100%",
                 height: 46,
@@ -226,7 +224,7 @@ export default function AdminSinonimosClient({
 
           <div>
             <label
-              htmlFor="sinonimos"
+              htmlFor="termino_canonico"
               style={{
                 display: "block",
                 marginBottom: 6,
@@ -235,13 +233,13 @@ export default function AdminSinonimosClient({
                 color: "#111827",
               }}
             >
-              Sinónimos separados por coma
+              Se convierte en
             </label>
             <input
-              id="sinonimos"
-              value={sinonimos}
-              onChange={(e) => setSinonimos(e.target.value)}
-              placeholder="ej: veterinaria, mascotas, alimentos mascotas"
+              id="termino_canonico"
+              value={terminoCanonico}
+              onChange={(e) => setTerminoCanonico(e.target.value)}
+              placeholder="ej: plomero"
               style={{
                 width: "100%",
                 height: 46,
@@ -304,8 +302,8 @@ export default function AdminSinonimosClient({
             background: "#f9fafb",
           }}
         >
-          <div>Término</div>
-          <div>Sinónimos</div>
+          <div>Qué escribe el usuario</div>
+          <div>Se convierte en</div>
           <div>Activo</div>
           <div>Acciones</div>
         </div>
@@ -316,11 +314,11 @@ export default function AdminSinonimosClient({
           </div>
         ) : (
           items.map((row) => {
-            const isEditing = editingId === row.id;
+            const isEditing = editingId === String(row.id);
 
             return (
               <div
-                key={row.id}
+                key={String(row.id)}
                 style={{
                   display: "grid",
                   gridTemplateColumns: "220px 1fr 110px 220px",
@@ -333,8 +331,8 @@ export default function AdminSinonimosClient({
                 <div>
                   {isEditing ? (
                     <input
-                      value={editTermino}
-                      onChange={(e) => setEditTermino(e.target.value)}
+                      value={editTerminoInput}
+                      onChange={(e) => setEditTerminoInput(e.target.value)}
                       style={{
                         width: "100%",
                         height: 40,
@@ -346,7 +344,7 @@ export default function AdminSinonimosClient({
                     />
                   ) : (
                     <div style={{ fontWeight: 800, color: "#111827" }}>
-                      {row.termino}
+                      {row.termino_input}
                     </div>
                   )}
                 </div>
@@ -354,8 +352,8 @@ export default function AdminSinonimosClient({
                 <div>
                   {isEditing ? (
                     <input
-                      value={editSinonimos}
-                      onChange={(e) => setEditSinonimos(e.target.value)}
+                      value={editTerminoCanonico}
+                      onChange={(e) => setEditTerminoCanonico(e.target.value)}
                       style={{
                         width: "100%",
                         height: 40,
@@ -367,9 +365,7 @@ export default function AdminSinonimosClient({
                     />
                   ) : (
                     <div style={{ color: "#374151", lineHeight: 1.6 }}>
-                      {Array.isArray(row.sinonimos) && row.sinonimos.length > 0
-                        ? row.sinonimos.join(", ")
-                        : "—"}
+                      {row.termino_canonico ? row.termino_canonico : "—"}
                     </div>
                   )}
                 </div>

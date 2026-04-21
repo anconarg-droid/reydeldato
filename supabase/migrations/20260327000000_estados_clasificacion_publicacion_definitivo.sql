@@ -2,7 +2,7 @@
 -- Estados de clasificación y publicación – Definición definitiva
 -- Separa claramente:
 --   Clasificación: sin_clasificar | clasificada_automatica | pendiente_revision | clasificada_manual
---   Publicación:   borrador | pendiente_aprobacion | publicado | rechazado
+--   Publicación:   borrador | en_revision | publicado | rechazado | suspendido
 -- Mantiene clasificacion_pendiente y clasificacion_feedback_log para aprendizaje futuro.
 -- =============================================================================
 
@@ -10,8 +10,9 @@
 -- 1. Normalizar datos existentes antes de restricciones
 -- -----------------------------------------------------------------------------
 UPDATE public.emprendedores
-SET estado_publicacion = 'pendiente_aprobacion'
-WHERE estado_publicacion = 'pendiente_verificacion';
+SET estado_publicacion = 'en_revision'
+WHERE estado_publicacion IS NOT NULL
+  AND estado_publicacion NOT IN ('borrador', 'publicado', 'rechazado', 'suspendido');
 
 UPDATE public.emprendedores
 SET classification_status = CASE
@@ -69,7 +70,7 @@ COMMENT ON COLUMN public.emprendedores.classification_status IS
 
 -- -----------------------------------------------------------------------------
 -- 3. Restricción estado de publicación (estado_publicacion)
--- Valores: borrador | pendiente_aprobacion | publicado | rechazado
+-- Valores: borrador | en_revision | publicado | rechazado | suspendido
 -- -----------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -94,9 +95,10 @@ BEGIN
       ADD CONSTRAINT emprendedores_estado_publicacion_check
       CHECK (estado_publicacion IN (
         'borrador',
-        'pendiente_aprobacion',
+        'en_revision',
         'publicado',
-        'rechazado'
+        'rechazado',
+        'suspendido'
       ));
   END IF;
 EXCEPTION
@@ -104,7 +106,7 @@ EXCEPTION
 END $$;
 
 COMMENT ON COLUMN public.emprendedores.estado_publicacion IS
-  'Estado de publicación: borrador | pendiente_aprobacion | publicado | rechazado';
+  'Estado de publicación: borrador | en_revision | publicado | rechazado | suspendido';
 
 -- -----------------------------------------------------------------------------
 -- 4. Tablas para aprendizaje futuro (asegurar que existen)

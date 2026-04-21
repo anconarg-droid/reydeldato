@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  normalizeDescripcionCorta,
+  normalizeDescripcionLarga,
+  primeraValidacionDescripcion,
+  validateDescripcionCortaPublicacion,
+  validateDescripcionLarga,
+} from "@/lib/descripcionProductoForm";
+import { validateRequiredPublicEmail } from "@/lib/validateEmail";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,13 +78,13 @@ export async function POST(req: Request) {
         ? arr(body?.subcategorias_slugs)
         : arr(body?.subcategoriasSlugs);
 
-    const descripcion_corta =
-      s(body?.descripcion_corta) ||
-      s(body?.descripcionCorta);
+    const descripcion_corta = normalizeDescripcionCorta(
+      s(body?.descripcion_corta) || s(body?.descripcionCorta),
+    );
 
-    const descripcion_larga =
-      s(body?.descripcion_larga) ||
-      s(body?.descripcionLarga);
+    const descripcion_larga = normalizeDescripcionLarga(
+      s(body?.descripcion_larga) || s(body?.descripcionLarga),
+    );
 
     if (!nombre_emprendimiento) {
       return NextResponse.json(
@@ -95,6 +103,14 @@ export async function POST(req: Request) {
     if (!email) {
       return NextResponse.json(
         { ok: false, error: "Falta email" },
+        { status: 400 }
+      );
+    }
+
+    const emailVal = validateRequiredPublicEmail(email);
+    if (!emailVal.ok) {
+      return NextResponse.json(
+        { ok: false, error: "email_invalido", message: emailVal.message },
         { status: 400 }
       );
     }
@@ -127,9 +143,14 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!descripcion_corta) {
+    const errDesc = [
+      ...validateDescripcionCortaPublicacion(descripcion_corta),
+      ...validateDescripcionLarga(descripcion_larga),
+    ];
+    const msgDesc = primeraValidacionDescripcion(errDesc);
+    if (msgDesc) {
       return NextResponse.json(
-        { ok: false, error: "Falta descripcion_corta" },
+        { ok: false, error: msgDesc, message: msgDesc, errors: errDesc },
         { status: 400 }
       );
     }
@@ -138,7 +159,7 @@ export async function POST(req: Request) {
       nombre_emprendimiento,
       responsable_nombre,
       mostrar_responsable,
-      email,
+      email: emailVal.normalized,
       whatsapp,
       instagram: instagram || null,
       web: web || null,
@@ -148,7 +169,7 @@ export async function POST(req: Request) {
       categoria_slug,
       subcategorias_slugs,
       descripcion_corta,
-      descripcion_larga: descripcion_larga || null,
+      descripcion_larga: descripcion_larga.trim() ? descripcion_larga : null,
       estado: "pendiente",
     };
 

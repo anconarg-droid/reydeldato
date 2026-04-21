@@ -39,7 +39,7 @@ type MissingCategoriesProps = {
 
 function buildShareMessage(comunaNombre: string, rubroNombre: string, comunaSlug: string): string {
   const url = `${SITE_URL}/cobertura?comuna=${encodeURIComponent(comunaSlug)}`;
-  return `Hola, estamos ayudando a abrir ${comunaNombre} en Rey del Dato.\nTodavía faltan emprendimientos del rubro ${rubroNombre}.\nSi conoces a alguien o tienes este negocio, regístralo aquí:\n${url}`;
+  return `Hola, estamos ayudando a abrir ${comunaNombre} en Rey del Dato.\nTodavía falta oferta en el tipo de servicio “${rubroNombre}”.\nSi conoces a alguien o tienes este negocio, regístralo aquí:\n${url}`;
 }
 
 function ShareRubroMenu({

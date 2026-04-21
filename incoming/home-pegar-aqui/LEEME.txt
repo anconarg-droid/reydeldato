@@ -1,0 +1,3 @@
+Pegá aquí los archivos que te dio Claude (arrastrar desde el explorador o guardar como).
+
+Luego avisá en el chat: los integro en components/home/ y borro o dejo esta carpeta según prefieras.

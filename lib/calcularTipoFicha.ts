@@ -1,3 +1,5 @@
+import { calcularEstadoFicha } from "@/lib/estadoFicha";
+
 export type TipoFicha = "basica" | "completa";
 
 export type CalcularTipoFichaInput = {
@@ -13,6 +15,11 @@ export type CalcularTipoFichaInput = {
 
   instagram?: string | null;
   sitio_web?: string | null;
+
+  plan_activo?: boolean | null;
+  plan_expira_at?: string | null;
+  trial_expira_at?: string | null;
+  trial_expira?: string | null;
 };
 
 /** Normaliza a string recortado; vacío si null/undefined. */
@@ -22,28 +29,25 @@ export function s(v: unknown): string {
 }
 
 /**
- * Tipo de ficha por contenido (sin plan, trial ni verificación).
- * Básica mínima: nombre, WhatsApp, frase, comuna, cobertura.
- * Completa: además descripción ≥120, ≥2 fotos en total, Instagram o web.
+ * Alineado al panel y listados: **completa** = `calcularEstadoFicha` → `mejorada` (solo trial/plan vigente).
  */
 export function calcularTipoFicha(input: CalcularTipoFichaInput): TipoFicha {
-  const basicaOk =
-    s(input.nombre_emprendimiento).length > 0 &&
-    s(input.whatsapp_principal).length > 0 &&
-    s(input.frase_negocio).length > 0 &&
-    Number(input.comuna_id) > 0 &&
-    s(input.cobertura_tipo).length > 0;
-
-  if (!basicaOk) return "basica";
-
-  const descripcionOk = s(input.descripcion_libre).length >= 120;
-
-  const totalFotos =
-    (s(input.foto_principal_url) ? 1 : 0) + Number(input.galeria_count || 0);
-  const fotosOk = totalFotos >= 2;
-
-  const canalExtraOk =
-    s(input.instagram).length > 0 || s(input.sitio_web).length > 0;
-
-  return descripcionOk && fotosOk && canalExtraOk ? "completa" : "basica";
+  return calcularEstadoFicha({
+    nombre_emprendimiento: input.nombre_emprendimiento,
+    whatsapp_principal: input.whatsapp_principal,
+    frase_negocio: input.frase_negocio,
+    comuna_id: input.comuna_id,
+    cobertura_tipo: input.cobertura_tipo,
+    descripcion_libre: input.descripcion_libre,
+    foto_principal_url: input.foto_principal_url,
+    galeria_count: input.galeria_count,
+    instagram: input.instagram,
+    sitio_web: input.sitio_web,
+    plan_activo: input.plan_activo,
+    plan_expira_at: input.plan_expira_at ?? null,
+    trial_expira_at: input.trial_expira_at ?? null,
+    trial_expira: input.trial_expira ?? null,
+  }) === "mejorada"
+    ? "completa"
+    : "basica";
 }

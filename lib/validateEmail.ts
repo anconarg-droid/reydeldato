@@ -15,6 +15,9 @@ function normalizeEmail(value: string): string {
  * Validación sintáctica básica (no verifica si el buzón existe).
  * - Rechaza espacios
  * - Requiere un '@' y al menos un '.'
+ *
+ * Preferí `validateRequiredPublicEmail` / `validateOptionalPublicEmail` en formularios
+ * y APIs: rechazan dominios típicamente mal escritos (ej. gmail.co).
  */
 export function isValidEmailFormat(value: string): boolean {
   const email = normalizeEmail(value);
@@ -113,6 +116,144 @@ function splitEmail(email: string): { local: string; domain: string } | null {
   const domain = email.slice(at + 1);
   if (!local || !domain) return null;
   return { local, domain };
+}
+
+/** TLD que casi siempre son errores al escribir .com / .cl */
+const SUSPICIOUS_TLDS = new Set([
+  "con",
+  "cm",
+  "cim",
+  "cmo",
+  "comm",
+  "coom",
+  "om",
+  "c0m",
+]);
+
+/**
+ * Proveedores de correo masivos que usan .com (o dominio propio), no .co como TLD final.
+ * No afecta dominios corporativos tipo empresa.co (segundo nivel distinto).
+ */
+const WELL_KNOWN_MAIL_SLD_NOT_CO_TLD = new Set([
+  "gmail",
+  "googlemail",
+  "hotmail",
+  "yahoo",
+  "outlook",
+  "live",
+  "msn",
+  "icloud",
+  "protonmail",
+  "proton",
+  "aol",
+  "zoho",
+  "gmx",
+  "yandex",
+  "mail",
+]);
+
+function validatePublicEmailNonEmpty(email: string):
+  | { ok: true; normalized: string }
+  | { ok: false; message: string } {
+  if (/\s/.test(email)) {
+    return { ok: false, message: "El correo no puede tener espacios." };
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return {
+      ok: false,
+      message: "Escribí un correo con @ y dominio (ej. nombre@gmail.com).",
+    };
+  }
+
+  const parts = splitEmail(email);
+  if (!parts) {
+    return { ok: false, message: "El formato del correo no es válido." };
+  }
+
+  const domain = parts.domain.replace(/\.+$/, "").toLowerCase();
+  if (!domain) {
+    return { ok: false, message: "Falta el dominio después de @." };
+  }
+
+  const typoTarget = DOMAIN_TYPO_MAP[domain];
+  if (typoTarget) {
+    return {
+      ok: false,
+      message: `El dominio parece incorrecto. Probá ${parts.local}@${typoTarget}`,
+    };
+  }
+
+  const labels = domain.split(".").filter(Boolean);
+  if (labels.length < 2) {
+    return { ok: false, message: "El dominio del correo no es válido." };
+  }
+
+  const tld = labels[labels.length - 1].toLowerCase();
+  if (tld.length < 2) {
+    return {
+      ok: false,
+      message: "Revisá la terminación del dominio (.cl, .com, etc.).",
+    };
+  }
+  if (SUSPICIOUS_TLDS.has(tld)) {
+    return {
+      ok: false,
+      message:
+        "Revisá la terminación del dominio: a veces se confunde .com con .con, .cm u otras.",
+    };
+  }
+
+  const beforeTld = labels.length >= 2 ? labels[labels.length - 2].toLowerCase() : "";
+  if (tld === "co" && WELL_KNOWN_MAIL_SLD_NOT_CO_TLD.has(beforeTld)) {
+    return {
+      ok: false,
+      message: `Para ${beforeTld} el correo suele ser .com (ej. ${parts.local}@${beforeTld}.com).`,
+    };
+  }
+
+  if (parts.local.length > 64) {
+    return {
+      ok: false,
+      message: "La parte del correo antes de @ es demasiado larga.",
+    };
+  }
+  if (domain.length > 253) {
+    return { ok: false, message: "El dominio del correo es demasiado largo." };
+  }
+  if (
+    parts.local.startsWith(".") ||
+    parts.local.endsWith(".") ||
+    parts.local.includes("..")
+  ) {
+    return {
+      ok: false,
+      message: "El correo tiene un formato inválido antes de @.",
+    };
+  }
+
+  return { ok: true, normalized: email };
+}
+
+/** Correo obligatorio (panel, pasos que exigen email). */
+export function validateRequiredPublicEmail(raw: string):
+  | { ok: true; normalized: string }
+  | { ok: false; message: string } {
+  const email = normalizeEmail(raw);
+  if (!email) {
+    return { ok: false, message: "El correo electrónico es obligatorio." };
+  }
+  return validatePublicEmailNonEmpty(email);
+}
+
+/** Correo opcional: vacío acepta; si hay texto, misma regla estricta. */
+export function validateOptionalPublicEmail(raw: string):
+  | { ok: true; normalized: string }
+  | { ok: false; message: string } {
+  const email = normalizeEmail(raw);
+  if (!email) {
+    return { ok: true, normalized: "" };
+  }
+  return validatePublicEmailNonEmpty(email);
 }
 
 /**

@@ -23,7 +23,10 @@ export async function POST(req: Request) {
     const categoriaId = normalizeTaxonomiaUuid(body.categoria_id);
     const subcategoriasIds = normalizeTaxonomiaUuidList(body.subcategorias_ids);
 
-    const supabase = getSupabaseAdmin();
+    const supabase = getSupabaseAdmin({
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    });
     const result = await validateCategoriaSubcategorias(
       supabase,
       categoriaId,

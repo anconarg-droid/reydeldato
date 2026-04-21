@@ -1,5 +1,10 @@
 import { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
+import {
+  countGaleriaPivotByEmprendedorIds,
+  normalizeEmprendedorId,
+} from "@/lib/emprendedorGaleriaPivot";
+import { fichaPublicaEsMejoradaDesdeBusqueda } from "@/lib/estadoFicha";
 
 function createSupabaseStaticClient() {
   return createClient(
@@ -45,23 +50,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
-  const { data: emprendedores } = await supabase
-    .from("emprendedores")
-    .select("slug, comuna_base_slug, subcategorias_slugs, updated_at")
-    .eq("publicado", true)
+  const { data: emprendedoresRaw } = await supabase
+    .from("vw_emprendedores_publico")
+    .select(
+      "id, slug, comuna_base_slug, subcategorias_slugs, updated_at, nombre_emprendimiento, whatsapp_principal, frase_negocio, comuna_id, cobertura_tipo, descripcion_libre, foto_principal_url, instagram, sitio_web, web, estado_publicacion, created_at"
+    )
     .eq("estado_publicacion", "publicado");
 
-  const fichaPages: MetadataRoute.Sitemap =
-    (emprendedores ?? []).map((item: any) => ({
+  const todos = emprendedoresRaw ?? [];
+  const pivotMap = await countGaleriaPivotByEmprendedorIds(
+    supabase,
+    todos.map((t: { id?: unknown }) => t.id)
+  );
+  const emprendedoresFichaPublica = todos.filter((item: unknown) => {
+    const r = item as Record<string, unknown>;
+    const k = normalizeEmprendedorId(r.id);
+    return fichaPublicaEsMejoradaDesdeBusqueda(
+      r,
+      null,
+      pivotMap.get(k) ?? 0
+    );
+  });
+
+  const fichaPages: MetadataRoute.Sitemap = emprendedoresFichaPublica.map(
+    (item: any) => ({
       url: `${baseUrl}/emprendedor/${item.slug}`,
       lastModified: item.updated_at ? new Date(item.updated_at) : new Date(),
       changeFrequency: "weekly",
       priority: 0.7,
-    }));
+    })
+  );
 
   const pairSet = new Set<string>();
 
-  for (const item of emprendedores ?? []) {
+  for (const item of todos) {
     const comuna = item.comuna_base_slug;
     const subs = Array.isArray(item.subcategorias_slugs)
       ? item.subcategorias_slugs

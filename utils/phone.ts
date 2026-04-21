@@ -35,6 +35,11 @@ export function isValidChileMobile(normalized: string): boolean {
  * Entrada válida (con separadores comunes): 9XXXXXXXX, 569XXXXXXXX, +569XXXXXXXX, 56 9XXXXXXXX
  * Salida normalizada: 569XXXXXXXX
  */
+/** Solo dígitos y separadores permitidos al escribir (bloquea letras y símbolos raros). */
+export function sanitizeChileWhatsappInput(raw: string): string {
+  return String(raw ?? "").replace(/[^0-9+\s\-()]/g, "");
+}
+
 export function normalizeAndValidateChileWhatsappStrict(input: string): {
   ok: boolean;
   normalized: string;
@@ -47,15 +52,40 @@ export function normalizeAndValidateChileWhatsappStrict(input: string): {
 
   const digits = raw.replace(/\D/g, "");
 
-  // Caso 1: 9XXXXXXXX (9 dígitos, parte con 9) → 56 + número
+  // Un solo móvil chileno: 9 dígitos nacionales o 11 con prefijo 56. Nada más.
+  if (digits.length !== 9 && digits.length !== 11) {
+    return { ok: false, normalized: "" };
+  }
+
+  // Caso 1: 9XXXXXXXX (9 dígitos, empieza en 9) → 569XXXXXXXX
   if (digits.length === 9 && digits.startsWith("9")) {
     return { ok: true, normalized: `56${digits}` };
   }
 
-  // Caso 2/3: 56 + 9XXXXXXXX (11 dígitos, parte con 56 y 3er dígito = 9)
+  // Caso 2/3: 569XXXXXXXX (11 dígitos, tercer dígito = 9)
   if (digits.length === 11 && digits.startsWith("56") && digits[2] === "9") {
     return { ok: true, normalized: digits };
   }
 
   return { ok: false, normalized: "" };
+}
+
+/** Formato de lectura unificado: +56912345678 (12 caracteres con +). */
+export function formatChileWhatsappDisplay(normalized11Digits: string): string {
+  const d = String(normalized11Digits ?? "").replace(/\D/g, "");
+  if (d.length === 11 && d.startsWith("56") && d[2] === "9") {
+    return `+${d}`;
+  }
+  return String(normalized11Digits ?? "").trim();
+}
+
+/** Convierte valor guardado (569…) o entrada válida al formato mostrado +569…. */
+export function chileWhatsappStorageToDisplay(raw: string): string {
+  const v = normalizeAndValidateChileWhatsappStrict(raw);
+  if (v.ok) return formatChileWhatsappDisplay(v.normalized);
+  const digits = String(raw ?? "").replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("56") && digits[2] === "9") {
+    return formatChileWhatsappDisplay(digits);
+  }
+  return String(raw ?? "").trim();
 }

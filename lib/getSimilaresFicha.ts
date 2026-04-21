@@ -6,6 +6,11 @@ function s(v: unknown): string {
   return String(v).trim();
 }
 
+function arr(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.map((x) => s(x)).filter(Boolean);
+}
+
 /** Evita que un solo bucket llene toda la grilla de similares. */
 const MAX_POR_BUCKET = 4;
 
@@ -17,9 +22,9 @@ const COBERTURA_ATIENDE_AMPLIO = [
 
 const LOG_PREFIX = "[getSimilaresFicha]";
 
-/** Solo columnas de `emprendedores` (sin embeds / joins PostgREST). */
+/** Solo columnas de la vista pública (sin columnas sensibles). */
 const EMP_ROW_SELECT =
-  "id, slug, nombre_emprendimiento, foto_principal_url, categoria_id, comuna_id";
+  "id, slug, nombre_emprendimiento, foto_principal_url, categoria_id, comuna_id, subcategorias_slugs";
 
 function debugSimilaresLog(payload: Record<string, unknown>) {
   if (
@@ -47,7 +52,10 @@ export type SimilarFichaItem = {
   nombre_emprendimiento: string;
   foto_principal_url: string | null;
   comuna_nombre: string | null;
+  /** Categoría principal (siempre presente si hay `categoria_id`). */
   categoria_nombre: string | null;
+  /** Primera subcategoría del emprendedor similar (lookup por slug); UI prefiere esto sobre categoría. */
+  subcategoria_nombre: string | null;
   bucket: SimilarFichaBucket;
 };
 
@@ -59,6 +67,17 @@ const BUCKET_DISPLAY_ORDER: SimilarFichaBucket[] = [
   "nacional",
   "misma_categoria",
 ];
+
+/** Oculta filas de prueba en UI (nombre o slug). */
+const RUIDO_SIMILARES_RE = /\b(TEST|SCORE|PRUEBA)\b/i;
+
+export function filtrarSimilaresSinRuido(items: SimilarFichaItem[]): SimilarFichaItem[] {
+  return items.filter((x) => {
+    const nombre = s(x.nombre_emprendimiento) || s(x.slug);
+    const slug = s(x.slug);
+    return !RUIDO_SIMILARES_RE.test(nombre) && !RUIDO_SIMILARES_RE.test(slug);
+  });
+}
 
 export function sortSimilarFichaItemsForDisplay(items: SimilarFichaItem[]): SimilarFichaItem[] {
   const bucketIdx = (b: SimilarFichaBucket) => {
@@ -83,6 +102,7 @@ type EmpRow = {
   foto_principal_url: string | null;
   categoria_id?: string | number | null;
   comuna_id?: string | number | null;
+  subcategorias_slugs?: unknown;
 };
 
 function sortRowsForDisplay(rows: EmpRow[]): EmpRow[] {
@@ -104,6 +124,8 @@ export type GetSimilaresFichaArgsCurrent = {
   comuna_base_id?: string | number | null;
   region_id?: string | number | null;
   categoria_id?: string | number | null;
+  /** Primera subcategoría (principal); si falta, los pasos A–D usan solo categoría. */
+  subcategoria_principal_slug?: string | null;
 };
 
 type GetSimilaresFichaArgs = {
@@ -115,10 +137,12 @@ function toItem(
   row: EmpRow,
   bucket: SimilarFichaBucket,
   comunaNombreById: Map<string, string>,
-  categoriaNombreById: Map<string, string>
+  categoriaNombreById: Map<string, string>,
+  subcategoriaNombreBySlug: Map<string, string>
 ): SimilarFichaItem {
   const comId = s(row.comuna_id);
   const catId = s(row.categoria_id);
+  const subSlug0 = s(arr(row.subcategorias_slugs)[0]);
   return {
     id: String(row.id),
     slug: s(row.slug),
@@ -126,16 +150,19 @@ function toItem(
     foto_principal_url: row.foto_principal_url ? s(row.foto_principal_url) : null,
     comuna_nombre: comId ? comunaNombreById.get(comId) ?? null : null,
     categoria_nombre: catId ? categoriaNombreById.get(catId) ?? null : null,
+    subcategoria_nombre: subSlug0
+      ? subcategoriaNombreBySlug.get(subSlug0) ?? null
+      : null,
     bucket,
   };
 }
 
 export function buildSubtituloSimilarFicha(item: SimilarFichaItem): string {
-  const categoria = s(item.categoria_nombre) || "Servicios";
+  const rubro = s(item.subcategoria_nombre) || s(item.categoria_nombre) || "Servicios";
   const comuna = s(item.comuna_nombre);
 
   if (item.bucket === "misma_comuna") {
-    return comuna ? `${categoria} en ${comuna}` : categoria;
+    return comuna ? `${rubro} en ${comuna}` : rubro;
   }
   if (item.bucket === "atiende_comuna") {
     return comuna ? `Atiende en ${comuna}` : "Atiende en tu comuna";
@@ -144,16 +171,17 @@ export function buildSubtituloSimilarFicha(item: SimilarFichaItem): string {
     return "Disponible en la región";
   }
   if (item.bucket === "misma_categoria") {
-    return comuna ? `${categoria} · ${comuna}` : `${categoria} · misma categoría`;
+    return comuna ? `${rubro} · ${comuna}` : `${rubro} · misma categoría`;
   }
   return "Disponible en todo Chile";
 }
 
-async function ensureComunaYCategoriaMaps(
+async function ensureRowDisplayMaps(
   supabase: SupabaseClient,
   rows: EmpRow[],
   comunaNombreById: Map<string, string>,
   categoriaNombreById: Map<string, string>,
+  subcategoriaNombreBySlug: Map<string, string>,
   logQueryError: (step: string, err: { message?: string } | null) => void
 ) {
   const needCom = [...new Set(rows.map((r) => s(r.comuna_id)).filter(Boolean))].filter(
@@ -161,6 +189,9 @@ async function ensureComunaYCategoriaMaps(
   );
   const needCat = [...new Set(rows.map((r) => s(r.categoria_id)).filter(Boolean))].filter(
     (id) => !categoriaNombreById.has(id)
+  );
+  const needSubSlugs = [...new Set(rows.map((r) => s(arr(r.subcategorias_slugs)[0])).filter(Boolean))].filter(
+    (slug) => !subcategoriaNombreBySlug.has(slug)
   );
 
   if (needCom.length) {
@@ -186,6 +217,18 @@ async function ensureComunaYCategoriaMaps(
       categoriaNombreById.set(s(rec.id), s(rec.nombre));
     }
   }
+
+  if (needSubSlugs.length) {
+    const { data, error } = await supabase
+      .from("subcategorias")
+      .select("slug, nombre")
+      .in("slug", needSubSlugs);
+    logQueryError("lookup_subcategorias", error);
+    for (const r of data ?? []) {
+      const rec = r as { slug?: unknown; nombre?: unknown };
+      subcategoriaNombreBySlug.set(s(rec.slug), s(rec.nombre));
+    }
+  }
 }
 
 function uniqPush(
@@ -198,7 +241,8 @@ function uniqPush(
   maxPerBucket: number,
   excludeSlug: string,
   comunaNombreById: Map<string, string>,
-  categoriaNombreById: Map<string, string>
+  categoriaNombreById: Map<string, string>,
+  subcategoriaNombreBySlug: Map<string, string>
 ): number {
   let added = 0;
   for (const r of sortRowsForDisplay(rows)) {
@@ -210,7 +254,7 @@ function uniqPush(
     if (seenSlugs.has(slug)) continue;
     seenSlugs.add(slug);
     bucketCounts[bucket] += 1;
-    out.push(toItem(r, bucket, comunaNombreById, categoriaNombreById));
+    out.push(toItem(r, bucket, comunaNombreById, categoriaNombreById, subcategoriaNombreBySlug));
     added += 1;
   }
   return added;
@@ -260,9 +304,11 @@ export async function getSimilaresFicha({
   const comunaId = s(current.comuna_id) || s(current.comuna_base_id);
   const regionIdFromCurrent = s(current.region_id);
   const catId = s(current.categoria_id);
+  const principalSubSlug = s(current.subcategoria_principal_slug);
 
   const comunaNombreById = new Map<string, string>();
   const categoriaNombreById = new Map<string, string>();
+  const subcategoriaNombreBySlug = new Map<string, string>();
 
   if (!currentSlug) {
     debugSimilaresLog({ event: "abort_sin_slug" });
@@ -272,6 +318,15 @@ export async function getSimilaresFicha({
   const publishedExcluyeActual = (q: any) => {
     let qq = q.eq("estado_publicacion", "publicado").neq("slug", currentSlug);
     if (currentId) qq = qq.neq("id", currentId);
+    return qq;
+  };
+
+  /** Misma categoría; si hay subcategoría principal, exige que el candidato la tenga en su array. */
+  const conCategoriaYSubcategoriaOpcional = (q: any) => {
+    let qq = q.eq("categoria_id", catId);
+    if (principalSubSlug) {
+      qq = qq.contains("subcategorias_slugs", [principalSubSlug]);
+    }
     return qq;
   };
 
@@ -312,11 +367,12 @@ export async function getSimilaresFicha({
     bucket: SimilarFichaBucket,
     maxPerBucket: number
   ) => {
-    await ensureComunaYCategoriaMaps(
+    await ensureRowDisplayMaps(
       supabase,
       rowsRaw,
       comunaNombreById,
       categoriaNombreById,
+      subcategoriaNombreBySlug,
       logQueryError
     );
     pushedPorPaso[step] = uniqPush(
@@ -329,19 +385,21 @@ export async function getSimilaresFicha({
       maxPerBucket,
       currentSlug,
       comunaNombreById,
-      categoriaNombreById
+      categoriaNombreById,
+      subcategoriaNombreBySlug
     );
   };
 
-  // A) misma_comuna
+  // A) misma subcategoría (si aplica) + misma comuna — sin subslug: solo categoría + comuna
   if (comunaId) {
     const { data, error } = await publishedExcluyeActual(
-      supabase
-        .from("emprendedores")
-        .select(EMP_ROW_SELECT)
-        .eq("categoria_id", catId)
-        .eq("comuna_id", comunaId)
-        .limit(40)
+      conCategoriaYSubcategoriaOpcional(
+        supabase
+          .from("vw_emprendedores_publico")
+          .select(EMP_ROW_SELECT)
+          .eq("comuna_id", comunaId)
+          .limit(40)
+      )
     );
     logQueryError("A_misma_comuna", error);
     await runBucket("A_misma_comuna", Array.isArray(data) ? (data as EmpRow[]) : [], "misma_comuna", MAX_POR_BUCKET);
@@ -350,15 +408,16 @@ export async function getSimilaresFicha({
     debugSimilaresLog({ event: "bucket_A_omitido", reason: "sin comuna_id" });
   }
 
-  // B) atiende_comuna
+  // B) misma subcategoría (si aplica) + cobertura amplia
   if (out.length < limit) {
     const { data, error } = await publishedExcluyeActual(
-      supabase
-        .from("emprendedores")
-        .select(EMP_ROW_SELECT)
-        .eq("categoria_id", catId)
-        .in("cobertura_tipo", [...COBERTURA_ATIENDE_AMPLIO])
-        .limit(60)
+      conCategoriaYSubcategoriaOpcional(
+        supabase
+          .from("vw_emprendedores_publico")
+          .select(EMP_ROW_SELECT)
+          .in("cobertura_tipo", [...COBERTURA_ATIENDE_AMPLIO])
+          .limit(60)
+      )
     );
     logQueryError("B_atiende_comuna", error);
     await runBucket(
@@ -369,7 +428,7 @@ export async function getSimilaresFicha({
     );
   }
 
-  // C) misma_region: region_id desde comunas(comuna_id actual); filtro emprendedores.comuna_id IN comunas de la región
+  // C) misma subcategoría (si aplica) + misma región
   if (out.length < limit) {
     let regionNum: number | null = null;
     if (comunaId) {
@@ -384,12 +443,13 @@ export async function getSimilaresFicha({
       const idsRegion = await comunaIdsEnRegion(supabase, regionNum, logQueryError);
       if (idsRegion.length) {
         const { data, error } = await publishedExcluyeActual(
-          supabase
-            .from("emprendedores")
-            .select(EMP_ROW_SELECT)
-            .eq("categoria_id", catId)
-            .in("comuna_id", idsRegion)
-            .limit(80)
+          conCategoriaYSubcategoriaOpcional(
+            supabase
+              .from("vw_emprendedores_publico")
+              .select(EMP_ROW_SELECT)
+              .in("comuna_id", idsRegion)
+              .limit(80)
+          )
         );
         logQueryError("C_misma_region", error);
         await runBucket(
@@ -411,26 +471,28 @@ export async function getSimilaresFicha({
     }
   }
 
-  // D) nacional
+  // D) misma subcategoría (si aplica) + cobertura nacional
   if (out.length < limit) {
     const { data, error } = await publishedExcluyeActual(
-      supabase
-        .from("emprendedores")
-        .select(EMP_ROW_SELECT)
-        .eq("categoria_id", catId)
-        .eq("cobertura_tipo", "nacional")
-        .limit(80)
+      conCategoriaYSubcategoriaOpcional(
+        supabase
+          .from("vw_emprendedores_publico")
+          .select(EMP_ROW_SELECT)
+          .eq("cobertura_tipo", "nacional")
+          .limit(80)
+      )
     );
     logQueryError("D_nacional", error);
     await runBucket("D_nacional", Array.isArray(data) ? (data as EmpRow[]) : [], "nacional", MAX_POR_BUCKET);
   }
 
   let usoFallback = false;
+  // E) Fallback: misma categoría (sin filtro de subcategoría), igual que antes
   if (out.length < limit) {
     usoFallback = true;
     const { data, error } = await publishedExcluyeActual(
       supabase
-        .from("emprendedores")
+        .from("vw_emprendedores_publico")
         .select(EMP_ROW_SELECT)
         .eq("categoria_id", catId)
         .limit(4)
@@ -448,6 +510,7 @@ export async function getSimilaresFicha({
     event: "resumen",
     slug: currentSlug,
     categoria_id: catId,
+    subcategoria_principal_slug: principalSubSlug || null,
     comuna_id: comunaId || null,
     region_id: regionIdFromCurrent || null,
     limite: limit,

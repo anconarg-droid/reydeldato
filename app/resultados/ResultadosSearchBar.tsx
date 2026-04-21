@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { normalizeText } from "@/lib/search/normalizeText";
 import { slugify } from "@/lib/slugify";
+
+type ResolverSubJson = { ok?: boolean; slug?: string | null };
 import { getRegionShort } from "@/utils/regionShort";
 
 type ComunaSuggestion = {
@@ -126,7 +128,7 @@ export default function ResultadosSearchBar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [handleClickOutside]);
 
-  const buscar = useCallback(() => {
+  const buscar = useCallback(async () => {
     const qNorm = normalizeText(q);
     const comSlugRaw = (selectedComunaSlug ?? "").trim();
     const canonicalComuna = comSlugRaw ? slugify(comSlugRaw) : "";
@@ -141,12 +143,30 @@ export default function ResultadosSearchBar({
     }
 
     if (canonicalComuna) {
-      // URL pública canónica: /[comuna]?q=...
+      const slugTry = slugify(q.trim());
+      if (slugTry) {
+        try {
+          const res = await fetch(
+            `/api/catalogo/resolver-subcategoria-slug?slug=${encodeURIComponent(slugTry)}`,
+            { cache: "no-store" }
+          );
+          const data = (await res.json()) as ResolverSubJson;
+          if (res.ok && data?.ok && data.slug) {
+            router.push(
+              `/${encodeURIComponent(canonicalComuna)}?subcategoria=${encodeURIComponent(data.slug)}`
+            );
+            return;
+          }
+        } catch {
+          /* cae a búsqueda libre */
+        }
+      }
       router.push(
         `/${encodeURIComponent(canonicalComuna)}?q=${encodeURIComponent(qNorm)}`
       );
       return;
     }
+
     router.push(`/resultados?q=${encodeURIComponent(qNorm)}`);
   }, [q, selectedComunaSlug, router]);
 
@@ -163,6 +183,21 @@ export default function ResultadosSearchBar({
     }
     router.push(`/resultados?q=${encodeURIComponent(qNorm)}`);
   }, [q, router]);
+
+  /** Limpia término `q` y mantiene la comuna si existe. */
+  const clearQ = useCallback(() => {
+    setQ("");
+    const comSlugRaw = (selectedComunaSlug ?? "").trim();
+    const canonicalComuna = comSlugRaw ? slugify(comSlugRaw) : "";
+
+    if (canonicalComuna) {
+      router.push(`/${encodeURIComponent(canonicalComuna)}`);
+      return;
+    }
+    router.push("/resultados");
+  }, [selectedComunaSlug, router]);
+
+  const hasQToClear = normalizeText(q).length > 0;
 
   const qPlaceholder = selectedComunaSlug
     ? `¿Qué buscas en ${
@@ -311,7 +346,17 @@ export default function ResultadosSearchBar({
           Buscar
         </button>
 
-        <div className="order-0 hidden sm:order-none sm:col-start-1 sm:row-start-3 sm:block" aria-hidden="true" />
+        <div className="order-0 min-h-[1.25rem] sm:order-none sm:col-start-1 sm:row-start-3">
+          {hasQToClear ? (
+            <button
+              type="button"
+              onClick={clearQ}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Limpiar búsqueda
+            </button>
+          ) : null}
+        </div>
 
         <div className="order-5 min-h-[1.25rem] sm:order-none sm:col-start-2 sm:row-start-3">
           {selectedComunaSlug ? (

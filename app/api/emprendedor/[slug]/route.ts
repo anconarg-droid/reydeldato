@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
+import {
+  planPeriodicidadDesdeEmprendedorRow,
+  planTipoComercialDesdeEmprendedorRow,
+} from "@/lib/emprendedorPlanCamposCompat";
+import { direccionCallePrincipalDesdeLocales } from "@/lib/emprendedorLocalesFichaPublica";
+import { emprendedorFichaVisiblePublicamente } from "@/lib/estadoPublicacion";
+import { fetchGaleriaImagenesUrlsPublicas } from "@/lib/emprendedorGaleriaPivot";
 
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
+export const dynamic = "force-dynamic";
 
 function arr(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
@@ -24,6 +26,12 @@ function b(v: unknown): boolean {
   return v === true;
 }
 
+/** Evita respuestas cacheadas cuando la ficha pasa por revisión / cambia visibilidad. */
+const NO_STORE_JSON_HEADERS = {
+  "Cache-Control": "private, no-store, max-age=0, must-revalidate",
+  Pragma: "no-cache",
+} as const;
+
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ slug: string }> }
@@ -38,15 +46,14 @@ export async function GET(
           error: "missing_slug",
           message: "Falta slug",
         },
-        { status: 400 }
+        { status: 400, headers: NO_STORE_JSON_HEADERS }
       );
     }
 
-    const supabase = getSupabase();
+    const supabase = createSupabaseServerPublicClient();
 
-    // 1) Emprendedor base directo desde tabla
     const { data, error } = await supabase
-      .from("emprendedores")
+      .from("vw_emprendedores_publico")
       .select("*")
       .eq("slug", slug)
       .eq("estado_publicacion", "publicado")
@@ -60,7 +67,7 @@ export async function GET(
           message: error.message,
           slug,
         },
-        { status: 500 }
+        { status: 500, headers: NO_STORE_JSON_HEADERS }
       );
     }
 
@@ -72,7 +79,19 @@ export async function GET(
           message: "Emprendimiento no encontrado",
           slug,
         },
-        { status: 404 }
+        { status: 404, headers: NO_STORE_JSON_HEADERS }
+      );
+    }
+
+    if (!emprendedorFichaVisiblePublicamente(data.estado_publicacion)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "no_publicado",
+          message: "Esta ficha no está publicada.",
+          slug,
+        },
+        { status: 404, headers: NO_STORE_JSON_HEADERS }
       );
     }
 
@@ -130,150 +149,30 @@ export async function GET(
       }
     }
 
-    // 4) Subcategoría principal
-    const principalSubId = s(row.subcategoria_principal_id);
-    let principalSubNombre = "";
-    let principalSubSlug = "";
+    const subcategoriasNombresArr = arr(row.subcategorias_nombres_arr);
+    const subcategoriasSlugsArr = arr(row.subcategorias_slugs);
+    const principalSubNombre = subcategoriasNombresArr[0] || "";
+    const principalSubSlug = subcategoriasSlugsArr[0] || "";
 
-    if (principalSubId) {
-      const { data: subRow } = await supabase
-        .from("subcategorias")
-        .select("id, nombre, slug")
-        .eq("id", principalSubId)
-        .maybeSingle();
+    const modalidadesAtencionArr = arr(row.modalidades_atencion_arr);
+    const galeriaUrlsArr = id
+      ? await fetchGaleriaImagenesUrlsPublicas(supabase, id)
+      : [];
 
-      if (subRow) {
-        principalSubNombre = s((subRow as any).nombre);
-        principalSubSlug = s((subRow as any).slug);
-      }
-    }
+    const coberturaComunasArr = arr(row.comunas_cobertura_nombres_arr);
+    const coberturaComunasSlugsArr = arr(row.comunas_cobertura_slugs_arr);
 
-    // 5) Subcategorías relacionadas
-    let subcategoriasNombresArr: string[] = [];
-    let subcategoriasSlugsArr: string[] = [];
+    const coberturaRegionesArr = arr(row.regiones_cobertura_nombres_arr);
+    const coberturaRegionesSlugsArr = arr(row.regiones_cobertura_slugs_arr);
 
-    if (id != null) {
-      const { data: subRows } = await supabase
-        .from("emprendedor_subcategorias")
-        .select("subcategoria_id, subcategorias(nombre, slug)")
-        .eq("emprendedor_id", id);
-
-      if (Array.isArray(subRows)) {
-        subcategoriasNombresArr = subRows
-          .map((r: any) => s(r.subcategorias?.nombre))
-          .filter(Boolean);
-
-        subcategoriasSlugsArr = subRows
-          .map((r: any) => s(r.subcategorias?.slug))
-          .filter(Boolean);
-      }
-    }
-
-    // 6) Modalidades
-    let modalidadesAtencionArr: string[] = [];
-
-    if (id != null) {
-      const { data: modalidadesRows } = await supabase
-        .from("emprendedor_modalidades")
-        .select("modalidad")
-        .eq("emprendedor_id", id);
-
-      if (Array.isArray(modalidadesRows)) {
-        modalidadesAtencionArr = modalidadesRows
-          .map((r: any) => s(r.modalidad))
-          .filter(Boolean);
-      }
-    }
-
-    // 7) Galería
-    let galeriaUrlsArr: string[] = [];
-
-    if (id != null) {
-      const { data: galeriaRows } = await supabase
-        .from("emprendedor_galeria")
-        .select("imagen_url")
-        .eq("emprendedor_id", id);
-
-      if (Array.isArray(galeriaRows)) {
-        galeriaUrlsArr = galeriaRows
-          .map((r: any) => s(r.imagen_url))
-          .filter(Boolean);
-      }
-    }
-
-    // 8) Cobertura comunas (misma tabla que aprobar / panel / vista Algolia)
-    let coberturaComunasArr: string[] = [];
-    let coberturaComunasSlugsArr: string[] = [];
-
-    if (id != null) {
-      const { data: coberturaComunasRows } = await supabase
-        .from("emprendedor_comunas_cobertura")
-        .select("comuna_id, comunas(nombre, slug)")
-        .eq("emprendedor_id", id);
-
-      if (Array.isArray(coberturaComunasRows)) {
-        coberturaComunasArr = coberturaComunasRows
-          .map((r: any) => s(r.comunas?.nombre))
-          .filter(Boolean);
-
-        coberturaComunasSlugsArr = coberturaComunasRows
-          .map((r: any) => s(r.comunas?.slug))
-          .filter(Boolean);
-      }
-    }
-
-    // 9) Cobertura regiones (tabla canónica; antes la ficha no las exponía)
-    let coberturaRegionesArr: string[] = [];
-    let coberturaRegionesSlugsArr: string[] = [];
-
-    if (id != null) {
-      const { data: coberturaRegionesRows } = await supabase
-        .from("emprendedor_regiones_cobertura")
-        .select("region_id, regiones(nombre, slug)")
-        .eq("emprendedor_id", id);
-
-      if (Array.isArray(coberturaRegionesRows)) {
-        coberturaRegionesArr = coberturaRegionesRows
-          .map((r: any) => s(r.regiones?.nombre))
-          .filter(Boolean);
-
-        coberturaRegionesSlugsArr = coberturaRegionesRows
-          .map((r: any) => s(r.regiones?.slug))
-          .filter(Boolean);
-      }
-    }
-
-    // 10) Locales físicos
-    let localesFicha: {
-      nombre_local: string | null;
-      direccion: string;
-      comuna_nombre: string;
-      comuna_slug: string;
-      es_principal: boolean;
-    }[] = [];
-
-    if (id != null) {
-      const { data: localesRows } = await supabase
-        .from("emprendedor_locales")
-        .select("nombre_local, direccion, es_principal, comunas(nombre, slug)")
-        .eq("emprendedor_id", id)
-        .order("es_principal", { ascending: false });
-
-      if (Array.isArray(localesRows)) {
-        localesFicha = localesRows.map((r: any) => ({
-          nombre_local: r.nombre_local ? s(r.nombre_local) : null,
-          direccion: s(r.direccion),
-          comuna_nombre: s(r.comunas?.nombre),
-          comuna_slug: s(r.comunas?.slug),
-          es_principal: r.es_principal === true,
-        }));
-      }
-    }
+    const localesFicha = Array.isArray(row.locales) ? (row.locales as any[]) : [];
+    const direccionDesdeLocales = direccionCallePrincipalDesdeLocales(localesFicha);
 
     const item = {
       id: row.id ?? null,
       slug: s(row.slug),
       nombre: s(row.nombre_emprendimiento),
+      nombre_emprendimiento: s(row.nombre_emprendimiento),
 
       descripcion_corta: s(row.descripcion_corta || row.frase_negocio),
       descripcion_larga: s(row.descripcion_larga || row.descripcion_libre),
@@ -287,7 +186,6 @@ export async function GET(
       subcategorias_nombres_arr: subcategoriasNombresArr,
       subcategorias_slugs_arr: subcategoriasSlugsArr,
 
-      subcategoria_principal_id: principalSubId || null,
       subcategoria_principal_nombre: principalSubNombre,
       subcategoria_principal_slug: principalSubSlug,
       subcategorias_slugs: arr(row.subcategorias_slugs).length
@@ -295,6 +193,7 @@ export async function GET(
         : subcategoriasSlugsArr,
       subcategoria_slug_final: s(row.subcategoria_slug_final),
 
+      comuna_id: row.comuna_id ?? null,
       comuna_base_id: row.comuna_id ?? null,
       comuna_nombre: comunaNombre,
       comuna_slug: comunaSlug,
@@ -318,13 +217,14 @@ export async function GET(
       modalidades_atencion: modalidadesAtencionArr,
 
       whatsapp: s(row.whatsapp_principal),
+      whatsapp_secundario: s(row.whatsapp_secundario),
       instagram: s(row.instagram),
       sitio_web: s(row.sitio_web),
-      email: s(row.email),
-      direccion: s(row.direccion),
-
       responsable_nombre: s(row.nombre_responsable),
-      mostrar_responsable: b(row.mostrar_responsable_publico),
+      mostrar_responsable: Boolean(s(row.nombre_responsable)),
+      direccion: direccionDesdeLocales,
+      /** Alias; misma regla que `direccion` (solo desde `emprendedor_locales`). */
+      direccion_local: direccionDesdeLocales,
 
       foto_principal_url: s(row.foto_principal_url),
       galeria_urls_arr: galeriaUrlsArr,
@@ -338,8 +238,12 @@ export async function GET(
       created_at: row.created_at ?? null,
       trial_inicia_at: row.trial_inicia_at ?? null,
       trial_expira_at: row.trial_expira_at ?? row.trial_expira ?? null,
-      plan_tipo: (row.plan_tipo as string) ?? null,
-      plan_periodicidad: (row.plan_periodicidad as string) ?? null,
+      plan_tipo: planTipoComercialDesdeEmprendedorRow(
+        row as Record<string, unknown>
+      ),
+      plan_periodicidad: planPeriodicidadDesdeEmprendedorRow(
+        row as Record<string, unknown>
+      ),
       plan_activo: row.plan_activo === true,
       plan_inicia_at: row.plan_inicia_at ?? null,
       plan_expira_at: row.plan_expira_at ?? null,
@@ -368,10 +272,13 @@ export async function GET(
       locales: localesFicha,
     };
 
-    return NextResponse.json({
-      ok: true,
-      item,
-    });
+    return NextResponse.json(
+      {
+        ok: true,
+        item,
+      },
+      { headers: NO_STORE_JSON_HEADERS }
+    );
   } catch (error) {
     return NextResponse.json(
       {
@@ -380,7 +287,7 @@ export async function GET(
         message:
           error instanceof Error ? error.message : "Error inesperado",
       },
-      { status: 500 }
+      { status: 500, headers: NO_STORE_JSON_HEADERS }
     );
   }
 }

@@ -1,9 +1,12 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
+import HomeFooter from '@/components/home/HomeFooter'
+import GlobalHeader from '@/components/GlobalHeader'
+import PostHogProvider from '@/app/posthog-provider'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
+const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
 
 export const metadata: Metadata = {
   title: 'Rey del Dato - Activa tu Comuna',
@@ -36,13 +39,17 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className="font-sans antialiased"
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
         style={{
           fontFamily:
-            "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+            'var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
         }}
       >
-        {children}
+        <PostHogProvider>
+          <GlobalHeader />
+          {children}
+          <HomeFooter />
+        </PostHogProvider>
       </body>
     </html>
   )

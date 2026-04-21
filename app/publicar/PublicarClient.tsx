@@ -3,12 +3,22 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { isPersistibleFotoUrl } from "@/lib/isPersistibleFotoUrl";
-import { getEmailTypoSuggestion, isValidEmailFormat } from "@/lib/validateEmail";
+import { validateOptionalPublicEmail } from "@/lib/validateEmail";
 import {
   PUBLICAR_BORRADOR_PATH,
   publicarBorradorByIdPath,
 } from "@/lib/publicarApi";
 import { normalizeChilePhone, isValidChileMobile } from "@/utils/phone";
+import {
+  DESCRIPCION_CORTA_MAX,
+  DESCRIPCION_CORTA_MIN,
+  normalizeDescripcionCorta,
+  normalizeDescripcionLarga,
+  primeraValidacionDescripcion,
+  validateDescripcionCortaPublicacion,
+  validateDescripcionLarga,
+} from "@/lib/descripcionProductoForm";
+import { parseKeywordsUsuarioInputToTextArray } from "@/lib/keywordsUsuarioPostulacion";
 import { normalizeWebsite } from "@/utils/url";
 import PasoInformacionBasica from "./PasoInformacionBasica";
 import PasoDescripcionImagenes from "./PasoDescripcionImagenes";
@@ -45,7 +55,8 @@ export type Region = {
   slug: string;
 };
 
-export const MIN_DESCRIPCION_NEGOCIO = 40;
+/** @deprecated Usar `DESCRIPCION_CORTA_MIN` desde `@/lib/descripcionProductoForm` en código nuevo. */
+export const MIN_DESCRIPCION_NEGOCIO = DESCRIPCION_CORTA_MIN;
 export const KEYWORDS_MIN = 1;
 export const KEYWORDS_MAX = 10;
 
@@ -69,6 +80,8 @@ export type FormData = {
 
   fraseNegocio: string;
   descripcionNegocio: string;
+  /** Opcional; solo en ficha completa bajo la galería. */
+  descripcionLarga: string;
   /** Opcional, no visible públicamente (input de texto con comas). */
   keywordsUsuario: string;
   fotoPrincipal: File | null;
@@ -99,6 +112,9 @@ export type FormData = {
     clasificacion_confianza?: number;
     clasificacion_fuente?: string;
   } | null;
+
+  /** Consentimiento legal para publicar (UI). */
+  aceptaTerminosPrivacidad: boolean;
 };
 
 type Props = {
@@ -125,6 +141,7 @@ export const INITIAL_FORM: FormData = {
 
   fraseNegocio: "",
   descripcionNegocio: "",
+  descripcionLarga: "",
   keywordsUsuario: "",
   fotoPrincipal: null,
   galeria: [],
@@ -147,6 +164,8 @@ export const INITIAL_FORM: FormData = {
   keywordItems: [],
 
   clasificacion: undefined,
+
+  aceptaTerminosPrivacidad: false,
 };
 
 function normalizeInstagram(input: string) {
@@ -291,6 +310,7 @@ export default function PublicarClient({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submittedMessage, setSubmittedMessage] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState("");
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -321,9 +341,13 @@ export default function PublicarClient({
       items.push("WhatsApp válido");
     }
 
-    if (form.descripcionNegocio.trim().length < MIN_DESCRIPCION_NEGOCIO) {
+    if (
+      validateDescripcionCortaPublicacion(
+        normalizeDescripcionCorta(form.descripcionNegocio),
+      ).length > 0
+    ) {
       items.push(
-        `Descripción mínima (${MIN_DESCRIPCION_NEGOCIO} caracteres)`
+        `Resumen para búsquedas (máx. ${DESCRIPCION_CORTA_MAX} caracteres, una frase)`,
       );
     }
 
@@ -385,7 +409,7 @@ export default function PublicarClient({
       nombre: prev.nombre.trim(),
       responsable: prev.responsable.trim(),
       email: prev.email.trim().toLowerCase(),
-      fraseNegocio: prev.fraseNegocio.trim().slice(0, 120),
+      fraseNegocio: normalizeDescripcionCorta(prev.fraseNegocio),
       whatsapp: normalizeChilePhone(prev.whatsapp) || prev.whatsapp.trim(),
       whatsappSecundario: prev.whatsappSecundario
         ? normalizeChilePhone(prev.whatsappSecundario) || prev.whatsappSecundario.trim()
@@ -414,15 +438,10 @@ export default function PublicarClient({
           "Ingresa un WhatsApp válido de Chile. Ej: 912345678 o +56912345678";
       }
 
-      if (form.email.trim() && !isValidEmailFormat(form.email)) {
-        nextErrors.email = "Ingresa un email válido. Ej: nombre@correo.com";
-      } else if (form.email.trim()) {
-        const typo = getEmailTypoSuggestion(form.email);
-        if (typo) {
-          nextErrors.email = `Revisa el dominio: parece un error. ¿Quisiste decir ${typo.suggestedEmail}?`;
-        } else if (!isValidEmailFormat(form.email)) {
-          // fallback por si se coló un caso raro
-          nextErrors.email = "Ingresa un email válido. Ej: nombre@correo.com";
+      if (form.email.trim()) {
+        const ev = validateOptionalPublicEmail(form.email);
+        if (!ev.ok) {
+          nextErrors.email = ev.message;
         }
       }
 
@@ -451,34 +470,72 @@ export default function PublicarClient({
         const hasBase = base && arr.includes(base);
         if (!hasBase) {
           nextErrors.comunasCobertura =
-            "Tu comuna base debe quedar incluida en comunas de cobertura.";
+            "Tu comuna de origen debe estar entre las comunas seleccionadas.";
         } else if (arr.length < 2) {
           nextErrors.comunasCobertura =
-            "Debes seleccionar al menos 2 comunas (incluyendo la base).";
+            "Debes seleccionar al menos otra comuna además de la base.";
         } else if (arr.length > 8) {
           nextErrors.comunasCobertura =
             "Puedes seleccionar máximo 8 comunas (incluyendo tu comuna base).";
         }
       }
+
+      const largaNorm = normalizeDescripcionLarga(form.descripcionLarga);
+      if (largaNorm) {
+        const largaErrs = validateDescripcionLarga(largaNorm);
+        const largaMsg = primeraValidacionDescripcion(largaErrs);
+        if (largaMsg) nextErrors.descripcionLarga = largaMsg;
+      }
     }
 
     if (currentStep === 2) {
-      const descLen = form.descripcionNegocio.trim().length;
-      if (descLen < MIN_DESCRIPCION_NEGOCIO) {
-        nextErrors.descripcionNegocio = `Describe el producto o servicio que ofreces (mínimo ${MIN_DESCRIPCION_NEGOCIO} caracteres).`;
+      const cortaErrs = validateDescripcionCortaPublicacion(
+        normalizeDescripcionCorta(form.descripcionNegocio),
+      );
+      if (cortaErrs.length) {
+        nextErrors.descripcionNegocio =
+          primeraValidacionDescripcion(cortaErrs) ??
+          `El resumen para búsquedas debe tener entre ${DESCRIPCION_CORTA_MIN} y ${DESCRIPCION_CORTA_MAX} caracteres, en una sola frase.`;
       }
 
       if (!form.fotoPrincipal) {
         nextErrors.fotoPrincipal = "Debes subir una foto principal.";
       }
 
-      if (form.galeria.length > 6) {
-        nextErrors.galeria = "Puedes subir máximo 6 imágenes en la galería.";
+      if (form.galeria.length > 8) {
+        nextErrors.galeria =
+          "Puedes agregar hasta 8 imágenes para mostrar tu trabajo.";
       }
     }
 
     if (currentStep === 3) {
-      // Paso 3 queda para datos opcionales (locales/modalidades/dirección) más adelante.
+      if (!form.comunaBase.trim()) {
+        nextErrors.comunaBase = "Selecciona la comuna base.";
+      }
+      if (!form.coberturaTipo.trim()) {
+        nextErrors.coberturaTipo = "Selecciona la cobertura.";
+      }
+      if (form.coberturaTipo === "varias_comunas") {
+        const base = form.comunaBase.trim();
+        const arr = Array.isArray(form.comunasCobertura) ? form.comunasCobertura : [];
+        const hasBase = base && arr.includes(base);
+        if (!hasBase) {
+          nextErrors.comunasCobertura =
+            "Tu comuna de origen debe estar entre las comunas seleccionadas.";
+        } else if (arr.length < 2) {
+          nextErrors.comunasCobertura =
+            "Debes seleccionar al menos otra comuna además de la base.";
+        } else if (arr.length > 8) {
+          nextErrors.comunasCobertura =
+            "Puedes seleccionar máximo 8 comunas (incluyendo tu comuna base).";
+        }
+      }
+      if (form.coberturaTipo === "varias_regiones") {
+        if (!form.regionesCobertura.length) {
+          nextErrors.regionesCobertura =
+            "Selecciona al menos una región donde atiendes.";
+        }
+      }
     }
 
     setErrors(nextErrors);
@@ -577,15 +634,22 @@ export default function PublicarClient({
       }
 
       if (currentForm.email.trim()) {
-        createPayload.email = currentForm.email.trim().toLowerCase();
+        const ev = validateOptionalPublicEmail(currentForm.email);
+        if (ev.ok && ev.normalized) {
+          createPayload.email = ev.normalized;
+        }
       }
 
       if (currentForm.fraseNegocio.trim()) {
-        createPayload.fraseNegocio = currentForm.fraseNegocio.trim().slice(0, 120);
+        createPayload.fraseNegocio = normalizeDescripcionCorta(
+          currentForm.fraseNegocio,
+        );
       }
 
       if (currentForm.descripcionNegocio.trim()) {
-        createPayload.descripcionNegocio = currentForm.descripcionNegocio.trim();
+        createPayload.descripcionNegocio = normalizeDescripcionCorta(
+          currentForm.descripcionNegocio,
+        );
       }
 
       const res = await fetch(PUBLICAR_BORRADOR_PATH, {
@@ -641,7 +705,10 @@ export default function PublicarClient({
     }
 
     if (currentForm.email.trim()) {
-      payload.email = currentForm.email.trim().toLowerCase();
+      const ev = validateOptionalPublicEmail(currentForm.email);
+      if (ev.ok && ev.normalized) {
+        payload.email = ev.normalized;
+      }
     }
 
     payload.ocultarResponsable = currentForm.ocultarResponsable;
@@ -662,15 +729,19 @@ export default function PublicarClient({
     }
 
     if (currentForm.fraseNegocio.trim()) {
-      payload.fraseNegocio = currentForm.fraseNegocio.trim().slice(0, 120);
+      payload.fraseNegocio = normalizeDescripcionCorta(currentForm.fraseNegocio);
     }
 
     if (currentForm.descripcionNegocio.trim()) {
-      payload.descripcionNegocio = currentForm.descripcionNegocio.trim();
+      payload.descripcionNegocio = normalizeDescripcionCorta(
+        currentForm.descripcionNegocio,
+      );
     }
 
-    if (currentForm.keywordsUsuario?.trim()) {
-      payload.keywords_usuario = currentForm.keywordsUsuario.trim();
+    if (currentForm.descripcionLarga.trim()) {
+      payload.descripcion_larga = normalizeDescripcionLarga(
+        currentForm.descripcionLarga,
+      );
     }
 
     const comunaBaseId = comunaIdMapRef.current.get(currentForm.comunaBase);
@@ -690,8 +761,23 @@ export default function PublicarClient({
       payload.regiones_cobertura = currentForm.regionesCobertura;
     }
 
-    if (currentForm.modalidades.length > 0) {
-      payload.modalidades_atencion = currentForm.modalidades;
+    const modalidadesPayload = Array.isArray(currentForm.modalidades)
+      ? currentForm.modalidades
+      : [];
+    if (modalidadesPayload.length > 0) {
+      payload.modalidades_atencion = modalidadesPayload;
+    }
+
+    payload.keywords_usuario = parseKeywordsUsuarioInputToTextArray(
+      currentForm.keywordsUsuario
+    );
+
+    if (process.env.NEXT_PUBLIC_PUBLICAR_LOCAL_DEBUG === "1") {
+      // eslint-disable-next-line no-console
+      console.log("[publicar-local-debug][autosave-advanced]", {
+        modalidades_form_state: currentForm.modalidades,
+        modalidades_payload: modalidadesPayload,
+      });
     }
 
     const categoriaId = categoriaIdMapRef.current.get(currentForm.categoriaSlug);
@@ -776,7 +862,7 @@ export default function PublicarClient({
         : null;
 
       const galeriaUrls: string[] = [];
-      for (const file of form.galeria.slice(0, 6)) {
+      for (const file of form.galeria.slice(0, 8)) {
         // eslint-disable-next-line no-await-in-loop
         const url = await uploadFileToLocalApi(file, "postulaciones/galeria");
         galeriaUrls.push(url);
@@ -804,9 +890,13 @@ export default function PublicarClient({
         instagram: normalizeInstagram(form.instagram),
         web: normalizeWebsite(form.web),
 
-        fraseNegocio: form.fraseNegocio.trim().slice(0, 120),
-        descripcionNegocio: form.descripcionNegocio.trim(),
-        keywords_usuario: form.keywordsUsuario.trim(),
+        fraseNegocio: normalizeDescripcionCorta(form.fraseNegocio),
+        descripcionNegocio: normalizeDescripcionCorta(form.descripcionNegocio),
+        ...(normalizeDescripcionLarga(form.descripcionLarga).trim()
+          ? {
+              descripcion_larga: normalizeDescripcionLarga(form.descripcionLarga),
+            }
+          : {}),
 
         foto_principal_url: fotoPrincipalUrl,
         galeria_urls: galeriaUrls,
@@ -832,6 +922,7 @@ export default function PublicarClient({
           form.clasificacion?.sector_slug ?? null,
         tags_slugs:
           form.clasificacion?.tags_slugs ?? [],
+        keywords_usuario: parseKeywordsUsuarioInputToTextArray(form.keywordsUsuario),
       };
 
       const patchRes = await fetch(publicarBorradorByIdPath(currentDraftId), {
@@ -858,6 +949,7 @@ export default function PublicarClient({
         },
         body: JSON.stringify({
           draft_id: currentDraftId,
+          acepta_terminos_privacidad: form.aceptaTerminosPrivacidad,
         }),
       });
 
@@ -871,6 +963,11 @@ export default function PublicarClient({
       }
 
       setSubmitted(true);
+      setSubmittedMessage(
+        typeof enviarData?.message === "string" && enviarData.message.trim()
+          ? enviarData.message.trim()
+          : "Tu emprendimiento está en revisión. Te avisaremos cuando esté publicado."
+      );
     } catch (_error) {
       setServerError("Ocurrió un error al guardar.");
     } finally {
@@ -998,7 +1095,7 @@ export default function PublicarClient({
           >
             {mode === "advanced"
               ? "Guardando cambios..."
-              : "Guardando borrador..."}
+              : "Guardando..."}
           </div>
         ) : null}
 
@@ -1036,6 +1133,7 @@ export default function PublicarClient({
             setField={setField}
             submitForm={nextStep}
             comunas={comunas}
+            regiones={regiones}
           />
         )}
 
@@ -1106,9 +1204,8 @@ export default function PublicarClient({
               lineHeight: 1.5,
             }}
           >
-            {mode === "advanced"
-              ? "Tus cambios fueron guardados correctamente."
-              : "Tu emprendimiento fue recibido correctamente y quedó pendiente de revisión antes de publicarse."}
+            {submittedMessage ||
+              "Tu emprendimiento está en revisión. Te avisaremos cuando esté publicado."}
           </div>
         ) : null}
       </section>

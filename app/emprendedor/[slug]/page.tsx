@@ -1,34 +1,82 @@
-import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import PortalGallery from "./PortalGallery";
 import TrackedActionButton from "./TrackedActionButton";
-import ShareFichaButton from "./ShareFichaButton";
 import TrackView from "@/components/TrackView";
 import BackLink from "@/components/BackLink";
 import SimilaresFichaSection from "@/components/cards/SimilaresFichaSection";
+import FichaHero from "@/components/emprendedor/FichaHero";
+import FichaDestacados from "@/components/emprendedor/FichaDestacados";
 import {
   buildWhatsappUrl,
+  buildWhatsappUrlWithPrefill,
   buildInstagramUrl,
   buildWebsiteUrl,
-  formatWhatsappDisplay,
   formatInstagramDisplay,
   formatWebsiteDisplay,
+  formatWhatsappDisplay,
+  publicWhatsappSecundarioParaFicha,
 } from "@/lib/formatPublicLinks";
+import { coberturaTexto, normalizeCoberturaTipoDb } from "@/lib/cobertura";
 import {
-  coberturaTexto,
-  coberturaBadge,
-  normalizeCoberturaTipoDb,
-} from "@/lib/cobertura";
-import { calcularEstadoFicha } from "@/lib/estadoFicha";
+  fichaPublicaEsMejoradaDesdeItem,
+} from "@/lib/estadoFicha";
+import {
+  clampDescripcionCortaFichaDisplay,
+  comoAtiendeFlags,
+  perfilCompletoIncluyeLineas,
+  TEXTO_FICHA_BASICA_AVISO,
+  textoResumenListadoEmprendedor,
+} from "@/lib/emprendedorFichaUi";
+import { displayTitleCaseWords } from "@/lib/displayTextFormat";
+import { getBloqueUbicacionFicha } from "@/lib/getContextoUbicacion";
 import { getEmprendedorPublicoBySlug } from "@/lib/getEmprendedorPublicoBySlug";
-import { getSimilaresFicha } from "@/lib/getSimilaresFicha";
+import {
+  direccionCallePrincipalDesdeLocales,
+  lineaChecklistDireccionLocales,
+  sortLocalesFichaPrincipalPrimero,
+} from "@/lib/emprendedorLocalesFichaPublica";
+import {
+  getComunaDirectorioNavegable,
+  getRegionSlugForComunaSlug,
+} from "@/lib/comunaDirectorioNavegable";
+import {
+  filtrarSimilaresSinRuido,
+  getSimilaresFicha,
+} from "@/lib/getSimilaresFicha";
+import { emprendedorFichaVisiblePublicamente } from "@/lib/estadoPublicacion";
+import { normalizeText } from "@/lib/search/normalizeText";
+import { slugify } from "@/lib/slugify";
+import {
+  formatComunaRegion,
+  getPlaceholderSinFotoSub,
+  getPlaceholderSinFotoTitulo,
+} from "@/lib/productRules";
 import {
   buildDescripcionFallback,
-  buildEstadoVacioFicha,
   buildSubtituloFicha,
   limpiarTexto,
 } from "@/lib/emprendedorProfileCopy";
+import {
+  DESCRIPCION_CORTA_MAX,
+  DESCRIPCION_CORTA_MIN,
+  normalizeDescripcionCorta,
+} from "@/lib/descripcionProductoForm";
+import {
+  getCategoriaCompacta,
+  getLineaTaxonomiaCard,
+} from "@/lib/search/emprendedorSearchCardHelpers";
+
+function capitalizeFirstLetterForDisplay(input: string): string {
+  const t = String(input ?? "");
+  if (!t) return t;
+  // Capitaliza el primer caracter alfabético (respeta espacios/guiones iniciales).
+  const idx = t.search(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/);
+  if (idx < 0) return t;
+  const ch = t[idx] ?? "";
+  const upper = ch.toLocaleUpperCase("es-CL");
+  if (upper === ch) return t;
+  return t.slice(0, idx) + upper + t.slice(idx + 1);
+}
 
 type Emprendedor = {
   id?: string | number | null;
@@ -68,14 +116,20 @@ type Emprendedor = {
 
   whatsapp?: string;
   whatsapp_principal?: string | null;
+  /** Segundo número; solo ficha pública, no cards de búsqueda. */
+  whatsapp_secundario?: string | null;
   instagram?: string;
   sitio_web?: string;
   email?: string;
+  /** Teléfono distinto a WhatsApp, si existe en BD. */
+  telefono?: string | null;
 
   responsable_nombre?: string;
   mostrar_responsable?: boolean;
 
   direccion?: string;
+  /** Solo desde `emprendedor_locales` (calles); sin columna legacy en `emprendedores`. */
+  direccion_local?: string;
 
   estado_publicacion?: string;
   destacado?: boolean;
@@ -105,7 +159,6 @@ type Emprendedor = {
   tags_slugs?: string[] | null;
   clasificacion_confianza?: number | null;
 
-  subcategoria_principal_id?: string | number | null;
   subcategoria_principal_nombre?: string;
   subcategoria_principal_slug?: string;
   subcategorias_slugs?: string[];
@@ -121,9 +174,18 @@ type Emprendedor = {
   frase_negocio?: string;
   cobertura_label?: string;
   cobertura_tipo_label?: string;
-};
 
-type SimilarFichaItem = import("@/lib/getSimilaresFicha").SimilarFichaItem;
+  locales?: {
+    nombre_local: string | null;
+    direccion: string;
+    referencia?: string;
+    comuna_nombre: string;
+    comuna_slug: string;
+    es_principal: boolean;
+    lat?: number | null;
+    lng?: number | null;
+  }[];
+};
 
 function s(v: unknown): string {
   if (v === null || v === undefined) return "";
@@ -135,11 +197,11 @@ function arr(v: unknown): string[] {
   return v.map((x) => (x == null ? "" : String(x).trim())).filter(Boolean);
 }
 
-function subtituloClave(subtitulo: string): string {
-  const t = s(subtitulo).replace(/\.$/, "").trim();
-  if (!t) return "";
-  // Preferimos "·" sobre "y" para lectura rápida.
-  return t.replace(/\s+y\s+atenci[oó]n\s+/i, " · Atención ");
+function numCoord(v: unknown): number | undefined {
+  if (v == null) return undefined;
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  const n = parseFloat(String(v).trim().replace(",", "."));
+  return Number.isFinite(n) ? n : undefined;
 }
 
 function normalizeSiteUrl() {
@@ -149,21 +211,119 @@ function normalizeSiteUrl() {
   );
 }
 
-function activarFichaWhatsappHref(slug: string) {
-  const rawNumber = s(process.env.NEXT_PUBLIC_ACTIVAR_FICHA_WHATSAPP);
-  const number = rawNumber.replace(/\D/g, "");
-  if (!number) return "/publicar";
-  const text = `Hola quiero activar mi ficha en Rey del Dato (${slug})`;
-  return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
-}
-
 async function getEmprendedor(slug: string): Promise<Emprendedor | null> {
   const item = await getEmprendedorPublicoBySlug(slug);
   return item as Emprendedor | null;
 }
 
+/**
+ * Listado en `/[comuna]`: navegación estructurada sin mezclar `q`.
+ * Prioridad en URL: `subcategoria` > `categoria` > `q` (solo uno a la vez).
+ */
+function hrefListadoComunaConBusqueda(
+  comunaSlug: string,
+  opts: { subcategoriaSlug?: string; categoriaSlug?: string; qNorm?: string }
+): string {
+  const comuna = slugify(s(comunaSlug));
+  if (!comuna) return "/";
+  const sp = new URLSearchParams();
+  const subRaw = s(opts.subcategoriaSlug);
+  const subNorm = subRaw ? slugify(subRaw) : "";
+  const catRaw = s(opts.categoriaSlug);
+  const catNorm = catRaw ? slugify(catRaw) : "";
+  const qN = s(opts.qNorm);
+  if (subNorm) {
+    sp.set("subcategoria", subNorm);
+  } else if (catNorm) {
+    sp.set("categoria", catNorm);
+  } else if (qN) {
+    sp.set("q", qN);
+  }
+  const qs = sp.toString();
+  return qs ? `/${encodeURIComponent(comuna)}?${qs}` : `/${encodeURIComponent(comuna)}`;
+}
+
+/** Ruta canónica de exploración por comuna (la página decide directorio vs activación). */
+function hrefExplorarComuna(args: {
+  comunaSlug: string;
+  subcategoriaSlug?: string;
+  categoriaSlug?: string;
+  qNorm?: string;
+}): string {
+  const comuna = slugify(s(args.comunaSlug));
+  if (!comuna) return "/";
+  return hrefListadoComunaConBusqueda(comuna, {
+    subcategoriaSlug: args.subcategoriaSlug,
+    categoriaSlug: args.categoriaSlug,
+    qNorm: args.qNorm,
+  });
+}
+
+/** Slug de URL → etiqueta legible para títulos (subcategoría / categoría en query). */
+function prettySlugWordsParaTituloSimilares(raw: string): string {
+  const v = slugify(s(raw));
+  if (!v) return "";
+  return v
+    .replace(/[-_]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+/**
+ * Término visible del visitante: `q` primero; si no, label desde `subcategoria` o `categoria` en la URL.
+ * La taxonomía oficial del ítem no entra aquí (solo filtros / metadata).
+ */
+function terminoNavegacionVisibleSimilares(
+  sp: Record<string, string | string[] | undefined>
+): string {
+  const q = s(Array.isArray(sp.q) ? sp.q[0] : sp.q).trim();
+  if (q) return q;
+  const sub = s(Array.isArray(sp.subcategoria) ? sp.subcategoria[0] : sp.subcategoria).trim();
+  if (sub) return prettySlugWordsParaTituloSimilares(sub);
+  const cat = s(Array.isArray(sp.categoria) ? sp.categoria[0] : sp.categoria).trim();
+  if (cat) return prettySlugWordsParaTituloSimilares(cat);
+  return "";
+}
+
+/** Plural suave para titulares tipo "Otras … en {comuna}" (una palabra; frases se dejan en minúsculas). */
+function pluralRubroTituloSimilares(texto: string): string {
+  const raw = texto.trim();
+  if (!raw) return "";
+  const partes = raw.split(/\s+/).filter(Boolean);
+  if (partes.length !== 1) return raw.toLowerCase();
+  const t = partes[0].toLowerCase();
+  if (t.endsWith("s") || t.endsWith("x")) return t;
+  if (t.endsWith("ía")) return `${t.slice(0, -2)}ías`;
+  if (t.endsWith("í")) return `${t.slice(0, -1)}is`;
+  if (/[aeiouáéíóú]$/.test(t)) return `${t}s`;
+  return `${t}es`;
+}
+
+type SimilarFichaItem = import("@/lib/getSimilaresFicha").SimilarFichaItem;
+
 async function getSimilaresFichaUI(current: Emprendedor): Promise<SimilarFichaItem[]> {
-  return await getSimilaresFicha({ current, limit: 8 });
+  const subSlugs = arr(
+    (current as { subcategorias_slugs_arr?: unknown }).subcategorias_slugs_arr
+  );
+  const subPrincipalSlug =
+    s((current as { subcategoria_principal_slug?: unknown }).subcategoria_principal_slug) ||
+    s(subSlugs[0]) ||
+    s(arr((current as { subcategorias_slugs?: unknown }).subcategorias_slugs)[0]);
+
+  return await getSimilaresFicha({
+    current: {
+      id: current.id,
+      slug: current.slug,
+      comuna_id: current.comuna_id,
+      comuna_base_id: current.comuna_base_id,
+      region_id: current.region_id,
+      categoria_id: current.categoria_id,
+      subcategoria_principal_slug: subPrincipalSlug,
+    },
+    limit: 12,
+  });
 }
 
 function buildMailUrl(email: string) {
@@ -199,7 +359,7 @@ function descripcionEsPocoUtilParaPublico(
   const t = s(text);
   if (!t) return true;
   if (
-    /\b(interno|borrador|pendiente|no publicar|uso interno|privado|test|ranking|placeholder|lorem|ipsum)\b/i.test(
+    /\b(interno|borrador|pendiente|en_revision|no publicar|uso interno|privado|test|ranking|placeholder|lorem|ipsum)\b/i.test(
       t
     )
   )
@@ -217,6 +377,19 @@ function descripcionEsPocoUtilParaPublico(
   }
   if (/^servicios\s+para\s+hogares/i.test(t) && t.length < 120) return true;
   return false;
+}
+
+/**
+ * La larga aporta texto claramente distinto a la corta (misma apertura copiada en BD → un solo bloque).
+ */
+function largaTieneContenidoMasAllaDeCorta(larga: string, cortaNorm: string): boolean {
+  const L = s(larga).replace(/\s+/g, " ").trim();
+  const c = s(cortaNorm).trim();
+  if (!L) return false;
+  if (!c) return true;
+  if (L === c) return false;
+  if (!L.startsWith(c)) return true;
+  return L.slice(c.length).trim().length >= 40;
 }
 
 function capitalizaOracion(q: string): string {
@@ -470,38 +643,6 @@ function mencionadoEnFrase(frase: string, fragment: string): boolean {
   return frag.length >= 4 && f.includes(frag);
 }
 
-function senalContactoFicha(opts: {
-  tieneWhatsapp: boolean;
-  updatedAt: string | null | undefined;
-}): { titulo: string; subtitulo?: string } | null {
-  if (opts.tieneWhatsapp) {
-    return { titulo: "Respuesta rápida por WhatsApp" };
-  }
-  const raw = s(opts.updatedAt);
-  if (!raw) return null;
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return null;
-  const days = (Date.now() - d.getTime()) / 86400000;
-  if (days <= 45) return { titulo: "Activo recientemente" };
-  return null;
-}
-
-function modalidadesTexto(list?: string[]) {
-  if (!list?.length) return "";
-
-  const map: Record<string, string> = {
-    local: "Local físico",
-    local_fisico: "Local físico",
-    domicilio: "A domicilio",
-    online: "Online",
-    presencial: "Presencial",
-    fisico: "Físico",
-    presencial_terreno: "Presencial en terreno",
-  };
-
-  return list.map((v) => map[v] || v).join(" • ");
-}
-
 function prettySubcategoriaPath(list?: string[]) {
   if (!list?.length) return "";
   return s(list[0]);
@@ -511,23 +652,6 @@ function prettyFromSlug(slug: string): string {
   const base = s(slug).replace(/[-_]+/g, " ").trim();
   if (!base) return "";
   return base.charAt(0).toUpperCase() + base.slice(1);
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "160px 1fr",
-        gap: 14,
-        fontSize: 15,
-        lineHeight: 1.55,
-      }}
-    >
-      <div style={{ fontWeight: 800, color: "#111827" }}>{label}</div>
-      <div style={{ color: "#374151" }}>{value || "-"}</div>
-    </div>
-  );
 }
 
 export async function generateStaticParams() {
@@ -542,7 +666,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const item = await getEmprendedor(slug);
 
-  if (!item) {
+  if (!item || !emprendedorFichaVisiblePublicamente(item.estado_publicacion)) {
     return {
       title: "Ficha no encontrada | Rey del Dato",
       description: "No encontramos la ficha solicitada.",
@@ -551,10 +675,20 @@ export async function generateMetadata({
 
   const comuna = s(item.comuna_nombre || item.comuna_base_nombre) || "tu comuna";
   const categoria = s(item.categoria_nombre) || "servicios";
-  const title = `${item.nombre} en ${comuna} | Rey del Dato`;
+  const nombreTituloMeta = displayTitleCaseWords(s(item.nombre));
+  const title = `${nombreTituloMeta} en ${comuna} | Rey del Dato`;
+  const fallbackMeta = `${nombreTituloMeta}. ${categoria} en ${comuna}. Contacta directo por WhatsApp y revisa su ficha.`;
+  const largaMeta = s(item.descripcion_larga || item.descripcion_libre).replace(/\s+/g, " ");
   const description =
-    s(item.descripcion_corta) ||
-    `${item.nombre}. ${categoria} en ${comuna}. Contacta directo por WhatsApp y revisa su ficha.`;
+    largaMeta.length >= 80
+      ? largaMeta.length <= 160
+        ? largaMeta
+        : `${largaMeta.slice(0, 157).trimEnd()}…`
+      : textoResumenListadoEmprendedor({
+          descripcionCorta: s(item.descripcion_corta),
+          fraseNegocio: s(item.frase_negocio),
+          fallbackLine: fallbackMeta,
+        }) || fallbackMeta;
 
   return {
     title,
@@ -569,50 +703,110 @@ export async function generateMetadata({
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
+  const sp = (await searchParams) ?? {};
   const item = await getEmprendedor(slug);
 
   if (!item) notFound();
+  if (!emprendedorFichaVisiblePublicamente(item.estado_publicacion)) notFound();
+
+  const comunaBuscadaSlug =
+    (Array.isArray(sp.comuna) ? sp.comuna[0] : sp.comuna) ||
+    (Array.isArray(sp.comunaSlug) ? sp.comunaSlug[0] : sp.comunaSlug) ||
+    "";
+  const comunaBuscadaNombre =
+    (Array.isArray(sp.comunaNombre) ? sp.comunaNombre[0] : sp.comunaNombre) ||
+    (Array.isArray(sp.comuna_name) ? sp.comuna_name[0] : sp.comuna_name) ||
+    null;
 
   const comunaNombre = item.comuna_nombre || item.comuna_base_nombre || "";
   const comunaSlug = item.comuna_slug || item.comuna_base_slug || "";
+
+  const comunaCtxSlug = s(comunaBuscadaSlug) ? slugify(s(comunaBuscadaSlug)) : "";
+  const baseSlugCrumb = s(item.comuna_base_slug) || s(item.comuna_slug) || "";
+  const baseNombreCrumb = s(item.comuna_base_nombre) || s(item.comuna_nombre) || "";
+
+  const [ctxNav, baseNav] = await Promise.all([
+    comunaCtxSlug ? getComunaDirectorioNavegable(comunaCtxSlug) : Promise.resolve(null),
+    baseSlugCrumb ? getComunaDirectorioNavegable(baseSlugCrumb) : Promise.resolve(null),
+  ]);
+
+  let comunaBuscadaRegionSlug = ctxNav?.regionSlug ?? null;
+  if (comunaCtxSlug && !comunaBuscadaRegionSlug) {
+    comunaBuscadaRegionSlug = await getRegionSlugForComunaSlug(comunaCtxSlug);
+  }
+
+  /** Con `?comuna=` se muestra esa comuna en el crumb (experiencia del usuario); si no, la base del negocio. */
+  const usarContextoEnBreadcrumb = Boolean(comunaCtxSlug);
+  const breadcrumbSlug = usarContextoEnBreadcrumb ? comunaCtxSlug : baseSlugCrumb;
+  const breadcrumbNombre =
+    usarContextoEnBreadcrumb && s(comunaBuscadaNombre)
+      ? s(comunaBuscadaNombre)
+      : usarContextoEnBreadcrumb && ctxNav?.nombre
+        ? ctxNav.nombre
+        : baseNombreCrumb;
+  const breadcrumbDirectorioNavegable = usarContextoEnBreadcrumb
+    ? ctxNav?.navegable === true
+    : baseNav?.navegable === true;
   const coberturaTipo = item.cobertura_tipo || item.nivel_cobertura || "";
   const coberturaComunas =
     item.cobertura_comunas_arr || item.comunas_cobertura_nombres_arr || [];
-  const modalidades =
+  const modalidadesRaw =
     item.modalidad_atencion ||
     item.modalidades_atencion_arr ||
     item.modalidades_atencion ||
     [];
+  const modalidadesArr: string[] = Array.isArray(modalidadesRaw)
+    ? modalidadesRaw.map((x) => String(x).trim()).filter(Boolean)
+    : modalidadesRaw != null && String(modalidadesRaw).trim()
+      ? [String(modalidadesRaw).trim()]
+      : [];
   const galeria = item.galeria_urls_arr || item.galeria_urls || [];
+  const galeriaLen = Array.isArray(galeria) ? galeria.length : 0;
+  const esFichaCompleta = fichaPublicaEsMejoradaDesdeItem(
+    item as unknown as Record<string, unknown>,
+    galeriaLen
+  );
+
+  const nombreFichaTitulo = displayTitleCaseWords(s(item.nombre));
+
   const sitioWeb = item.sitio_web || item.web || "";
 
-  const whatsappUrl = buildWhatsappUrl(item.whatsapp || "");
+  const nombreEmprendimientoRaw =
+    s((item as { nombre_emprendimiento?: unknown }).nombre_emprendimiento) ||
+    s(item.nombre) ||
+    "tu negocio";
+  const nombreEmprendimiento = displayTitleCaseWords(nombreEmprendimientoRaw);
+  const mensajeWhatsapp = `Hola, vi tu negocio "${nombreEmprendimiento}" en Rey del Dato y quería hacer una consulta. ¿Me puedes ayudar?`;
+  const whatsappUrl =
+    buildWhatsappUrlWithPrefill(item.whatsapp || "", mensajeWhatsapp) ||
+    buildWhatsappUrl(item.whatsapp || "");
   const instagramUrl = buildInstagramUrl(item.instagram || "");
   const webUrl = buildWebsiteUrl(sitioWeb);
-  const phoneUrl = buildPhoneUrl(item.whatsapp || "");
-
-  const senalContacto = senalContactoFicha({
-    tieneWhatsapp: Boolean(whatsappUrl),
-    updatedAt: item.updated_at,
-  });
-
-  const whatsappText = formatWhatsappDisplay(item.whatsapp || "");
-  const instagramText = formatInstagramDisplay(item.instagram || "");
-  const webText = formatWebsiteDisplay(sitioWeb);
+  const telefonoLlamadas = s(item.telefono);
+  const telefonoUrl = telefonoLlamadas ? buildPhoneUrl(telefonoLlamadas) : "";
+  const phoneUrlLlamar =
+    telefonoUrl || (item.whatsapp ? buildPhoneUrl(item.whatsapp) : "");
+  const phoneLabelLlamar = telefonoLlamadas || formatWhatsappDisplay(item.whatsapp || "");
+  const whatsappDisplayHero = formatWhatsappDisplay(item.whatsapp || "");
+  const whatsappSecundarioFicha = publicWhatsappSecundarioParaFicha(
+    s(item.whatsapp_principal || item.whatsapp),
+    s(item.whatsapp_secundario),
+  );
+  const instagramDisplayHero = formatInstagramDisplay(item.instagram || "");
+  const webDisplayHero = formatWebsiteDisplay(sitioWeb);
+  const emailDisplayHero = "";
 
   const cobertura = coberturaTexto(coberturaTipo, coberturaComunas);
-  const modalidadesTextoFinal = modalidadesTexto(modalidades);
-  const tieneLocalFisico = modalidades.includes("local_fisico");
-
-  const frase =
-    item.descripcion_corta ||
-    `${item.categoria_nombre || "Servicio"} en ${
-      comunaNombre || "tu comuna"
-    }`;
+  const comoAtiende = comoAtiendeFlags(modalidadesArr);
+  const tieneLocalFisico = modalidadesArr.some((x) =>
+    ["local_fisico", "local", "fisico"].includes(x.toLowerCase()),
+  );
 
   const siteUrl = normalizeSiteUrl();
   const shareUrl = `${siteUrl}/emprendedor/${item.slug}`;
@@ -692,47 +886,66 @@ export default async function Page({
     comuna: comunaVisible,
     cobertura: coberturaVisible,
   });
-  const lineaClave = subtituloClave(subtituloVisible);
 
-  const descripcionRaw =
-    limpiarTexto(item.descripcion_libre || null) ||
+  const ctxDesc: DescCheckCtx = {
+    categoriaNombre: s(item.categoria_nombre),
+    comunaNombre,
+  };
+
+  const descripcionLargaFuenteRaw =
     limpiarTexto(item.descripcion_larga || null) ||
-    limpiarTexto(item.frase_negocio || null) ||
-    null;
-
-  const descripcionLimpiaTecnica =
-    descripcionRaw && /\b(ranking|score|rpc|algolia)\b/i.test(descripcionRaw)
+    limpiarTexto(item.descripcion_libre || null);
+  const descripcionLargaFuente =
+    descripcionLargaFuenteRaw &&
+    /\b(ranking|score|rpc|algolia)\b/i.test(descripcionLargaFuenteRaw)
       ? null
-      : descripcionRaw;
+      : descripcionLargaFuenteRaw;
 
-  const descripcionFinal =
-    descripcionLimpiaTecnica ||
-    buildDescripcionFallback({
-      categoria: categoriaVisible,
-      comuna: comunaVisible,
-      cobertura: coberturaVisible,
-      whatsapp: item.whatsapp,
-    });
+  const descripcionLargaUtilBase =
+    descripcionLargaFuente &&
+    !descripcionEsPocoUtilParaPublico(descripcionLargaFuente, ctxDesc, "larga")
+      ? descripcionLargaFuente
+      : null;
 
-  const estadoVacioVisible = buildEstadoVacioFicha();
+  /** Corta pública = frase_negocio (canónico) o descripcion_corta; una sola frase 40–120. */
+  const textoCortaFuente = s(item.frase_negocio) || s(item.descripcion_corta);
+  const textoCortaNorm = normalizeDescripcionCorta(textoCortaFuente);
+  const cortaCumpleProducto =
+    textoCortaNorm.length >= DESCRIPCION_CORTA_MIN &&
+    textoCortaNorm.length <= DESCRIPCION_CORTA_MAX &&
+    !descripcionEsPocoUtilParaPublico(textoCortaNorm, ctxDesc, "corta");
 
-  const subtituloHero = (() => {
-    const ctx = {
-      categoriaNombre: s(item.categoria_nombre),
-      comunaNombre,
-    };
-    const corta = s(item.descripcion_corta);
-    if (
-      corta &&
-      !descripcionEsPocoUtilParaPublico(corta, ctx, "corta")
-    ) {
-      return corta;
-    }
-    return subtituloVisible;
-  })();
+  /** Panel “Perfil completo”: solo la corta; sin subtítulo de rubro ni texto largo. */
+  const descripcionCortaPanel = cortaCumpleProducto
+    ? clampDescripcionCortaFichaDisplay(textoCortaNorm)
+    : "";
 
-  // Auditoría similares (consola): [similares-page] current → slug, categoria_id, comuna_id, cobertura_tipo;
-  // luego [similares-page] similares → count; en helper → [getSimilaresFicha] event="resumen".
+  /** Bajo galería: solo larga definida y distinta de la corta (evita duplicar el mismo párrafo). */
+  const descripcionLargaUtil =
+    descripcionLargaUtilBase &&
+    (!cortaCumpleProducto ||
+      largaTieneContenidoMasAllaDeCorta(descripcionLargaUtilBase, textoCortaNorm))
+      ? descripcionLargaUtilBase
+      : null;
+
+  const descripcionCuerpoFicha = descripcionLargaUtil
+    ? capitalizeFirstLetterForDisplay(descripcionLargaUtil)
+    : null;
+
+  /** Subtítulo en ficha básica / JSON-LD: corta válida o línea rubro+comuna. */
+  const lineaCortaPublica = clampDescripcionCortaFichaDisplay(
+    (cortaCumpleProducto ? textoCortaNorm : "") || subtituloVisible,
+  );
+  const subtituloHero = lineaCortaPublica;
+
+  const comunaLabelSimilares =
+    s(comunaBuscadaNombre) ||
+    (ctxNav?.nombre ? s(ctxNav.nombre) : "") ||
+    s(breadcrumbNombre) ||
+    s(comunaNombre) ||
+    "";
+
+  // Auditoría similares (consola): [similares-page] current → …; luego count; en helper → [getSimilaresFicha] event="resumen".
   const logSimilaresPage =
     process.env.NODE_ENV === "development" ||
     process.env.LOG_SIMILARES_FICHA === "1";
@@ -748,54 +961,134 @@ export default async function Page({
     });
   }
 
-  const similares = await getSimilaresFichaUI(item);
+  const similaresRaw = await getSimilaresFichaUI(item);
+  const similares = filtrarSimilaresSinRuido(similaresRaw).slice(0, 4);
 
   if (logSimilaresPage) {
     console.log("[similares-page] similares", { count: similares.length });
   }
 
-  const estadoFicha = calcularEstadoFicha({
-    nombre_emprendimiento: (item.nombre_emprendimiento ?? item.nombre ?? "") as string,
-    whatsapp_principal: (item.whatsapp_principal ?? item.whatsapp ?? "") as string,
-    frase_negocio: (item.frase_negocio ?? item.descripcion_corta ?? "") as string,
-    comuna_id: Number(item.comuna_id || item.comuna_base_id || 0) || 0,
-    cobertura_tipo: (item.cobertura_tipo ?? item.nivel_cobertura ?? "") as string,
-    descripcion_libre: (item.descripcion_libre ??
-      item.descripcion_larga ??
-      item.descripcion_libre ??
-      "") as string,
-    foto_principal_url: (item.foto_principal_url ?? "") as string,
-    galeria_count: Array.isArray(galeria) ? galeria.length : 0,
-    instagram: (item.instagram ?? "") as string,
-    sitio_web: (item.sitio_web ?? item.web ?? "") as string,
+  const ubicacionUnaLinea = formatComunaRegion({
+    comunaNombre: comunaNombre || item.comuna_base_nombre,
+    regionNombre: item.region_nombre,
+    regionSlug: item.region_slug,
   });
-  const isMejoradaProfile = estadoFicha === "mejorada";
-  const isBasicProfile = !isMejoradaProfile;
-  const activarFichaHref = activarFichaWhatsappHref(item.slug);
-  const activarFichaIsWhatsapp = activarFichaHref.startsWith("https://wa.me/");
+  const fotoPrincipalOk = Boolean(s(item.foto_principal_url));
+  const atiendeEnLinea =
+    isInformado(coberturaDisplay) && coberturaDisplay.length > 0
+      ? `Cobertura en: ${coberturaDisplay}`
+      : "";
+
+  const lineaRubro =
+    subcatsForList.length > 0
+      ? subcatsForList.slice(0, 5).join(" · ")
+      : etiquetaCategoriaVisible || categoriaVisible;
+
+  /** Misma línea que `EmprendedorSearchCard` (categoría · subcategoría). */
+  const lineaTaxonomiaFichaHero = (() => {
+    const tax = {
+      categoriaNombre: s(item.categoria_nombre),
+      subcategoriasNombres: subcategorias.length ? subcategorias : undefined,
+      subcategoriasSlugs: subcategoriasSlugsFinal.length
+        ? subcategoriasSlugsFinal
+        : undefined,
+    };
+    const linea = getLineaTaxonomiaCard(tax).trim();
+    if (linea) return linea;
+    return getCategoriaCompacta(tax).trim();
+  })();
+
+  const localesFichaSorted = sortLocalesFichaPrincipalPrimero(
+    Array.isArray(item.locales) ? item.locales : []
+  );
+  const direccionParaLocalFisico =
+    direccionCallePrincipalDesdeLocales(localesFichaSorted);
+  const lineaChecklistLoc = lineaChecklistDireccionLocales(localesFichaSorted);
+
+  const perfilIncluyeLineas = esFichaCompleta
+    ? (() => {
+        const base = perfilCompletoIncluyeLineas({
+          disponibleEnComuna: Boolean(s(ubicacionUnaLinea)),
+          flags: comoAtiende,
+          tieneWhatsapp: Boolean(whatsappUrl),
+        });
+        return lineaChecklistLoc ? [...base, lineaChecklistLoc] : base;
+      })()
+    : [];
+
+  const emailUrl = "";
+
+  const regionesCoberturaSlugsFicha =
+    arr(item.regiones_cobertura_slugs_arr).length > 0
+      ? arr(item.regiones_cobertura_slugs_arr)
+      : arr(item.cobertura_regiones_slugs_arr);
+
+  const comunasCoberturaSlugsFicha = arr(item.cobertura_comunas_slugs_arr);
+
+  const bloqueUbicacion = getBloqueUbicacionFicha({
+    comunaBuscadaSlug,
+    comunaBuscadaNombre,
+    comunaBuscadaRegionSlug,
+    comunaBaseSlug: item.comuna_base_slug || item.comuna_slug || null,
+    comunaBaseNombre: item.comuna_base_nombre || item.comuna_nombre || null,
+    regionNombre: item.region_nombre || null,
+    regionSlug: item.region_slug || null,
+    coberturaTipo: item.cobertura_tipo || item.nivel_cobertura || null,
+    comunasCobertura: item.cobertura_comunas_arr || item.comunas_cobertura_nombres_arr || null,
+    comunasCoberturaSlugs: item.cobertura_comunas_slugs_arr || null,
+    regionesCoberturaSlugs: regionesCoberturaSlugsFicha.length
+      ? regionesCoberturaSlugsFicha
+      : null,
+  });
+
+  const panelMuestraBloqueUbicacion = Boolean(
+    bloqueUbicacion.lineaPin && bloqueUbicacion.lineaBase,
+  );
+  const baseNombrePanel =
+    s(item.comuna_base_nombre) || s(item.comuna_nombre) || "";
+  const partesCoberturaDisplay = coberturaDisplay
+    .split(",")
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+  const coberturaSoloRepiteBase =
+    Boolean(baseNombrePanel) &&
+    partesCoberturaDisplay.length === 1 &&
+    partesCoberturaDisplay[0] === baseNombrePanel.toLowerCase();
+
+  const atiendeEnLineaFicha =
+    bloqueUbicacion.ocultarAtiendeEnLineaGenerica ||
+    (panelMuestraBloqueUbicacion && coberturaSoloRepiteBase)
+      ? ""
+      : atiendeEnLinea;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    name: item.nombre,
-    description: isMejoradaProfile
-      ? descripcionFinal
-      : s(item.descripcion_corta) || frase,
-    image: (
-      isMejoradaProfile
-        ? [item.foto_principal_url, ...galeria]
-        : [item.foto_principal_url]
-    ).filter(Boolean),
+    name: nombreFichaTitulo,
+    description:
+      descripcionLargaUtil ||
+      lineaCortaPublica ||
+      buildDescripcionFallback({
+        categoria: categoriaVisible,
+        comuna: comunaVisible,
+        cobertura: coberturaVisible,
+        whatsapp: item.whatsapp,
+      }),
+    image: [item.foto_principal_url, ...galeria].filter(Boolean),
     url: shareUrl,
     email: undefined,
     telephone: s(item.whatsapp) || undefined,
     areaServed: comunaNombre || undefined,
     address:
-      isMejoradaProfile && tieneLocalFisico && item.direccion
+      tieneLocalFisico &&
+      (direccionParaLocalFisico ||
+        s(localesFichaSorted[0]?.comuna_nombre) ||
+        comunaNombre)
         ? {
             "@type": "PostalAddress",
-            streetAddress: item.direccion,
-            addressLocality: comunaNombre,
+            streetAddress: direccionParaLocalFisico || undefined,
+            addressLocality:
+              s(localesFichaSorted[0]?.comuna_nombre) || comunaNombre,
             addressRegion: item.region_nombre || undefined,
             addressCountry: "CL",
           }
@@ -807,9 +1100,93 @@ export default async function Page({
             addressCountry: "CL",
           }
         : undefined,
-    sameAs: isMejoradaProfile ? [instagramUrl, webUrl].filter(Boolean) : [],
+    sameAs: [instagramUrl, webUrl].filter(Boolean),
     knowsAbout: subcategorias.length ? subcategorias : undefined,
   };
+
+  const subSlugParaListado = subcategoriaSlugPrincipal
+    ? slugify(s(subcategoriaSlugPrincipal))
+    : "";
+  const categoriaSlugParaListado = slugify(
+    s(item.categoria_slug_final) || s(item.categoria_slug) || ""
+  );
+  const breadcrumbComunaHref = breadcrumbSlug
+    ? `/${encodeURIComponent(slugify(breadcrumbSlug))}`
+    : null;
+  const breadcrumbRubroHref =
+    breadcrumbSlug && subSlugParaListado
+      ? hrefListadoComunaConBusqueda(breadcrumbSlug, { subcategoriaSlug: subSlugParaListado })
+      : breadcrumbSlug && categoriaSlugParaListado
+        ? hrefListadoComunaConBusqueda(breadcrumbSlug, {
+            categoriaSlug: categoriaSlugParaListado,
+          })
+        : null;
+
+  const similaresComunaSlug = comunaCtxSlug || baseSlugCrumb;
+  /** Solo params de la URL actual (no mezclar con taxonomía del ítem ni `q`+`subcategoria`). */
+  const verMasSpSub = s(Array.isArray(sp.subcategoria) ? sp.subcategoria[0] : sp.subcategoria).trim();
+  const verMasSpCat = s(Array.isArray(sp.categoria) ? sp.categoria[0] : sp.categoria).trim();
+  const verMasSpQ = s(Array.isArray(sp.q) ? sp.q[0] : sp.q).trim();
+
+  const similaresVerMasHref = (() => {
+    if (!similaresComunaSlug) {
+      const qN = verMasSpQ ? normalizeText(verMasSpQ) : "";
+      return qN ? `/resultados?q=${encodeURIComponent(qN)}` : null;
+    }
+    const com = similaresComunaSlug;
+    if (verMasSpSub) {
+      return hrefListadoComunaConBusqueda(com, {
+        subcategoriaSlug: slugify(verMasSpSub),
+      });
+    }
+    if (verMasSpCat) {
+      return hrefListadoComunaConBusqueda(com, {
+        categoriaSlug: slugify(verMasSpCat),
+      });
+    }
+    if (verMasSpQ) {
+      return hrefListadoComunaConBusqueda(com, {
+        qNorm: normalizeText(verMasSpQ),
+      });
+    }
+    return hrefExplorarComuna({ comunaSlug: com });
+  })();
+
+  const terminoUsuarioSimilares = terminoNavegacionVisibleSimilares(sp);
+  const comunaTituloSimilares = s(comunaLabelSimilares);
+  const rubroPluralTitulo = terminoUsuarioSimilares
+    ? pluralRubroTituloSimilares(terminoUsuarioSimilares)
+    : "";
+
+  const similaresSectionTitle =
+    rubroPluralTitulo && comunaTituloSimilares
+      ? `Otras ${rubroPluralTitulo} en ${comunaTituloSimilares}`
+      : comunaTituloSimilares
+        ? `Más negocios parecidos en ${comunaTituloSimilares}`
+        : "Más negocios parecidos en tu comuna";
+
+  const similaresVerMasLabel =
+    rubroPluralTitulo && comunaTituloSimilares
+      ? `Ver más ${rubroPluralTitulo} en ${comunaTituloSimilares}`
+      : comunaTituloSimilares
+        ? `Ver más en ${comunaTituloSimilares}`
+        : "Ver más opciones";
+
+  const similaresSlugs = similares.map((x) => x.slug);
+  const comunaBaseIdForDebug = item.comuna_base_id ?? item.comuna_id ?? null;
+  if (
+    process.env.NODE_ENV === "development" ||
+    process.env.DEBUG_SIMILARES_FICHA === "1"
+  ) {
+    console.log("[SIMILARES_INSTR] page_before_return", {
+      slug: item.slug,
+      esFichaCompleta,
+      comunaBuscadaSlug: s(comunaBuscadaSlug) || null,
+      comunaBaseId: comunaBaseIdForDebug,
+      similaresLen: similares.length,
+      similaresSlugs,
+    });
+  }
 
   return (
     <main style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 20px 80px" }}>
@@ -839,988 +1216,232 @@ export default async function Page({
         >
           ← Volver
         </BackLink>
-        <ShareFichaButton
-          slug={item.slug}
-          shareUrl={shareUrl}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            padding: "8px 14px",
-            borderRadius: 10,
-            border: "2px solid #e2e8f0",
-            fontWeight: 700,
-            fontSize: 13,
-            textDecoration: "none",
-            color: "#334155",
-            background: "#fff",
-          }}
-        />
       </div>
 
       <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 20 }}>
         <a href="/" style={{ color: "#2563eb", textDecoration: "none" }}>
           Inicio
         </a>
-        {comunaSlug ? (
+        {breadcrumbSlug && breadcrumbComunaHref ? (
           <>
             {" / "}
             <a
-              href={`/${comunaSlug}`}
+              href={breadcrumbComunaHref}
               style={{ color: "#2563eb", textDecoration: "none" }}
+              title={
+                breadcrumbDirectorioNavegable
+                  ? undefined
+                  : "Esta comuna aún se está activando; te llevamos a cómo abrirla."
+              }
             >
-              {comunaNombre || "Comuna"}
+              {breadcrumbNombre || "Comuna"}
             </a>
           </>
-        ) : comunaNombre ? (
+        ) : breadcrumbNombre ? (
           <>
             {" / "}
-            <span>{comunaNombre}</span>
+            <span>{breadcrumbNombre}</span>
           </>
         ) : null}
-        {(subcategoriaSlugPrincipal && comunaSlug) || s(item.categoria_nombre) ? (
+        {(subcategoriaSlugPrincipal && breadcrumbSlug) || s(item.categoria_nombre) ? (
           <>
             {" / "}
-            {subcategoriaSlugPrincipal && comunaSlug ? (
-              <a
-                href={`/${comunaSlug}/${subcategoriaSlugPrincipal}`}
-                style={{ color: "#2563eb", textDecoration: "none" }}
-              >
+            {breadcrumbRubroHref ? (
+              <a href={breadcrumbRubroHref} style={{ color: "#2563eb", textDecoration: "none" }}>
                 {subcategorias[0] || item.categoria_nombre}
               </a>
             ) : (
-              <span>{item.categoria_nombre}</span>
+              <span style={{ color: "#64748b" }}>
+                {subcategorias[0] || item.categoria_nombre}
+              </span>
             )}
           </>
         ) : null}
         {" / "}
-        {item.nombre}
+        {nombreFichaTitulo}
       </div>
 
-      {isBasicProfile ? (
-        <section
-          style={{
-            maxWidth: 720,
-            margin: "0 auto 40px",
-          }}
-        >
-          <div
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 20,
-              background: "#fff",
-              overflow: "hidden",
-            }}
-          >
-            {item.foto_principal_url ? (
-              <div style={{ aspectRatio: "16/9", background: "#f1f5f9" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.foto_principal_url}
-                  alt={item.nombre}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                />
-              </div>
-            ) : (
+      {!esFichaCompleta ? (
+        <>
+          <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.12fr)_minmax(300px,400px)] gap-8 mb-10 items-start">
+            <div className="flex min-w-0 flex-col gap-3">
               <div
-                style={{
-                  aspectRatio: "16/9",
-                  background: "#f1f5f9",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 36,
-                  color: "#94a3b8",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
+                className="rounded-2xl border border-slate-200 bg-slate-100 overflow-hidden min-h-[320px] xl:min-h-[420px]"
               >
-                🏪
-                <div style={{ marginTop: 16, fontSize: 14, color: "#475569" }}>
-                  Este emprendimiento aún no ha subido fotos
-                </div>
-              </div>
-            )}
-
-            <div style={{ padding: 24 }}>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  marginBottom: 14,
-                }}
-              >
-                <div
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: 10,
-                    background: "#f8fafc",
-                    border: "1px solid #cbd5e1",
-                    fontSize: 13,
-                    fontWeight: 800,
-                    color: "#475569",
-                  }}
-                >
-                  Ficha básica
-                </div>
-                {(() => {
-                  const badge = coberturaBadge(coberturaTipo);
-                  return (
-                    <div
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: 10,
-                        background: "#f3f4f6",
-                        border: "1px solid #e5e7eb",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: "#374151",
-                      }}
-                    >
-                      {badge.emoji} {badge.label}
-                    </div>
-                  );
-                })()}
+                {fotoPrincipalOk ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={s(item.foto_principal_url)}
+                    alt=""
+                    className="w-full h-full min-h-[320px] xl:min-h-[420px] object-cover"
+                  />
+                ) : (
+                  <div className="h-full min-h-[320px] xl:min-h-[420px] flex flex-col items-center justify-center px-6 text-center bg-slate-100">
+                    <p className="text-sm font-extrabold tracking-wide text-slate-600">
+                      {getPlaceholderSinFotoTitulo()}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500 max-w-sm">
+                      {getPlaceholderSinFotoSub()}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              <h1
-                style={{
-                  fontSize: 32,
-                  lineHeight: 1.1,
-                  margin: "0 0 10px 0",
-                  fontWeight: 900,
-                  color: "#111827",
-                }}
-              >
-                {item.nombre}
-              </h1>
-
-              {lineaClave ? (
-                <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6, color: "#0f172a" }}>
-                  {lineaClave}
+              {Array.isArray(galeria) && galeria.length > 0 ? (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="m-0 mb-3 text-[12px] font-extrabold uppercase tracking-wide text-slate-600">
+                    Galería
+                  </p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    {galeria.slice(0, 8).map((u, idx) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        key={`${idx}-${u.slice(0, 40)}`}
+                        src={u}
+                        alt=""
+                        className="aspect-square w-full rounded-xl object-cover border border-slate-200 bg-slate-100"
+                        loading="lazy"
+                      />
+                    ))}
+                  </div>
                 </div>
               ) : null}
-
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 999,
-                    border: "1px solid #bbf7d0",
-                    background: "#ecfdf5",
-                    fontSize: 13,
-                    fontWeight: 800,
-                    color: "#166534",
-                  }}
-                >
-                  🟢 Disponible hoy
-                </span>
-                {comunaVisible ? (
-                  <span
-                    style={{
-                      padding: "6px 10px",
-                      borderRadius: 999,
-                      border: "1px solid #e2e8f0",
-                      background: "#fff",
-                      fontSize: 13,
-                      fontWeight: 800,
-                      color: "#0f172a",
-                    }}
-                  >
-                    📍 {comunaVisible}
-                  </span>
-                ) : null}
-                {categoriaVisible ? (
-                  <span
-                    style={{
-                      padding: "6px 10px",
-                      borderRadius: 999,
-                      border: "1px solid #e2e8f0",
-                      background: "#fff",
-                      fontSize: 13,
-                      fontWeight: 800,
-                      color: "#0f172a",
-                    }}
-                  >
-                    🔧 {categoriaVisible}
-                  </span>
-                ) : null}
-              </div>
-
-              <p
-                style={{
-                  fontSize: 18,
-                  lineHeight: 1.5,
-                  color: "#0f172a",
-                  marginTop: 10,
-                  fontWeight: 600,
-                }}
-              >
-                {subtituloHero}
-              </p>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 16,
-                  padding: 16,
-                  background: "#f8fafc",
-                  marginBottom: 20,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: "#0f172a",
-                    marginBottom: 6,
-                  }}
-                >
-                  Más información
-                </div>
-                <p
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    color: "#475569",
-                    margin: 0,
-                  }}
-                >
-                  {estadoVacioVisible}
-                </p>
-              </div>
-
-              <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
-                {comunaNombre ? (
-                  <InfoRow label="Comuna base" value={comunaNombre} />
-                ) : null}
-                {isInformado(coberturaDisplay) ? (
-                  <InfoRow label="Cobertura" value={coberturaDisplay} />
-                ) : null}
-                {isInformado(modalidadesTextoFinal) ? (
-                  <InfoRow label="Atención" value={modalidadesTextoFinal} />
-                ) : null}
-                {isInformado(subcategoriaPrincipalTitulo) ? (
-                  <InfoRow label="Categoría" value={subcategoriaPrincipalTitulo} />
-                ) : null}
-              </div>
-
-              <div
-                style={{
-                  marginBottom: 10,
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid #e2e8f0",
-                  background: "#fff",
-                }}
-                aria-label="Estado de ficha"
-              >
-                <div style={{ fontSize: 13, fontWeight: 900, color: "#0f172a" }}>
-                  Tu ficha básica ya está publicada
-                </div>
-                <div
-                  style={{
-                    marginTop: 4,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: "#64748b",
-                    lineHeight: 1.4,
-                  }}
-                >
-                  Completar tu ficha aumenta contactos
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gap: 10 }}>
-                {whatsappUrl ? (
-                  <div>
-                    <TrackedActionButton
-                      slug={item.slug}
-                      type="whatsapp"
-                      href={whatsappUrl}
-                      label="Cotizar por WhatsApp"
-                      bg="#16a34a"
-                    />
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 12,
-                        color: "#64748b",
-                        textAlign: "center",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Sin intermediarios
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "#16a34a",
-                        marginTop: 6,
-                        textAlign: "center",
-                        fontWeight: 700,
-                      }}
-                    >
-                      Respuesta rápida
-                    </div>
-                  </div>
-                ) : null}
-              </div>
             </div>
+
+            <aside className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6 xl:p-7">
+              {ubicacionUnaLinea ? (
+                <p className="text-base font-semibold text-slate-700 mb-3">
+                  {ubicacionUnaLinea}
+                </p>
+              ) : null}
+              <div className="inline-flex mb-4 px-3 py-1.5 rounded-lg bg-slate-200/80 border border-slate-300 text-xs font-bold text-slate-700">
+                Información básica
+              </div>
+              <h1 className="text-3xl xl:text-4xl font-black text-slate-900 leading-tight m-0 mb-3">
+                {nombreFichaTitulo}
+              </h1>
+              {isInformado(subtituloHero) ? (
+                <p className="text-lg text-slate-600 font-medium m-0 mb-4 leading-snug">
+                  {subtituloHero}
+                </p>
+              ) : null}
+              {isInformado(lineaRubro) ? (
+                <p className="text-sm font-semibold text-slate-500 m-0 mb-6">
+                  {lineaRubro}
+                </p>
+              ) : null}
+              {whatsappUrl ? (
+                <TrackedActionButton
+                  slug={item.slug}
+                  type="whatsapp"
+                  href={whatsappUrl}
+                  label="Contactar por WhatsApp"
+                  bg="#16a34a"
+                  emphasis="primary"
+                  emprendedorNombre={nombreFichaTitulo}
+                />
+              ) : null}
+            </aside>
+          </section>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 mb-10">
+            <p className="m-0 text-slate-600 text-base leading-relaxed max-w-2xl">
+              {TEXTO_FICHA_BASICA_AVISO}
+            </p>
           </div>
-        </section>
+        </>
       ) : (
         <>
-          <section
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1.2fr 380px",
-              gap: 20,
-              marginBottom: 30,
-              alignItems: "start",
-            }}
-          >
-            <PortalGallery
-              fotoPrincipal={item.foto_principal_url || ""}
-              galeria={galeria}
-              nombreNegocio={item.nombre}
-              subcategoriaLabel={subcategoriaPrincipalTitulo}
-              categoriaLabel={s(item.categoria_nombre)}
-              comunaLabel={comunaNombre}
-            />
-
-            <aside
-              style={{
-                border: "1px solid #bbf7d0",
-                borderRadius: 24,
-                padding: 24,
-                background: "#fff",
-                boxShadow: "0 0 0 3px rgba(220,252,231,0.65)",
-              }}
-            >
-              <ShareFichaButton
-                slug={item.slug}
-                shareUrl={shareUrl}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 16,
-                  padding: "10px 18px",
-                  borderRadius: 12,
-                  border: "2px solid #e2e8f0",
-                  fontWeight: 700,
-                  fontSize: 14,
-                  textDecoration: "none",
-                  color: "#334155",
-                  background: "#fff",
-                }}
-              />
-              {(() => {
-                const loc = [comunaNombre, s(item.region_nombre)]
-                  .filter(Boolean)
-                  .join(" • ");
-                return loc ? (
-                  <div
-                    style={{
-                      fontWeight: 900,
-                      color: "#2563eb",
-                      marginBottom: 8,
-                    }}
-                  >
-                    📍 {loc}
-                  </div>
-                ) : null;
-              })()}
-
-              <div
-                style={{
-                  display: "inline-flex",
-                  marginBottom: 14,
-                  padding: "6px 12px",
-                  borderRadius: 10,
-                  background: "#dcfce7",
-                  border: "1px solid #86efac",
-                  fontSize: 13,
-                  fontWeight: 800,
-                  color: "#166534",
-                }}
-              >
-                Ficha completa
-              </div>
-
-              {(() => {
-                const badge = coberturaBadge(coberturaTipo);
-                return (
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      marginBottom: 14,
-                      marginLeft: 8,
-                      padding: "6px 12px",
-                      borderRadius: 10,
-                      background: "#eff6ff",
-                      border: "1px solid #bfdbfe",
-                      fontSize: 13,
-                      fontWeight: 800,
-                      color: "#1e40af",
-                    }}
-                  >
-                    {badge.emoji} {badge.label}
-                  </div>
-                );
-              })()}
-
-              <h1
-                style={{
-                  fontSize: 42,
-                  lineHeight: 1,
-                  margin: "0 0 10px 0",
-                  fontWeight: 900,
-                  color: "#111827",
-                }}
-              >
-                {item.nombre}
-              </h1>
-
-              {lineaClave ? (
-                <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6, color: "#0f172a" }}>
-                  {lineaClave}
-                </div>
-              ) : null}
-
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 999,
-                    border: "1px solid #bbf7d0",
-                    background: "#ecfdf5",
-                    fontSize: 13,
-                    fontWeight: 800,
-                    color: "#166534",
-                  }}
-                >
-                  🟢 Disponible hoy
-                </span>
-                {comunaVisible ? (
-                  <span
-                    style={{
-                      padding: "6px 10px",
-                      borderRadius: 999,
-                      border: "1px solid #e2e8f0",
-                      background: "#fff",
-                      fontSize: 13,
-                      fontWeight: 800,
-                      color: "#0f172a",
-                    }}
-                  >
-                    📍 {comunaVisible}
-                  </span>
-                ) : null}
-                {categoriaVisible ? (
-                  <span
-                    style={{
-                      padding: "6px 10px",
-                      borderRadius: 999,
-                      border: "1px solid #e2e8f0",
-                      background: "#fff",
-                      fontSize: 13,
-                      fontWeight: 800,
-                      color: "#0f172a",
-                    }}
-                  >
-                    🔧 {categoriaVisible}
-                  </span>
-                ) : null}
-              </div>
-
-              {isInformado(etiquetaCategoriaVisible) ? (
-                <div
-                  style={{
-                    display: "inline-block",
-                    marginBottom: 12,
-                    padding: "8px 14px",
-                    borderRadius: 999,
-                    background: "#f1f5f9",
-                    border: "1px solid #cbd5e1",
-                    fontSize: 14,
-                    fontWeight: 800,
-                    color: "#334155",
-                    letterSpacing: "0.01em",
-                  }}
-                >
-                  {etiquetaCategoriaVisible}
-                </div>
-              ) : null}
-
-              <p
-                style={{
-                  fontSize: 18,
-                  lineHeight: 1.5,
-                  color: "#0f172a",
-                  marginTop: 10,
-                  fontWeight: 600,
-                }}
-              >
-                {subtituloHero}
-              </p>
-
-              {isInformado(comunaNombre) ? (
-                <p
-                  style={{
-                    margin: "0 0 14px 0",
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: "#0369a1",
-                    lineHeight: 1.45,
-                  }}
-                >
-                  Disponible en {comunaNombre}
-                </p>
-              ) : null}
-
-              {subcatsForList.length > 0 ? (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    marginBottom: 14,
-                  }}
-                >
-                  {subcatsForList.map((sub, i) => {
-                    const slugSub = subcategoriasSlugsFinal[i] || "";
-                    return (
-                      <a
-                        key={`${sub}-${i}`}
-                        href={
-                          slugSub
-                            ? `/buscar?subcategoria=${encodeURIComponent(slugSub)}`
-                            : "#"
-                        }
-                        style={{
-                          background: "#eff6ff",
-                          color: "#1d4ed8",
-                          padding: "6px 10px",
-                          borderRadius: 8,
-                          fontSize: 13,
-                          fontWeight: 700,
-                          textDecoration: "none",
-                        }}
-                      >
-                        {sub}
-                      </a>
-                    );
-                  })}
-                </div>
-              ) : null}
-
-              {item.mostrar_responsable && isInformado(item.responsable_nombre) ? (
-                <p
-                  style={{
-                    fontSize: 14,
-                    margin: "0 0 12px 0",
-                    color: "#374151",
-                  }}
-                >
-                  <strong>Responsable:</strong> {s(item.responsable_nombre)}
-                </p>
-              ) : null}
-
-              {isInformado(modalidadesTextoFinal) ? (
-                <p
-                  style={{
-                    fontSize: 14,
-                    margin: "0 0 8px 0",
-                    color: "#374151",
-                  }}
-                >
-                  <strong>Forma de atención:</strong> {modalidadesTextoFinal}
-                </p>
-              ) : null}
-
-              {isInformado(coberturaDisplay) &&
-              !mencionadoEnFrase(subtituloHero, coberturaDisplay) ? (
-                <p
-                  style={{
-                    fontSize: 14,
-                    margin: "0 0 8px 0",
-                    color: "#374151",
-                  }}
-                >
-                  <strong>Cobertura:</strong> {coberturaDisplay}
-                </p>
-              ) : null}
-
-              {isInformado(subcategoriaPrincipalTitulo) &&
-              !mencionadoEnFrase(
-                subtituloHero,
-                subcategoriaPrincipalTitulo
-              ) ? (
-                <p
-                  style={{
-                    fontSize: 14,
-                    margin: "0 0 8px 0",
-                    color: "#374151",
-                  }}
-                >
-                  <strong>Categoría:</strong> {subcategoriaPrincipalTitulo}
-                </p>
-              ) : null}
-
-              {tieneLocalFisico && item.direccion ? (
-                <p
-                  style={{
-                    fontSize: 14,
-                    margin: "0 0 8px 0",
-                    color: "#374151",
-                  }}
-                >
-                  <strong>Dirección:</strong> {item.direccion}
-                </p>
-              ) : null}
-            </aside>
-          </section>
-
-          <section
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 320px",
-              gap: 24,
-              alignItems: "start",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 20,
-                  padding: 22,
-                  marginBottom: 20,
-                  background: "#fff",
-                }}
-              >
-                <h2
-                  style={{
-                    margin: "0 0 12px 0",
-                    fontSize: 22,
-                    fontWeight: 900,
-                    color: "#111827",
-                  }}
-                >
-                  Descripción
-                </h2>
-
-                <p
-                  style={{
-                    marginTop: 10,
-                    fontSize: 15,
-                    lineHeight: 1.65,
-                    color: "#334155",
-                  }}
-                >
-                  {descripcionFinal}
-                </p>
-              </div>
-
-              {tieneLocalFisico && item.direccion ? (
-                <section
-                  style={{
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 20,
-                    padding: 22,
-                    marginBottom: 20,
-                    background: "#fff",
-                  }}
-                >
-                  <h2
-                    style={{
-                      margin: "0 0 8px 0",
-                      fontSize: 22,
-                      fontWeight: 900,
-                      color: "#111827",
-                    }}
-                  >
-                    Ubicación
+          <FichaHero
+            emprendedorId={s(item.id)}
+            comunaSlug={comunaSlug ? s(comunaSlug) : null}
+            slug={item.slug}
+            fotoPrincipal={item.foto_principal_url || ""}
+            galeria={galeria}
+            bloqueBajoGaleria={
+              descripcionCuerpoFicha ? (
+                <div className="rounded-2xl border border-slate-200/90 bg-white p-5 md:p-6 shadow-sm ring-1 ring-slate-100">
+                  <h2 className="m-0 mb-3 text-lg font-black text-slate-900 tracking-tight">
+                    Descripción
                   </h2>
-                  <p
-                    style={{
-                      fontSize: 14,
-                      color: "#374151",
-                      margin: "0 0 12px 0",
-                    }}
-                  >
-                    {item.direccion}
-                    {comunaNombre ? `, ${comunaNombre}` : ""}
-                    {item.region_nombre ? `, ${item.region_nombre}` : ""}
+                  <p className="m-0 max-w-prose text-[15px] md:text-[16px] leading-relaxed text-slate-700">
+                    {descripcionCuerpoFicha}
                   </p>
-                  <iframe
-                    title="Mapa de ubicación"
-                    width="100%"
-                    height={280}
-                    style={{
-                      border: 0,
-                      borderRadius: 16,
-                      display: "block",
-                    }}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    src={`https://www.google.com/maps?q=${encodeURIComponent(
-                      `${item.direccion},${comunaNombre || ""},Chile`
-                    )}&output=embed`}
-                  />
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      item.direccion
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "inline-block",
-                      marginTop: 12,
-                      padding: "10px 16px",
-                      borderRadius: 10,
-                      fontWeight: 700,
-                      fontSize: 14,
-                      textDecoration: "none",
-                      color: "#fff",
-                      background: "#2563eb",
-                    }}
-                  >
-                    Ver en Google Maps
-                  </a>
-                </section>
-              ) : null}
-            </div>
-
-            <aside
-              style={{
-                border: "1px solid #e2e8f0",
-                borderRadius: 20,
-                background: "#f8fafc",
-                padding: 20,
-                height: "fit-content",
-              }}
-            >
-              <h3
-                style={{
-                  margin: "0 0 10px 0",
-                  fontSize: 22,
-                  fontWeight: 900,
-                  color: "#0f172a",
-                }}
-              >
-                Contacto
-              </h3>
-
-              {whatsappUrl ? (
-                <>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: "#15803d",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Consulta directo por WhatsApp ahora
-                  </div>
-                  <p
-                    style={{
-                      fontSize: 14,
-                      lineHeight: 1.6,
-                      color: "#475569",
-                      marginBottom: 14,
-                    }}
-                  >
-                    Coordinación rápida según disponibilidad del emprendimiento.
-                  </p>
-                </>
-              ) : (
-                <>
-                  {senalContacto ? (
-                    <div style={{ margin: "0 0 10px 0" }}>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: 13,
-                          fontWeight: 700,
-                          color: "#15803d",
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        {senalContacto.titulo}
-                      </p>
-                      {senalContacto.subtitulo ? (
-                        <p
-                          style={{
-                            margin: "5px 0 0 0",
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: "#16a34a",
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {senalContacto.subtitulo}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                  <p
-                    style={{
-                      margin: "0 0 14px 0",
-                      fontSize: 14,
-                      lineHeight: 1.55,
-                      color: "#475569",
-                    }}
-                  >
-                    Contacta directamente a este emprendimiento usando sus
-                    canales disponibles.
-                  </p>
-                </>
-              )}
-
-              <div
-                style={{
-                  display: "grid",
-                  gap: 10,
-                  marginBottom: 16,
-                }}
-              >
-                {whatsappUrl ? (
-                  <TrackedActionButton
-                    slug={item.slug}
-                    type="whatsapp"
-                    href={whatsappUrl}
-                    label="Cotizar por WhatsApp"
-                    bg="#16a34a"
-                    emphasis="primary"
-                  />
-                ) : null}
-                {item.whatsapp && phoneUrl ? (
-                  <a
-                    href={phoneUrl}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minHeight: 40,
-                      padding: "0 12px",
-                      borderRadius: 10,
-                      border: "1px solid #e2e8f0",
-                      background: "#fafafa",
-                      color: "#64748b",
-                      fontWeight: 600,
-                      fontSize: 12,
-                      textDecoration: "none",
-                    }}
-                  >
-                    Llamar
-                  </a>
-                ) : null}
-                {item.instagram && instagramUrl ? (
-                  <TrackedActionButton
-                    slug={item.slug}
-                    type="instagram"
-                    href={instagramUrl}
-                    label="Ver Instagram"
-                    bg="#B84D7A"
-                    emphasis="muted"
-                  />
-                ) : null}
-                {webUrl ? (
-                  <TrackedActionButton
-                    slug={item.slug}
-                    type="web"
-                    href={webUrl}
-                    label="Visitar sitio web"
-                    bg="#64748b"
-                    emphasis="secondary"
-                  />
-                ) : null}
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gap: 10,
-                  paddingTop: 14,
-                  borderTop: "1px solid #e2e8f0",
-                }}
-              >
-                {whatsappText ? (
-                  <div style={contactTextStyle}>
-                    <strong>WhatsApp:</strong> {whatsappText}
-                  </div>
-                ) : null}
-
-                {instagramUrl && instagramText ? (
-                  <a
-                    href={instagramUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={contactLinkStyle}
-                  >
-                    {instagramText}
-                  </a>
-                ) : null}
-
-                {webUrl && webText ? (
-                  <a
-                    href={webUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={contactLinkStyle}
-                  >
-                    {webText}
-                  </a>
-                ) : null}
-
-              </div>
-            </aside>
-          </section>
-
-          {similares.length > 0 ? (
-            <SimilaresFichaSection items={similares} fromSlug={item.slug} />
-          ) : null}
+                </div>
+              ) : undefined
+            }
+            bloqueBajoPanel={<FichaDestacados items={perfilIncluyeLineas} />}
+            ubicacionLinea={
+              bloqueUbicacion.lineaPin ? "" : ubicacionUnaLinea
+            }
+            bloqueUbicacion={
+              bloqueUbicacion.lineaPin && bloqueUbicacion.lineaBase
+                ? {
+                    lineaPin: bloqueUbicacion.lineaPin,
+                    lineaBase: bloqueUbicacion.lineaBase,
+                    lineaAtiendeTambien: bloqueUbicacion.lineaAtiendeTambien,
+                  }
+                : null
+            }
+            nombre={item.nombre}
+            descripcionCortaPanel={descripcionCortaPanel}
+            atiendeEnLinea={atiendeEnLineaFicha}
+            comoAtiende={comoAtiende}
+            whatsappUrl={whatsappUrl}
+            whatsappDisplay={whatsappDisplayHero}
+            whatsappSecundarioUrl={whatsappSecundarioFicha.url}
+            whatsappSecundarioDisplay={whatsappSecundarioFicha.display}
+            instagramUrl={instagramUrl}
+            instagramDisplay={instagramDisplayHero}
+            webUrl={webUrl}
+            webDisplay={webDisplayHero}
+            phoneUrl={phoneUrlLlamar}
+            phoneLabel={phoneLabelLlamar}
+            emailUrl={emailUrl}
+            emailDisplay={emailDisplayHero}
+            mostrarResponsable={Boolean(item.mostrar_responsable)}
+            responsableNombre={s(item.responsable_nombre)}
+            localesFicha={
+              localesFichaSorted.length > 0
+                ? localesFichaSorted.map((l) => {
+                    const row = l as {
+                      lat?: unknown;
+                      lng?: unknown;
+                      latitude?: unknown;
+                      longitude?: unknown;
+                    };
+                    const lat = numCoord(row.lat ?? row.latitude);
+                    const lng = numCoord(row.lng ?? row.longitude);
+                    return {
+                      nombre_local: l.nombre_local,
+                      direccion: s(l.direccion),
+                      referencia: s(l.referencia),
+                      comuna_nombre: s(l.comuna_nombre),
+                      comuna_slug: s((l as { comuna_slug?: unknown }).comuna_slug) || null,
+                      es_principal: l.es_principal === true,
+                      ...(lat != null && lng != null ? { lat, lng } : {}),
+                    };
+                  })
+                : undefined
+            }
+            direccionLocal={undefined}
+            shareUrl={shareUrl}
+            lineaTaxonomia={lineaTaxonomiaFichaHero}
+            mostrarEnlacesMapas={tieneLocalFisico}
+          />
         </>
       )}
+
+      {similares.length > 0 ? (
+        <SimilaresFichaSection
+          items={similares}
+          fromSlug={item.slug}
+          title={similaresSectionTitle}
+          verMasHref={similaresVerMasHref}
+          verMasLabel={similaresVerMasLabel}
+          comunaContextoNombre={comunaLabelSimilares}
+        />
+      ) : null}
     </main>
   );
 }
-
-const contactTextStyle: CSSProperties = {
-  fontSize: 14,
-  color: "#475569",
-  lineHeight: 1.5,
-  wordBreak: "break-word",
-};
-
-const contactLinkStyle: CSSProperties = {
-  fontSize: 14,
-  color: "#334155",
-  fontWeight: 700,
-  textDecoration: "none",
-  wordBreak: "break-word",
-};

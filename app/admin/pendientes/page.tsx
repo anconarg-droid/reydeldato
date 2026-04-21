@@ -1,13 +1,35 @@
-import { loadPostulacionesPorEstado } from "@/lib/loadPostulacionesModeracion";
 import PendientesClient from "@/components/admin/PendientesClient";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { loadPostulacionesPorEstado } from "@/lib/loadPostulacionesModeracion";
+import type { PostulacionModeracionItem } from "@/lib/loadPostulacionesModeracion";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPendientesPage() {
-  const { items, error } = await loadPostulacionesPorEstado("pendiente_revision");
+  let items: PostulacionModeracionItem[] = [];
+  let loadError: string | null = null;
 
-  if (error) {
-    console.error("Error cargando postulaciones pendientes:", error.message);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    loadError =
+      "Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY. Revisá .env.local y reiniciá el servidor.";
+  } else {
+    try {
+      const supabase = getSupabaseAdmin({ supabaseUrl: url, serviceRoleKey: key });
+      const { items: loaded, error } = await loadPostulacionesPorEstado(
+        supabase,
+        "pendiente_revision"
+      );
+      if (error) {
+        loadError = error.message;
+      } else {
+        items = loaded;
+      }
+    } catch (e) {
+      loadError = e instanceof Error ? e.message : String(e);
+    }
   }
 
   return (
@@ -38,6 +60,22 @@ export default async function AdminPendientesPage() {
         actualiza el registro en emprendedores; aquí solo ves{" "}
         <code>postulaciones_emprendedores</code>.
       </p>
+
+      {loadError ? (
+        <p
+          role="alert"
+          style={{
+            color: "#b91c1c",
+            marginBottom: 24,
+            padding: 16,
+            background: "#fef2f2",
+            borderRadius: 8,
+            border: "1px solid #fecaca",
+          }}
+        >
+          No se pudo cargar la cola: {loadError}
+        </p>
+      ) : null}
 
       <PendientesClient initialPostulaciones={items} initialEstadoFilter="pendiente_revision" />
     </main>

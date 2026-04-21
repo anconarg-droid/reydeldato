@@ -20,7 +20,8 @@ export async function POST(req: Request) {
       .from("emprendedores")
       .select("id")
       .eq("slug", slug)
-      .single();
+      .eq("estado_publicacion", "publicado")
+      .maybeSingle();
 
     if (!emp) {
       return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });

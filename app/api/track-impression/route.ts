@@ -54,7 +54,8 @@ async function processImpressions(
   const { data: items, error: findError } = await supabase
     .from("emprendedores")
     .select("id, slug, impresiones_busqueda")
-    .in("slug", cleanSlugs);
+    .in("slug", cleanSlugs)
+    .eq("estado_publicacion", "publicado");
 
   if (findError || !items?.length) {
     console.error("track-impression fetch:", findError);

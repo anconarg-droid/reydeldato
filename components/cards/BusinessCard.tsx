@@ -6,11 +6,14 @@ import TrackedCardLink, {
   sendTrackedCardEvent,
   type CardViewListingSource,
 } from "@/components/search/TrackedCardLink";
+import {
+  displayCapitalizeSentenceStarts,
+  displayTitleCaseWords,
+} from "@/lib/displayTextFormat";
 
 export type BusinessCardProps = {
   name: string;
   slug: string;
-  /** Origen del listado para `card_view_click` (ver ficha desde tarjeta). */
   analyticsSource?: CardViewListingSource;
   imageUrl?: string | null;
   shortDescription?: string | null;
@@ -24,7 +27,6 @@ export type BusinessCardProps = {
   showSecondaryFichaCta?: boolean;
   secondaryFichaLabel?: string | null;
   signalText?: string | null;
-  /** Subcategoría / rubro en el modal de ficha básica; si falta, se usa subcategoriasNombres[0], categoria o signalText. */
   modalRubro?: string | null;
 };
 
@@ -33,36 +35,47 @@ function s(v: unknown): string {
   return String(v).trim();
 }
 
+// ─── Card shell ───────────────────────────────────────────────────────────────
+
 const cardStyle: CSSProperties = {
   background: "#fff",
-  border: "1px solid #e5e7eb",
-  borderRadius: 18,
+  border: "1px solid #e2e8f0",
+  borderRadius: 16,
   overflow: "hidden",
-  boxShadow: "0 4px 14px rgba(15, 23, 42, 0.05)",
+  boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
   display: "flex",
   flexDirection: "column",
   minHeight: "100%",
   position: "relative",
+  transition: "box-shadow 0.15s ease",
 };
 
-const cardStyleHighlight: CSSProperties = {
-  border: "2px solid #22c55e",
-  boxShadow: "0 12px 28px rgba(34, 197, 94, 0.15)",
-  transform: "scale(1.02)",
-  zIndex: 2,
+// Completa — borde verde prominente + sombra verde sutil
+const cardStyleComplete: CSSProperties = {
+  border: "2px solid #0f766e",
+  boxShadow: "0 4px 16px rgba(15, 118, 110, 0.12)",
 };
 
 const overlayStyle: CSSProperties = {
   position: "absolute",
   inset: 0,
   zIndex: 1,
-  borderRadius: 18,
+  borderRadius: 16,
 };
 
+// ─── Media block ──────────────────────────────────────────────────────────────
+
+// Básica: placeholder gris neutro
 const mediaStyle: CSSProperties = {
   position: "relative",
-  height: 170,
-  background: "#f3f4f6",
+  height: 168,
+  background: "#f1f5f9",
+  flexShrink: 0,
+};
+
+// Completa: placeholder verde muy suave — señal visual clara sin foto
+const mediaStyleComplete: CSSProperties = {
+  background: "#f0fdfa",
 };
 
 const imgStyle: CSSProperties = {
@@ -72,97 +85,62 @@ const imgStyle: CSSProperties = {
   display: "block",
 };
 
-const badgeStyle: CSSProperties = {
+// ─── Coverage badge ───────────────────────────────────────────────────────────
+
+const baseBadge: CSSProperties = {
   position: "absolute",
-  left: 12,
-  top: 12,
-  padding: "6px 10px",
+  left: 10,
+  top: 10,
+  padding: "5px 10px",
   borderRadius: 999,
-  background: "rgba(15, 23, 42, 0.85)",
-  color: "#fff",
-  fontSize: 12,
-  fontWeight: 900,
-  maxWidth: "75%",
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: "0.02em",
+  maxWidth: "78%",
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
+  zIndex: 2,
 };
 
 function coverageBadgeStyle(label: string): CSSProperties {
   const v = s(label).toLowerCase();
-  if (v.includes("en tu comuna")) {
-    return {
-      ...badgeStyle,
-      background: "#ecfdf5",
-      color: "#065f46",
-      border: "1px solid #a7f3d0",
-    };
-  }
   if (v.includes("de tu comuna")) {
-    return {
-      ...badgeStyle,
-      background: "#ecfdf5",
-      color: "#065f46",
-      border: "1px solid #a7f3d0",
-    };
+    return { ...baseBadge, background: "#0f766e", color: "#fff" };
   }
-  if (v.includes("atiende tu comuna")) {
-    return {
-      ...badgeStyle,
-      background: "#eff6ff",
-      color: "#1d4ed8",
-      border: "1px solid #bfdbfe",
-    };
+  if (v.includes("en tu comuna") || v.includes("atiende tu comuna")) {
+    return { ...baseBadge, background: "#eef2ff", color: "#3730a3", border: "1px solid #c7d2fe" };
   }
-  if (v.includes("regional")) {
-    return {
-      ...badgeStyle,
-      background: "#faf5ff",
-      color: "#6b21a8",
-      border: "1px solid #e9d5ff",
-    };
+  if (v.includes("regional") || v.includes("nacional")) {
+    return { ...baseBadge, background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1" };
   }
-  return {
-    ...badgeStyle,
-    background: "rgba(15, 23, 42, 0.85)",
-    color: "#fff",
-    border: "1px solid rgba(15,23,42,.3)",
-  };
+  return { ...baseBadge, background: "rgba(15, 23, 42, 0.75)", color: "#fff" };
 }
 
-const profileBadgeStyle: CSSProperties = {
-  position: "absolute",
-  right: 12,
-  top: 12,
-  padding: "6px 10px",
+// ─── "Ficha completa" badge — body, bajo el nombre ───────────────────────────
+
+const completeBadgeStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  fontSize: 11,
+  fontWeight: 700,
+  color: "#0f766e",
+  background: "#f0fdfa",
+  border: "1px solid #5eead4",
   borderRadius: 999,
-  fontSize: 12,
-  fontWeight: 900,
-  maxWidth: "70%",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
+  padding: "3px 9px",
+  width: "fit-content",
+  letterSpacing: "0.02em",
 };
 
-const profileBadgeBasicStyle: CSSProperties = {
-  ...profileBadgeStyle,
-  background: "#f8fafc",
-  color: "#475569",
-  border: "1px solid #cbd5e1",
-};
-
-const profileBadgeCompleteStyle: CSSProperties = {
-  ...profileBadgeStyle,
-  background: "#dcfce7",
-  color: "#166534",
-  border: "1px solid #86efac",
-};
+// ─── Body ─────────────────────────────────────────────────────────────────────
 
 const bodyStyle: CSSProperties = {
-  padding: 16,
+  padding: "14px 14px 12px",
   display: "flex",
   flexDirection: "column",
-  gap: 12,
+  gap: 8,
   flex: 1,
   position: "relative",
   zIndex: 2,
@@ -170,9 +148,9 @@ const bodyStyle: CSSProperties = {
 
 const titleStyle: CSSProperties = {
   margin: 0,
-  fontSize: 18,
-  lineHeight: 1.15,
-  fontWeight: 950,
+  fontSize: 17,
+  lineHeight: 1.2,
+  fontWeight: 800,
   color: "#0f172a",
   display: "-webkit-box",
   WebkitLineClamp: 2,
@@ -182,52 +160,71 @@ const titleStyle: CSSProperties = {
 
 const descStyle: CSSProperties = {
   margin: 0,
-  color: "#475569",
+  color: "#64748b",
   fontSize: 13,
-  lineHeight: 1.35,
-  whiteSpace: "nowrap",
+  lineHeight: 1.4,
+  display: "-webkit-box",
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: "vertical",
   overflow: "hidden",
-  textOverflow: "ellipsis",
 };
 
 const locationStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 5,
   fontSize: 13,
-  fontWeight: 800,
-  color: "#0f172a",
-  background: "#f1f5f9",
-  border: "1px solid #cbd5e1",
-  padding: "7px 12px",
-  borderRadius: 10,
+  fontWeight: 600,
+  color: "#1e293b",
+  background: "#f0fdfa",
+  border: "1px solid #5eead4",
+  padding: "5px 10px",
+  borderRadius: 8,
   width: "fit-content",
   maxWidth: "100%",
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
-  letterSpacing: ".01em",
 };
+
+// ─── CTAs ─────────────────────────────────────────────────────────────────────
 
 const ctaRowStyle: CSSProperties = {
   marginTop: "auto",
   display: "flex",
-  gap: 10,
-  paddingTop: 6,
+  gap: 8,
+  paddingTop: 8,
   position: "relative",
   zIndex: 3,
 };
 
 const primaryCtaStyle: CSSProperties = {
   textDecoration: "none",
-  background: "#22c55e",
+  background: "#0f766e",
   color: "#fff",
-  borderRadius: 14,
-  minHeight: 50,
+  borderRadius: 12,
+  minHeight: 46,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontWeight: 950,
-  fontSize: 15,
-  letterSpacing: ".01em",
-  boxShadow: "none",
+  fontWeight: 800,
+  fontSize: 14,
+  letterSpacing: "0.01em",
+  flex: 1,
+};
+
+const secondaryCtaStyle: CSSProperties = {
+  textDecoration: "none",
+  background: "#f8fafc",
+  color: "#334155",
+  borderRadius: 12,
+  minHeight: 46,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: 600,
+  fontSize: 13,
+  border: "1px solid #e2e8f0",
   flex: 1,
 };
 
@@ -241,25 +238,14 @@ const basicOverlayButtonStyle: CSSProperties = {
   WebkitTapHighlightColor: "transparent",
 };
 
-const secondaryCtaStyle: CSSProperties = {
-  textDecoration: "none",
-  background: "#f1f5f9",
-  color: "#0f172a",
-  borderRadius: 14,
-  minHeight: 44,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: 800,
-  fontSize: 13,
-  border: "1px solid #dbe2ea",
-  flex: 1,
-};
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function BusinessCard(props: BusinessCardProps) {
   const listingSource = props.analyticsSource ?? "search";
   const [basicModalOpen, setBasicModalOpen] = useState(false);
-  const name = s(props.name) || "Emprendimiento";
+
+  const nameRaw = s(props.name);
+  const name = nameRaw ? displayTitleCaseWords(nameRaw) : "Emprendimiento";
   const slug = s(props.slug);
   const imageUrl = s(props.imageUrl);
   const shortDescription = s(props.shortDescription);
@@ -273,12 +259,12 @@ export default function BusinessCard(props: BusinessCardProps) {
   const fichaHref = s(props.fichaHref);
   const whatsappHref = s(props.whatsappHref);
   const isComplete = props.variant === "complete";
-  const secondaryLabel =
-    s(props.secondaryFichaLabel) ||
-    (isComplete ? "Ver más detalles" : "Ver ficha");
-  const summaryText = shortDescription || subcategoria || categoria || fallbackInfo;
-  const modalRubroLine =
-    s(props.modalRubro) || subcategoria || categoria || fallbackInfo;
+
+  const summaryRaw = shortDescription || subcategoria || categoria || fallbackInfo;
+  const summaryText = summaryRaw
+    ? displayCapitalizeSentenceStarts(summaryRaw)
+    : "";
+  const modalRubroLine = s(props.modalRubro) || subcategoria || categoria || fallbackInfo;
   const showWhatsappPrimary = !!whatsappHref;
   const showSecondaryFicha = !!fichaHref && (props.showSecondaryFichaCta ?? true);
 
@@ -289,118 +275,130 @@ export default function BusinessCard(props: BusinessCardProps) {
 
   return (
     <>
-    <article
-      style={{
-        ...cardStyle,
-        ...(isComplete ? cardStyleHighlight : null),
-      }}
-      aria-label={name}
-    >
-      {fichaHref && isComplete ? (
-        <TrackedCardLink
-          slug={slug}
-          href={fichaHref}
-          type="view_ficha"
-          analyticsSource={listingSource}
-          style={overlayStyle}
-          aria-label={`Ver ficha de ${name}`}
-        >
-          {/* overlay link */}
-        </TrackedCardLink>
-      ) : fichaHref && !isComplete ? (
-        <button
-          type="button"
-          style={basicOverlayButtonStyle}
-          aria-label={`Más sobre ${name}`}
-          onClick={openBasicFichaModal}
-        />
-      ) : null}
+      <article
+        style={{
+          ...cardStyle,
+          ...(isComplete ? cardStyleComplete : null),
+        }}
+        aria-label={name}
+      >
+        {/* Overlay de navegación — sin cambios en lógica */}
+        {fichaHref && isComplete ? (
+          <TrackedCardLink
+            slug={slug}
+            href={fichaHref}
+            type="view_ficha"
+            analyticsSource={listingSource}
+            style={overlayStyle}
+            aria-label={`Ver ficha de ${name}`}
+          >
+            {/* overlay link */}
+          </TrackedCardLink>
+        ) : fichaHref && !isComplete ? (
+          <button
+            type="button"
+            style={basicOverlayButtonStyle}
+            aria-label={`Más sobre ${name}`}
+            onClick={openBasicFichaModal}
+          />
+        ) : null}
 
-      <div style={mediaStyle}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={imageUrl || "/placeholder-emprendedor.jpg"}
-          alt={name}
-          style={imgStyle}
-          loading="lazy"
-          onError={(e) => {
-            e.currentTarget.src = "/placeholder-emprendedor.jpg";
-          }}
-        />
-        {coverageBadge ? <div style={coverageBadgeStyle(coverageBadge)}>{coverageBadge}</div> : null}
-        <div style={isComplete ? profileBadgeCompleteStyle : profileBadgeBasicStyle}>
-          {isComplete ? "Ficha completa" : "Ficha básica"}
+        {/* Imagen — fondo diferenciado: gris (básica) vs verde suave (completa) */}
+        <div style={{ ...mediaStyle, ...(isComplete ? mediaStyleComplete : null) }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl || "/placeholder-emprendedor.jpg"}
+            alt={name}
+            style={imgStyle}
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = "/placeholder-emprendedor.jpg";
+            }}
+          />
+          {coverageBadge ? (
+            <div style={coverageBadgeStyle(coverageBadge)}>{coverageBadge}</div>
+          ) : null}
         </div>
-      </div>
 
-      <div style={bodyStyle}>
-        <h3 style={titleStyle} title={name}>
-          {name}
-        </h3>
+        {/* Body: nombre → badge completa → descripción → ubicación → CTAs */}
+        <div style={bodyStyle}>
 
-        {locationLabel ? (
-          <div style={locationStyle} title={locationLabel}>
-            {locationLabel}
-          </div>
-        ) : null}
+          {/* 1. Nombre */}
+          <h3 style={titleStyle} title={name}>
+            {name}
+          </h3>
 
-        {summaryText ? (
-          <p style={descStyle} title={summaryText}>
-            {summaryText}
-          </p>
-        ) : null}
-
-        {isComplete ? (
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#166534" }}>
-            Incluye fotos y detalles
-          </p>
-        ) : null}
-
-        <div style={ctaRowStyle}>
-          {showWhatsappPrimary ? (
-            <TrackedCardLink
-              slug={slug}
-              href={whatsappHref}
-              type="whatsapp"
-              analyticsSource={listingSource}
-              target="_blank"
-              rel="noreferrer"
-              style={primaryCtaStyle}
-            >
-              WhatsApp
-            </TrackedCardLink>
+          {/* 2. Badge "Ficha completa" — solo en variante complete, bajo el nombre */}
+          {isComplete ? (
+            <div style={completeBadgeStyle}>
+              <span style={{ fontSize: 10 }}>✓</span>
+              Ficha completa
+            </div>
           ) : null}
 
-          {showSecondaryFicha ? (
-            isComplete ? (
+          {/* 3. Descripción — qué hace */}
+          {summaryText ? (
+            <p style={descStyle} title={summaryText}>
+              {summaryText}
+            </p>
+          ) : null}
+
+          {/* 4. Ubicación — dónde está */}
+          {locationLabel ? (
+            <div style={locationStyle} title={locationLabel}>
+              <span style={{ fontSize: 12, flexShrink: 0 }}>📍</span>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                {locationLabel}
+              </span>
+            </div>
+          ) : null}
+
+          {/* 5. CTAs */}
+          <div style={ctaRowStyle}>
+            {showWhatsappPrimary ? (
               <TrackedCardLink
                 slug={slug}
-                href={fichaHref}
-                type="view_ficha"
+                href={whatsappHref}
+                type="whatsapp"
                 analyticsSource={listingSource}
-                style={secondaryCtaStyle}
+                target="_blank"
+                rel="noreferrer"
+                style={primaryCtaStyle}
               >
-                {secondaryLabel}
+                WhatsApp
               </TrackedCardLink>
-            ) : (
-              <button
-                type="button"
-                onClick={openBasicFichaModal}
-                style={{
-                  ...secondaryCtaStyle,
-                  border: secondaryCtaStyle.border,
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                }}
-              >
-                {secondaryLabel}
-              </button>
-            )
-          ) : null}
-        </div>
-      </div>
-    </article>
+            ) : null}
 
+            {showSecondaryFicha ? (
+              isComplete ? (
+                <TrackedCardLink
+                  slug={slug}
+                  href={fichaHref}
+                  type="view_ficha"
+                  analyticsSource={listingSource}
+                  style={secondaryCtaStyle}
+                >
+                  Ver perfil
+                </TrackedCardLink>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openBasicFichaModal}
+                  style={{
+                    ...secondaryCtaStyle,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                  }}
+                >
+                  Ver perfil
+                </button>
+              )
+            ) : null}
+          </div>
+        </div>
+      </article>
+
+      {/* Modal ficha básica */}
       {basicModalOpen ? (
         <div
           role="presentation"
@@ -408,7 +406,7 @@ export default function BusinessCard(props: BusinessCardProps) {
             position: "fixed",
             inset: 0,
             zIndex: 100,
-            background: "rgba(15, 23, 42, 0.45)",
+            background: "rgba(15, 23, 42, 0.4)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -426,30 +424,30 @@ export default function BusinessCard(props: BusinessCardProps) {
               background: "#fff",
               borderRadius: 16,
               padding: "22px 22px 18px",
-              boxShadow: "0 24px 48px rgba(15, 23, 42, 0.18)",
+              boxShadow: "0 20px 40px rgba(15, 23, 42, 0.15)",
               border: "1px solid #e2e8f0",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <p
               style={{
-                margin: "0 0 8px 0",
+                margin: "0 0 6px 0",
                 fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: "0.04em",
+                fontWeight: 700,
+                letterSpacing: "0.05em",
                 textTransform: "uppercase",
-                color: "#64748b",
+                color: "#94a3b8",
               }}
             >
-              Ficha básica
+              Información disponible
             </p>
             <h2
               id="basic-ficha-modal-negocio"
               style={{
                 margin: modalRubroLine ? "0 0 6px 0" : "0 0 16px 0",
-                fontSize: 22,
+                fontSize: 21,
                 lineHeight: 1.2,
-                fontWeight: 950,
+                fontWeight: 800,
                 color: "#0f172a",
               }}
             >
@@ -458,18 +456,25 @@ export default function BusinessCard(props: BusinessCardProps) {
             {modalRubroLine ? (
               <p
                 style={{
-                  margin: "0 0 16px 0",
+                  margin: "0 0 14px 0",
                   fontSize: 14,
                   lineHeight: 1.45,
                   color: "#64748b",
-                  fontWeight: 600,
+                  fontWeight: 500,
                 }}
               >
                 {modalRubroLine}
               </p>
             ) : null}
-            <p style={{ margin: "0 0 18px 0", fontSize: 15, color: "#475569", lineHeight: 1.55 }}>
-              Este emprendimiento no tiene más información disponible.
+            <p
+              style={{
+                margin: "0 0 18px 0",
+                fontSize: 14,
+                color: "#64748b",
+                lineHeight: 1.55,
+              }}
+            >
+              Este negocio aún no ha completado su ficha. Puedes contactarlo directamente por WhatsApp.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {showWhatsappPrimary ? (
@@ -480,7 +485,7 @@ export default function BusinessCard(props: BusinessCardProps) {
                   analyticsSource={listingSource}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ ...primaryCtaStyle, width: "100%" }}
+                  style={{ ...primaryCtaStyle, borderRadius: 12 }}
                 >
                   WhatsApp
                 </TrackedCardLink>
@@ -489,14 +494,15 @@ export default function BusinessCard(props: BusinessCardProps) {
                 type="button"
                 onClick={() => setBasicModalOpen(false)}
                 style={{
-                  padding: "12px 16px",
-                  borderRadius: 12,
-                  border: "1px solid #cbd5e1",
+                  padding: "11px 16px",
+                  borderRadius: 10,
+                  border: "1px solid #e2e8f0",
                   background: "#f8fafc",
-                  fontWeight: 700,
-                  fontSize: 14,
-                  color: "#334155",
+                  fontWeight: 600,
+                  fontSize: 13,
+                  color: "#475569",
                   cursor: "pointer",
+                  fontFamily: "inherit",
                 }}
               >
                 Cerrar
@@ -508,4 +514,3 @@ export default function BusinessCard(props: BusinessCardProps) {
     </>
   );
 }
-

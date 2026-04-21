@@ -187,7 +187,8 @@ function setHas(arr: string[] | null | undefined): Set<string> {
 }
 
 export type PublishingDecision = {
-  estado_publicacion: "publicado" | "pendiente_aprobacion";
+  /** Tras moderación obligatoria, la publicación en sitio solo vía admin; siempre queda en revisión. */
+  estado_publicacion: "en_revision";
   motivo_verificacion: string | null;
   requiere_verificacion: boolean;
 };
@@ -222,15 +223,32 @@ export function getPublishingDecision(input: MatchInput): PublishingDecision {
     }
 
     return {
-      estado_publicacion: "pendiente_aprobacion",
+      estado_publicacion: "en_revision",
       motivo_verificacion: rule.reason,
       requiere_verificacion: true,
     };
   }
 
   return {
-    estado_publicacion: "publicado",
+    estado_publicacion: "en_revision",
     motivo_verificacion: null,
     requiere_verificacion: false,
   };
 }
+
+/** Local físico + dirección según plan comercial: {@link requiereDireccionSiModalidadLocalFisico}. */
+export { requiereDireccionSiModalidadLocalFisico } from "./requiereDireccionLocalFisico";
+
+/** Validación admin “Publicar en sitio”: prioriza `emprendedor_locales`, fallback legacy en `emprendedores`. */
+export {
+  comunaIdTieneValor,
+  fetchComercialInputParaValidarLocalFisico,
+  normalizarUuidEmprendedorId,
+  validarLocalFisicoDireccionAntesDePublicarAdmin,
+  esLocalFisicoFilaValida,
+} from "./localFisicoPublicacionAdmin";
+
+export type {
+  AdminPublishFailureReason,
+  AdminPublishEmprendedorResult,
+} from "./adminPublishEmprendedorFicha";

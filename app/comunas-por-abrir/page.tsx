@@ -1,17 +1,10 @@
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  loadComunasPorAbrirRows,
+  type ComunaPorAbrirRow as ComunaRow,
+} from "@/lib/loadComunasPorAbrirRows";
 
 export const revalidate = 0;
-
-type ComunaRow = {
-  region_id?: string | number | null;
-  region_nombre?: string | null;
-  comuna_id?: string | number | null;
-  comuna_nombre: string;
-  comuna_slug: string;
-  total_emprendedores: number | null;
-  avance_porcentaje: number | null;
-};
 
 function getEstadoDesdeAvance(avance: number) {
   if (avance >= 100) {
@@ -107,12 +100,7 @@ function getWhatsappShareHref(comunaNombre: string, comunaSlug: string) {
 }
 
 export default async function ComunasPorAbrirPage() {
-  const supabase = createSupabaseServerClient();
-
-  const { data, error } = await supabase
-    .from("vw_regiones_comunas_detalle")
-    .select("*")
-    .order("avance_porcentaje", { ascending: false });
+  const { rows: loaded, error } = await loadComunasPorAbrirRows();
 
   if (error) {
     return (
@@ -120,13 +108,13 @@ export default async function ComunasPorAbrirPage() {
         <h1 style={titleStyle}>Comunas en activación</h1>
 
         <div style={errorStyle}>
-          No se pudieron cargar las comunas por abrir: {error.message}
+          No se pudieron cargar las comunas por abrir: {error}
         </div>
       </main>
     );
   }
 
-  const rows: ComunaRow[] = ((data as ComunaRow[] | null) || []).map((row) => ({
+  const rows: ComunaRow[] = loaded.map((row) => ({
     ...row,
     total_emprendedores: Number(row.total_emprendedores || 0),
     avance_porcentaje: Number(row.avance_porcentaje || 0),

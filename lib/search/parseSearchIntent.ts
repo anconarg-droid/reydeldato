@@ -30,6 +30,11 @@ export function parseSearchIntent(raw: string): ParsedSearchIntent {
     return { finalQuery: rest, sectorSlug: null, comunaSlug };
   }
 
+  // Caso especial: "gas" exacto no debe resolver a intent (ej. gasfiter).
+  if (restNorm === "gas") {
+    return { finalQuery: rest, sectorSlug: null, comunaSlug };
+  }
+
   for (const def of Object.values(INTENT_ALIASES)) {
     for (const alias of def.aliases) {
       const aliasNorm = normalize(alias);

@@ -1,4 +1,11 @@
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
+import { fetchGaleriaImagenesUrlsPublicas } from "@/lib/emprendedorGaleriaPivot";
+import { pareceUuidEmprendedor } from "@/lib/emprendedorLookupParam";
+import {
+  planPeriodicidadDesdeEmprendedorRow,
+  planTipoComercialDesdeEmprendedorRow,
+} from "@/lib/emprendedorPlanCamposCompat";
+import { direccionCallePrincipalDesdeLocales } from "@/lib/emprendedorLocalesFichaPublica";
 
 function arr(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
@@ -10,6 +17,24 @@ function arr(v: unknown): string[] {
 function s(v: unknown): string {
   if (v == null) return "";
   return String(v).trim();
+}
+
+/** Slug en URL: trim + un solo decode si venía con % (Next suele decodificar, pero evita rarezas). */
+function normalizeSlugParam(raw: string): string {
+  let t = s(raw);
+  if (!t) return "";
+  try {
+    const once = decodeURIComponent(t);
+    if (once && once !== t) t = s(once);
+  } catch {
+    /* mantener t */
+  }
+  return t;
+}
+
+/** Solo caracteres típicos de slug (evita `%`/`_` en ILIKE). */
+function slugPareceSeguroParaIlike(t: string): boolean {
+  return /^[a-zA-Z0-9._-]+$/.test(t);
 }
 
 function b(v: unknown): boolean {
@@ -28,24 +53,43 @@ const EMPRENDEDOR_PUBLICO_SELECT_MIN = `
 `;
 
 export async function getEmprendedorPublicoBySlug(slug: string) {
+  // Público: solo anon + vista pública (sin service_role).
   const supabase = createSupabaseServerPublicClient();
-  const cleanSlug = s(slug);
+  const cleanSlug = normalizeSlugParam(slug);
   if (!cleanSlug) return null;
 
   const fichaDebug =
     process.env.NODE_ENV === "development" ||
     process.env.LOG_FICHA_DEBUG === "1";
 
-  // 1a) Fila mínima: valida slug/publicado y columnas base (logs para debug).
-  const {
-    data: dataMin,
-    error: errorMin,
-  } = await supabase
-    .from("emprendedores")
-    .select(EMPRENDEDOR_PUBLICO_SELECT_MIN)
-    .eq("slug", cleanSlug)
-    .eq("estado_publicacion", "publicado")
-    .maybeSingle();
+  // 1a) Fila mínima: por `slug` o por `id` (UUID en URL, p. ej. panel → ficha).
+  const minQuery = () =>
+    supabase
+      .from("vw_emprendedores_publico")
+      .select(EMPRENDEDOR_PUBLICO_SELECT_MIN)
+      .eq("estado_publicacion", "publicado");
+
+  let dataMin: Record<string, unknown> | null = null;
+  let errorMin: { message?: string } | null = null;
+
+  if (pareceUuidEmprendedor(cleanSlug)) {
+    const r = await minQuery().eq("id", cleanSlug).maybeSingle();
+    dataMin = (r.data as Record<string, unknown> | null) ?? null;
+    errorMin = r.error;
+  } else {
+    const rEq = await minQuery().eq("slug", cleanSlug).maybeSingle();
+    if (!rEq.error && rEq.data) {
+      dataMin = rEq.data as Record<string, unknown>;
+      errorMin = rEq.error;
+    } else if (slugPareceSeguroParaIlike(cleanSlug)) {
+      const rIl = await minQuery().ilike("slug", cleanSlug).maybeSingle();
+      dataMin = (rIl.data as Record<string, unknown> | null) ?? null;
+      errorMin = rIl.error;
+    } else {
+      dataMin = (rEq.data as Record<string, unknown> | null) ?? null;
+      errorMin = rEq.error;
+    }
+  }
 
   if (fichaDebug) {
     console.log("[ficha-debug] slug", slug);
@@ -58,9 +102,9 @@ export async function getEmprendedorPublicoBySlug(slug: string) {
   const idMin = (dataMin as Record<string, unknown>).id ?? null;
   if (idMin == null) return null;
 
-  // 1b) Ficha completa por id (`*` evita romper si un listado explícito incluye columna inexistente).
+  // 1b) Ficha pública completa desde vista (evita exponer columnas sensibles).
   const { data, error } = await supabase
-    .from("emprendedores")
+    .from("vw_emprendedores_publico")
     .select("*")
     .eq("id", idMin)
     .eq("estado_publicacion", "publicado")
@@ -69,18 +113,19 @@ export async function getEmprendedorPublicoBySlug(slug: string) {
   const row = (error || !data ? dataMin : data) as Record<string, unknown>;
   const id = row.id ?? null;
 
-  // 2) Comuna base
+  const comunaRefId = row.comuna_id ?? row.comuna_base_id;
+
   let comunaNombre = "";
   let comunaSlug = "";
   let regionId: number | null = null;
   let regionNombre = "";
   let regionSlug = "";
 
-  if (row.comuna_id != null) {
+  if (comunaRefId != null) {
     const { data: comunaRow } = await supabase
       .from("comunas")
       .select("id, nombre, slug, region_id")
-      .eq("id", row.comuna_id)
+      .eq("id", comunaRefId)
       .maybeSingle();
 
     if (comunaRow) {
@@ -120,150 +165,32 @@ export async function getEmprendedorPublicoBySlug(slug: string) {
     }
   }
 
-  // 4) Subcategoría principal
-  const principalSubId = s(row.subcategoria_principal_id);
-  let principalSubNombre = "";
-  let principalSubSlug = "";
+  const subcategoriasNombresArr = arr(row.subcategorias_nombres_arr);
+  const subcategoriasSlugsArr = arr(row.subcategorias_slugs);
+  const principalSubNombre = subcategoriasNombresArr[0] || "";
+  const principalSubSlug = subcategoriasSlugsArr[0] || "";
 
-  if (principalSubId) {
-    const { data: subRow } = await supabase
-      .from("subcategorias")
-      .select("id, nombre, slug")
-      .eq("id", principalSubId)
-      .maybeSingle();
+  const modalidadesAtencionArr = arr(row.modalidades_atencion_arr);
+  const idStr = id != null ? s(id) : "";
+  const galeriaUrlsArr = idStr
+    ? await fetchGaleriaImagenesUrlsPublicas(supabase, idStr)
+    : [];
 
-    if (subRow) {
-      principalSubNombre = s((subRow as any).nombre);
-      principalSubSlug = s((subRow as any).slug);
-    }
-  }
+  const coberturaComunasArr = arr(row.comunas_cobertura_nombres_arr);
+  const coberturaComunasSlugsArr = arr(row.comunas_cobertura_slugs_arr);
 
-  // 5) Subcategorías relacionadas
-  let subcategoriasNombresArr: string[] = [];
-  let subcategoriasSlugsArr: string[] = [];
+  const coberturaRegionesArr = arr(row.regiones_cobertura_nombres_arr);
+  const coberturaRegionesSlugsArr = arr(row.regiones_cobertura_slugs_arr);
 
-  if (id != null) {
-    const { data: subRows } = await supabase
-      .from("emprendedor_subcategorias")
-      .select("subcategoria_id, subcategorias(nombre, slug)")
-      .eq("emprendedor_id", id);
-
-    if (Array.isArray(subRows)) {
-      subcategoriasNombresArr = subRows
-        .map((r: any) => s(r.subcategorias?.nombre))
-        .filter(Boolean);
-
-      subcategoriasSlugsArr = subRows
-        .map((r: any) => s(r.subcategorias?.slug))
-        .filter(Boolean);
-    }
-  }
-
-  // 6) Modalidades
-  let modalidadesAtencionArr: string[] = [];
-
-  if (id != null) {
-    const { data: modalidadesRows } = await supabase
-      .from("emprendedor_modalidades")
-      .select("modalidad")
-      .eq("emprendedor_id", id);
-
-    if (Array.isArray(modalidadesRows)) {
-      modalidadesAtencionArr = modalidadesRows
-        .map((r: any) => s(r.modalidad))
-        .filter(Boolean);
-    }
-  }
-
-  // 7) Galería
-  let galeriaUrlsArr: string[] = [];
-
-  if (id != null) {
-    const { data: galeriaRows } = await supabase
-      .from("emprendedor_galeria")
-      .select("imagen_url")
-      .eq("emprendedor_id", id);
-
-    if (Array.isArray(galeriaRows)) {
-      galeriaUrlsArr = galeriaRows
-        .map((r: any) => s(r.imagen_url))
-        .filter(Boolean);
-    }
-  }
-
-  // 8) Cobertura comunas
-  let coberturaComunasArr: string[] = [];
-  let coberturaComunasSlugsArr: string[] = [];
-
-  if (id != null) {
-    const { data: coberturaComunasRows } = await supabase
-      .from("emprendedor_comunas_cobertura")
-      .select("comuna_id, comunas(nombre, slug)")
-      .eq("emprendedor_id", id);
-
-    if (Array.isArray(coberturaComunasRows)) {
-      coberturaComunasArr = coberturaComunasRows
-        .map((r: any) => s(r.comunas?.nombre))
-        .filter(Boolean);
-
-      coberturaComunasSlugsArr = coberturaComunasRows
-        .map((r: any) => s(r.comunas?.slug))
-        .filter(Boolean);
-    }
-  }
-
-  // 9) Cobertura regiones
-  let coberturaRegionesArr: string[] = [];
-  let coberturaRegionesSlugsArr: string[] = [];
-
-  if (id != null) {
-    const { data: coberturaRegionesRows } = await supabase
-      .from("emprendedor_regiones_cobertura")
-      .select("region_id, regiones(nombre, slug)")
-      .eq("emprendedor_id", id);
-
-    if (Array.isArray(coberturaRegionesRows)) {
-      coberturaRegionesArr = coberturaRegionesRows
-        .map((r: any) => s(r.regiones?.nombre))
-        .filter(Boolean);
-
-      coberturaRegionesSlugsArr = coberturaRegionesRows
-        .map((r: any) => s(r.regiones?.slug))
-        .filter(Boolean);
-    }
-  }
-
-  // 10) Locales físicos
-  let localesFicha: {
-    nombre_local: string | null;
-    direccion: string;
-    comuna_nombre: string;
-    comuna_slug: string;
-    es_principal: boolean;
-  }[] = [];
-
-  if (id != null) {
-    const { data: localesRows } = await supabase
-      .from("emprendedor_locales")
-      .select("nombre_local, direccion, es_principal, comunas(nombre, slug)")
-      .eq("emprendedor_id", id)
-      .order("es_principal", { ascending: false });
-
-    if (Array.isArray(localesRows)) {
-      localesFicha = localesRows.map((r: any) => ({
-        nombre_local: r.nombre_local ? s(r.nombre_local) : null,
-        direccion: s(r.direccion),
-        comuna_nombre: s(r.comunas?.nombre),
-        comuna_slug: s(r.comunas?.slug),
-        es_principal: r.es_principal === true,
-      }));
-    }
-  }
+  const localesFicha = Array.isArray(row.locales) ? (row.locales as any[]) : [];
+  const direccionPublica = direccionCallePrincipalDesdeLocales(localesFicha);
 
   return {
     id: row.id ?? null,
     slug: s(row.slug),
     nombre: s(row.nombre_emprendimiento),
+    /** Nombre tal cual en BD (para respetar mayúsculas/tildes en copys). */
+    nombre_emprendimiento: s(row.nombre_emprendimiento),
 
     descripcion_corta: s(row.descripcion_corta || row.frase_negocio),
     descripcion_larga: s(row.descripcion_larga || row.descripcion_libre),
@@ -277,7 +204,6 @@ export async function getEmprendedorPublicoBySlug(slug: string) {
     subcategorias_nombres_arr: subcategoriasNombresArr,
     subcategorias_slugs_arr: subcategoriasSlugsArr,
 
-    subcategoria_principal_id: principalSubId || null,
     subcategoria_principal_nombre: principalSubNombre,
     subcategoria_principal_slug: principalSubSlug,
     subcategorias_slugs: arr(row.subcategorias_slugs).length
@@ -285,8 +211,8 @@ export async function getEmprendedorPublicoBySlug(slug: string) {
       : subcategoriasSlugsArr,
     subcategoria_slug_final: s(row.subcategoria_slug_final),
 
-    comuna_id: row.comuna_id ?? null,
-    comuna_base_id: row.comuna_id ?? null,
+    comuna_id: row.comuna_id ?? row.comuna_base_id ?? null,
+    comuna_base_id: row.comuna_id ?? row.comuna_base_id ?? null,
     comuna_nombre: comunaNombre,
     comuna_slug: comunaSlug,
 
@@ -309,13 +235,15 @@ export async function getEmprendedorPublicoBySlug(slug: string) {
     modalidades_atencion: modalidadesAtencionArr,
 
     whatsapp: s(row.whatsapp_principal),
+    whatsapp_secundario: s(row.whatsapp_secundario),
     instagram: s(row.instagram),
     sitio_web: s(row.sitio_web),
-    email: s(row.email),
-    direccion: s(row.direccion),
-
+    /** Vista pública: solo viene si `mostrar_responsable_publico` en BD. */
     responsable_nombre: s(row.nombre_responsable),
-    mostrar_responsable: b(row.mostrar_responsable_publico),
+    mostrar_responsable: Boolean(s(row.nombre_responsable)),
+    direccion: direccionPublica,
+    /** Alias / columna alternativa en algunas BDs o APIs; misma cadena resuelta que `direccion`. */
+    direccion_local: direccionPublica,
 
     foto_principal_url: s(row.foto_principal_url),
     galeria_urls_arr: galeriaUrlsArr,
@@ -329,8 +257,8 @@ export async function getEmprendedorPublicoBySlug(slug: string) {
     created_at: row.created_at ?? null,
     trial_inicia_at: row.trial_inicia_at ?? null,
     trial_expira_at: row.trial_expira_at ?? row.trial_expira ?? null,
-    plan_tipo: (row.plan_tipo as string) ?? null,
-    plan_periodicidad: (row.plan_periodicidad as string) ?? null,
+    plan_tipo: planTipoComercialDesdeEmprendedorRow(row),
+    plan_periodicidad: planPeriodicidadDesdeEmprendedorRow(row),
     plan_activo: row.plan_activo === true,
     plan_inicia_at: row.plan_inicia_at ?? null,
     plan_expira_at: row.plan_expira_at ?? null,

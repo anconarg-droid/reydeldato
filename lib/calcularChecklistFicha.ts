@@ -1,37 +1,37 @@
+import { tieneFichaCompleta } from "@/lib/tieneFichaCompleta";
+
 export type CalcularChecklistFichaInput = {
   descripcion_libre?: string | null;
+  frase_negocio?: string | null;
+  whatsapp_principal?: string | null;
   foto_principal_url?: string | null;
   galeria_count?: number | null;
   instagram?: string | null;
   sitio_web?: string | null;
+
+  plan_activo?: boolean | null;
+  plan_expira_at?: string | null;
+  trial_expira_at?: string | null;
+  trial_expira?: string | null;
 };
 
-function s(v: unknown): string {
-  if (v === null || v === undefined) return "";
-  return String(v).trim();
-}
-
 /**
- * Pendientes para pasar de “contenido básico” a criterios de ficha completa
- * (mismas reglas que la parte “completa” de calcularTipoFicha, sin plan/trial).
+ * Pendientes para alcanzar **perfil completo** (solo trial/plan vigente).
  */
 export function calcularChecklistFicha(
   input: CalcularChecklistFichaInput
 ): string[] {
   const faltantes: string[] = [];
 
-  if (s(input.descripcion_libre).length < 120) {
-    faltantes.push("Agrega una descripción más detallada");
-  }
+  const suscripcion = tieneFichaCompleta({
+    planActivo: input.plan_activo,
+    planExpiraAt: input.plan_expira_at ?? null,
+    trialExpiraAt: input.trial_expira_at ?? null,
+    trialExpira: input.trial_expira ?? null,
+  });
 
-  const totalFotos =
-    (s(input.foto_principal_url) ? 1 : 0) + Number(input.galeria_count || 0);
-  if (totalFotos < 2) {
-    faltantes.push("Sube al menos 2 fotos");
-  }
-
-  if (s(input.instagram).length === 0 && s(input.sitio_web).length === 0) {
-    faltantes.push("Agrega Instagram o sitio web");
+  if (!suscripcion) {
+    faltantes.push("Activa tu periodo de prueba o un plan para tener perfil completo");
   }
 
   return faltantes;

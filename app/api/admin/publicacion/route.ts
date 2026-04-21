@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { triggerReindexEmprendedorAlgolia } from "@/app/api/_lib/adminPublishEmprendedorFicha";
+import { normalizarUuidEmprendedorId } from "@/app/api/_lib/localFisicoPublicacionAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +18,7 @@ function s(v: unknown) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const id = s(body?.id);
+    const id = normalizarUuidEmprendedorId(s(body?.id));
     const accion = s(body?.accion).toLowerCase();
 
     if (!id) {
@@ -53,12 +55,22 @@ export async function POST(req: Request) {
       );
     }
 
+    /**
+     * No repetir `validarLocalFisicoDireccionAntesDePublicarAdmin` al reactivar:
+     * la regla ya se aplicó al publicar vía `adminPublishEmprendedorFicha` (y en el panel).
+     * Una segunda pasada aquí usaba otro `comercialInput` (`fetchComercialInputParaValidarLocalFisico`)
+     * y podía contradecir el OK de `emprendedor_locales` en el mismo emprendimiento.
+     */
+
     const nuevoEstado =
       accion === "suspender" ? "suspendido" : "publicado";
 
     const { error: updateError } = await supabase
       .from("emprendedores")
-      .update({ estado_publicacion: nuevoEstado })
+      .update({
+        estado_publicacion: nuevoEstado,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", id);
 
     if (updateError) {
@@ -68,27 +80,16 @@ export async function POST(req: Request) {
       );
     }
 
-    // Reindex puntual en Algolia si la visibilidad cambia
-    const baseUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-
-    try {
-      await fetch(
-        `${baseUrl.replace(/\/+$/, "")}/api/reindex/emprendedores/item?id=${encodeURIComponent(
-          id
-        )}`
-      );
-    } catch (_err) {
-      // No bloquear si falla reindex
-    }
+    const reindexAlgolia = await triggerReindexEmprendedorAlgolia(id);
 
     return NextResponse.json({
       ok: true,
+      publicacion: { ok: true, estado_publicacion: nuevoEstado },
       item: {
         id: existing.id,
         estado_publicacion: nuevoEstado,
       },
+      reindexAlgolia,
     });
   } catch (error) {
     return NextResponse.json(

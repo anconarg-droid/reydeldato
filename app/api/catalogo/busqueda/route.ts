@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 export async function GET() {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServerPublicClient();
 
     const [comunasRes, categoriasRes, subcategoriasRes] = await Promise.all([
       supabase.from("comunas").select("nombre, slug").order("nombre"),
       supabase.from("categorias").select("id, nombre, slug").order("nombre"),
-      supabase.from("subcategorias").select("nombre, slug, categoria_id").order("nombre"),
+      supabase.from("subcategorias").select("nombre, slug, categoria_id").eq("activo", true).order("nombre"),
     ]);
 
     if (comunasRes.error) throw comunasRes.error;

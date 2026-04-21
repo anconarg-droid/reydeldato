@@ -1,7 +1,7 @@
 /**
- * Regla de producto: apertura real (mínimos) vs override demo, y estado público final.
+ * Regla de producto: apertura real (mínimos por rubro) vs override demo, y estado público final.
  *
- * - abierta_por_minimos: derivado de vw_apertura_comuna_v2 (sin tocar su SQL aquí).
+ * - abierta_por_minimos: vw_apertura_comuna_v2.abierta o porcentaje_apertura ≥ 100.
  * - comuna_publica_abierta: lo que ve el usuario como “comuna con directorio abierto”.
  */
 

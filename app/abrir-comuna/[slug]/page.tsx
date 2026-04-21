@@ -1,42 +1,20 @@
 import { redirect } from "next/navigation";
 import AbrirComunaClient from "./AbrirComunaClient";
-import { supabase } from "@/lib/supabase";
+import AbrirComunaPageChrome from "@/components/abrir-comuna/AbrirComunaPageChrome";
+import { comunaPublicaAbierta } from "@/lib/comunaPublicaAbierta";
+import { loadAperturaComunaV2Resumen } from "@/lib/loadAperturaComunaV2Resumen";
+import { loadAbrirComunaEmprendedoresPublicados } from "@/lib/loadAbrirComunaEmprendedoresPublicados";
+import { loadComunaInteresCount } from "@/lib/loadComunaInteresCount";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
 type AperturaRow = {
-  comuna_id: number;
-  comuna_slug: string;
-  comuna_nombre: string;
-  total_requerido: number;
-  total_cumplido: number;
-  total_faltante: number;
-  porcentaje_apertura: number;
-};
-
-type FaltanteRow = {
-  comuna_id: number;
-  comuna_slug: string;
-  comuna_nombre: string;
-  subcategoria_slug: string;
-  subcategoria_nombre: string;
-  maximo_contable: number;
-  total_contado: number;
-  faltantes: number;
-};
-
-type DetalleRow = {
-  comuna_id: number;
-  comuna_slug: string;
-  comuna_nombre: string;
-  subcategoria_id: number;
-  subcategoria_slug: string;
-  subcategoria_nombre: string;
-  total_registrados: number;
-  maximo_contable: number;
-  total_contado: number;
+  porcentaje_apertura?: unknown;
+  total_requerido?: unknown;
+  total_cumplido?: unknown;
 };
 
 export default async function AbrirComunaPage({ params }: PageProps) {
@@ -47,140 +25,103 @@ export default async function AbrirComunaPage({ params }: PageProps) {
     redirect("/comunas");
   }
 
+  const supabase = createSupabaseServerPublicClient();
+
+  // Solo columnas estables: si pedimos columnas que no existen en un entorno, falla TODO el lookup.
   const { data: comunaRow, error: comunaError } = await supabase
     .from("comunas")
-    .select("id, slug, nombre")
+    .select("id, slug, nombre, forzar_abierta, regiones(slug, nombre)")
     .eq("slug", comunaSlug)
     .maybeSingle();
 
-  if (comunaError || !comunaRow) {
-    return <AbrirComunaClient data={null} />;
+  // "No encontrada" únicamente cuando no hay fila en `comunas` (o error real de lectura sin datos).
+  if (comunaError) {
+    console.error("[abrir-comuna] error comunas:", comunaError);
   }
-
-  // Override manual: si está marcada como activa, redirige a la comuna normal
-  const { data: activaRow } = await supabase
-    .from("comunas_activas")
-    .select("estado_apertura")
-    .eq("comuna_slug", comunaSlug)
-    .maybeSingle();
-
-  if (activaRow?.estado_apertura === "activa") {
-    redirect(`/${comunaSlug}`);
-  }
-
-  const { data: aperturaRow, error: aperturaError } = await supabase
-    .from("vw_apertura_comuna_v2")
-    .select(`
-      comuna_id,
-      comuna_slug,
-      comuna_nombre,
-      total_requerido,
-      total_cumplido,
-      total_faltante,
-      porcentaje_apertura
-    `)
-    .eq("comuna_slug", comunaSlug)
-    .maybeSingle();
-
-  if (aperturaError) {
-    console.error("[abrir-comuna] error vw_apertura_comuna_v2:", aperturaError);
-  }
-
-  const { data: faltantesRows, error: faltantesError } = await supabase
-    .from("vw_faltantes_comuna_v2")
-    .select(`
-      comuna_id,
-      comuna_slug,
-      comuna_nombre,
-      subcategoria_slug,
-      subcategoria_nombre,
-      maximo_contable,
-      total_contado,
-      faltantes
-    `)
-    .eq("comuna_slug", comunaSlug)
-    .order("faltantes", { ascending: false });
-
-  if (faltantesError) {
-    console.error("[abrir-comuna] error vw_faltantes_comuna_v2:", faltantesError);
-  }
-
-  const { data: detalleRows, error: detalleError } = await supabase
-    .from("vw_conteo_comuna_rubro_contado_v2")
-    .select(`
-      comuna_id,
-      comuna_slug,
-      comuna_nombre,
-      subcategoria_id,
-      subcategoria_slug,
-      subcategoria_nombre,
-      total_registrados,
-      maximo_contable,
-      total_contado
-    `)
-    .eq("comuna_slug", comunaSlug)
-    .order("subcategoria_slug", { ascending: true });
-
-  if (detalleError) {
-    console.error(
-      "[abrir-comuna] error vw_conteo_comuna_rubro_contado_v2:",
-      detalleError
+  if (!comunaRow?.id) {
+    return (
+      <AbrirComunaPageChrome comunaBreadcrumbLabel={comunaSlug}>
+        <AbrirComunaClient data={null} />
+      </AbrirComunaPageChrome>
     );
   }
 
-  const apertura = (aperturaRow ?? null) as AperturaRow | null;
-  const faltantes = ((faltantesRows ?? []) as FaltanteRow[]).map((r) => ({
-    rubro: r.subcategoria_slug,
-    nombre: r.subcategoria_nombre,
-    faltan: Number(r.faltantes ?? 0),
-    peso: Number(r.maximo_contable ?? 0),
-    actual: Number(r.total_contado ?? 0),
-    requerido: Number(r.maximo_contable ?? 0),
-  }));
+  const { data: config } = await supabase
+    .from("comunas_config")
+    .select("activa")
+    .eq("comuna_id", comunaRow.id)
+    .maybeSingle();
 
-  const rubrosDetalle = ((detalleRows ?? []) as DetalleRow[]).map((r) => ({
-    rubro: r.subcategoria_slug,
-    nombre: r.subcategoria_nombre,
-    faltan: Math.max(
-      0,
-      Number(r.maximo_contable ?? 0) - Number(r.total_contado ?? 0)
-    ),
-    peso: Number(r.maximo_contable ?? 0),
-    actual: Number(r.total_contado ?? 0),
-    requerido: Number(r.maximo_contable ?? 0),
-  }));
+  const { data: aperturaRow } = await loadAperturaComunaV2Resumen(supabase, comunaSlug);
 
-  const porcentaje = Number(apertura?.porcentaje_apertura ?? 0);
-  const sePuedeAbrir = porcentaje >= 100;
+  const vwParaReglaPublica = aperturaRow
+    ? {
+        porcentaje_apertura: Number(
+          (aperturaRow as { porcentaje_apertura?: unknown }).porcentaje_apertura ?? 0
+        ),
+        abierta: (aperturaRow as { abierta?: unknown }).abierta,
+      }
+    : null;
 
-  // Si ya llegó a 100% por reglas, redirige a resultados
-  if (sePuedeAbrir) {
+  const directorioPublicoOperativo =
+    config?.activa !== false &&
+    comunaPublicaAbierta(
+      (comunaRow as { forzar_abierta?: unknown }).forzar_abierta,
+      vwParaReglaPublica
+    );
+
+  if (directorioPublicoOperativo) {
     redirect(`/${comunaSlug}`);
   }
+
+  const apertura = (aperturaRow ?? null) as AperturaRow | null;
+  const porcentaje = Number(apertura?.porcentaje_apertura ?? NaN);
+  const porcentajeValido = Number.isFinite(porcentaje)
+    ? Math.min(100, Math.max(0, porcentaje))
+    : null;
+
+  const tr = Number(apertura?.total_requerido ?? NaN);
+  const tc = Number(apertura?.total_cumplido ?? NaN);
+  const totalRequeridoApertura =
+    Number.isFinite(tr) && tr > 0 ? Math.max(0, Math.floor(tr)) : null;
+  const totalCumplidoApertura =
+    Number.isFinite(tc) && tc >= 0 ? Math.max(0, Math.floor(tc)) : null;
+
+  const comunaNombreDisplay =
+    String(comunaRow.nombre ?? "").trim() || comunaSlug;
+  const regionJoin = (comunaRow as { regiones?: { slug?: string; nombre?: string } | null })
+    .regiones;
+  const regionSlug = String(regionJoin?.slug ?? "").trim();
+  const regionNombre = String(regionJoin?.nombre ?? "").trim();
+  const { total: publicadosTotal, cardProps: publicadosCards } =
+    await loadAbrirComunaEmprendedoresPublicados(comunaRow.id, {
+      comunaNombre: comunaNombreDisplay,
+      comunaSlug: String(comunaRow.slug ?? comunaSlug),
+      regionSlug,
+    });
+
+  const comunaInteresTotal = await loadComunaInteresCount(comunaSlug);
 
   const data = {
     comuna_slug: comunaRow.slug,
     comuna_nombre: comunaRow.nombre,
-    porcentaje_apertura: porcentaje,
-    estado_apertura:
-      porcentaje <= 0
-        ? "sin_movimiento"
-        : porcentaje >= 100
-          ? "lista_para_abrir"
-          : "en_proceso",
-    estado_apertura_simple:
-      porcentaje <= 0
-        ? "sin_movimiento"
-        : porcentaje >= 100
-          ? "lista_para_abrir"
-          : "en_proceso",
-    se_puede_abrir: sePuedeAbrir,
-    total_requerido: Number(apertura?.total_requerido ?? 0),
-    total_cumplido: Number(apertura?.total_cumplido ?? 0),
-    total_faltante: Number(apertura?.total_faltante ?? 0),
-    rubros_faltantes: faltantes,
-    rubros_detalle: rubrosDetalle,
+    region_nombre: regionNombre || null,
+    porcentaje_apertura: porcentajeValido,
+    emprendedores_publicados_total: publicadosTotal,
+    emprendedores_publicados_cards: publicadosCards,
+    total_requerido_apertura: totalRequeridoApertura,
+    total_cumplido_apertura: totalCumplidoApertura,
+    comuna_interes_total: comunaInteresTotal,
+    /** Misma regla que el redirect: listado “operativo” solo cuando el directorio público está abierto. */
+    directorio_publico_operativo: directorioPublicoOperativo,
   };
 
-  return <AbrirComunaClient data={data} />;
+  const breadcrumbLabel =
+    String(comunaRow.nombre ?? "").trim() || String(comunaRow.slug ?? comunaSlug);
+
+  return (
+    <AbrirComunaPageChrome comunaBreadcrumbLabel={breadcrumbLabel}>
+      <AbrirComunaClient data={data} />
+    </AbrirComunaPageChrome>
+  );
 }

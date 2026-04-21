@@ -6,11 +6,17 @@ describe("buildAtiendeLine", () => {
     expect(
       buildAtiendeLine({
         coberturaTipo: "solo_comuna",
-        comunasCobertura: ["x"],
         regionesCobertura: [],
-        comunaBuscadaSlug: "maipu",
-        comunaBuscadaNombre: "Maipú",
-      })
+      }),
+    ).toBe("");
+  });
+
+  it("solo_mi_comuna (alias) → vacío", () => {
+    expect(
+      buildAtiendeLine({
+        coberturaTipo: "solo_mi_comuna",
+        regionesCobertura: [],
+      }),
     ).toBe("");
   });
 
@@ -18,41 +24,70 @@ describe("buildAtiendeLine", () => {
     expect(
       buildAtiendeLine({
         coberturaTipo: "nacional",
-        comunasCobertura: [],
         regionesCobertura: [],
-        comunaBuscadaSlug: "maipu",
-        comunaBuscadaNombre: "Maipú",
-      })
-    ).toBe("Atiende: Todo Chile");
+      }),
+    ).toBe("Atiende todo Chile");
   });
 
-  it("varias_comunas una coincidencia con comuna buscada", () => {
+  it("varias_comunas → siempre el mismo texto (sin listar comunas)", () => {
     expect(
       buildAtiendeLine({
         coberturaTipo: "varias_comunas",
-        comunasCobertura: ["maipu"],
         regionesCobertura: [],
-        comunaBuscadaSlug: "maipu",
-        comunaBuscadaNombre: "Maipú",
-      })
-    ).toBe("Atiende: Maipú");
+      }),
+    ).toBe("Atiende varias comunas");
   });
 
-  it("varias_comunas varias", () => {
+  it("varias_regiones una región", () => {
     expect(
       buildAtiendeLine({
-        coberturaTipo: "varias_comunas",
-        comunasCobertura: ["a", "b"],
+        coberturaTipo: "varias_regiones",
+        regionesCobertura: ["region-metropolitana"],
+      }),
+    ).toBe("Atiende RM");
+  });
+
+  it("varias_regiones dos regiones", () => {
+    expect(
+      buildAtiendeLine({
+        coberturaTipo: "varias_regiones",
+        regionesCobertura: ["region-metropolitana", "valparaiso"],
+      }),
+    ).toBe("Atiende RM y Valparaíso");
+  });
+
+  it("varias_regiones más de dos", () => {
+    expect(
+      buildAtiendeLine({
+        coberturaTipo: "varias_regiones",
+        regionesCobertura: ["a", "b", "c"],
+      }),
+    ).toBe("Atiende varias regiones");
+  });
+
+  it("varias_regiones sin regiones en datos", () => {
+    expect(
+      buildAtiendeLine({
+        coberturaTipo: "varias_regiones",
         regionesCobertura: [],
-        comunaBuscadaSlug: "maipu",
-        comunaBuscadaNombre: "Maipú",
-      })
-    ).toBe("Atiende: varias comunas");
+      }),
+    ).toBe("Atiende varias regiones");
+  });
+
+  it("regional (alias) → varias_regiones", () => {
+    expect(
+      buildAtiendeLine({
+        coberturaTipo: "regional",
+        regionesCobertura: ["region-metropolitana"],
+      }),
+    ).toBe("Atiende RM");
   });
 });
 
 describe("humanizeCoverageSlug", () => {
   it("slug a palabras", () => {
-    expect(humanizeCoverageSlug("region-metropolitana")).toBe("Region Metropolitana");
+    expect(humanizeCoverageSlug("region-metropolitana")).toBe(
+      "Region Metropolitana",
+    );
   });
 });

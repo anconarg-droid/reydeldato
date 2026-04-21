@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 export async function GET() {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServerPublicClient();
 
     const [catRes, subRes] = await Promise.all([
       supabase
@@ -13,6 +13,7 @@ export async function GET() {
       supabase
         .from("subcategorias")
         .select("id, nombre, slug, categoria_id")
+        .eq("activo", true)
         .order("nombre"),
     ]);
 

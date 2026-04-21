@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { recordEvent, isValidEventType } from "@/lib/analytics/recordEvent";
+import {
+  analyticsEventUsesEmprendedorStats,
+  isValidEventType,
+  recordEvent,
+} from "@/lib/analytics/recordEvent";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,18 +45,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const needsEmpStats = analyticsEventUsesEmprendedorStats(event_type);
+    const idFromBody = Boolean(emprendedor_id);
+
     if (!emprendedor_id && slug) {
-      const { data: emp, error: findError } = await supabase
-        .from("emprendedores")
-        .select("id")
-        .eq("slug", slug)
-        .limit(1)
-        .maybeSingle();
+      let qb = supabase.from("emprendedores").select("id").eq("slug", slug).limit(1);
+      if (needsEmpStats) qb = qb.eq("estado_publicacion", "publicado");
+      const { data: emp, error: findError } = await qb.maybeSingle();
       if (findError) {
         console.error("event resolve slug error:", findError);
         return NextResponse.json({ ok: false }, { status: 500 });
       }
       emprendedor_id = emp?.id ?? null;
+    }
+
+    if (needsEmpStats) {
+      if (slug && !emprendedor_id) {
+        return NextResponse.json({ ok: false, error: "not_public" }, { status: 404 });
+      }
+      if (emprendedor_id && idFromBody) {
+        const { data: pub, error: pubErr } = await supabase
+          .from("emprendedores")
+          .select("id")
+          .eq("id", emprendedor_id)
+          .eq("estado_publicacion", "publicado")
+          .maybeSingle();
+        if (pubErr || !pub) {
+          return NextResponse.json({ ok: false, error: "not_public" }, { status: 404 });
+        }
+      }
     }
 
     const mergedMeta: Record<string, unknown> = {

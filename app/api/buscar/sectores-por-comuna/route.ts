@@ -105,9 +105,11 @@ export async function GET(req: Request) {
     }
 
     const { data, error } = await supabase
-      .from("vw_emprendedores_algolia_final")
-      .select("categoria_slug, nivel_cobertura, comunas_cobertura_slugs_arr, comuna_base_slug, comuna_base_nombre, estado_publicacion")
-      .eq("publicado", true);
+      .from("vw_emprendedores_publico")
+      .select(
+        "categoria_slug_final, nivel_cobertura, comunas_cobertura_slugs_arr, comuna_base_slug, comuna_base_nombre, estado_publicacion"
+      )
+      .eq("estado_publicacion", "publicado");
 
     if (error) {
       return NextResponse.json(
@@ -117,7 +119,7 @@ export async function GET(req: Request) {
     }
 
     const rows: Row[] = (data || []).map((row: any) => ({
-      sector_slug: row.categoria_slug ?? null,
+      sector_slug: row.categoria_slug_final ?? null,
       comuna_base_slug: row.comuna_base_slug ?? null,
       comuna_base_nombre: row.comuna_base_nombre ?? null,
       nivel_cobertura: row.nivel_cobertura ?? null,

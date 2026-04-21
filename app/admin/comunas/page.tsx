@@ -1,9 +1,10 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminComunasPage() {
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
 
   const { data, error } = await supabase
     .from("vw_comunas_por_abrir")
@@ -53,7 +54,7 @@ export default async function AdminComunasPage() {
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "minmax(160px, 1.4fr) 120px 120px 120px 150px 180px",
+                  "minmax(160px, 1.4fr) 120px 120px 120px 150px 180px 130px",
                 gap: 12,
                 padding: "12px 16px",
                 borderBottom: "1px solid #e5e7eb",
@@ -69,6 +70,7 @@ export default async function AdminComunasPage() {
               <div>Avance</div>
               <div>Faltan meta</div>
               <div>Acciones</div>
+              <div>Apertura</div>
             </div>
 
             {items.map((item: any) => {
@@ -80,7 +82,7 @@ export default async function AdminComunasPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns:
-                      "minmax(160px, 1.4fr) 120px 120px 120px 150px 180px",
+                      "minmax(160px, 1.4fr) 120px 120px 120px 150px 180px 130px",
                     gap: 12,
                     padding: "12px 16px",
                     borderBottom: "1px solid #f3f4f6",
@@ -112,6 +114,19 @@ export default async function AdminComunasPage() {
                     >
                       Volver a preparación
                     </FormButton>
+                  </div>
+                  <div>
+                    <Link
+                      href={`/admin/apertura-comuna/${encodeURIComponent(item.comuna_slug)}`}
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 800,
+                        color: "#2563eb",
+                        textDecoration: "none",
+                      }}
+                    >
+                      Rubros →
+                    </Link>
                   </div>
                 </div>
               );

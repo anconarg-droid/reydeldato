@@ -1,6 +1,10 @@
 // app/api/admin/postulaciones/[id]/route.ts
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { ok, notFound, serverError } from "@/lib/http";
+import {
+  POSTULACIONES_APROBAR_COLUMNS,
+  postulacionesEmprendedoresSelectWithColumnRetry,
+} from "@/lib/loadPostulacionesModeracion";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -39,38 +43,49 @@ function buildDiff(current: Record<string, unknown>, proposed: Record<string, un
 export async function GET(_request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const supabase = getSupabaseAdmin();
+    const supabase = getSupabaseAdmin({
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    });
 
-    const { data: postulacion, error: postError } = await supabase
-      .from("postulaciones_emprendedores")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const { data: postulacion, error: postError } = await postulacionesEmprendedoresSelectWithColumnRetry(
+      supabase,
+      [...POSTULACIONES_APROBAR_COLUMNS],
+      async (selectStr) => {
+        return await supabase
+          .from("postulaciones_emprendedores")
+          .select(selectStr)
+          .eq("id", id)
+          .single();
+      }
+    );
 
     if (postError || !postulacion) {
       return notFound("Postulación no encontrada");
     }
 
+    const postRow = postulacion as unknown as Record<string, unknown>;
+
     let actual = null;
     let diff = null;
 
-    if (postulacion.tipo_postulacion === "edicion_publicado" && postulacion.emprendedor_id) {
+    if (postRow.tipo_postulacion === "edicion_publicado" && postRow.emprendedor_id) {
       const { data: emprendedorActual } = await supabase
         .from("emprendedores")
         .select("*")
-        .eq("id", postulacion.emprendedor_id)
+        .eq("id", postRow.emprendedor_id)
         .single();
 
       actual = emprendedorActual ?? null;
 
       if (actual) {
-        diff = buildDiff(actual, postulacion as Record<string, unknown>);
+        diff = buildDiff(actual, postRow);
       }
     }
 
     return ok({
       ok: true,
-      postulacion,
+      postulacion: postRow,
       actual,
       diff,
     });

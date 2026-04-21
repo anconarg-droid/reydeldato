@@ -59,6 +59,7 @@ export async function POST(
       .from("emprendedores")
       .select("id, slug, vistas_ficha, click_whatsapp, click_instagram, click_web, click_email")
       .eq("slug", slug)
+      .eq("estado_publicacion", "publicado")
       .limit(1)
       .maybeSingle();
 

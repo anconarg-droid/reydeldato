@@ -14,7 +14,10 @@ export default function TestPublicarPage() {
       const res = await fetch("/api/publicar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draft_id: draftId.trim() }),
+        body: JSON.stringify({
+          draft_id: draftId.trim(),
+          acepta_terminos_privacidad: true,
+        }),
       });
       const text = await res.text();
       let parsed: unknown;

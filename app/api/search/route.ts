@@ -5,7 +5,11 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getAlgoliaAdminIndex } from "@/lib/algoliaServer";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
+import { resolveQueryFromBusquedaSinonimos } from "@/lib/busquedaSinonimosResolve";
+import {
+  isResolvedQueryExactGas,
+} from "@/lib/gasQueryExcludeGasfiteria";
 import { slugify } from "@/lib/slugify";
 
 export const runtime = "nodejs";
@@ -15,6 +19,8 @@ export const dynamic = "force-dynamic";
 const INDEX_NAME = process.env.ALGOLIA_INDEX_EMPRENDEDORES || "emprendedores";
 
 const IS_DEV = process.env.NODE_ENV !== "production";
+
+const supabase = createSupabaseServerPublicClient();
 
 function s(v: unknown): string {
   if (v == null) return "";
@@ -31,44 +37,12 @@ function arr(v: unknown): string[] {
   return v.map((x) => String(x).trim().toLowerCase()).filter(Boolean);
 }
 
-type Tier = "base" | "cobertura" | "regional" | "nacional" | "general";
-
-function tierRank(tier: Tier): number {
-  switch (tier) {
-    case "base": return 1;
-    case "cobertura": return 2;
-    case "regional": return 3;
-    case "nacional": return 4;
-    default: return 5;
-  }
-}
-
-function getTier(
-  hit: { comuna_base_slug?: string; comunas_cobertura_slugs_arr?: string[]; nivel_cobertura?: string },
-  comunaSlug: string
-): Tier {
-  if (!comunaSlug) return "general";
-  const base = slugify(s(hit.comuna_base_slug));
-  const cobertura = arr(hit.comunas_cobertura_slugs_arr);
-  const nivel = s(hit.nivel_cobertura).toLowerCase();
-
-  if (base === comunaSlug) return "base";
-  if (cobertura.includes(comunaSlug)) return "cobertura";
-  if (nivel === "regional" || nivel === "varias_regiones") return "regional";
-  if (nivel === "nacional") return "nacional";
-  return "general";
-}
-
-// Ranking territorial numérico según reglas del producto
-// 1) comuna base = comuna buscada   -> 100
-// 2) coverage_keys contiene comuna  -> 80
-// 3) nivel_cobertura = regional     -> 50
-// 4) nivel_cobertura = nacional     -> 20
-// else                             -> 0
+// Ranking territorial (mayor = mejor): comuna base > cobertura comunas > región > nacional
 function rankTerritorial(
   hit: {
     comuna_base_slug?: string;
-    coverage_keys?: string[];
+    comunas_cobertura_slugs_arr?: string[];
+    regiones_cobertura_slugs_arr?: string[];
     nivel_cobertura?: string;
   },
   comunaSlug: string,
@@ -77,107 +51,27 @@ function rankTerritorial(
   if (!comunaSlug) return 0;
 
   const base = slugify(s(hit.comuna_base_slug));
-  const keys = arr(hit.coverage_keys);
+  const cobertura = arr(hit.comunas_cobertura_slugs_arr);
+  const regiones = arr(hit.regiones_cobertura_slugs_arr);
   const nivel = s(hit.nivel_cobertura).toLowerCase();
 
-  // 4: comuna base exacta = comuna buscada
+  // 4: comuna base = comuna buscada
   if (base === comunaSlug) return 4;
 
-  // 3: coverage_keys contiene comuna buscada
-  if (keys.includes(comunaSlug)) return 3;
+  // 3: comuna en lista de cobertura explícita
+  if (cobertura.includes(comunaSlug)) return 3;
 
-  // 2: coverage_keys contiene la región (convención única: "region:<slug>")
-  if (regionKey && keys.includes(regionKey)) {
-    return 2;
-  }
+  const regionSlug =
+    regionKey && regionKey.startsWith("region:")
+      ? regionKey.slice("region:".length)
+      : s(regionKey);
+  if (regionSlug && regiones.includes(regionSlug)) return 2;
 
-  // 1: cobertura nacional
-  if (
-    keys.includes("nacional") ||
-    keys.includes("pais:chile") ||
-    nivel === "nacional"
-  ) {
-    return 1;
-  }
+  if (nivel === "regional" || nivel === "varias_regiones") return 2;
 
-  // 0: resto
+  if (nivel === "nacional") return 1;
+
   return 0;
-}
-
-function rankTextMatch(
-  hit: {
-    nombre?: string;
-    tags_slugs?: string[];
-    keywords_clasificacion?: string[];
-    sector_slug?: string;
-  },
-  q: string
-): number {
-  const rawQuery = s(q).toLowerCase();
-  if (!rawQuery) return 0;
-
-  const nombre = s(hit.nombre).toLowerCase();
-  const tags = arr(hit.tags_slugs);
-  const kwClasif = arr(hit.keywords_clasificacion);
-  const sectorSlug = s(hit.sector_slug).toLowerCase();
-
-  const tokens = rawQuery
-    .split(/\s+/)
-    .map((t) => t.trim())
-    .filter((t) => t.length >= 2);
-
-  let score = 0;
-
-  // Coincidencia en nombre (como antes, pero ligeramente ajustado)
-  if (nombre && rawQuery.length >= 2 && nombre.includes(rawQuery)) {
-    score += 40;
-  }
-
-  // Boost por tags_slugs: más fuerte cuando el token coincide exactamente
-  if (tags.length && tokens.length) {
-    for (const tag of tags) {
-      const t = tag.toLowerCase();
-      if (t.length < 3) continue; // evitar ruido de tags muy cortos
-      for (const tok of tokens) {
-        if (tok.length < 2) continue;
-        if (t === tok) {
-          score += 30;
-        } else if (t.includes(tok)) {
-          score += 12;
-        }
-      }
-    }
-  }
-
-  // Boost por keywords_clasificacion (más suave que tags)
-  if (kwClasif.length && tokens.length) {
-    for (const kw of kwClasif) {
-      const k = kw.toLowerCase();
-      if (k.length < 3) continue;
-      for (const tok of tokens) {
-        if (tok.length < 2) continue;
-        if (k === tok) {
-          score += 18;
-        } else if (k.includes(tok)) {
-          score += 8;
-        }
-      }
-    }
-  }
-
-  // Pequeño boost por sector_slug si coincide directamente
-  if (sectorSlug && tokens.length) {
-    for (const tok of tokens) {
-      if (sectorSlug === tok) {
-        score += 10;
-      }
-    }
-  }
-
-  // Limitar el impacto total del texto para no superar demasiado al ranking territorial
-  if (score > 80) score = 80;
-
-  return score;
 }
 
 // Puntaje de calidad liviano para desempates (máx 10; nunca le gana al territorio).
@@ -186,7 +80,7 @@ function qualityScore(hit: {
   descripcion_larga?: string | null;
   tags_slugs?: string[] | null;
   whatsapp?: string | null;
-  coverage_keys?: string[] | null;
+  comunas_cobertura_slugs_arr?: string[] | null;
   nivel_cobertura?: string | null;
 }): number {
   let score = 0;
@@ -203,10 +97,10 @@ function qualityScore(hit: {
 
   if (s(hit.whatsapp)) score += 2;
 
-  const keys = arr(hit.coverage_keys);
+  const cobCount = arr(hit.comunas_cobertura_slugs_arr).length;
   const nivel = s(hit.nivel_cobertura).toLowerCase();
   if (
-    keys.length > 0 ||
+    cobCount > 0 ||
     ["comuna", "solo_mi_comuna", "comunas", "regional", "varias_regiones", "nacional"].includes(nivel)
   ) {
     score += 2;
@@ -242,7 +136,10 @@ type TerritorialContext =
 
 type AlgoliaSearchResult = {
   hits: Record<string, unknown>[];
+  /** Conteo efectivo usado en `nbHits` / paginación tras filtros en servidor (p. ej. gas, territorial). */
   totalHits: number;
+  /** `nbHits` devuelto por Algolia antes de filtros post-query (p. ej. exclusión gas vs gasfitería). */
+  nbHitsAlgoliaRaw: number;
 };
 
 function parseInput(req: NextRequest): ParsedInput {
@@ -275,8 +172,6 @@ async function resolveTerritorialContext(
     return { mode: "no_comuna" };
   }
 
-  const supabase = createSupabaseServerClient();
-
   const [{ data: activaRow }, { data: comunaRow }] = await Promise.all([
     supabase
       .from("comunas_activas")
@@ -299,7 +194,7 @@ async function resolveTerritorialContext(
       .replace(/-/g, " ")
       .replace(/\b\w/g, (l) => l.toUpperCase());
 
-  // Convención única para región en coverage_keys: "region:<slug>" (rankTerritorial solo usa esta forma).
+  // rankTerritorial usa regionKey ("region:<slug>") con regiones_cobertura_slugs_arr del hit.
   const regionSlug = s((comunaRow as any)?.region_slug);
   let regionKey: string | undefined;
   if (regionSlug) {
@@ -349,25 +244,45 @@ async function searchAlgolia(
     "descripcion_corta",
     "descripcion_larga",
     "categoria_nombre",
+    "categoria_slug",
     "subcategorias_nombres_arr",
+    "subcategorias_slugs_arr",
     "comuna_base_nombre",
     "comuna_base_slug",
     "nivel_cobertura",
     "comunas_cobertura_slugs_arr",
-    "coverage_keys",
-    "coverage_labels",
+    "regiones_cobertura_slugs_arr",
     "foto_principal_url",
     "whatsapp",
-    "instagram",
     "web",
     "tipo_actividad",
     "sector_slug",
     "tags_slugs",
-    "keywords_clasificacion",
     "clasificacion_confianza",
   ];
 
-  const querySent = input.q || "";
+  const qOriginal = s(input.q);
+  const qResolvedSynonym = await resolveQueryFromBusquedaSinonimos(
+    supabase,
+    input.q,
+    IS_DEV ? (msg) => console.warn("[search] busqueda_sinonimos:", msg) : undefined
+  );
+  const querySent = qResolvedSynonym || s(input.q);
+
+  console.log("[search][sinonimos]", {
+    qOriginal,
+    qResolvedBySinonimos: qResolvedSynonym,
+    querySentFinal: querySent,
+  });
+
+  // Regla producto: "gas" exacto NO debe devolver resultados.
+  // - NO ejecutar búsqueda en Algolia
+  // - NO usar fallback de texto
+  // - Retornar lista vacía
+  if (isResolvedQueryExactGas(querySent)) {
+    return { hits: [], totalHits: 0, nbHitsAlgoliaRaw: 0 };
+  }
+
   const searchParams = {
     hitsPerPage,
     page: hasComuna ? 0 : input.page,
@@ -388,11 +303,25 @@ async function searchAlgolia(
 
   const result = await index.search(querySent, searchParams);
 
-  const hits = (result.hits || []) as Record<string, unknown>[];
-  const totalHits = result.nbHits ?? 0;
+  const nbHitsAlgoliaRaw = result.nbHits ?? 0;
+  let hits = (result.hits || []) as Record<string, unknown>[];
+  let totalHits = nbHitsAlgoliaRaw;
+
+  console.log("[search][sinonimos]", {
+    nbHitsAlgoliaRaw,
+    hitsAfterPostFilters: hits.length,
+    totalHitsUsedForResponse: totalHits,
+  });
 
   if (IS_DEV) {
-    console.log("[search] Algolia response: nbHits =", totalHits);
+    console.log(
+      "[search] Algolia response: nbHitsAlgoliaRaw =",
+      nbHitsAlgoliaRaw,
+      "| hits this page =",
+      hits.length,
+      "| totalHits =",
+      totalHits
+    );
     if (totalHits === 0) {
       console.log(
         "[search] Sin resultados. Revisar: índice con datos, facetFilters (estado_publicacion:publicado) y que la query coincida con search_text/nombre/tags."
@@ -406,7 +335,7 @@ async function searchAlgolia(
     console.log("[search] First 3 hits (raw):", JSON.stringify(first3, null, 2));
   }
 
-  return { hits, totalHits };
+  return { hits, totalHits, nbHitsAlgoliaRaw };
 }
 
 function sortWithTerritorialAndQuality(
@@ -497,6 +426,7 @@ function buildResponse(
     page: input.page,
     nbPages: Math.ceil(totalHits / input.limit) || 1,
     nbHits: totalHits,
+    nbHitsAlgoliaRaw: searchResult.nbHitsAlgoliaRaw,
     hits,
   });
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { FormData } from "./PublicarClient";
 import type { Comuna } from "./PublicarClient";
+import type { Region } from "./PublicarClient";
 import { supabase } from "@/lib/supabase";
 import { slugify } from "@/lib/slugify";
 import { getEmailTypoSuggestion } from "@/lib/validateEmail";
@@ -28,12 +30,23 @@ function sameRegionId(candidate: Comuna, base: Comuna | null): boolean {
   return baseRid === candRid;
 }
 
+function regionSlugFromComunaBase(
+  comunaBase: Comuna | null,
+  regiones: Region[]
+): string | null {
+  const rid = comunaBase?.region_id != null ? String(comunaBase.region_id).trim() : "";
+  if (!rid) return null;
+  const r = regiones.find((x) => String(x.id) === rid);
+  return r?.slug ? String(r.slug).trim() : null;
+}
+
 export default function PasoInformacionBasica({
   form,
   errors,
   setField,
   submitForm,
   comunas,
+  regiones,
   showIntro = true,
 }: {
   form: FormData;
@@ -41,6 +54,7 @@ export default function PasoInformacionBasica({
   setField: SetField;
   submitForm: () => void;
   comunas: Comuna[];
+  regiones: Region[];
   /** Si false, oculta título y aviso duplicados (layout con hero externo). */
   showIntro?: boolean;
 }) {
@@ -70,6 +84,8 @@ export default function PasoInformacionBasica({
 
   const [comunasQuery, setComunasQuery] = useState("");
   const [comunaBaseQuery, setComunaBaseQuery] = useState("");
+  /** Remount del `<select>` de regiones para que vuelva al placeholder tras cada agregado. */
+  const [regionAgregarSelectKey, setRegionAgregarSelectKey] = useState(0);
 
   const comunasBaseFiltradas = useMemo(() => {
     const q = comunaBaseQuery.trim().toLowerCase();
@@ -93,6 +109,8 @@ export default function PasoInformacionBasica({
     );
   }, [comunasMismaRegion, comunasQuery]);
 
+  const [touchedDescripcionCorta, setTouchedDescripcionCorta] = useState(false);
+
   function applyCoberturaTipo(value: string) {
     setField("coberturaTipo", value);
     console.log("comunaBase:", form.comunaBase);
@@ -112,7 +130,8 @@ export default function PasoInformacionBasica({
 
     if (value === "varias_regiones") {
       setField("comunasCobertura", []);
-      setField("regionesCobertura", []);
+      const baseRegionSlug = regionSlugFromComunaBase(comunaBaseObj, regiones);
+      setField("regionesCobertura", baseRegionSlug ? [baseRegionSlug] : []);
       return;
     }
 
@@ -140,11 +159,61 @@ export default function PasoInformacionBasica({
       setField("regionesCobertura", []);
     } else if (form.coberturaTipo === "varias_regiones") {
       setField("comunasCobertura", []);
-      setField("regionesCobertura", []);
+      const base = comunas.find((c) => c.slug === slug) || null;
+      const baseRegionSlug = regionSlugFromComunaBase(base, regiones);
+      setField("regionesCobertura", baseRegionSlug ? [baseRegionSlug] : []);
     } else if (form.coberturaTipo === "nacional") {
       setField("comunasCobertura", []);
       setField("regionesCobertura", []);
     }
+  }
+
+  const regionBaseSlug = useMemo(() => {
+    return regionSlugFromComunaBase(comunaBaseObj, regiones);
+  }, [comunaBaseObj, regiones]);
+
+  const regionesOrdenadas = useMemo(() => {
+    return [...regiones].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  }, [regiones]);
+
+  const regionesCoberturaDisponiblesOrden = useMemo(() => {
+    if (!regionBaseSlug) return regionesOrdenadas;
+    const base = regionesOrdenadas.find((r) => r.slug === regionBaseSlug);
+    if (!base) return regionesOrdenadas;
+    return [base, ...regionesOrdenadas.filter((r) => r.slug !== regionBaseSlug)];
+  }, [regionesOrdenadas, regionBaseSlug]);
+
+  const regionesCoberturaSeleccionadasObjs = useMemo(() => {
+    const bySlug = new Map(regiones.map((r) => [r.slug, r]));
+    return (Array.isArray(form.regionesCobertura) ? form.regionesCobertura : [])
+      .map((slug) => bySlug.get(String(slug)))
+      .filter((x): x is Region => Boolean(x));
+  }, [regiones, form.regionesCobertura]);
+
+  const regionesCoberturaAgregables = useMemo(() => {
+    const selected = new Set(form.regionesCobertura);
+    return regionesCoberturaDisponiblesOrden.filter((r) => !selected.has(r.slug));
+  }, [regionesCoberturaDisponiblesOrden, form.regionesCobertura]);
+
+  function agregarRegionCobertura(slug: string) {
+    const s = String(slug || "").trim();
+    if (!s || form.regionesCobertura.includes(s)) return;
+    setField("regionesCobertura", [...form.regionesCobertura, s]);
+    setRegionAgregarSelectKey((k) => k + 1);
+  }
+
+  function eliminarRegionCobertura(slug: string) {
+    const s = String(slug || "").trim();
+    if (!s) return;
+    const isBase = regionBaseSlug && s === regionBaseSlug;
+    const next = form.regionesCobertura.filter((x) => x !== s);
+    if (isBase) return;
+    if (next.length === 0 && regionBaseSlug) {
+      setField("regionesCobertura", [regionBaseSlug]);
+      return;
+    }
+    if (next.length === 0) return;
+    setField("regionesCobertura", next);
   }
 
   function clearComunaBase() {
@@ -226,6 +295,7 @@ export default function PasoInformacionBasica({
   const descripcionLength = form.descripcionNegocio.trim().length;
   const descripcionMinimaOk = descripcionLength >= 40;
   const descripcionFaltante = Math.max(0, 40 - descripcionLength);
+  const showDescripcionFaltaEnRojo = touchedDescripcionCorta && !descripcionMinimaOk;
 
   const emailTypoSuggestion = useMemo(() => {
     return getEmailTypoSuggestion(form.email);
@@ -452,47 +522,40 @@ export default function PasoInformacionBasica({
         </div>
 
         <div style={{ gridColumn: "1 / -1" }}>
-          <label style={labelStyle}>Descripción corta *</label>
+          <label style={labelStyle}>Descripción de tu emprendimiento *</label>
           <textarea
             value={form.descripcionNegocio}
-            onChange={(e) => setField("descripcionNegocio", e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setField("descripcionNegocio", next);
+              if (!touchedDescripcionCorta && next.trim().length > 0) {
+                setTouchedDescripcionCorta(true);
+              }
+            }}
             placeholder="Ej: Vendemos pan amasado, empanadas y kuchen por encargo en Calera de Tango."
             style={textareaStyle}
           />
           <div style={helperStyle}>
-            Incluye qué vendes o qué servicios ofreces, y la comuna donde atiendes.
+            Este texto aparece en los resultados cuando alguien te busca. Sé breve y claro. Después podrás agregar una descripción completa con más detalles.
           </div>
           <div
             style={{
               ...helperStyle,
-              color: descripcionMinimaOk ? "#166534" : "#b91c1c",
-              fontWeight: 700,
+              color: showDescripcionFaltaEnRojo ? "#b91c1c" : "#64748b",
+              fontWeight: showDescripcionFaltaEnRojo ? 700 : 600,
             }}
           >
             {descripcionMinimaOk
               ? `${descripcionLength}/40 caracteres mínimos`
-              : `Te faltan ${descripcionFaltante} caracteres`}
+              : touchedDescripcionCorta
+                ? `Te faltan ${descripcionFaltante} caracteres`
+                : "Mínimo 40 caracteres"}
           </div>
           {errors.descripcionNegocio ? (
             <p style={errorStyle}>{errors.descripcionNegocio}</p>
           ) : null}
         </div>
 
-        <div style={{ gridColumn: "1 / -1" }}>
-          <label style={labelStyle}>
-            Palabras que ayuden a encontrar tu negocio (opcional)
-          </label>
-          <input
-            type="text"
-            value={form.keywordsUsuario}
-            onChange={(e) => setField("keywordsUsuario", e.target.value)}
-            placeholder="Ej: pan amasado, empanadas, kuchen"
-            style={inputStyle}
-          />
-          <div style={helperStyle}>
-            No se muestran públicamente. Úsalas para ayudar a la clasificación y la búsqueda.
-          </div>
-        </div>
       </div>
 
       <div style={dividerStyle} />
@@ -626,7 +689,7 @@ export default function PasoInformacionBasica({
             <option value="">Selecciona cobertura</option>
             <option value="solo_mi_comuna">Solo mi comuna</option>
             <option value="varias_comunas">Varias comunas cercanas</option>
-            <option value="varias_regiones">Toda mi región</option>
+            <option value="varias_regiones">Una o más regiones</option>
             <option value="nacional">Todo Chile</option>
           </select>
           <div style={helperStyle}>
@@ -852,16 +915,217 @@ export default function PasoInformacionBasica({
             )}
           </div>
         ) : null}
+
+        {form.coberturaTipo === "varias_regiones" ? (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <label style={labelStyle}>Regiones donde atiendes *</label>
+            <div style={{ ...helperStyle, marginTop: 4, marginBottom: 12 }}>
+              La región de tu comuna base aparece seleccionada. Puedes agregar otras regiones.
+            </div>
+
+            {!form.comunaBase ? (
+              <div style={helperStyle}>Primero selecciona tu comuna base.</div>
+            ) : (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+                  Regiones seleccionadas
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {regionesCoberturaSeleccionadasObjs.length === 0 ? (
+                    <div style={helperStyle}>
+                      No hay regiones seleccionadas. Vuelve a elegir tu comuna base o agrega una región abajo.
+                    </div>
+                  ) : (
+                    regionesCoberturaSeleccionadasObjs.map((r) => {
+                      const esBase = r.slug === regionBaseSlug;
+                      return (
+                        <div
+                          key={r.slug}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            padding: "6px 10px",
+                            borderRadius: 20,
+                            border: esBase ? "none" : "2px solid #93c5fd",
+                            background: esBase ? "#2563eb" : "#dbeafe",
+                            color: esBase ? "#fff" : "#1e40af",
+                            fontSize: 13,
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span>
+                            {r.nombre}
+                            {esBase ? " (región base)" : ""}
+                          </span>
+                          {esBase ? null : (
+                            <button
+                              type="button"
+                              onClick={() => eliminarRegionCobertura(r.slug)}
+                              aria-label={`Quitar ${r.nombre}`}
+                              style={{
+                                marginLeft: 4,
+                                border: "none",
+                                background: "#bfdbfe",
+                                borderRadius: 999,
+                                width: 22,
+                                height: 22,
+                                lineHeight: 1,
+                                cursor: "pointer",
+                                fontWeight: 700,
+                                color: "#1e3a8a",
+                              }}
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div style={{ marginTop: 14 }}>
+                  <label style={{ ...labelStyle, fontSize: 13 }}>
+                    Agregar regiones
+                  </label>
+                  <select
+                    key={regionAgregarSelectKey}
+                    value=""
+                    aria-label="Elige una región para agregar"
+                    onChange={(e) => {
+                      const slug = e.target.value;
+                      if (slug) agregarRegionCobertura(slug);
+                    }}
+                    style={{ ...inputStyle, marginTop: 2 }}
+                  >
+                    <option value="">Elige una región para agregar...</option>
+                    {regionesCoberturaAgregables.map((r) => (
+                      <option key={r.slug} value={r.slug}>
+                        {r.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {errors.regionesCobertura ? (
+              <p style={{ ...errorStyle, marginTop: 12 }}>
+                {errors.regionesCobertura}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div style={footerStyle}>
-        <div style={helperStyle}>
-          Después podrás agregar fotos, redes sociales y más detalles para
-          mejorar tu ficha.
+        <div style={{ flex: 1, minWidth: 260 }}>
+          <label
+            htmlFor="acepta-terminos-privacidad"
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+              fontSize: 13,
+              color: "#374151",
+              lineHeight: 1.45,
+              fontWeight: 600,
+            }}
+          >
+            <input
+              id="acepta-terminos-privacidad"
+              type="checkbox"
+              checked={form.aceptaTerminosPrivacidad}
+              onChange={(e) =>
+                setField("aceptaTerminosPrivacidad", e.target.checked)
+              }
+              style={{ marginTop: 2, accentColor: "#0d9488" }}
+            />
+            <span>
+              Acepto los{" "}
+              <Link
+                href="/terminos"
+                style={{
+                  color: "#0d9488",
+                  fontWeight: 800,
+                  textDecoration: "underline",
+                  textUnderlineOffset: 2,
+                }}
+              >
+                Términos y Condiciones
+              </Link>{" "}
+              y la{" "}
+              <Link
+                href="/privacidad"
+                style={{
+                  color: "#0d9488",
+                  fontWeight: 800,
+                  textDecoration: "underline",
+                  textUnderlineOffset: 2,
+                }}
+              >
+                Política de Privacidad
+              </Link>
+              .
+            </span>
+          </label>
+          {errors.aceptaTerminosPrivacidad ? (
+            <p style={{ ...errorStyle, marginTop: 8 }}>
+              {errors.aceptaTerminosPrivacidad}
+            </p>
+          ) : null}
+
+          <div
+            style={{
+              marginTop: 22,
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+              fontSize: 13,
+              color: "#0f766e",
+              lineHeight: 1.5,
+              fontWeight: 600,
+              background: "#f0fdfa",
+              border: "1px solid #99f6e4",
+              borderRadius: 10,
+              padding: "10px 12px",
+            }}
+            role="note"
+          >
+            <span
+              aria-hidden
+              style={{
+                flexShrink: 0,
+                display: "inline-flex",
+                marginTop: 1,
+                color: "#0f766e",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                />
+                <path
+                  d="M12 16v-4.5M12 8.25h.01"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+            <span>
+              Después podrás agregar fotos, redes sociales y más detalles para mejorar tu ficha.
+            </span>
+          </div>
         </div>
 
         <button type="button" onClick={submitForm} style={primaryButtonStyle}>
-          Publicar mi emprendimiento
+          Publicar y empezar a recibir contactos
         </button>
       </div>
     </div>
@@ -896,10 +1160,14 @@ const noticeStyle: React.CSSProperties = {
 };
 
 const sectionTitleStyle: React.CSSProperties = {
-  fontSize: 15,
-  fontWeight: 900,
-  color: "#111827",
+  fontSize: 11,
+  fontWeight: 600,
+  color: "#0f766e",
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
   marginBottom: 14,
+  paddingBottom: 10,
+  borderBottom: "1px solid #99f6e4",
 };
 
 const dividerStyle: React.CSSProperties = {
@@ -970,7 +1238,7 @@ const footerStyle: React.CSSProperties = {
 };
 
 const primaryButtonStyle: React.CSSProperties = {
-  background: "#111827",
+  background: "#0d9488",
   color: "#fff",
   border: "none",
   padding: "12px 20px",

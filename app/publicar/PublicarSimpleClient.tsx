@@ -20,7 +20,12 @@ import { getRegionShort } from "@/utils/regionShort";
 import { normalizeAndValidateChileWhatsappStrict } from "@/utils/phone";
 import PasoInformacionBasica from "./PasoInformacionBasica";
 import { INITIAL_FORM as PUBLICAR_INITIAL_FORM, type FormData } from "./PublicarClient";
-import MejorarFichaClient, { type MejorarFichaInitial } from "@/app/mejorar-ficha/MejorarFichaClient";
+import Link from "next/link";
+import {
+  captureFormularioValidationError,
+  capturePosthogEvent,
+  identifyPosthogUser,
+} from "@/lib/posthog";
 
 type Comuna = {
   id: string;
@@ -68,6 +73,7 @@ type SimpleForm = {
   comunasCobertura: string[];
   regionesCobertura: string[];
   modalidades: string[];
+  aceptaTerminosPrivacidad: boolean;
 };
 
 const INITIAL_FORM: SimpleForm = {
@@ -80,6 +86,7 @@ const INITIAL_FORM: SimpleForm = {
   comunasCobertura: [],
   regionesCobertura: [],
   modalidades: [],
+  aceptaTerminosPrivacidad: false,
 };
 
 function stringArraysEqual(a: string[], b: string[]): boolean {
@@ -106,12 +113,19 @@ function simpleFormEqual(a: SimpleForm, b: SimpleForm): boolean {
     a.coberturaTipo === b.coberturaTipo &&
     stringArraysEqual(a.comunasCobertura, b.comunasCobertura) &&
     stringArraysEqual(a.regionesCobertura, b.regionesCobertura) &&
-    stringArraysEqual(a.modalidades, b.modalidades)
+    stringArraysEqual(a.modalidades, b.modalidades) &&
+    a.aceptaTerminosPrivacidad === b.aceptaTerminosPrivacidad
   );
 }
 
 function fraseNegocioLimpia(value: string | null | undefined): string {
   return (value ?? "").trim();
+}
+
+/** Misma semántica que `app/publicar/page.tsx` — permite abrir /publicar aunque el borrador esté en revisión. */
+function isEdicionBasicaQuery(v: string | null | undefined): boolean {
+  const t = String(v ?? "").trim().toLowerCase();
+  return t === "1" || t === "true" || t === "yes" || t === "si";
 }
 
 function normalizeInstagramInput(value: string): string {
@@ -351,7 +365,6 @@ export default function PublicarSimpleClient({
   const [serverError, setServerError] = useState("");
   const [saving, setSaving] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [bootstrapPhase, setBootstrapPhase] = useState<BootstrapPhase>("loading");
   const [bootstrapError, setBootstrapError] = useState("");
@@ -389,7 +402,6 @@ export default function PublicarSimpleClient({
   );
   const [borradorDireccionReferencia, setBorradorDireccionReferencia] =
     useState<string | null>(null);
-  const [successExtrasSaving, setSuccessExtrasSaving] = useState(false);
   const [checklistSaveBanner, setChecklistSaveBanner] = useState<{
     text: string;
     kind: "ok" | "error";
@@ -420,6 +432,7 @@ export default function PublicarSimpleClient({
   const draftAutoRecover404Ref = useRef(0);
   /** Log “autosave skipped on first render” una vez por corrida de bootstrap hasta `ready`. */
   const hasLoggedAutosaveSkipRef = useRef(false);
+  const posthogInicioPublicacionRef = useRef(false);
 
   /** `pendingCandidateId` gana sobre el resto. */
   const idEnUrl = s(searchParams.get("id"));
@@ -445,6 +458,12 @@ export default function PublicarSimpleClient({
   useEffect(() => {
     draftIdRef.current = draftId;
   }, [draftId]);
+
+  useEffect(() => {
+    if (posthogInicioPublicacionRef.current) return;
+    posthogInicioPublicacionRef.current = true;
+    capturePosthogEvent("inicio_publicacion");
+  }, []);
 
   useEffect(() => {
     if (pendingCandidateId && idEnUrl === pendingCandidateId) {
@@ -499,6 +518,26 @@ export default function PublicarSimpleClient({
           }
           if (outcome.kind === "ok") {
             const snapshot = outcome.snapshot;
+            const postulacionId = s(snapshot.id);
+            const edicionBasicaFromUrl =
+              typeof window !== "undefined"
+                ? new URLSearchParams(window.location.search).get("edicion_basica")
+                : null;
+            /**
+             * Sin `edicion_basica`, si el borrador sigue en revisión redirigimos a mejorar-ficha
+             * (flujo post-envío). Con «Editar datos básicos» (`edicion_basica=1`) debe abrirse el
+             * formulario aunque el estado sea pendiente_revision (p. ej. edición de publicado).
+             */
+            if (
+              s(snapshot.estado).toLowerCase() === "pendiente_revision" &&
+              !isEdicionBasicaQuery(edicionBasicaFromUrl)
+            ) {
+              const mejorarQs = new URLSearchParams();
+              mejorarQs.set("borrador", postulacionId || candidate);
+              mejorarQs.set("revision", "1");
+              router.replace(`/mejorar-ficha?${mejorarQs.toString()}`);
+              return;
+            }
             const comunaBaseSlug =
               s(snapshot.comuna_base_slug) ||
               comunaSlugById.get(s((snapshot as Record<string, unknown>).comuna_base_id)) ||
@@ -513,26 +552,30 @@ export default function PublicarSimpleClient({
               comunasCobertura: asStringArray(snapshot.comunas_cobertura),
               regionesCobertura: asStringArray(snapshot.regiones_cobertura),
               modalidades: asStringArray(snapshot.modalidades_atencion),
+              aceptaTerminosPrivacidad: false,
             };
-            bootstrappedKeyRef.current = candidate;
-            draftIdRef.current = candidate;
-            setDraftId(candidate);
+            const canonicalId = postulacionId || candidate;
+            bootstrappedKeyRef.current = canonicalId;
+            draftIdRef.current = canonicalId;
+            setDraftId(canonicalId);
+            /** Evita segundo fetch cuando `id` en la URL era el emprendedor y el GET devolvió el id de postulación. */
+            if (canonicalId && canonicalId !== candidate) {
+              setPendingCandidateId(canonicalId);
+            }
             draftAutoRecover404Ref.current = 0;
             setForm(loadedForm);
             setAutosaveBaseline(cloneSimpleForm(loadedForm));
             setDraftGaleriaUrls(asStringArray((snapshot as { galeria_urls?: unknown }).galeria_urls));
             setBorradorDireccion(s(snapshot.direccion) || null);
             setBorradorDireccionReferencia(s(snapshot.direccion_referencia) || null);
-            setSubmitted(s(snapshot.estado).toLowerCase() === "pendiente_revision");
             setSuccessFotoUrl(s(snapshot.foto_principal_url));
             setSuccessInstagram(normalizeInstagramInput(s(snapshot.instagram)));
             setSuccessWeb(s(snapshot.sitio_web));
             setSuccessDescripcionLarga(s(snapshot.descripcion_libre));
-            if (!embedOnHome && effectiveUrlId !== candidate) {
-              router.replace(
-                `/publicar?id=${encodeURIComponent(candidate)}`,
-                { scroll: false }
-              );
+            if (!embedOnHome && effectiveUrlId !== canonicalId) {
+              const qs = new URLSearchParams(searchParams.toString());
+              qs.set("id", canonicalId);
+              router.replace(`/publicar?${qs.toString()}`, { scroll: false });
             }
             setServerError("");
             setBootstrapPhase("ready");
@@ -553,7 +596,6 @@ export default function PublicarSimpleClient({
         setDraftGaleriaUrls([]);
         setBorradorDireccion(null);
         setBorradorDireccionReferencia(null);
-        setSubmitted(false);
         setSuccessFotoUrl("");
         setSuccessInstagram("");
         setSuccessWeb("");
@@ -600,114 +642,6 @@ export default function PublicarSimpleClient({
       }
     };
   }, []);
-
-  const persistSuccessExtras = useCallback(
-    async (
-      mode: "auto" | "manual"
-    ): Promise<{ ok: boolean; message?: string }> => {
-      if (!draftId) {
-        if (mode === "manual") {
-          return { ok: false, message: "No hay borrador activo." };
-        }
-        return { ok: true };
-      }
-
-      const igCheck = validateInstagramInput(successInstagram);
-      const ig = igCheck.normalized;
-      const web = successWeb.trim();
-      const desc = successDescripcionLarga.trim();
-      if (successInstagram.trim() && !igCheck.ok) {
-        return {
-          ok: false,
-          message: "Ingresa un usuario o link válido de Instagram (sin espacios)",
-        };
-      }
-      const payload: Record<string, unknown> = {};
-      if (ig) payload.instagram = ig;
-      if (web) payload.sitio_web = web;
-      if (desc.length >= 40) payload.descripcion_libre = desc;
-
-      if (Object.keys(payload).length === 0) {
-        if (mode === "manual") {
-          return {
-            ok: false,
-            message:
-              "Agregá Instagram, sitio web o escribí al menos 40 caracteres en «Más detalles» para guardar.",
-          };
-        }
-        return { ok: true };
-      }
-
-      setSuccessExtrasSaving(true);
-      try {
-        const res = await fetch(publicarBorradorByIdPath(draftId), {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        let data: Record<string, unknown> = {};
-        try {
-          data = (await res.json()) as Record<string, unknown>;
-        } catch {
-          data = {};
-        }
-        if (res.status === 404) {
-          return { ok: false, message: "Ese borrador ya no está disponible." };
-        }
-        if (!res.ok || !data?.ok) {
-          return {
-            ok: false,
-            message:
-              s(data.message) ||
-              s(data.error) ||
-              "No se pudieron guardar los cambios.",
-          };
-        }
-        return { ok: true };
-      } catch (err) {
-        if (isLikelyNetworkFailure(err)) {
-          return { ok: false, message: "Revisá tu conexión e intentá de nuevo." };
-        }
-        return {
-          ok: false,
-          message: err instanceof Error ? err.message : "Error al guardar.",
-        };
-      } finally {
-        setSuccessExtrasSaving(false);
-      }
-    },
-    [draftId, successInstagram, successWeb, successDescripcionLarga]
-  );
-
-  useEffect(() => {
-    if (!submitted || !draftId) return;
-
-    if (successExtrasDebounceRef.current) {
-      clearTimeout(successExtrasDebounceRef.current);
-    }
-
-    successExtrasDebounceRef.current = setTimeout(() => {
-      successExtrasDebounceRef.current = null;
-      void persistSuccessExtras("auto").then((r) => {
-        if (!r.ok && r.message?.toLowerCase().includes("conexión")) {
-          console.warn("[publicar] extras guardado: red");
-        }
-      });
-    }, 850);
-
-    return () => {
-      if (successExtrasDebounceRef.current) {
-        clearTimeout(successExtrasDebounceRef.current);
-      }
-    };
-  }, [
-    submitted,
-    draftId,
-    successInstagram,
-    successWeb,
-    successDescripcionLarga,
-    persistSuccessExtras,
-  ]);
 
   const uploadPrincipalAfterSubmit = useCallback(async (file: File) => {
     const id = draftId;
@@ -981,46 +915,9 @@ export default function PublicarSimpleClient({
       comunasCobertura: form.comunasCobertura,
       regionesCobertura: form.regionesCobertura,
       modalidades: form.modalidades,
+      aceptaTerminosPrivacidad: form.aceptaTerminosPrivacidad,
     }),
     [form]
-  );
-
-  const initialMejorarFicha = useMemo<MejorarFichaInitial>(
-    () => ({
-      foto_principal_url: successFotoUrl || null,
-      galeria_urls: draftGaleriaUrls.length ? draftGaleriaUrls : null,
-      email: (form.email || "").trim().toLowerCase() || null,
-      instagram: successInstagram || null,
-      sitio_web: successWeb || null,
-      descripcion_libre:
-        successDescripcionLarga || form.descripcionNegocio || null,
-      direccion: borradorDireccion,
-      direccion_referencia: borradorDireccionReferencia,
-      nombre_responsable: null,
-      mostrar_responsable_publico: false,
-      nombre_emprendimiento: form.nombre || "",
-      frase_negocio: form.descripcionNegocio || "",
-      comuna_nombre: form.comunaBase || null,
-      whatsapp: form.whatsapp || null,
-      descripcion_corta: form.descripcionNegocio || null,
-      ficha_publica_slug: null,
-      modalidades_atencion: form.modalidades ?? null,
-    }),
-    [
-      successFotoUrl,
-      draftGaleriaUrls,
-      borradorDireccion,
-      borradorDireccionReferencia,
-      successInstagram,
-      successWeb,
-      successDescripcionLarga,
-      form.descripcionNegocio,
-      form.nombre,
-      form.email,
-      form.comunaBase,
-      form.whatsapp,
-      form.modalidades,
-    ]
   );
 
   function setPasoField<K extends keyof FormData>(key: K, value: FormData[K]) {
@@ -1051,6 +948,9 @@ export default function PublicarSimpleClient({
         return;
       case "modalidades":
         setField("modalidades", value as string[]);
+        return;
+      case "aceptaTerminosPrivacidad":
+        setField("aceptaTerminosPrivacidad", value as boolean);
         return;
       default:
         return;
@@ -1131,8 +1031,29 @@ export default function PublicarSimpleClient({
         "Selecciona la comuna base para definir tu región de cobertura.";
     }
 
+    if (!form.aceptaTerminosPrivacidad) {
+      nextErrors.aceptaTerminosPrivacidad =
+        "Debes aceptar los Términos y Condiciones y la Política de Privacidad.";
+    }
+
+    const valido = Object.keys(nextErrors).length === 0;
+    if (!valido) {
+      if (!whatsappValido) {
+        captureFormularioValidationError("whatsapp", "formato_invalido");
+      }
+      if (!descripcionValida) {
+        captureFormularioValidationError(
+          "descripcion",
+          "menos_de_40_caracteres"
+        );
+      }
+      if (!comunaValida) {
+        captureFormularioValidationError("comuna", "no_seleccionada");
+      }
+    }
+
     setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    return valido;
   }
 
   /** El borrador se crea al cargar la página; aquí solo devolvemos el id activo. */
@@ -1218,7 +1139,6 @@ export default function PublicarSimpleClient({
   }, [form, emailNormalizado, whatsappValido, whatsappNormalizado]);
 
   useEffect(() => {
-    if (submitted) return;
     if (bootstrapPhase !== "ready") return;
 
     if (!isFormDirty) {
@@ -1242,7 +1162,7 @@ export default function PublicarSimpleClient({
     return () => {
       if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     };
-  }, [autosave, bootstrapPhase, isFormDirty, submitted]);
+  }, [autosave, bootstrapPhase, isFormDirty]);
 
   async function submitForm() {
     if (saving) return;
@@ -1253,6 +1173,8 @@ export default function PublicarSimpleClient({
 
     try {
       setSaving(true);
+
+      capturePosthogEvent("paso1_completado");
 
       const currentDraftId = await ensureDraftExists();
       if (!currentDraftId) {
@@ -1337,6 +1259,7 @@ export default function PublicarSimpleClient({
         body: JSON.stringify({
           draft_id: currentDraftId,
           email: emailNormalizado,
+          acepta_terminos_privacidad: form.aceptaTerminosPrivacidad,
         }),
       });
 
@@ -1356,8 +1279,13 @@ export default function PublicarSimpleClient({
         return;
       }
 
-      setSubmitted(true);
-      setDraftId(currentDraftId);
+      identifyPosthogUser(emailNormalizado);
+      capturePosthogEvent("publicacion_exitosa");
+
+      const mejorarQs = new URLSearchParams();
+      mejorarQs.set("borrador", currentDraftId);
+      mejorarQs.set("revision", "1");
+      router.replace(`/mejorar-ficha?${mejorarQs.toString()}`);
     } catch (_error) {
       setServerError("Ocurrió un error al enviar la postulación.");
     } finally {
@@ -1394,7 +1322,7 @@ export default function PublicarSimpleClient({
     );
   }
 
-  if (!submitted && bootstrapPhase === "error") {
+  if (bootstrapPhase === "error") {
     return (
       <main style={mainShellStyle}>
         <section style={narrowErrorStyle}>
@@ -1424,35 +1352,34 @@ export default function PublicarSimpleClient({
             style={{
               maxWidth: 1180,
               margin: "0 auto",
-              padding: "14px 20px",
-              fontSize: 24,
-              fontWeight: 900,
-              color: "#111827",
+              padding: "12px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
             }}
           >
-            Rey del Dato
+            <Link
+              href="/"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 14,
+                fontWeight: 800,
+                color: "#0f766e",
+                textDecoration: "none",
+              }}
+            >
+              ← Volver al inicio
+            </Link>
+            <div />
           </div>
         </header>
       ) : null}
 
       <section style={contentSectionStyle}>
-        {hydrated && bootstrapPhase === "loading" ? (
-          <div
-            style={{
-              marginBottom: 16,
-              background: "#eff6ff",
-              border: "1px solid #bfdbfe",
-              color: "#1d4ed8",
-              padding: 14,
-              borderRadius: 14,
-              fontWeight: 700,
-            }}
-          >
-            Guardando borrador...
-          </div>
-        ) : null}
-
-        {bootstrapPhase === "ready" && !submitted ? (
+        {bootstrapPhase === "ready" ? (
           <>
             <PasoInformacionBasica
               form={formForPaso}
@@ -1460,6 +1387,7 @@ export default function PublicarSimpleClient({
               setField={setPasoField}
               submitForm={() => void submitForm()}
               comunas={comunas}
+              regiones={regiones}
               showIntro={false}
             />
           </>
@@ -1482,32 +1410,6 @@ export default function PublicarSimpleClient({
           </div>
         ) : null}
 
-        {submitted ? (
-          <>
-            <div
-              style={{
-                marginTop: 18,
-                background: "#ecfdf5",
-                border: "1px solid #86efac",
-                color: "#166534",
-                padding: 16,
-                borderRadius: 14,
-                fontWeight: 700,
-                lineHeight: 1.5,
-              }}
-            >
-              Tu postulación ya está en revisión. Puedes mejorar tu ficha ahora
-              para que se vea mejor cuando la publiquemos.
-              <br />
-              Perfiles con foto se ven más confiables y se revisan más rápido.
-            </div>
-            <MejorarFichaClient
-              postulacionId={draftId ?? ""}
-              draftFound={true}
-              initial={initialMejorarFicha}
-            />
-          </>
-        ) : null}
       </section>
     </main>
   );
@@ -1837,14 +1739,6 @@ const ctaCardStyle: React.CSSProperties = {
   boxShadow: "0 8px 24px rgba(30,58,138,0.12)",
 };
 
-const ctaHintStyle: React.CSSProperties = {
-  margin: "14px 0 0",
-  fontSize: 13,
-  color: "#64748b",
-  lineHeight: 1.5,
-  textAlign: "center",
-};
-
 const fieldGroupStyle: React.CSSProperties = {
   marginBottom: 18,
 };
@@ -2087,30 +1981,6 @@ const modeTextStyle: React.CSSProperties = {
   fontSize: 13,
   lineHeight: 1.5,
   color: "#64748b",
-};
-
-const primaryActionStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 54,
-  borderRadius: 16,
-  border: "none",
-  background: "#1e3a8a",
-  color: "#fff",
-  fontWeight: 900,
-  fontSize: 16,
-  cursor: "pointer",
-  boxShadow: "0 10px 22px rgba(30,58,138,0.18)",
-};
-
-const secondaryActionStyle: React.CSSProperties = {
-  minHeight: 48,
-  padding: "0 18px",
-  borderRadius: 14,
-  border: "1px solid #cbd5e1",
-  background: "#fff",
-  color: "#0f172a",
-  fontWeight: 800,
-  cursor: "pointer",
 };
 
 const previewCardStyle: React.CSSProperties = {

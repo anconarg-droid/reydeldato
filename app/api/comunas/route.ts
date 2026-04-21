@@ -12,7 +12,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("emprendedores")
       .select("comuna_base_slug")
-      .eq("publicado", true);
+      .eq("estado_publicacion", "publicado");
 
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });

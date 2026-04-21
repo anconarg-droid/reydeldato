@@ -1,10 +1,10 @@
 /**
  * Estado visual/funcional de la ficha del emprendimiento.
- * Fuente de verdad: solo plan_activo, plan_expira_at, trial_expira_at (no plan, estado ni publicado).
+ * `isFullProfile` sigue `calcularEstadoFicha` (solo suscripción: trial o plan vigente).
  */
 
 import type { PlanEstadoInput } from "./planEstado";
-import { tieneFichaCompleta } from "./tieneFichaCompleta";
+import { calcularEstadoFicha } from "./estadoFicha";
 
 function parseDate(v: string | null | undefined): Date | null {
   if (v == null || String(v).trim() === "") return null;
@@ -31,9 +31,8 @@ export type GetProfileStateInput = PlanEstadoInput & {
 };
 
 /**
- * Calcula el estado del perfil para UI. Solo usa la fuente de verdad:
- * planActivo, planExpiraAt, trialExpiraAt (trialExpira como fallback).
- * isFullProfile = tieneFichaCompleta (plan pagado vigente o trial vigente); alineado con tarjeta y búsqueda.
+ * Calcula el estado del perfil para UI.
+ * isFullProfile = misma regla comercial que listados y `/emprendedor/[slug]`.
  */
 export function getProfileState(
   createdAt: string | null | undefined,
@@ -42,6 +41,12 @@ export function getProfileState(
     planExpiraAt?: string | null;
     trialExpiraAt?: string | null;
     trialExpira?: string | null;
+    descripcionLibre?: string | null;
+    fraseNegocio?: string | null;
+    whatsappPrincipal?: string | null;
+    fotoPrincipalUrl?: string | null;
+    instagram?: string | null;
+    sitioWeb?: string | null;
   }
 ): ProfileState {
   const created = parseDate(createdAt);
@@ -51,12 +56,23 @@ export function getProfileState(
   const isNew = createdDaysAgo <= NEW_PROFILE_DAYS;
   const showNewBadge = createdDaysAgo <= NEW_BADGE_DAYS;
 
-  const isFullProfile = tieneFichaCompleta({
-    planActivo: options?.planActivo,
-    planExpiraAt: options?.planExpiraAt,
-    trialExpiraAt: options?.trialExpiraAt ?? options?.trialExpira,
-    trialExpira: options?.trialExpira,
-  });
+  const isFullProfile =
+    calcularEstadoFicha({
+      nombre_emprendimiento: null,
+      whatsapp_principal: options?.whatsappPrincipal ?? null,
+      frase_negocio: options?.fraseNegocio ?? null,
+      comuna_id: null,
+      cobertura_tipo: null,
+      descripcion_libre: options?.descripcionLibre ?? null,
+      galeria_count: null,
+      foto_principal_url: options?.fotoPrincipalUrl,
+      instagram: options?.instagram,
+      sitio_web: options?.sitioWeb,
+      plan_activo: options?.planActivo === true ? true : options?.planActivo ?? null,
+      plan_expira_at: options?.planExpiraAt ?? null,
+      trial_expira_at: options?.trialExpiraAt ?? null,
+      trial_expira: options?.trialExpira ?? null,
+    }) === "mejorada";
   const isBasicProfile = !isFullProfile;
 
   return {

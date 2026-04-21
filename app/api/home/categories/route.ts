@@ -26,7 +26,7 @@ export async function GET() {
     const result = await Promise.all(
       categorias.map(async (cat: any) => {
         const r = await fetch(
-          `${url}/rest/v1/subcategorias?select=nombre,slug&categoria_id=eq.${cat.id}&limit=4`,
+          `${url}/rest/v1/subcategorias?select=nombre,slug&categoria_id=eq.${cat.id}&activo=eq.true&limit=4`,
           {
             headers: {
               apikey: key,

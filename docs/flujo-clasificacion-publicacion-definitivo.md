@@ -20,11 +20,11 @@ Describe el ciclo de vida de la ficha ante el público:
 | Valor | Significado |
 |-------|-------------|
 | `borrador` | El emprendedor aún no envía. |
-| `pendiente_aprobacion` | Enviado; pendiente de revisión (clasificación o moderación). |
+| `en_revision` | Enviado; pendiente de revisión (clasificación o moderación). |
 | `publicado` | Visible en el sitio. |
 | `rechazado` | Rechazado por moderación. |
 
-La clasificación y la publicación son independientes: puede estar `clasificada_automatica` y `pendiente_aprobacion` (p. ej. rubro regulado).
+La clasificación y la publicación son independientes: puede estar `clasificada_automatica` y `en_revision` (p. ej. rubro regulado).
 
 ---
 
@@ -96,10 +96,10 @@ Quedan como base para entrenar o ajustar reglas sin tocar el flujo actual.
    Crea tablas (subcategorias, emprendedor_subcategorias, keyword_to_subcategory_map, clasificacion_pendiente, clasificacion_feedback_log) y columnas en `emprendedores`.
 
 2. **`20260327000000_estados_clasificacion_publicacion_definitivo.sql`**  
-   - Sustituye `estado_publicacion = 'pendiente_verificacion'` por `'pendiente_aprobacion'`.
+   - Normaliza filas intermedias a `estado_publicacion = 'en_revision'` cuando no son `borrador`, `publicado`, `rechazado` ni `suspendido`.
    - Mapea `classification_status` antiguos a los nuevos (`automatica` → `clasificada_automatica`, `corregida_manual` → `clasificada_manual`, etc.).
    - Ajusta CHECK de `classification_status` a: `sin_clasificar`, `clasificada_automatica`, `pendiente_revision`, `clasificada_manual`.
-   - Ajusta CHECK de `estado_publicacion` a: `borrador`, `pendiente_aprobacion`, `publicado`, `rechazado`.
+   - Ajusta CHECK de `estado_publicacion` a: `borrador`, `en_revision`, `publicado`, `rechazado`, `suspendido`.
    - Asegura que existan `clasificacion_pendiente` y `clasificacion_feedback_log`.
 
 **Orden:** ejecutar primero la migración del motor, luego la de estados.
@@ -116,9 +116,9 @@ Quedan como base para entrenar o ajustar reglas sin tocar el flujo actual.
    - Keywords: usuario primero, luego IA.
    - Si no hay suficiente texto/keywords → error.
    - IA + mapeo → candidatas.
-   - Sin match → `classification_status = pendiente_revision`, `estado_publicacion = pendiente_aprobacion`, upsert en `clasificacion_pendiente`.
+   - Sin match → `classification_status = pendiente_revision`, `estado_publicacion = en_revision`, upsert en `clasificacion_pendiente`.
    - Con match y confianza &lt; 0.7 → se asignan principal y secundarias, pero `classification_status = pendiente_revision` y upsert en `clasificacion_pendiente`.
-   - Con match y confianza ≥ 0.7 → `classification_status = clasificada_automatica`, se borra de `clasificacion_pendiente`, y `estado_publicacion` según `getPublishingDecision` (publicado o pendiente_aprobacion si es rubro regulado).
+   - Con match y confianza ≥ 0.7 → `classification_status = clasificada_automatica`, se borra de `clasificacion_pendiente`, y `estado_publicacion` según `getPublishingDecision` (publicado o `en_revision` si es rubro regulado).
 
 ---
 

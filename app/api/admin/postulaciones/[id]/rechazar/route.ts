@@ -16,7 +16,10 @@ export async function POST(request: Request, context: RouteContext) {
       return badRequest("motivo_rechazo es obligatorio");
     }
 
-    const supabase = getSupabaseAdmin();
+    const supabase = getSupabaseAdmin({
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    });
 
     const { data: postulacion, error: postError } = await supabase
       .from("postulaciones_emprendedores")

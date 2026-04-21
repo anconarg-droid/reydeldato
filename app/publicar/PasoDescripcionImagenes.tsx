@@ -4,6 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { FormData } from "./PublicarClient";
 import { MIN_DESCRIPCION_NEGOCIO } from "./PublicarClient";
+import {
+  DESCRIPCION_CORTA_MAX,
+  DESCRIPCION_CORTA_MIN,
+  normalizeDescripcionCorta,
+} from "@/lib/descripcionProductoForm";
 import { cleanDetectedProducts } from "@/lib/cleanDetectedProducts";
 
 type SetField = <K extends keyof FormData>(key: K, value: FormData[K]) => void;
@@ -589,6 +594,17 @@ export default function PasoDescripcionImagenes({
   }, [form.descripcionNegocio]);
 
   const descripcionActual = form.descripcionNegocio.trim();
+  const descripcionCortaLen = normalizeDescripcionCorta(
+    form.descripcionNegocio,
+  ).length;
+  const descripcionSobra = Math.max(
+    0,
+    descripcionCortaLen - DESCRIPCION_CORTA_MAX,
+  );
+  const descripcionFaltante = Math.max(
+    0,
+    DESCRIPCION_CORTA_MIN - descripcionCortaLen,
+  );
   const descripcionValida =
     descripcionActual.length >= MIN_DESCRIPCION_NEGOCIO;
   const fotoPrincipalValida = !!form.fotoPrincipal;
@@ -597,9 +613,9 @@ export default function PasoDescripcionImagenes({
   const faltantes: string[] = [];
   if (!descripcionValida) {
     faltantes.push(
-      `Completar descripción (${
+      `Resumen para búsquedas: te faltan ${
         MIN_DESCRIPCION_NEGOCIO - descripcionActual.length
-      } caracteres faltantes)`
+      } caracteres (máx. ${DESCRIPCION_CORTA_MAX}, una frase)`
     );
   }
   if (!fotoPrincipalValida) {
@@ -637,41 +653,75 @@ export default function PasoDescripcionImagenes({
       </div>
 
       <div style={{ marginBottom: 22 }}>
-        <label style={labelStyle}>Descripción corta *</label>
+        <label style={labelStyle}>¿A qué te dedicas? *</label>
         <textarea
           value={form.descripcionNegocio}
           onChange={(e) => setField("descripcionNegocio", e.target.value)}
-          placeholder="Ej: Hago pan amasado y empanadas caseras en Padre Hurtado. También vendo pasteles por encargo y atiendo eventos."
+          placeholder="Ej: Gasfiter en Maipú: destapes, filtraciones, calefont"
           style={{
             ...textareaStyle,
             minHeight: 140,
-            border: errors.descripcionNegocio
-              ? "2px solid #ef4444"
-              : "1px solid #d1d5db",
+            border:
+              errors.descripcionNegocio ||
+              descripcionSobra > 0 ||
+              descripcionFaltante > 0
+                ? "2px solid #ef4444"
+                : "1px solid #d1d5db",
           }}
+          aria-invalid={
+            descripcionSobra > 0 ||
+            descripcionFaltante > 0 ||
+            Boolean(errors.descripcionNegocio)
+          }
         />
 
-        <div style={helperStyle}>
-          Incluye qué vendes o qué servicio prestas, productos/servicios concretos y la comuna donde atiendes.
-          Ejemplo: “Vendo empanadas, pan amasado y dulces caseros con retiro en Maipú”.
+        <div style={{ ...helperStyle, lineHeight: 1.55 }}>
+          Describe en una frase clara qué haces y dónde trabajas.
+          <br />
+          <span style={{ color: "#4b5563" }}>
+            Ej: Gasfiter en Maipú: destapes, filtraciones, calefont.
+          </span>
+          <br />
+          Después podrás agregar más detalles en tu perfil (horarios, servicios,
+          etc.).
         </div>
 
-        <div
-          style={
-            form.descripcionNegocio.length < MIN_DESCRIPCION_NEGOCIO
-              ? counterStyleShort
-              : counterStyle
-          }
+        <p
+          style={{
+            ...counterStyle,
+            color:
+              descripcionSobra > 0 || descripcionFaltante > 0
+                ? "#b91c1c"
+                : "#15803d",
+            fontWeight: 600,
+            marginTop: 10,
+          }}
+          aria-live="polite"
         >
-          {form.descripcionNegocio.length}/{MIN_DESCRIPCION_NEGOCIO} caracteres
-          mínimo
-        </div>
+          {descripcionCortaLen} / {DESCRIPCION_CORTA_MAX}
+        </p>
 
-        {form.descripcionNegocio.length < MIN_DESCRIPCION_NEGOCIO && (
-          <p style={shortDescMessageStyle}>
-            Te faltan{" "}
-            {MIN_DESCRIPCION_NEGOCIO - form.descripcionNegocio.length}{" "}
-            caracteres para completar la descripción.
+        {descripcionSobra > 0 ? (
+          <p style={{ ...errorStyle, marginTop: 4 }} role="alert">
+            Te pasaste por {descripcionSobra} caracteres. Acórtalo a una sola
+            frase.
+          </p>
+        ) : (
+          <p
+            style={{
+              marginTop: 4,
+              marginBottom: 0,
+              fontSize: 12,
+              lineHeight: 1.45,
+              fontWeight: 600,
+              color: descripcionFaltante > 0 ? "#b91c1c" : "#15803d",
+            }}
+            role="status"
+            aria-live="polite"
+          >
+            {descripcionFaltante > 0
+              ? `Te faltan ${descripcionFaltante} caracteres para completar este campo`
+              : "Perfecto, así te encontrarán mejor"}
           </p>
         )}
 
@@ -713,18 +763,21 @@ export default function PasoDescripcionImagenes({
 
       <div style={{ marginBottom: 22 }}>
         <label style={labelStyle}>
-          Palabras que ayuden a encontrar tu negocio (opcional)
+          Palabras clave de búsqueda (opcional)
         </label>
+        <div style={keywordsCalloutStyle}>
+          Escribe los productos o servicios específicos que ofreces. Esto ayuda a
+          que los clientes te encuentren cuando busquen algo puntual, no solo el
+          nombre de tu negocio.
+        </div>
         <input
           type="text"
+          autoComplete="off"
           value={form.keywordsUsuario}
           onChange={(e) => setField("keywordsUsuario", e.target.value)}
-          placeholder="Ej: pan amasado, empanadas, kuchen"
+          placeholder="Ej: cambio de aceite, frenos, alineación, neumáticos, scanner"
           style={inputStyle}
         />
-        <div style={helperStyle}>
-          No se muestran públicamente. Úsalas para ayudar a la clasificación y la búsqueda.
-        </div>
       </div>
 
       <div style={grid2}>
@@ -771,19 +824,21 @@ export default function PasoDescripcionImagenes({
             accept="image/*"
             multiple
             onChange={(e) =>
-              setField("galeria", Array.from(e.target.files || []))
+              setField(
+                "galeria",
+                Array.from(e.target.files || []).slice(0, 8)
+              )
             }
             style={fileInputStyle}
           />
 
           <div style={helperStyle}>
-            Puedes subir hasta 6 imágenes adicionales para mostrar mejor tu
-            trabajo, productos o local.
+            Puedes agregar hasta 8 imágenes para mostrar tu trabajo.
           </div>
 
           {form.galeria.length > 0 ? (
             <div style={helperBlueStyle}>
-              Imágenes seleccionadas: {form.galeria.length} de 6
+              Imágenes seleccionadas: {form.galeria.length} de 8
             </div>
           ) : null}
 
@@ -943,6 +998,16 @@ const helperStyle: React.CSSProperties = {
   lineHeight: 1.5,
 };
 
+const keywordsCalloutStyle: React.CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.55,
+  color: "#374151",
+  background: "#f3f4f6",
+  borderRadius: 12,
+  padding: "12px 14px",
+  marginBottom: 10,
+};
+
 const counterStyle: React.CSSProperties = {
   fontSize: 12,
   color: "#374151",
@@ -953,14 +1018,6 @@ const counterStyle: React.CSSProperties = {
 const counterStyleShort: React.CSSProperties = {
   ...counterStyle,
   color: "#b91c1c",
-};
-
-const shortDescMessageStyle: React.CSSProperties = {
-  fontSize: 13,
-  color: "#b91c1c",
-  fontWeight: 700,
-  marginTop: 6,
-  lineHeight: 1.4,
 };
 
 const helperBlueStyle: React.CSSProperties = {

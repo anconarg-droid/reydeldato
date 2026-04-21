@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import algoliasearch from "algoliasearch";
+import {
+  countGaleriaPivotByEmprendedorIds,
+  normalizeEmprendedorId,
+} from "@/lib/emprendedorGaleriaPivot";
+import { fichaPublicaEsMejoradaDesdeBusqueda } from "@/lib/estadoFicha";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,12 +51,30 @@ function asStringArray(value: unknown): string[] {
   );
 }
 
-function transformRow(row: any) {
+function buildSearchText(row: Record<string, unknown>): string {
+  const existing = s(row.search_text);
+  if (existing) return existing;
+
+  const keywordsArr = asStringArray(row.keywords ?? row.palabras_clave);
+  const parts = [
+    s(row.nombre),
+    s(row.descripcion_corta),
+    s(row.descripcion_larga),
+    s(row.categoria_nombre),
+    ...asStringArray(row.subcategorias_nombres_arr),
+    ...keywordsArr,
+    s(row.comuna_base_nombre),
+    ...asStringArray(row.tags_slugs),
+  ];
+  return parts.filter(Boolean).join(" ");
+}
+
+function transformRow(row: any, galeriaPivotByEmpId: Map<string, number>) {
   const subcategoriasNombresArr = asStringArray(
     row.subcategorias_nombres_arr
   );
   const subcategoriasSlugsArr = asStringArray(
-    row.subcategorias_slugs_arr
+    row.subcategorias_slugs_arr ?? row.subcategorias_slugs
   );
 
   const comunasCoberturaNombresArr = asStringArray(
@@ -69,13 +92,13 @@ function transformRow(row: any) {
   );
 
   const serviciosArr = asStringArray(row.servicios);
-  const keywordsArr = asStringArray(row.keywords);
+  const keywordsArr = asStringArray(row.keywords ?? row.palabras_clave);
 
   const modalidadesAtencionArr = asStringArray(
     row.modalidades_atencion_arr ?? row.modalidades_atencion
   );
 
-  const galeriaUrlsArr = asStringArray(row.galeria_urls);
+  const galeriaUrlsArr = asStringArray(row.galeria_urls ?? row.galeria_urls_arr);
 
   const estadoPublicacion = s(row.estado_publicacion);
 
@@ -90,7 +113,7 @@ function transformRow(row: any) {
 
     categoria_id: s(row.categoria_id),
     categoria_nombre: s(row.categoria_nombre),
-    categoria_slug: s(row.categoria_slug),
+    categoria_slug: s(row.categoria_slug ?? row.categoria_slug_final),
 
     comuna_base_id: s(row.comuna_base_id),
     comuna_base_nombre: s(row.comuna_base_nombre),
@@ -103,7 +126,7 @@ function transformRow(row: any) {
     foto_principal_url: s(row.foto_principal_url),
     galeria_urls: galeriaUrlsArr,
 
-    whatsapp: s(row.whatsapp),
+    whatsapp: s(row.whatsapp ?? row.whatsapp_principal),
     instagram: s(row.instagram),
     web: s(row.web ?? row.sitio_web),
     email: s(row.email),
@@ -132,10 +155,26 @@ function transformRow(row: any) {
     keywords: keywordsArr,
     modalidades_atencion: modalidadesAtencionArr,
 
-    search_text: s(row.search_text),
-    keywords_text: s(row.keywords_text),
+    search_text: buildSearchText(row as Record<string, unknown>),
+    keywords_text:
+      s(row.keywords_text) ||
+      keywordsArr.join(" ").trim(),
 
-    nivel_rank: Number(row.nivel_rank || 9999),
+    nivel_rank: Number(row.nivel_rank ?? 9999),
+
+    sector_slug: s(row.sector_slug),
+    tipo_actividad: s(row.tipo_actividad),
+    tags_slugs: asStringArray(row.tags_slugs),
+    clasificacion_confianza:
+      row.clasificacion_confianza == null || row.clasificacion_confianza === ""
+        ? null
+        : Number(row.clasificacion_confianza),
+
+    ficha_mejorada_contenido: fichaPublicaEsMejoradaDesdeBusqueda(
+      row as Record<string, unknown>,
+      null,
+      galeriaPivotByEmpId.get(normalizeEmprendedorId(row.id)) ?? 0
+    ),
   };
 }
 
@@ -173,8 +212,13 @@ export async function GET() {
       from += pageSize;
     }
 
+    const galeriaPivotByEmpId = await countGaleriaPivotByEmprendedorIds(
+      supabase,
+      allRows.map((r) => r.id)
+    );
+
     const objects = allRows
-      .map(transformRow)
+      .map((row) => transformRow(row, galeriaPivotByEmpId))
       .filter(
         (item) =>
           item.objectID &&
@@ -201,17 +245,16 @@ export async function GET() {
         "filterOnly(estado_publicacion)",
         "filterOnly(sector_slug)",
         "filterOnly(tipo_actividad)",
-        "filterOnly(coverage_keys)",
+        "filterOnly(tags_slugs)",
+        "filterOnly(ficha_mejorada_contenido)",
       ],
       searchableAttributes: [
         "unordered(nombre)",
         "descripcion_corta",
         "search_text",
         "unordered(tags_slugs)",
-        "unordered(keywords_clasificacion)",
         "descripcion_larga",
         "unordered(subcategorias_nombres_arr)",
-        "unordered(servicios)",
         "unordered(keywords)",
         "categoria_nombre",
         "keywords_text",
@@ -263,9 +306,9 @@ export async function GET() {
         "nivel_rank",
         "sector_slug",
         "tipo_actividad",
-        "coverage_keys",
         "tags_slugs",
-        "keywords_clasificacion",
+        "clasificacion_confianza",
+        "ficha_mejorada_contenido",
       ],
     });
 

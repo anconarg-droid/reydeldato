@@ -47,7 +47,7 @@ function buildResponse(
   meta: SimilaresMeta | null
 ): { items: Similar[]; meta: SimilaresMeta | null } {
   const out = items.map((item) => ({
-    nombre: s(item.nombre),
+    nombre: s(item.nombre) || s(item.nombre_emprendimiento),
     slug: s(item.slug),
     categoria_nombre: s(item.categoria_nombre) || undefined,
     comuna_base_nombre: s(item.comuna_base_nombre) || undefined,
@@ -61,7 +61,7 @@ function buildResponse(
     descripcion_corta: s(item.descripcion_corta) || s(item.frase_negocio) || undefined,
     subcategorias_nombres_arr: arr(item.subcategorias_nombres_arr),
     cobertura_tipo: s(item.cobertura_tipo || item.nivel_cobertura || "") || undefined,
-    whatsapp: s(item.whatsapp) || undefined,
+    whatsapp: s(item.whatsapp_principal) || s(item.whatsapp) || undefined,
     plan_activo: item.plan_activo === true,
     plan_expira_at: (item.plan_expira_at as string) ?? null,
     trial_expira_at: (item.trial_expira_at as string) ?? (item.trial_expira as string) ?? null,
@@ -81,9 +81,12 @@ export async function getSimilaresBySlug(actualSlug: string): Promise<{
     if (!slug) return { items: [], meta: null };
 
     const { data: actual, error: actualError } = await supabase
-      .from("vw_emprendedores_algolia_final")
-      .select("*")
+      .from("vw_emprendedores_publico")
+      .select(
+        "slug, comuna_base_slug, comuna_base_nombre, categoria_slug_final, categoria_nombre, subcategorias_slugs, subcategorias_nombres_arr"
+      )
       .eq("slug", slug)
+      .eq("estado_publicacion", "publicado")
       .limit(1)
       .maybeSingle();
 
@@ -92,14 +95,12 @@ export async function getSimilaresBySlug(actualSlug: string): Promise<{
     const row = actual as Record<string, unknown>;
     const comunaSlug = s(row.comuna_base_slug);
     const comunaNombre = s(row.comuna_base_nombre);
-    const categoriaSlug = s(row.categoria_slug);
+    const categoriaSlug = s(row.categoria_slug_final);
     const categoriaNombre = s(row.categoria_nombre);
-    const subcategoriasSlugs = arr(row.subcategorias_slugs_arr);
+    const subcategoriasSlugs = arr(row.subcategorias_slugs);
     const subcategoriaSlug = subcategoriasSlugs[0] || "";
     const subcategoriaNombreTitulo =
-      s(row.subcategoria_principal_nombre) ||
-      arr(row.subcategorias_nombres_arr)[0] ||
-      "";
+      arr(row.subcategorias_nombres_arr)[0] || "";
 
     const used = new Set<string>([slug]);
     const collected: Record<string, unknown>[] = [];
@@ -123,16 +124,19 @@ export async function getSimilaresBySlug(actualSlug: string): Promise<{
     // 1) Misma subcategoría + misma comuna
     if (subcategoriaSlug && (comunaSlug || comunaNombre)) {
       let q = supabase
-        .from("vw_emprendedores_algolia_final")
-        .select("*")
+        .from("vw_emprendedores_publico")
+        .select(
+          "nombre, slug, categoria_nombre, comuna_base_nombre, foto_principal_url, descripcion_corta, frase_negocio, subcategorias_nombres_arr, cobertura_tipo, whatsapp_principal, plan_activo, plan_expira_at, trial_expira_at, created_at, estado_publicacion, comuna_base_slug, categoria_slug_final, subcategorias_slugs"
+        )
         .neq("slug", slug)
+        .eq("estado_publicacion", "publicado")
         .limit(FETCH_CAP);
       if (comunaSlug) q = q.eq("comuna_base_slug", comunaSlug);
       else q = q.eq("comuna_base_nombre", comunaNombre);
       const { data, error } = await q;
       if (error) return { items: [], meta: null };
       const list = (data || []).filter((r: Record<string, unknown>) =>
-        arr(r.subcategorias_slugs_arr).includes(subcategoriaSlug)
+        arr(r.subcategorias_slugs).includes(subcategoriaSlug)
       );
       addRows(list, 1);
     }
@@ -144,11 +148,14 @@ export async function getSimilaresBySlug(actualSlug: string): Promise<{
       (comunaSlug || comunaNombre)
     ) {
       let q = supabase
-        .from("vw_emprendedores_algolia_final")
-        .select("*")
+        .from("vw_emprendedores_publico")
+        .select(
+          "nombre, slug, categoria_nombre, comuna_base_nombre, foto_principal_url, descripcion_corta, frase_negocio, subcategorias_nombres_arr, cobertura_tipo, whatsapp_principal, plan_activo, plan_expira_at, trial_expira_at, created_at, estado_publicacion, comuna_base_slug, categoria_slug_final, subcategorias_slugs"
+        )
         .neq("slug", slug)
+        .eq("estado_publicacion", "publicado")
         .limit(FETCH_CAP);
-      if (categoriaSlug) q = q.eq("categoria_slug", categoriaSlug);
+      if (categoriaSlug) q = q.eq("categoria_slug_final", categoriaSlug);
       else q = q.eq("categoria_nombre", categoriaNombre);
       if (comunaSlug) q = q.eq("comuna_base_slug", comunaSlug);
       else q = q.eq("comuna_base_nombre", comunaNombre);
@@ -163,9 +170,12 @@ export async function getSimilaresBySlug(actualSlug: string): Promise<{
     // 3) Todos los negocios de la comuna (si aún hay menos de TARGET_MIN)
     if (collected.length < TARGET_MIN && (comunaSlug || comunaNombre)) {
       let q = supabase
-        .from("vw_emprendedores_algolia_final")
-        .select("*")
+        .from("vw_emprendedores_publico")
+        .select(
+          "nombre, slug, categoria_nombre, comuna_base_nombre, foto_principal_url, descripcion_corta, frase_negocio, subcategorias_nombres_arr, cobertura_tipo, whatsapp_principal, plan_activo, plan_expira_at, trial_expira_at, created_at, estado_publicacion, comuna_base_slug, categoria_slug_final, subcategorias_slugs"
+        )
         .neq("slug", slug)
+        .eq("estado_publicacion", "publicado")
         .limit(FETCH_CAP);
       if (comunaSlug) q = q.eq("comuna_base_slug", comunaSlug);
       else q = q.eq("comuna_base_nombre", comunaNombre);

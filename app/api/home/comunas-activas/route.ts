@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { VW_APERTURA_COMUNA_V2 } from "@/lib/aperturaComunaContrato";
 import {
   abiertaPorMinimosFromVwRow,
   comunaPublicaAbierta,
@@ -60,8 +61,8 @@ export async function GET() {
     }
 
     const { data: vwRows, error: vwErr } = await supabase
-      .from("vw_apertura_comuna_v2")
-      .select("comuna_slug, porcentaje_apertura");
+      .from(VW_APERTURA_COMUNA_V2)
+      .select("comuna_slug, porcentaje_apertura, abierta");
 
     if (vwErr) {
       return NextResponse.json(
@@ -70,13 +71,17 @@ export async function GET() {
       );
     }
 
-    const vwBySlug = new Map<string, { porcentaje_apertura: number }>();
+    const vwBySlug = new Map<
+      string,
+      { porcentaje_apertura: number; abierta?: unknown }
+    >();
     for (const r of vwRows || []) {
       const row = r as Record<string, unknown>;
       const slug = String(row.comuna_slug || "").trim();
       if (!slug) continue;
       vwBySlug.set(slug, {
         porcentaje_apertura: Number(row.porcentaje_apertura ?? 0),
+        abierta: row.abierta,
       });
     }
 
@@ -85,8 +90,14 @@ export async function GET() {
         const slug = String(c.slug || "").trim();
         const vw = vwBySlug.get(slug) ?? null;
         const forzar = Boolean(c.forzar_abierta);
-        const abierta_por_minimos = abiertaPorMinimosFromVwRow(vw);
-        const comuna_publica_abierta = comunaPublicaAbierta(forzar, vw);
+        const vwParaRegla = vw
+          ? {
+              porcentaje_apertura: vw.porcentaje_apertura,
+              abierta: vw.abierta,
+            }
+          : null;
+        const abierta_por_minimos = abiertaPorMinimosFromVwRow(vwParaRegla);
+        const comuna_publica_abierta = comunaPublicaAbierta(forzar, vwParaRegla);
         return {
           id: Number(c.id ?? 0),
           slug,

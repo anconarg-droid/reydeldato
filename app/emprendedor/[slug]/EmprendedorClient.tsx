@@ -1,20 +1,65 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { etiquetaModalidadAtencion } from "@/lib/modalidadesAtencion";
+import {
+  formatDireccionLocalLinea,
+  sortLocalesFichaPrincipalPrimero,
+} from "@/lib/emprendedorLocalesFichaPublica";
+import {
+  buildMapsLinks,
+  emprendedorTieneModalidadLocalFisico,
+} from "@/lib/maps";
+import { displayTitleCaseWords } from "@/lib/displayTextFormat";
 
 type LocalFicha = {
   nombre_local: string | null;
   direccion: string;
+  referencia?: string;
   comuna_nombre: string;
   comuna_slug: string;
   es_principal: boolean;
+  lat?: number;
+  lng?: number;
 };
+
+function MapasNavegacionLocal({
+  loc,
+  mostrar,
+}: {
+  loc: LocalFicha;
+  mostrar: boolean;
+}) {
+  if (!mostrar) return null;
+  const maps = buildMapsLinks(loc.direccion, loc.comuna_nombre, loc.lat, loc.lng);
+  if (!maps) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-2">
+      <a
+        href={maps.waze}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex min-h-[2.5rem] shrink-0 items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+      >
+        Abrir en Waze
+      </a>
+      <a
+        href={maps.google}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex min-h-[2.5rem] shrink-0 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+      >
+        Ver en Maps
+      </a>
+    </div>
+  );
+}
 
 type Emprendedor = {
   id: string;
   slug: string;
   nombre: string;
-  /** Dirección única cuando no hay fila en `locales` (legacy / API). */
+  /** Solo relleno legacy si la API aún la enviara; la UI pública prioriza `locales`. */
   direccion?: string;
   /** Frase corta opcional; se muestra debajo del nombre. */
   frase_negocio?: string;
@@ -164,6 +209,19 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
 
     cargarSimilares();
   }, [slug]);
+
+  const localesOrdenados = useMemo(
+    () =>
+      sortLocalesFichaPrincipalPrimero(
+        item && Array.isArray(item.locales) ? item.locales : []
+      ),
+    [item]
+  );
+
+  const puedeMostrarMapasLocales = useMemo(
+    () => emprendedorTieneModalidadLocalFisico(item?.modalidades_atencion),
+    [item?.modalidades_atencion]
+  );
 
   if (!item) {
     return <div className="p-8">Cargando emprendimiento...</div>;
@@ -348,49 +406,57 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
               </div>
             )}
 
-            {item.direccion && !item.locales?.length && (
-              <div className="rounded-2xl bg-gray-50 px-4 py-3">
-                <div className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                  Dirección
-                </div>
-                <div className="text-base font-semibold text-gray-900 mt-1">
-                  {item.direccion}
-                </div>
-              </div>
-            )}
-
-            {item.locales && item.locales.length >= 2 && (
+            {localesOrdenados.length >= 2 && (
               <div className="rounded-2xl bg-gray-50 px-4 py-3">
                 <div className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">
-                  Locales físicos
+                  Locales
                 </div>
                 <ul className="space-y-3">
-                  {item.locales.map((loc, idx) => (
-                    <li key={idx} className="text-base text-gray-900 border-b border-gray-200 last:border-0 pb-2 last:pb-0">
+                  {localesOrdenados.map((loc, idx) => (
+                    <li
+                      key={`${loc.comuna_slug}-${idx}`}
+                      className="text-base text-gray-900 border-b border-gray-200 last:border-0 pb-2 last:pb-0"
+                    >
                       <span className="font-semibold">
                         {loc.nombre_local ? `${loc.nombre_local} — ` : ""}
                         {loc.comuna_nombre}
                         {loc.es_principal ? " (principal)" : ""}
                       </span>
-                      <span className="block text-gray-700 mt-0.5">{loc.direccion}</span>
+                      {formatDireccionLocalLinea(loc) ? (
+                        <span className="block text-gray-700 mt-0.5">
+                          {formatDireccionLocalLinea(loc)}
+                        </span>
+                      ) : null}
+                      <MapasNavegacionLocal
+                        loc={loc}
+                        mostrar={puedeMostrarMapasLocales}
+                      />
                     </li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {item.locales && item.locales.length === 1 && (
+            {localesOrdenados.length === 1 && (
               <div className="rounded-2xl bg-gray-50 px-4 py-3">
                 <div className="text-xs font-bold uppercase tracking-wide text-gray-500">
                   Local
                 </div>
                 <div className="text-base font-semibold text-gray-900 mt-1">
-                  {item.locales[0].nombre_local ? `${item.locales[0].nombre_local} — ` : ""}
-                  {item.locales[0].comuna_nombre}
+                  {localesOrdenados[0].nombre_local
+                    ? `${localesOrdenados[0].nombre_local} — `
+                    : ""}
+                  {localesOrdenados[0].comuna_nombre}
                 </div>
-                {item.locales[0].direccion && (
-                  <div className="text-sm text-gray-700 mt-1">{item.locales[0].direccion}</div>
-                )}
+                {formatDireccionLocalLinea(localesOrdenados[0]) ? (
+                  <div className="text-sm text-gray-700 mt-1">
+                    {formatDireccionLocalLinea(localesOrdenados[0])}
+                  </div>
+                ) : null}
+                <MapasNavegacionLocal
+                  loc={localesOrdenados[0]}
+                  mostrar={puedeMostrarMapasLocales}
+                />
               </div>
             )}
 
@@ -407,7 +473,7 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
                         key={m}
                         className="rounded-full bg-white px-3 py-1 text-sm font-medium text-gray-800 border border-gray-200"
                       >
-                        {m}
+                        {etiquetaModalidadAtencion(m)}
                       </span>
                     ))}
                   </div>
@@ -466,7 +532,9 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
           </h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {similares.map((sim) => (
+            {similares.map((sim) => {
+              const nombreSimilar = displayTitleCaseWords(String(sim.nombre ?? "").trim());
+              return (
               <div
                 key={sim.id}
                 className="overflow-hidden rounded-[26px] border border-gray-200 bg-white shadow-sm hover:shadow-md transition"
@@ -475,7 +543,7 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
                   <img
                     src={pickFoto(sim.foto_principal_url)}
                     className="w-full h-full object-cover"
-                    alt={sim.nombre}
+                    alt={nombreSimilar || sim.nombre}
                   />
                 </div>
 
@@ -490,7 +558,7 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
                   </div>
 
                   <h3 className="text-[30px] leading-[1.05] font-black text-gray-900 mb-3">
-                    {sim.nombre}
+                    {nombreSimilar || sim.nombre}
                   </h3>
 
                   <p className="text-base text-gray-700 leading-6 min-h-[72px] mb-6">
@@ -505,7 +573,8 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
                   </a>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       )}

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import HomePublicarLazy from "@/components/home/HomePublicarLazy";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import HomeRecomienda from "@/components/home/HomeRecomienda";
 import HomeComunasAbiertasGrid, {
   type ComunaAbiertaItem,
@@ -11,39 +11,28 @@ import HomeComunaAutocomplete from "@/components/home/HomeComunaAutocomplete";
 import HomeComunasPreparacion, {
   type ComunaPreparacionItem,
 } from "@/components/home/HomeComunasPreparacion";
+import HomeUltimosPublicadosClient from "@/components/home/HomeUltimosPublicadosClient";
+import type { EmprendedorSearchCardProps } from "@/components/search/EmprendedorSearchCard";
 
 type Comuna = { id: number; nombre: string; slug: string; total?: number };
 
-/** Nombres cortos para equilibrio visual en la grilla */
-const CATEGORIAS_DESTACADAS = [
-  { slug: "hogar-construccion", nombre: "Hogar", emoji: "🏠", ejemplos: ["Gasfiter", "Electricista"] },
-  { slug: "automotriz", nombre: "Automotriz", emoji: "🚗", ejemplos: ["Mecánico", "Vulcanización"] },
-  { slug: "mascotas", nombre: "Mascotas", emoji: "🐾", ejemplos: ["Veterinaria", "Peluquería canina"] },
-  { slug: "alimentacion", nombre: "Alimentación", emoji: "🍞", ejemplos: ["Panadería", "Empanadas"] },
-  { slug: "salud-bienestar", nombre: "Salud", emoji: "💚", ejemplos: ["Kinesiología", "Masajes"] },
-  { slug: "eventos", nombre: "Eventos", emoji: "🎉", ejemplos: ["Banquetería", "Decoración"] },
-  { slug: "belleza-estetica", nombre: "Belleza", emoji: "💇", ejemplos: ["Peluquería", "Uñas"] },
-  { slug: "educacion-clases", nombre: "Servicios", emoji: "📚", ejemplos: ["Clases", "Tutorías"] },
-] as const;
-
 const COMUNAS_PREVIEW = 6;
 
-export default function HomeLandingBody() {
+type Props = {
+  ultimosPublicadosCards: EmprendedorSearchCardProps[];
+};
+
+const cardBase =
+  "rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition-shadow hover:shadow-md";
+
+export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
+  const searchParams = useSearchParams();
+  const contextComunaSlug = (searchParams.get("comuna") || "").trim().toLowerCase();
+
   const [comunas, setComunas] = useState<Comuna[]>([]);
   const [loadingComunas, setLoadingComunas] = useState(true);
   const [prep, setPrep] = useState<ComunaPreparacionItem[]>([]);
   const [loadingPrep, setLoadingPrep] = useState(true);
-  const [publicarOpen, setPublicarOpen] = useState(false);
-  const [publicarMounted, setPublicarMounted] = useState(false);
-  const publicarPanelRef = useRef<HTMLDivElement | null>(null);
-
-  function openPublicar() {
-    setPublicarMounted(true);
-    setPublicarOpen(true);
-    requestAnimationFrame(() => {
-      publicarPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -89,29 +78,39 @@ export default function HomeLandingBody() {
   useEffect(() => {
     let cancelled = false;
     setLoadingPrep(true);
-    fetch("/api/comunas/estado")
+    const qs = contextComunaSlug
+      ? `?comuna=${encodeURIComponent(contextComunaSlug)}`
+      : "";
+    fetch(`/api/comunas/estado${qs}`)
       .then((res) => res.json())
       .then((data: { ok?: boolean; items?: any[] }) => {
         if (cancelled) return;
         const items = Array.isArray(data?.items) ? data.items : [];
         const prepItems: ComunaPreparacionItem[] = items
-          // No listar comunas ya públicas (forzar_abierta o mínimos cumplidos): evita doble bloque con “con resultados”.
           .filter(
             (x) =>
               Number(x?.porcentaje_apertura ?? 0) < 100 &&
               x?.comuna_publica_abierta !== true
           )
-          .map((x) => ({
-            slug: String(x.comuna_slug || "").trim(),
-            nombre: String(x.comuna_nombre || "").trim(),
-            porcentaje: Number(x.porcentaje_apertura || 0),
-            faltantesTop: Array.isArray(x.faltantes)
-              ? x.faltantes.slice(0, 3).map((f: any) => ({
-                  subcategoria: String(f?.subcategoria || "").trim(),
-                  faltan: Number(f?.faltan || 0),
-                }))
-              : [],
-          }))
+          .map((x) => {
+            const tr = Number(x?.total_requerido ?? NaN);
+            const tc = Number(x?.total_cumplido ?? NaN);
+            return {
+              slug: String(x.comuna_slug || "").trim(),
+              nombre: String(x.comuna_nombre || "").trim(),
+              porcentaje: Number(x.porcentaje_apertura || 0),
+              total_requerido:
+                Number.isFinite(tr) && tr > 0 ? Math.floor(tr) : null,
+              total_cumplido:
+                Number.isFinite(tc) && tc >= 0 ? Math.floor(tc) : null,
+              faltantesTop: Array.isArray(x.faltantes)
+                ? x.faltantes.slice(0, 3).map((f: any) => ({
+                    subcategoria: String(f?.subcategoria || "").trim(),
+                    faltan: Number(f?.faltan || 0),
+                  }))
+                : [],
+            };
+          })
           .filter((x) => x.slug && Number.isFinite(x.porcentaje));
         setPrep(prepItems);
       })
@@ -124,7 +123,7 @@ export default function HomeLandingBody() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [contextComunaSlug]);
 
   const comunasCards: ComunaAbiertaItem[] = comunas
     .filter((c) => (Number(c.total || 0) || 0) > 0)
@@ -135,137 +134,201 @@ export default function HomeLandingBody() {
       count: Number(c.total || 0),
     }));
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 pb-16 sm:pb-20">
-      <section
-        className="mt-6 sm:mt-10 border-t border-slate-100 pt-10 sm:pt-14"
-        aria-labelledby="comunas-abiertas-heading"
-      >
-        <h2
-          id="comunas-abiertas-heading"
-          className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl"
-        >
-          Ya disponible
-        </h2>
+  const totalNegociosActivos = comunas.reduce((s, c) => s + (Number(c.total) || 0), 0);
 
-        {loadingComunas ? (
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-[180px] rounded-2xl bg-slate-100 animate-pulse" />
+  return (
+    <div className="pb-0">
+      {/* 1 · Cómo funciona */}
+      <section
+        className="border-t border-slate-100 bg-white"
+        aria-labelledby="home-como-funciona"
+      >
+        <div className="mx-auto max-w-5xl px-4 pb-20 pt-16 sm:px-6 sm:pb-24 sm:pt-20">
+          <h2
+            id="home-como-funciona"
+            className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+          >
+            Cómo funciona
+          </h2>
+          <ol className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
+            {[
+              { n: "01", t: "Buscas en tu comuna", d: "Resultados locales primero." },
+              { n: "02", t: "Revisas la ficha", d: "Información clara para decidir rápido." },
+              { n: "03", t: "Contactas por WhatsApp", d: "Directo, sin comisiones ocultas." },
+              { n: "04", t: "Si publicas, te encuentran", d: "Vecinos que ya buscan con intención." },
+            ].map((step) => (
+              <li key={step.n} className={cardBase}>
+                <div className="text-[clamp(1.75rem,4vw,2.35rem)] font-black tabular-nums leading-none tracking-[-0.04em] text-teal-700">
+                  {step.n}
+                </div>
+                <div className="mt-3 text-base font-bold text-slate-900">{step.t}</div>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-700">{step.d}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* 2 · Cards reales (evidencia) */}
+      <section
+        className="border-t border-slate-100 bg-slate-50/90"
+        aria-labelledby="home-ultimos-publicados-heading"
+      >
+        <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
+          <HomeUltimosPublicadosClient
+            cards={ultimosPublicadosCards}
+            totalNegociosActivos={totalNegociosActivos}
+          />
+        </div>
+      </section>
+
+      {/* 3 · La diferencia (único bloque — sin duplicar problema/solución) */}
+      <section
+        className="border-t border-slate-100 bg-white"
+        aria-labelledby="home-diferencia-por-que home-diferencia"
+      >
+        <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
+          <p
+            id="home-diferencia-por-que"
+            className="text-sm font-semibold tracking-tight text-teal-700"
+          >
+            ¿Por qué funciona distinto?
+          </p>
+          <h2
+            id="home-diferencia"
+            className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+          >
+            La diferencia
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+            Directorio justo: cercanía y reglas claras, no presupuesto de publicidad.
+          </p>
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+            {[
+              {
+                t: "Sin pago por posicionamiento",
+                d: "No es pay-to-rank: nadie compra el primer lugar del listado.",
+              },
+              {
+                t: "Resultados locales primero",
+                d: "Lo de tu comuna manda frente al ruido nacional.",
+              },
+              {
+                t: "Contacto directo por WhatsApp",
+                d: "Hablas con el negocio, sin intermediarios ni cobro por mensaje.",
+              },
+              {
+                t: "Fichas que rotan",
+                d: "El orden cambia en el tiempo para repartir visibilidad.",
+              },
+            ].map((x) => (
+              <div
+                key={x.t}
+                className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm border-l-[3px] border-l-teal-600 transition-shadow hover:shadow-md"
+              >
+                <div className="text-sm font-bold text-slate-900">{x.t}</div>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">{x.d}</p>
+              </div>
             ))}
           </div>
-        ) : comunasCards.length === 0 ? (
-          <div className="mt-6">
-            <p className="text-sm text-slate-600">Aún no hay comunas abiertas con resultados.</p>
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-medium text-slate-800">
-                Busca tu comuna para ver si ya tiene resultados
-              </p>
-              <HomeComunaAutocomplete
-                placeholder="Busca tu comuna…"
-                containerClassName="relative w-full sm:w-56"
-                inputClassName="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400"
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="mt-6">
-            <HomeComunasAbiertasGrid items={comunasCards} />
-            <div className="mt-8 flex flex-col gap-3 border-t border-slate-100 pt-8 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-medium text-slate-700">
-                ¿Tu comuna no aparece? Búscala aquí
-              </p>
-              <HomeComunaAutocomplete
-                placeholder="Busca tu comuna…"
-                containerClassName="relative w-full sm:w-56"
-                inputClassName="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400"
-              />
-            </div>
-          </div>
-        )}
+          <p className="mt-10 text-center text-xs text-slate-500">
+            Rey del Dato SpA · RUT 78.403.835-1
+          </p>
+        </div>
       </section>
 
-      {loadingPrep ? (
-        <div className="mt-14 sm:mt-16 border-t border-slate-100 pt-10 sm:pt-12">
-          <p className="text-sm text-slate-500">Cargando comunas en preparación…</p>
-        </div>
-      ) : (
-        <HomeComunasPreparacion items={prep.slice(0, 6)} />
-      )}
+      {/* 4 · Comunas */}
+      <section className="border-t border-slate-100 bg-slate-50/90" aria-labelledby="home-local">
+        <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
+          <h2
+            id="home-local"
+            className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+          >
+            Comunas
+          </h2>
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
+            Sumamos fichas cada semana. Si la tuya está en preparación, igual puedes explorar.
+          </p>
 
-      <section
-        className="mt-14 sm:mt-16 border-t border-slate-100 pt-10 sm:pt-12"
-        aria-labelledby="categorias-heading"
-      >
-        <h2
-          id="categorias-heading"
-          className="text-base font-medium text-slate-500 sm:text-lg"
-        >
-          Explora por tipo de servicio
-        </h2>
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-          {CATEGORIAS_DESTACADAS.map((cat) => (
-            <div
-              key={cat.slug}
-              className="rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 sm:p-3 flex flex-col transition hover:border-slate-200 hover:bg-white"
-            >
-              <Link
-                href={`/buscar?categoria=${encodeURIComponent(cat.slug)}`}
-                className="block min-w-0 text-slate-500 transition hover:text-slate-800"
-              >
-                <div className="text-base opacity-75" aria-hidden>
-                  {cat.emoji}
-                </div>
-                <div className="mt-0.5 font-medium text-sm text-slate-600 leading-tight">
-                  {cat.nombre}
-                </div>
-                <span className="mt-1.5 inline-flex text-xs font-normal text-slate-500">
-                  Ver categoría →
-                </span>
-              </Link>
-              <div className="mt-2 flex flex-wrap gap-1 border-t border-slate-100/80 pt-2">
-                {cat.ejemplos.slice(0, 2).map((e) => (
-                  <Link
-                    key={e}
-                    href={`/resultados?q=${encodeURIComponent(e)}`}
-                    className="rounded-full bg-slate-100/80 px-2 py-0.5 text-[11px] font-normal text-slate-500 transition hover:bg-slate-200/80 hover:text-slate-700"
-                  >
-                    {e}
-                  </Link>
+          <div className="mt-10">
+            <h3 className="text-sm font-semibold text-slate-900">Con resultados</h3>
+            {loadingComunas ? (
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-[180px] animate-pulse rounded-2xl bg-slate-100" />
                 ))}
               </div>
+            ) : comunasCards.length === 0 ? (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-5 sm:p-6">
+                <p className="text-sm leading-relaxed text-slate-700">
+                  Aún no hay comunas con resultados listadas acá. Busca la tuya para ver el estado.
+                </p>
+                <div className="mt-4">
+                  <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <HomeComunasAbiertasGrid items={comunasCards} />
+                <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                  <p className="text-sm font-medium text-slate-800">¿Tu comuna no aparece?</p>
+                  <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {!loadingPrep && prep.length > 0 ? (
+            <div className="mt-14">
+              <HomeComunasPreparacion items={prep.slice(0, 6)} />
             </div>
-          ))}
+          ) : null}
         </div>
       </section>
 
+      {/* 5 · CTA emprendedor + recomendar (ancho completo, alto contraste) */}
       <section
-        className="mt-16 sm:mt-20 border-t border-slate-200 pt-14 sm:pt-16 pb-6 space-y-14 sm:space-y-16 text-center sm:text-left"
-        aria-label="Publicar o recomendar"
+        className="mt-0 w-full border-t border-emerald-900/20 bg-[#059669] text-white"
+        aria-labelledby="home-emprendedores"
       >
-        <div ref={publicarPanelRef}>
-          <h2 className="text-lg font-semibold text-slate-900 sm:text-xl max-w-xl leading-snug">
-            Consigue clientes hoy. Publica gratis.
-          </h2>
-          <button
-            type="button"
-            onClick={() => (publicarOpen ? setPublicarOpen(false) : openPublicar())}
-            className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white transition-colors duration-200 hover:bg-slate-800 w-full sm:w-auto"
+        <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 sm:py-20">
+          <h2
+            id="home-emprendedores"
+            className="text-3xl font-bold tracking-tight sm:text-4xl"
           >
-            {publicarOpen ? "Ocultar formulario de publicación" : "Publicar gratis"}
-          </button>
-          {!publicarOpen ? (
-            <p className="mt-2 text-sm text-slate-500">Toma menos de 2 minutos</p>
-          ) : null}
-          {publicarMounted ? (
-            <div className={publicarOpen ? "block" : "hidden"} aria-hidden={!publicarOpen}>
-              <HomePublicarLazy />
-            </div>
-          ) : null}
-        </div>
+            Para emprendedores
+          </h2>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-emerald-50 sm:text-lg">
+            Si haces bien el trabajo, mereces aparecer cuando te buscan en tu comuna. Publicar es gratis en esta etapa.
+          </p>
+          <p className="mt-6 text-center text-sm font-semibold tracking-tight text-white sm:text-left sm:text-base">
+            Empieza hoy. Es gratis.
+          </p>
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+            <Link
+              href="/publicar"
+              className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-xl bg-white px-8 text-base font-extrabold text-[#047857] shadow-lg transition hover:bg-emerald-50 sm:w-auto"
+            >
+              Publica tu emprendimiento
+            </Link>
+            <Link
+              href="/informacion-util"
+              className="text-center text-sm font-semibold text-white/95 underline underline-offset-4 hover:text-white sm:text-left"
+            >
+              Ver información útil
+            </Link>
+          </div>
 
-        <div>
-          <HomeRecomienda embedded />
+          <HomeRecomienda embedded embeddedOnEmerald />
+
+          <div className="mt-10 flex flex-wrap justify-center gap-6 text-sm font-semibold text-white/95 sm:justify-start">
+            <Link href="/buscar" className="underline underline-offset-4 hover:text-white">
+              Ir a buscar
+            </Link>
+            <Link href="/publicar" className="underline underline-offset-4 hover:text-white">
+              Publicar
+            </Link>
+          </div>
         </div>
       </section>
     </div>

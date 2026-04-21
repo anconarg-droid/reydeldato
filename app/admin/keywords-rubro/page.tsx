@@ -1,8 +1,8 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import AdminKeywordsRubroClient from "@/components/admin/AdminKeywordsRubroClient";
 
 export default async function AdminKeywordsRubroPage() {
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
 
   const { data, error } = await supabase
     .from("keywords_rubro")

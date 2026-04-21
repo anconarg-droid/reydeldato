@@ -8,8 +8,9 @@
  *   incluso si su cobertura es "solo_comuna", "varias_comunas", "varias_regiones" o "nacional".
  * - Bloque "Atienden tu comuna": incluir solo emprendimientos cuya comuna base NO es la buscada, pero que atienden
  *   por cobertura "varias_comunas", "varias_regiones" o "nacional".
- * - Prioridad entre bloques: primero siempre "En tu comuna", después siempre "Atienden tu comuna".
- * - Orden interno en cada bloque: rotación determinística cada 5 minutos.
+ * - Prioridad entre bloques (API /api/buscar): base en la comuna → cobertura otras comunas → regional → nacional.
+ * - Orden interno en cada bloque: `rotateDeterministicPhotoBuckets` — con foto y sin foto en sublistas separadas;
+ *   cada sublista rota cada 5 min con hash FNV estable (`lib/search/deterministicRotation.ts`). Sin premium/plan en el orden.
  * - Prohibido: ordenar por clics, popularidad, premium, o random puro por request.
  *
  * Fuentes soportadas:

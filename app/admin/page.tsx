@@ -6,6 +6,7 @@ export default function AdminIndexPage() {
   const links = [
     { href: "/admin/pendientes", label: "Negocios pendientes" },
     { href: "/admin/emprendimientos", label: "Emprendimientos publicados" },
+    { href: "/admin/apertura-comunas", label: "Apertura por comuna (rubros y faltantes)" },
     { href: "/admin/comunas", label: "Comunas" },
     { href: "/admin/comuna-interes", label: "Interés por comuna" },
     { href: "/admin/keywords-rubro", label: "Keywords por rubro" },

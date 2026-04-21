@@ -58,10 +58,10 @@ No se pide categoría ni subcategoría en el formulario.
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
-| `estado_publicacion` | `text` | `'publicado'` \| `'pendiente_verificacion'`. |
-| `motivo_verificacion` | `text` (nullable) | Motivo cuando `estado_publicacion = 'pendiente_verificacion'` (ej. rubro regulado o “Clasificación automática sin match suficiente”). |
+| `estado_publicacion` | `text` | `'publicado'` \| `'en_revision'`. |
+| `motivo_verificacion` | `text` (nullable) | Motivo cuando la ficha está en revisión (`estado_publicacion = 'en_revision'`) (ej. rubro regulado o “Clasificación automática sin match suficiente”). |
 
-Regla: si no hay match suficiente de clasificación, se debe dejar `estado_publicacion = 'pendiente_verificacion'` y no publicar hasta revisión.
+Regla: si no hay match suficiente de clasificación, se debe dejar `estado_publicacion = 'en_revision'` y no publicar hasta revisión.
 
 ---
 
@@ -73,8 +73,8 @@ Regla: si no hay match suficiente de clasificación, se debe dejar `estado_publi
 4. **Combinar**: `keywords_final = unique(keywords_usuario + keywords_ia)`.
 5. **Mapear**: keywords → subcategorías (keyword_to_subcategory_map + similitud slug/nombre).
 6. **Decisión**:
-   - Si hay al menos una subcategoría con score aceptable → asignar `categoria_principal_id` y `subcategoria_principal_id`, `estado_clasificacion = 'automatica'`. Publicación según reglas existentes (ej. rubros regulados → `pendiente_verificacion`).
-   - Si no hay match suficiente → no asignar categoría/subcategoría; `estado_publicacion = 'pendiente_verificacion'`, `motivo_verificacion` y `motivo_revision_manual` descriptivos; `estado_clasificacion = 'pendiente_revision'`. Guardar igualmente trazabilidad (IA + keywords).
+   - Si hay al menos una subcategoría con score aceptable → asignar `categoria_principal_id` y `subcategoria_principal_id`, `estado_clasificacion = 'automatica'`. Publicación según reglas existentes (ej. rubros regulados → `en_revision`).
+   - Si no hay match suficiente → no asignar categoría/subcategoría; `estado_publicacion = 'en_revision'`, `motivo_verificacion` y `motivo_revision_manual` descriptivos; `estado_clasificacion = 'pendiente_revision'`. Guardar igualmente trazabilidad (IA + keywords).
 7. **Moderación**: el panel puede actualizar `categoria_principal_id`, `subcategoria_principal_id` y poner `estado_clasificacion = 'corregida_manual'`, `motivo_revision_manual` opcional.
 
 ---

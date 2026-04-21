@@ -1,6 +1,8 @@
 // app/api/suggest/q/route.ts
 import { NextResponse } from "next/server";
 import algoliasearch from "algoliasearch";
+import { resolveQueryFromBusquedaSinonimos } from "@/lib/busquedaSinonimosResolve";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -35,6 +37,10 @@ export async function GET(req: Request) {
 
     if (!q || q.length < 2) return NextResponse.json({ ok: true, items: [] });
 
+    const supabase = createSupabaseServerPublicClient();
+    const qResolved =
+      (await resolveQueryFromBusquedaSinonimos(supabase, q)) || q;
+
     const appId = env("ALGOLIA_APP_ID") || env("NEXT_PUBLIC_ALGOLIA_APP_ID");
     const searchKey = env("ALGOLIA_SEARCH_KEY") || env("NEXT_PUBLIC_ALGOLIA_SEARCH_KEY");
     const indexName = env("ALGOLIA_INDEX_EMPRENDEDORES") || "emprendedores";
@@ -46,26 +52,23 @@ export async function GET(req: Request) {
     const client = algoliasearch(appId, searchKey);
     const index = client.initIndex(indexName);
 
-    const res = await index.search(q, {
+    const res = await index.search(qResolved, {
       hitsPerPage: 20,
       attributesToRetrieve: [
         "nombre",
         "categoria_nombre",
         "subcategorias_nombres_arr",
         "tags_slugs",
-        "keywords_clasificacion",
         "comuna_base_nombre",
-        "coverage_labels",
       ],
       typoTolerance: true,
       removeWordsIfNoResults: "lastWords",
       advancedSyntax: true,
     });
 
-    const queryNorm = norm(q);
+    const queryNorm = norm(qResolved);
 
     const setTags = new Set<string>();
-    const setKeywords = new Set<string>();
     const setComunas = new Set<string>();
     const setText = new Set<string>();
 
@@ -87,16 +90,6 @@ export async function GET(req: Request) {
         }
       }
 
-      if (Array.isArray(h?.keywords_clasificacion)) {
-        for (const kw of h.keywords_clasificacion as any[]) {
-          const text = s(kw);
-          if (!text) continue;
-          if (!queryNorm || norm(text).includes(queryNorm)) {
-            setKeywords.add(text);
-          }
-        }
-      }
-
       if (h?.comuna_base_nombre) {
         const comuna = String(h.comuna_base_nombre);
         if (!queryNorm || norm(comuna).includes(queryNorm)) {
@@ -104,22 +97,12 @@ export async function GET(req: Request) {
         }
       }
 
-      if (Array.isArray(h?.coverage_labels)) {
-        for (const lbl of h.coverage_labels as any[]) {
-          const text = s(lbl);
-          if (!text) continue;
-          if (!queryNorm || norm(text).includes(queryNorm)) {
-            setComunas.add(text);
-          }
-        }
-      }
     }
 
-    // orden de prioridad: tags > keywords > comunas > nombres/categorías
+    // orden de prioridad: tags > comunas > nombres/categorías
     const ordered: string[] = [];
 
     for (const t of setTags) ordered.push(t);
-    for (const t of setKeywords) ordered.push(t);
     for (const t of setComunas) ordered.push(t);
     for (const t of setText) ordered.push(t);
 

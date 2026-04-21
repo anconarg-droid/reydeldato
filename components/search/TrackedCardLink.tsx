@@ -13,12 +13,22 @@ type Props = {
   target?: string;
   rel?: string;
   "aria-label"?: string;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
   /** Origen del listado para `card_view_click` (no aplica a WhatsApp). */
   analyticsSource?: CardViewListingSource;
+  /** Comuna de contexto para tracking en home (`/api/event`). */
+  trackingComunaSlug?: string | null;
+  /** Id público del emprendedor cuando está disponible en la tarjeta. */
+  trackingEmprendedorId?: string | null;
 };
 
 /** Listados de tarjeta → `metadata.source` en `card_view_click`. */
-export type CardViewListingSource = "search" | "comuna" | "home";
+export type CardViewListingSource =
+  | "search"
+  | "comuna"
+  | "home"
+  | "categoria"
+  | "panel";
 
 function postAnalyticsBody(body: string) {
   const blob = new Blob([body], { type: "application/json" });
@@ -34,19 +44,60 @@ function postAnalyticsBody(body: string) {
   }
 }
 
+function postEventApi(body: string) {
+  const blob = new Blob([body], { type: "application/json" });
+  if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+    navigator.sendBeacon("/api/event", blob);
+  } else {
+    void fetch("/api/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    });
+  }
+}
+
 /**
- * Clic en tarjeta: WhatsApp → /api/track-click;
- * ver ficha → /api/analytics con `card_view_click` y metadata.source.
+ * Clic en tarjeta: home → POST /api/event (whatsapp_click | profile_click);
+ * otros listados → WhatsApp `/api/track-click`; ver ficha → `/api/analytics` `card_view_click`.
  */
 export function sendTrackedCardEvent(
   slug: string,
   type: "whatsapp" | "view_ficha",
-  opts?: { source?: CardViewListingSource }
+  opts?: {
+    source?: CardViewListingSource;
+    comunaSlug?: string | null;
+    emprendedorId?: string | null;
+  }
 ) {
   const s = String(slug || "").trim();
   if (!s) return;
 
+  const source = opts?.source ?? "search";
+  const comunaSlug =
+    opts?.comunaSlug != null && String(opts.comunaSlug).trim()
+      ? String(opts.comunaSlug).trim()
+      : null;
+  const emprendedorIdRaw = opts?.emprendedorId != null ? String(opts.emprendedorId).trim() : "";
+  const emprendedorId = emprendedorIdRaw || undefined;
+
   try {
+    if (source === "home") {
+      const sessionId = getSessionId() || undefined;
+      const eventType = type === "whatsapp" ? "whatsapp_click" : "profile_click";
+      const payload: Record<string, unknown> = {
+        event_type: eventType,
+        slug: s,
+        session_id: sessionId,
+        comuna_slug: comunaSlug,
+        metadata: { source: "card_home" },
+      };
+      if (emprendedorId) payload.emprendedor_id = emprendedorId;
+      postEventApi(JSON.stringify(payload));
+      return;
+    }
+
     if (type === "whatsapp") {
       const body = JSON.stringify({ slug: s, type: "whatsapp" });
       const blob = new Blob([body], { type: "application/json" });
@@ -61,7 +112,6 @@ export function sendTrackedCardEvent(
         });
       }
     } else {
-      const source = opts?.source ?? "search";
       const sessionId = getSessionId();
       const body = JSON.stringify({
         slug: s,
@@ -120,14 +170,18 @@ export default function TrackedCardLink({
   target,
   rel,
   "aria-label": ariaLabel,
+  onClick,
   analyticsSource = "search",
+  trackingComunaSlug = null,
+  trackingEmprendedorId = null,
 }: Props) {
-  function handleClick() {
-    sendTrackedCardEvent(
-      slug,
-      type,
-      type === "view_ficha" ? { source: analyticsSource } : undefined
-    );
+  function handleClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    sendTrackedCardEvent(slug, type, {
+      source: analyticsSource,
+      comunaSlug: trackingComunaSlug,
+      emprendedorId: trackingEmprendedorId,
+    });
+    onClick?.(e);
   }
 
   return (

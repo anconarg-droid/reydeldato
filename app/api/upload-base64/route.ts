@@ -97,7 +97,10 @@ export async function POST(req: Request) {
 
     let supabase;
     try {
-      supabase = getSupabaseAdmin();
+      supabase = getSupabaseAdmin({
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      });
     } catch (e) {
       console.error("[upload-base64] Supabase admin no disponible:", e);
       return NextResponse.json(

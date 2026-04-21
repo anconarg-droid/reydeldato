@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { normalizeChileWhatsapp } from "@/lib/normalizeChileWhatsapp";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,43 +15,47 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     const comuna_slug = s(body?.comuna_slug);
-    const nombre = s(body?.nombre);
-    const telefono = s(body?.telefono);
-    const rubro = s(body?.rubro);
-    const comentario = s(body?.comentario);
-    const email = s(body?.email);
+    const nombreRaw = s(body?.nombre);
+    const telefonoRaw = s(body?.telefono);
+    const whatsappRaw = s(body?.whatsapp);
+    const phoneRaw = telefonoRaw || whatsappRaw;
 
     if (!comuna_slug) {
       return NextResponse.json({ ok: false, error: "Falta comuna_slug" }, { status: 400 });
     }
-    if (!nombre || nombre.length < 2) {
-      return NextResponse.json({ ok: false, error: "Falta nombre" }, { status: 400 });
-    }
-    if (!telefono || telefono.length < 6) {
-      return NextResponse.json({ ok: false, error: "Falta teléfono" }, { status: 400 });
-    }
-    if (!rubro || rubro.length < 2) {
-      return NextResponse.json({ ok: false, error: "Falta rubro" }, { status: 400 });
-    }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ ok: false, error: "Email inválido" }, { status: 400 });
+
+    const normalized = normalizeChileWhatsapp(phoneRaw);
+    if (!normalized) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Ingresa un WhatsApp móvil chileno válido (ej: 9 1234 5678, 56912345678 o +56912345678)",
+        },
+        { status: 400 }
+      );
     }
 
-    const supabase = createSupabaseServerClient();
+    const nombre = nombreRaw.length >= 2 ? nombreRaw : null;
+    if (nombreRaw.length > 0 && nombreRaw.length < 2) {
+      return NextResponse.json(
+        { ok: false, error: "Si pones nombre, usa al menos 2 caracteres" },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createSupabaseServerPublicClient();
     const { error } = await supabase.from("comuna_interes").insert({
       comuna_slug,
       nombre,
-      telefono,
-      rubro,
-      comentario: comentario || null,
-      email,
+      whatsapp: normalized,
     });
 
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, whatsapp: normalized });
   } catch (err) {
     return NextResponse.json(
       { ok: false, error: err instanceof Error ? err.message : "Error" },
@@ -58,4 +63,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

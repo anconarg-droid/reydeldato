@@ -1,34 +1,32 @@
-import { rotateDeterministic } from "@/lib/search/deterministicRotation";
+import {
+  rotateDeterministic,
+  SEARCH_ROTATION_WINDOW_MS,
+} from "@/lib/search/deterministicRotation";
+
+function rotationKeyForItem(i: unknown): string {
+  const anyI = i as Record<string, unknown>;
+  const k =
+    (anyI?.slug != null ? String(anyI.slug) : "") ||
+    (anyI?.id != null ? String(anyI.id) : "") ||
+    (anyI?.nombre != null ? String(anyI.nombre) : "") ||
+    "";
+  return k || JSON.stringify(i);
+}
 
 /**
- * @deprecated No usar en resultados visibles.
- * Usar rotación determinística por bloque (ver `lib/search/deterministicRotation.ts`)
- * y reglas territoriales explícitas (ver `lib/search/territorialLevelFromRpcRow.ts`).
- *
- * Este helper existía para “mezclar” resultados antes de priorizar ficha completa;
- * se eliminó `Math.random()` para evitar orden aleatorio por request.
+ * Orden dentro de un bloque territorial: rotación determinística por bucket de 5 min.
+ * **No** se prioriza perfil completo sobre básico (justicia en el ranking).
  */
-export function orderItemsFichaCompletaPrimero<
-  T extends { es_ficha_completa?: boolean | null },
->(items: T[]): T[] {
-  const mezcladas = rotateDeterministic(
+export function orderItemsFichaCompletaPrimero<T>(
+  items: T[],
+  namespace: string,
+): T[] {
+  return rotateDeterministic(
     [...items],
-    (i) => {
-      const anyI = i as any;
-      const k =
-        (anyI?.slug != null ? String(anyI.slug) : "") ||
-        (anyI?.id != null ? String(anyI.id) : "") ||
-        (anyI?.nombre != null ? String(anyI.nombre) : "") ||
-        "";
-      return k || JSON.stringify(i);
-    },
-    5 * 60 * 1000
+    rotationKeyForItem,
+    SEARCH_ROTATION_WINDOW_MS,
+    namespace,
   );
-  mezcladas.sort((a, b) => {
-    if (a.es_ficha_completa === b.es_ficha_completa) return 0;
-    return a.es_ficha_completa === true ? -1 : 1;
-  });
-  return mezcladas;
 }
 
 /** Nivel territorial según `ranking_score` (misma lógica que badges en búsqueda). */
@@ -52,9 +50,8 @@ export function territorialTierFromRanking<
 
 /**
  * Paso 1: buckets por tier territorial.
- * Paso 2: dentro de cada bucket, `orderItemsFichaCompletaPrimero` (equiv. ordenarBucket).
- * Paso 3: unir solo en este orden — sin volver a mezclar el array final:
- * en tu comuna → atiende → regional → nacional (items tier `general` van en bucket nacional).
+ * Paso 2: dentro de cada bucket, rotación determinística (sin separar completos/básicos).
+ * Paso 3: unir en orden: en tu comuna → atiende → regional → nacional (`general` → nacional).
  */
 export function mergeTerritorialBucketsOrdered<
   T extends {
@@ -71,9 +68,9 @@ export function mergeTerritorialBucketsOrdered<
   });
 
   return [
-    ...orderItemsFichaCompletaPrimero(enTuComuna),
-    ...orderItemsFichaCompletaPrimero(atiende),
-    ...orderItemsFichaCompletaPrimero(regional),
-    ...orderItemsFichaCompletaPrimero(nacional),
+    ...orderItemsFichaCompletaPrimero(enTuComuna, "merge:tier:exacta"),
+    ...orderItemsFichaCompletaPrimero(atiende, "merge:tier:cobertura_comuna"),
+    ...orderItemsFichaCompletaPrimero(regional, "merge:tier:regional"),
+    ...orderItemsFichaCompletaPrimero(nacional, "merge:tier:nacional"),
   ];
 }

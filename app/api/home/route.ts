@@ -38,6 +38,7 @@ export async function GET() {
       .from("subcategorias")
       .select("id, slug, nombre, categoria_id, is_destacada, orden_destacada")
       .in("categoria_id", catIds.length ? catIds : ["00000000-0000-0000-0000-000000000000"])
+      .eq("activo", true)
       .eq("is_destacada", true)
       .order("orden_destacada", { ascending: true })
       .order("nombre", { ascending: true });

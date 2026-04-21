@@ -1,54 +1,76 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { columnaYValorBusquedaEmprendedor } from "@/lib/emprendedorLookupParam";
 import { panelInsightCase } from "@/lib/panelInsightCase";
+import { resolveEmprendedorIdForPanelMetrics } from "@/lib/panelNegocioAccessToken";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get("slug");
     const idParam = searchParams.get("id");
+    const accessToken = searchParams.get("access_token")?.trim() ?? "";
     const rangeRaw = searchParams.get("range");
     const range =
       rangeRaw === "7d" || rangeRaw === "30d" || rangeRaw === "all"
         ? rangeRaw
         : "all";
 
-    if (!slug && !idParam) {
-      return NextResponse.json(
-        { ok: false, error: "Missing slug or id" },
-        { status: 400 }
-      );
-    }
+    const idTrim = idParam?.trim() ?? "";
+    const slugTrim = slug?.trim() ?? "";
+    const busqueda = columnaYValorBusquedaEmprendedor(idTrim, slugTrim);
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    let emprendedor_id: string;
+    let emprendedor_id: string | null = null;
 
-    if (idParam) {
-      const { data: byId, error: byIdErr } = await supabase
-        .from("emprendedores")
-        .select("id")
-        .eq("id", idParam)
-        .maybeSingle();
-      if (byIdErr || !byId) {
-        return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+    if (accessToken.length >= 8 && !idTrim && !slugTrim) {
+      emprendedor_id = await resolveEmprendedorIdForPanelMetrics(
+        supabase,
+        accessToken
+      );
+      if (!emprendedor_id) {
+        const insight_case = panelInsightCase({
+          impresiones: 0,
+          visitas: 0,
+          click_whatsapp: 0,
+        });
+        return NextResponse.json({
+          ok: true,
+          data: {
+            impresiones: 0,
+            visitas: 0,
+            click_whatsapp: 0,
+            click_ficha: 0,
+            click_waze: 0,
+            click_maps: 0,
+            insight_case,
+          },
+        });
       }
-      emprendedor_id = byId.id;
+    } else if (!busqueda) {
+      return NextResponse.json(
+        { ok: false, error: "Missing slug or id" },
+        { status: 400 }
+      );
     } else {
-      const { data: emp, error: empError } = await supabase
-        .from("emprendedores")
-        .select("id")
-        .eq("slug", slug as string)
-        .single();
+      const empQ = supabase.from("emprendedores").select("id");
+      const { data: empRow, error: empErr } = await empQ
+        .eq(busqueda.columna, busqueda.valor)
+        .maybeSingle();
 
-      if (empError || !emp) {
+      if (empErr || !empRow) {
         return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
       }
 
-      emprendedor_id = emp.id;
+      emprendedor_id = empRow.id as string;
+    }
+
+    if (!emprendedor_id) {
+      return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
     }
 
     const now = new Date();
@@ -82,12 +104,25 @@ export async function GET(req: Request) {
     let visitas = 0;
     let click_whatsapp = 0;
     let click_ficha = 0;
+    let click_waze = 0;
+    let click_maps = 0;
 
     for (const e of events || []) {
       if (e.event_type === "search_result_impression") impresiones++;
       if (e.event_type === "page_view_profile") visitas++;
       if (e.event_type === "whatsapp_click") click_whatsapp++;
-      if (e.event_type === "card_view_click") click_ficha++;
+      if (e.event_type === "waze_click") click_waze++;
+      if (e.event_type === "maps_click") click_maps++;
+      if (
+        e.event_type === "card_view_click" ||
+        e.event_type === "instagram_click" ||
+        e.event_type === "website_click" ||
+        e.event_type === "email_click" ||
+        e.event_type === "share_click" ||
+        e.event_type === "waze_click" ||
+        e.event_type === "maps_click"
+      )
+        click_ficha++;
     }
 
     const insight_case = panelInsightCase({
@@ -103,6 +138,8 @@ export async function GET(req: Request) {
         visitas,
         click_whatsapp,
         click_ficha,
+        click_waze,
+        click_maps,
         insight_case,
       },
     });

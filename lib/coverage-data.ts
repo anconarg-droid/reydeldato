@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 /**
  * FUENTES DE DATOS COBERTURA:
@@ -12,9 +12,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * B. BLOQUE RUBROS (subcategoria_nombre, registrados por rubro, objetivo, faltan):
  *    - Vista vw_apertura_rubros_comuna (filtro comuna_slug = canonicalSlug).
  *    - registrados vienen de vw_conteo_comuna_rubro.
- *    - vw_conteo_comuna_rubro cuenta desde emprendedores (comuna_base_id, subcategoria_principal_id,
- *      estado_publicacion = 'publicado') JOIN subcategorias ON s.id = e.subcategoria_principal_id.
- *    - No usa categorias ni keywords; solo subcategoria_principal_id para la grilla de rubros.
+ *    - vw_conteo_comuna_rubro cuenta desde emprendedor_subcategorias (y comuna_base_id en
+ *      emprendedores, estado_publicacion = 'publicado') JOIN subcategorias.
+ *    - No usa categorias ni keywords en esa vista; pivote N:M para la grilla de rubros.
  */
 
 /**
@@ -204,7 +204,7 @@ function regionNameToSlug(name: string): string {
  */
 export async function getCommuneCoverageDetail(comunaSlug: string | null): Promise<CommuneCoverageDetail | null> {
   if (!comunaSlug?.trim()) return null;
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
   const slugNorm = normSlug(comunaSlug);
   const slugParam = comunaSlug.trim();
 
@@ -290,9 +290,9 @@ export async function getCommuneCoverageDetail(comunaSlug: string | null): Promi
   // B. Rubros: vw_apertura_rubros_comuna → registrados de vw_conteo_comuna_rubro (esta vista EXIGE emprendedor_subcategorias)
   if (comunaRow?.id) {
     const { data: emprendedoresEnComuna } = await supabase
-      .from("emprendedores")
+      .from("vw_emprendedores_publico")
       .select("id")
-      .eq("comuna_base_id", comunaRow.id)
+      .eq("comuna_id", comunaRow.id)
       .eq("estado_publicacion", "publicado");
     const ids = (emprendedoresEnComuna ?? []) as Array<{ id: string }>;
     const totalRaw = ids.length;
@@ -406,7 +406,7 @@ export async function getCoverageData(
   citySlug: string | null,
   regionSlug: string | null = null
 ): Promise<CoverageData> {
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
   const slugNorm = citySlug ? normSlug(citySlug) : null;
   const regionSlugNorm = regionSlug ? normSlug(regionSlug) : null;
 

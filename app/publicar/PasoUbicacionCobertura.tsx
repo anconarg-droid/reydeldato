@@ -72,6 +72,7 @@ export default function PasoUbicacionCobertura({
   const [localComunaQuery, setLocalComunaQuery] = useState("");
   const [localComunaOpen, setLocalComunaOpen] = useState(false);
   const localComunaBlurRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [regionAgregarSelectKey, setRegionAgregarSelectKey] = useState(0);
 
   const effectiveComunaSlug = form.comunaBase;
 
@@ -188,7 +189,8 @@ export default function PasoUbicacionCobertura({
   const muestraComunas =
     form.coberturaTipo === "varias_comunas";
   const muestraRegiones = form.coberturaTipo === "varias_regiones";
-  const tieneLocalEnModalidades = form.modalidades.includes("local");
+  const tieneLocalEnModalidades =
+    form.modalidades.includes("local_fisico") || form.modalidades.includes("local");
   const MAX_LOCALES = 3;
 
   const puedeContinuar = true;
@@ -239,16 +241,17 @@ export default function PasoUbicacionCobertura({
 
   function applyCoberturaTipo(value: string) {
     setField("coberturaTipo", value);
-    setField("regionesCobertura", []);
     setLocalComunaQuery("");
     setLocalComunaOpen(false);
 
     if (value === "solo_mi_comuna" || value === "nacional") {
       setField("comunasCobertura", []);
+      setField("regionesCobertura", []);
       return;
     }
 
     if (value === "varias_comunas") {
+      setField("regionesCobertura", []);
       setField("comunasCobertura", form.comunaBase ? [form.comunaBase] : []);
       return;
     }
@@ -261,6 +264,9 @@ export default function PasoUbicacionCobertura({
       setField("regionesCobertura", region ? [region.slug] : []);
       return;
     }
+
+    setField("comunasCobertura", []);
+    setField("regionesCobertura", []);
   }
 
   function addComunaCobertura(slug: string) {
@@ -284,6 +290,33 @@ export default function PasoUbicacionCobertura({
       form.comunasCobertura.filter(
         (s) => resolveComunaBySlug(comunas, s)?.id !== target.id
       )
+    );
+  }
+
+  const regionesCoberturaSeleccionadasObjs = useMemo(() => {
+    const bySlug = new Map(regiones.map((r) => [r.slug, r]));
+    return form.regionesCobertura
+      .map((slug) => bySlug.get(slug))
+      .filter((x): x is Region => Boolean(x));
+  }, [regiones, form.regionesCobertura]);
+
+  const regionesCoberturaAgregables = useMemo(() => {
+    const selected = new Set(form.regionesCobertura);
+    return regionesCoberturaDisponibles.filter((r) => !selected.has(r.slug));
+  }, [regionesCoberturaDisponibles, form.regionesCobertura]);
+
+  function agregarRegionCobertura(slug: string) {
+    const s = slug.trim();
+    if (!s || form.regionesCobertura.includes(s)) return;
+    setField("regionesCobertura", [...form.regionesCobertura, s]);
+    setRegionAgregarSelectKey((k) => k + 1);
+  }
+
+  function eliminarRegionCobertura(slug: string) {
+    if (form.regionesCobertura.length <= 1) return;
+    setField(
+      "regionesCobertura",
+      form.regionesCobertura.filter((x) => x !== slug)
     );
   }
 
@@ -335,17 +368,29 @@ export default function PasoUbicacionCobertura({
       </div>
 
       <div style={sectionBoxStyle}>
-        <div style={sectionMiniTitleStyle}>1. Comuna base</div>
+        <div style={sectionMiniTitleStyle}>1. Comuna de origen</div>
         <div style={sectionHelpStyle}>
-          Representa desde dónde opera normalmente el emprendimiento.
+          Escribe la comuna donde se encuentra tu taller, local o donde preparas
+          tus productos.
         </div>
 
         <div style={{ position: "relative" }}>
-          <label style={labelStyle}>Comuna base *</label>
+          <label style={labelStyle}>Comuna de origen *</label>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#6b7280",
+              marginTop: -2,
+              marginBottom: 8,
+              fontWeight: 600,
+            }}
+          >
+            ¿Dónde estás ubicado?
+          </div>
           <input
             type="text"
             autoComplete="off"
-            placeholder="Escribe tu comuna (ej: Maipú)"
+            placeholder="Ej: Maipú"
             value={
               comunaBaseQuery !== ""
                 ? comunaBaseQuery
@@ -392,7 +437,7 @@ export default function PasoUbicacionCobertura({
           />
 
           <div style={sectionHelpStyle}>
-            Empieza a escribir y elige tu comuna de la lista.
+            Buscá en la lista y elegí tu comuna.
           </div>
 
           {comunaBaseOpen &&
@@ -441,11 +486,25 @@ export default function PasoUbicacionCobertura({
       </div>
 
       <div style={sectionBoxStyle}>
-        <div style={sectionMiniTitleStyle}>2. Cobertura</div>
-        <div style={sectionHelpStyle}>Hasta dónde llega tu servicio.</div>
+        <div style={sectionMiniTitleStyle}>2. Tu zona de atención</div>
+        <div style={sectionHelpStyle}>
+          Elige el alcance de tu servicio: solo comuna, varias comunas cercanas,
+          una o varias regiones, o cobertura nacional.
+        </div>
 
         <div>
-          <label style={labelStyle}>Cobertura *</label>
+          <label style={labelStyle}>Tu zona de atención *</label>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#6b7280",
+              marginTop: -2,
+              marginBottom: 8,
+              fontWeight: 600,
+            }}
+          >
+            ¿Hasta dónde llegas?
+          </div>
           <select
             value={form.coberturaTipo}
             onChange={(e) => {
@@ -454,16 +513,17 @@ export default function PasoUbicacionCobertura({
             }}
             style={selectStyle}
           >
-            <option value="">Selecciona cobertura</option>
+            <option value="">Selecciona una opción</option>
             <option value="solo_mi_comuna">Solo mi comuna</option>
-            <option value="varias_comunas">Varias comunas</option>
-            <option value="varias_regiones">Toda la region</option>
-            <option value="nacional">Todo Chile</option>
+            <option value="varias_comunas">Varias comunas cercanas</option>
+            <option value="varias_regiones">Una o varias regiones</option>
+            <option value="nacional">Nacional</option>
           </select>
 
           <div style={sectionHelpStyle}>
-            En “Varias comunas” elige manualmente en qué comunas quieres
-            aparecer.
+            En “Varias comunas cercanas” elegí manualmente en qué comunas querés
+            aparecer. En “Una o varias regiones” podés marcar varias regiones a la
+            vez.
           </div>
 
           {errors.coberturaTipo ? (
@@ -577,33 +637,104 @@ export default function PasoUbicacionCobertura({
       {muestraRegiones ? (
         <div style={sectionBoxStyle}>
           <div style={sectionMiniTitleStyle}>
-            {muestraComunas ? "4" : "3"}. Regiones donde también atiendes
+            {muestraComunas ? "4" : "3"}. Regiones donde atiendes
           </div>
           <div style={sectionHelpStyle}>
-            Puedes elegir una o más regiones. La primera sugerida corresponde a la
-            región de tu comuna base.
+            La región de tu comuna base aparece seleccionada. Puedes agregar otras
+            regiones.
           </div>
 
-          <div style={regionsGridStyle}>
-            {regionesCoberturaDisponibles.map((region) => {
-              const active = form.regionesCobertura.includes(region.slug);
-              const esRegionBase = region.slug === regionBaseSlug;
+          {!comunaBaseObj ? (
+            <div style={emptyBoxStyle}>
+              Primero selecciona una comuna base arriba para definir regiones.
+            </div>
+          ) : (
+            <>
+              <div style={chipWrap}>
+                {regionesCoberturaSeleccionadasObjs.length === 0 ? (
+                  <div style={emptyChipNoteStyle}>
+                    Agrega al menos una región con el selector de abajo.
+                  </div>
+                ) : (
+                  regionesCoberturaSeleccionadasObjs.map((region) => {
+                    const esBase = region.slug === regionBaseSlug;
+                    const soloUna = form.regionesCobertura.length <= 1;
+                    return (
+                      <div
+                        key={region.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "6px 10px",
+                          borderRadius: 20,
+                          border: esBase ? "none" : "2px solid #93c5fd",
+                          background: esBase ? "#2563eb" : "#dbeafe",
+                          color: esBase ? "#fff" : "#1e40af",
+                          fontSize: 13,
+                          fontWeight: 600,
+                        }}
+                      >
+                        <span>
+                          {region.nombre}
+                          {esBase ? " (región base)" : ""}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={soloUna}
+                          onClick={() => eliminarRegionCobertura(region.slug)}
+                          aria-label={`Quitar ${region.nombre}`}
+                          title={
+                            soloUna
+                              ? "Debe quedar al menos una región"
+                              : undefined
+                          }
+                          style={{
+                            marginLeft: 4,
+                            border: "none",
+                            background: esBase
+                              ? "rgba(255,255,255,0.2)"
+                              : "#bfdbfe",
+                            borderRadius: 999,
+                            width: 22,
+                            height: 22,
+                            lineHeight: 1,
+                            cursor: soloUna ? "not-allowed" : "pointer",
+                            fontWeight: 700,
+                            color: esBase ? "#fff" : "#1e3a8a",
+                            opacity: soloUna ? 0.35 : 1,
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
 
-              return (
-                <button
-                  key={region.id}
-                  type="button"
-                  onClick={() => toggleArrayValue("regionesCobertura", region.slug)}
-                  style={regionCardStyle(active, esRegionBase)}
-                >
-                  <div style={regionCardTitleStyle}>{region.nombre}</div>
-                  {esRegionBase ? (
-                    <div style={regionCardBadgeStyle}>Región base sugerida</div>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
+              <label style={{ ...labelStyle, marginTop: 12 }}>
+                Agregar regiones
+              </label>
+              <select
+                key={regionAgregarSelectKey}
+                value=""
+                aria-label="Elige una región para agregar"
+                onChange={(e) => {
+                  const slug = e.target.value;
+                  if (slug) agregarRegionCobertura(slug);
+                }}
+                style={{ ...selectStyle, marginTop: 6 }}
+              >
+                <option value="">Elige una región para agregar...</option>
+                {regionesCoberturaAgregables.map((r) => (
+                  <option key={r.id} value={r.slug}>
+                    {r.nombre}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
           {errors.regionesCobertura ? (
             <p style={errorStyle}>{errors.regionesCobertura}</p>
@@ -622,20 +753,25 @@ export default function PasoUbicacionCobertura({
         </div>
 
         <div style={sectionHelpStyle}>
-          Puedes elegir una, dos o las tres opciones.
+          Puedes elegir una o varias opciones.
         </div>
 
         <div style={modeListStyle}>
           {[
             {
-              value: "local",
+              value: "local_fisico",
               label: "Local físico",
               help: "Los clientes van a tu local, tienda u oficina.",
             },
             {
-              value: "presencial",
-              label: "Atención a domicilio",
-              help: "Vas al domicilio del cliente o trabajas fuera de un local fijo.",
+              value: "delivery",
+              label: "Delivery",
+              help: "Llevas o envías productos al domicilio del cliente.",
+            },
+            {
+              value: "domicilio",
+              label: "A domicilio",
+              help: "Vas al domicilio del cliente a prestar un servicio (sin local fijo o además del local).",
             },
             {
               value: "online",
@@ -650,17 +786,42 @@ export default function PasoUbicacionCobertura({
                 key={item.value}
                 type="button"
                 onClick={() => {
-                  if (item.value === "local") {
+                  if (item.value === "local_fisico") {
                     if (active) {
+                      const before = [...form.modalidades];
+                      const after = form.modalidades.filter((m) => m !== "local_fisico" && m !== "local");
                       setField(
                         "modalidades",
-                        form.modalidades.filter((m) => m !== "local")
+                        after
                       );
                       setField("tieneLocalFisico", false);
                       setField("locales", []);
+                      // Log temporal para confirmar que el estado se limpia al desactivar.
+                      // (Opcional: activar con NEXT_PUBLIC_PUBLICAR_LOCAL_DEBUG=1 para no spamear.)
+                      if (process.env.NEXT_PUBLIC_PUBLICAR_LOCAL_DEBUG === "1") {
+                        // eslint-disable-next-line no-console
+                        console.log("[publicar-local-debug][ui-toggle]", {
+                          action: "desactivar_local_fisico",
+                          modalidades_before: before,
+                          modalidades_after: after,
+                        });
+                      }
                     } else {
-                      setField("modalidades", [...form.modalidades, "local"]);
+                      const before = [...form.modalidades];
+                      const after = [
+                        ...form.modalidades.filter((m) => m !== "local"),
+                        "local_fisico",
+                      ];
+                      setField("modalidades", after);
                       setField("tieneLocalFisico", true);
+                      if (process.env.NEXT_PUBLIC_PUBLICAR_LOCAL_DEBUG === "1") {
+                        // eslint-disable-next-line no-console
+                        console.log("[publicar-local-debug][ui-toggle]", {
+                          action: "activar_local_fisico",
+                          modalidades_before: before,
+                          modalidades_after: after,
+                        });
+                      }
 
                       if (form.locales.length === 0) {
                         const comunaInicial = form.comunaBase || "";
@@ -1066,51 +1227,6 @@ const chipRemoveStyle: React.CSSProperties = {
 const emptyChipNoteStyle: React.CSSProperties = {
   fontSize: 13,
   color: "#6b7280",
-};
-
-function regionCardStyle(active: boolean, suggested: boolean): React.CSSProperties {
-  return {
-    width: "100%",
-    minHeight: 74,
-    padding: "12px 14px",
-    borderRadius: 14,
-    border: active
-      ? "2px solid #2563eb"
-      : suggested
-        ? "1px solid #93c5fd"
-        : "1px solid #d1d5db",
-    background: active
-      ? "#dbeafe"
-      : suggested
-        ? "#eff6ff"
-        : "#fff",
-    color: "#111827",
-    textAlign: "left",
-    cursor: "pointer",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    gap: 6,
-  };
-}
-
-const regionCardTitleStyle: React.CSSProperties = {
-  fontSize: 14,
-  fontWeight: 800,
-  lineHeight: 1.35,
-};
-
-const regionCardBadgeStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 700,
-  color: "#1d4ed8",
-  lineHeight: 1.3,
-};
-
-const regionsGridStyle: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: 12,
 };
 
 const comunaNoHabilitadaStyle: React.CSSProperties = {

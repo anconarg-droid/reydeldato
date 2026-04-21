@@ -16,7 +16,6 @@ function createMockSupabase(opts: {
 }): SupabaseClient {
   const defaultEmp = {
     id: "emp-1",
-    subcategoria_principal_id: null,
     keywords_usuario_json: ["pan", "panadería"],
     keywords_usuario: null,
     ai_keywords_json: { keywords: ["reposteria"], keywords_ia: [] },
@@ -28,12 +27,22 @@ function createMockSupabase(opts: {
   const from = vi.fn().mockImplementation((table: string) => {
     const chain = {
       select: (_cols?: string) => ({
-        eq: (_col: string, _val: unknown) => ({
-          single: () =>
-            table === "emprendedores"
-              ? Promise.resolve({ data: emprendedor, error: null })
-              : Promise.resolve({ data: null, error: { message: "not found" } }),
-        }),
+        eq: (_col: string, _val: unknown) => {
+          if (table === "emprendedor_subcategorias") {
+            return {
+              order: () => ({
+                limit: () =>
+                  Promise.resolve({ data: [], error: null }),
+              }),
+            };
+          }
+          return {
+            single: () =>
+              table === "emprendedores"
+                ? Promise.resolve({ data: emprendedor, error: null })
+                : Promise.resolve({ data: null, error: { message: "not found" } }),
+          };
+        },
         in: (_col: string, _vals: unknown[]) =>
           table === "keyword_to_subcategory_map"
             ? Promise.resolve({ data: existingKeywordRows, error: null })
@@ -77,7 +86,6 @@ describe("learnFromManualClassification", () => {
     const supabase = createMockSupabase({
       emprendedor: {
         id: "e1",
-        subcategoria_principal_id: null,
         keywords_usuario_json: ["pan", "panadería", "reposteria"],
         ai_keywords_json: null,
         ai_raw_classification_json: null,
@@ -106,7 +114,6 @@ describe("learnFromManualClassification", () => {
     const supabase = createMockSupabase({
       emprendedor: {
         id: "e2",
-        subcategoria_principal_id: null,
         keywords_usuario_json: [],
         ai_keywords_json: { keywords: ["veterinaria", "mascotas"], keywords_ia: [] },
         ai_raw_classification_json: null,
@@ -129,7 +136,6 @@ describe("learnFromManualClassification", () => {
     const supabase = createMockSupabase({
       emprendedor: {
         id: "e3",
-        subcategoria_principal_id: null,
         keywords_usuario_json: ["pan"],
         ai_keywords_json: { keywords: ["pan"], keywords_ia: [] },
         ai_raw_classification_json: null,
@@ -177,7 +183,6 @@ describe("learnFromManualClassification", () => {
     const supabase = createMockSupabase({
       emprendedor: {
         id: "e4",
-        subcategoria_principal_id: null,
         keywords_usuario_json: [],
         ai_keywords_json: { keywords: ["pan"], keywords_ia: [] },
         ai_raw_classification_json: null,

@@ -5,7 +5,7 @@
  * No usar clics/visitas como criterio principal (evitar efecto bola de nieve).
  */
 
-import { tieneFichaCompleta } from "@/lib/tieneFichaCompleta";
+import { calcularEstadoFicha } from "@/lib/estadoFicha";
 
 function slugNorm(s: string): string {
   return String(s ?? "")
@@ -65,16 +65,34 @@ export type ItemWithPlan = {
   plan_expira_at?: string | null;
   trial_expira_at?: string | null;
   trial_expira?: string | null;
+  descripcion_libre?: string | null;
+  frase_negocio?: string | null;
+  whatsapp_principal?: string | null;
+  foto_principal_url?: string | null;
+  instagram?: string | null;
+  sitio_web?: string | null;
 };
 
-/** Perfil completo: misma regla que tarjeta, búsqueda y ficha pública. */
+/** Perfil completo: `calcularEstadoFicha` (solo suscripción). */
 export function isFullProfile(item: ItemWithPlan): boolean {
-  return tieneFichaCompleta({
-    planActivo: item.plan_activo === true,
-    planExpiraAt: item.plan_expira_at ?? null,
-    trialExpiraAt: item.trial_expira_at ?? null,
-    trialExpira: item.trial_expira ?? null,
-  });
+  return (
+    calcularEstadoFicha({
+      nombre_emprendimiento: null,
+      whatsapp_principal: item.whatsapp_principal ?? null,
+      frase_negocio: item.frase_negocio ?? null,
+      comuna_id: null,
+      cobertura_tipo: null,
+      descripcion_libre: item.descripcion_libre ?? null,
+      galeria_count: null,
+      foto_principal_url: item.foto_principal_url,
+      instagram: item.instagram,
+      sitio_web: item.sitio_web,
+      plan_activo: item.plan_activo === true ? true : item.plan_activo ?? null,
+      plan_expira_at: item.plan_expira_at ?? null,
+      trial_expira_at: item.trial_expira_at ?? null,
+      trial_expira: item.trial_expira ?? null,
+    }) === "mejorada"
+  );
 }
 
 /**

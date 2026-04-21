@@ -32,6 +32,7 @@ export async function POST(
       .from("emprendedores")
       .select("id, slug, click_whatsapp")
       .eq("slug", slug)
+      .eq("estado_publicacion", "publicado")
       .limit(1)
       .maybeSingle();
 

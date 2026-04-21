@@ -1,50 +1,131 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import PublicarSimpleClient from "./PublicarSimpleClient";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { headers } from "next/headers";
+import PublicarSimpleClientGate from "./PublicarSimpleClientGate";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import { recordEvent } from "@/lib/analytics/recordEvent";
 
 type PageProps = {
-  searchParams?: Promise<{ id?: string }>;
+  searchParams?: Promise<{
+    id?: string;
+    comuna?: string;
+    servicio?: string;
+    edicion_basica?: string;
+    access_token?: string;
+    token?: string;
+  }>;
 };
+
+function isEdicionBasicaFlag(raw: string | undefined): boolean {
+  const v = String(raw || "")
+    .trim()
+    .toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "si";
+}
 
 export default async function PublicarPage({ searchParams }: PageProps) {
   const sp = (await searchParams) || {};
   let initialPostulacionId = String(sp.id || "").trim() || null;
+  const hintComuna = String(sp.comuna || "").trim();
+  const hintServicio = String(sp.servicio || "").trim();
+  const edicionBasica = isEdicionBasicaFlag(sp.edicion_basica);
+  const accessTokenHint =
+    String(sp.access_token || "").trim() || String(sp.token || "").trim();
 
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
+
+  let initialEdicionBasicaEmprendedorId: string | null = null;
+  let initialEdicionBasicaAccessToken: string | null = null;
+
+  if (edicionBasica && initialPostulacionId) {
+    const { data: emp } = await supabase
+      .from("vw_emprendedores_publico")
+      .select("id")
+      .eq("id", initialPostulacionId)
+      .maybeSingle();
+    const eid =
+      emp && typeof (emp as { id?: unknown }).id === "string"
+        ? String((emp as { id: string }).id).trim()
+        : "";
+    if (eid) initialEdicionBasicaEmprendedorId = eid;
+  } else if (edicionBasica && accessTokenHint.length >= 8) {
+    initialEdicionBasicaAccessToken = accessTokenHint;
+  }
+
+  // Si `id` corresponde a un emprendedor existente, /publicar redirige a mejorar-ficha,
+  // salvo `edicion_basica=1` (formulario de datos básicos con persistencia vía panel).
+  if (initialPostulacionId && !edicionBasica) {
+    const { data: emp } = await supabase
+      .from("vw_emprendedores_publico")
+      .select("id")
+      .eq("id", initialPostulacionId)
+      .maybeSingle();
+
+    const emprendedorId =
+      emp && typeof (emp as { id?: unknown }).id === "string"
+        ? String((emp as { id: string }).id).trim()
+        : "";
+
+    if (emprendedorId) {
+      redirect(`/mejorar-ficha?id=${encodeURIComponent(emprendedorId)}`);
+    }
+  }
+
+  const skipAutoDraft =
+    Boolean(initialEdicionBasicaEmprendedorId) ||
+    Boolean(initialEdicionBasicaAccessToken);
+
+  if (edicionBasica && !initialPostulacionId && !skipAutoDraft) {
+    redirect("/panel");
+  }
 
   // Si no viene draft_id, crear borrador automáticamente y redirigir
-  if (!initialPostulacionId) {
-    const { data: nuevaPostulacion, error: createError } = await supabase
-      .from("postulaciones_emprendedores")
-      .insert({
-        estado: "borrador",
-      })
-      .select("id")
-      .single();
+  if (!initialPostulacionId && !skipAutoDraft) {
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+    const proto = h.get("x-forwarded-proto") ?? "http";
+    const baseUrl = `${proto}://${host}`;
 
-    if (createError || !nuevaPostulacion?.id) {
-      console.error("[publicar/page] error creando borrador:", createError);
-      throw new Error("No se pudo crear el borrador inicial.");
+    const res = await fetch(`${baseUrl}/api/publicar/borrador`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({}),
+    });
+
+    const payload = (await res.json().catch(() => null)) as
+      | { ok?: boolean; id?: string | number; error?: string; message?: string; db_error?: string; db_code?: string }
+      | null;
+
+    const draftIdRaw = payload?.id;
+    const draftId = draftIdRaw != null ? String(draftIdRaw).trim() : "";
+
+    if (!res.ok || !payload?.ok || !draftId) {
+      console.error("[publicar/page] error creando borrador:", {
+        httpStatus: res.status,
+        payload,
+      });
+      throw new Error(payload?.message || payload?.error || "No se pudo crear el borrador inicial.");
     }
 
     try {
-      const admin = getSupabaseAdmin();
-      await recordEvent(admin, {
+      await recordEvent(supabase, {
         event_type: "draft_created",
         metadata: {
           comuna_slug: null,
           origen: "publicar_page",
-          draft_id: nuevaPostulacion.id,
+          draft_id: draftId,
         },
       });
     } catch (e) {
       console.error("[publicar/page] tracking draft_created error:", e);
     }
 
-    redirect(`/publicar?id=${nuevaPostulacion.id}`);
+    const qs = new URLSearchParams();
+    qs.set("id", draftId);
+    if (hintComuna) qs.set("comuna", hintComuna);
+    if (hintServicio) qs.set("servicio", hintServicio);
+    redirect(`/publicar?${qs.toString()}`);
   }
 
   const { data: regionesRaw, error: regionesError } = await supabase
@@ -103,10 +184,12 @@ export default async function PublicarPage({ searchParams }: PageProps) {
         </main>
       }
     >
-      <PublicarSimpleClient
+      <PublicarSimpleClientGate
         comunas={comunas}
         regiones={regiones}
         initialPostulacionId={initialPostulacionId}
+        initialEdicionBasicaEmprendedorId={initialEdicionBasicaEmprendedorId}
+        initialEdicionBasicaAccessToken={initialEdicionBasicaAccessToken}
       />
     </Suspense>
   );

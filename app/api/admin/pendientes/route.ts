@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  comunaIdPreferidaEmprendedorRow,
+  mapComunasByIdForEmprendedorRows,
+} from "@/lib/adminEmprendedoresComunaLookup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +19,7 @@ export async function GET() {
       .from("emprendedores")
       .select(`
         id,
-        nombre,
+        nombre_emprendimiento,
         slug,
         descripcion_corta,
         descripcion_larga,
@@ -31,20 +35,15 @@ export async function GET() {
         foto_principal_url,
         galeria_urls,
         estado_publicacion,
-        publicado,
         created_at,
+        comuna_id,
         categorias (
-          id,
-          nombre,
-          slug
-        ),
-        comunas!emprendedores_comuna_base_id_fkey (
           id,
           nombre,
           slug
         )
       `)
-      .or("estado_publicacion.eq.pendiente_aprobacion,estado.eq.pendiente_revision")
+      .in("estado_publicacion", ["en_revision", "borrador"])
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -58,9 +57,22 @@ export async function GET() {
       );
     }
 
+    const rows = (data ?? []) as Record<string, unknown>[];
+    const comunaMap = await mapComunasByIdForEmprendedorRows(supabase, rows);
+    const items = rows.map((row) => {
+      const cid = comunaIdPreferidaEmprendedorRow(row);
+      const c = cid ? comunaMap.get(cid) : undefined;
+      return {
+        ...row,
+        comunas: c
+          ? { id: c.id, nombre: c.nombre, slug: c.slug }
+          : null,
+      };
+    });
+
     return NextResponse.json({
       ok: true,
-      items: data || [],
+      items,
     });
   } catch (err) {
     return NextResponse.json(

@@ -10,9 +10,13 @@ export const ANALYTICS_EVENT_TYPES = [
   "page_view_search",
   "page_view_comuna",
   "page_view_profile",
+  /** Búsqueda disparada desde la home (query + comuna opcional). */
+  "search",
   "search_result_impression",
   /** Clic en “Ver ficha / detalle” desde tarjeta de listado (no confundir con page_view_profile). */
   "card_view_click",
+  /** Clic en “Ver detalles” desde tarjeta en home (metadata.source típico: card_home). */
+  "profile_click",
   /** Conversión real: borrador creado en /publicar */
   "draft_created",
   /** Inicio de publicación (CTA "Publica tu negocio"). */
@@ -22,6 +26,12 @@ export const ANALYTICS_EVENT_TYPES = [
   "website_click",
   "email_click",
   "share_click",
+  "waze_click",
+  "maps_click",
+  /** CTA “Publica tu emprendimiento” u homólogos desde la home. */
+  "cta_publicar_click",
+  /** Envío del formulario de recomendar emprendimiento (home embebida). */
+  "submit_recomendacion",
 ] as const;
 
 export type AnalyticsEventType = (typeof ANALYTICS_EVENT_TYPES)[number];
@@ -30,6 +40,11 @@ const EVENT_TYPES_SET = new Set<string>(ANALYTICS_EVENT_TYPES);
 
 export function isValidEventType(t: string): t is AnalyticsEventType {
   return EVENT_TYPES_SET.has(t);
+}
+
+/** True si el evento incrementa columnas en `emprendedor_stats` (solo debe contarse con ficha pública). */
+export function analyticsEventUsesEmprendedorStats(event_type: string): boolean {
+  return Boolean(EMPRENDEDOR_STATS_COLUMNS[event_type as AnalyticsEventType]);
 }
 
 /** Eventos que actualizan emprendedor_stats (requieren emprendedor_id) */

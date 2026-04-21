@@ -10,7 +10,10 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = getSupabaseAdmin({
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    });
 
     const { data: cats, error: catErr } = await supabase
       .from("categorias")
@@ -28,6 +31,7 @@ export async function GET() {
     const { data: subs, error: subErr } = await supabase
       .from("subcategorias")
       .select("id, nombre, slug, categoria_id")
+      .eq("activo", true)
       .order("nombre");
 
     if (subErr) {

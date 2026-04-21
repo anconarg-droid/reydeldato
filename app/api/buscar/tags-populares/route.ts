@@ -1,6 +1,6 @@
 /**
  * Tags/categorías populares para el buscador.
- * Usa solo columnas que sí existen en vw_emprendedores_algolia_final.
+ * Lee `vw_emprendedores_publico` (misma base territorial que tags-por-comuna-sector).
  */
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -36,31 +36,26 @@ function arr(v: unknown): string[] {
   return v.map((x) => s(x)).filter(Boolean);
 }
 
-/**
- * coverage_keys viene con paths tipo:
- * "/chile/metropolitana/maipu"
- * Entonces verificamos por inclusión del slug buscado.
- */
 function resolveBucket(
   item: {
     comuna_base_slug?: string | null;
     nivel_cobertura?: string | null;
-    coverage_keys?: string[] | null;
+    comunas_cobertura_slugs_arr?: string[] | null;
   },
   comunaBuscada: string
 ): Bucket {
-  const buscada = norm(comunaBuscada);
-  if (!buscada) return "general";
+  const comunaSlugLike = norm(comunaBuscada);
+  if (!comunaSlugLike) return "general";
 
   const baseSlug = norm(item.comuna_base_slug);
   const nivel = norm(item.nivel_cobertura);
-  const coverageKeys = arr(item.coverage_keys).map(norm);
+  const coberturaComunas = arr(item.comunas_cobertura_slugs_arr).map(norm);
 
-  if (baseSlug === buscada) return "exacta";
+  if (baseSlug === comunaSlugLike) return "exacta";
 
   if (
     nivel === "varias_comunas" &&
-    coverageKeys.some((k) => k.includes(`/${buscada}`) || k.endsWith(buscada))
+    coberturaComunas.includes(comunaSlugLike)
   ) {
     return "cobertura_comuna";
   }
@@ -78,11 +73,13 @@ function tagToLabel(tag: string): string {
 }
 
 type Row = {
-  categoria_slug: string | null;
+  categoria_slug_final: string | null;
   comuna_base_slug: string | null;
   nivel_cobertura: string | null;
-  coverage_keys: string[] | null;
+  comunas_cobertura_slugs_arr: string[] | null;
 };
+
+const emptyOk = () => NextResponse.json({ ok: true, tags: [] });
 
 export async function GET(req: Request) {
   try {
@@ -91,28 +88,29 @@ export async function GET(req: Request) {
     const limit = Math.min(10, Math.max(1, Number(searchParams.get("limit") || "5")));
 
     const { data, error } = await supabase
-      .from("vw_emprendedores_algolia_final")
-      .select(`
-        publicado,
+      .from("vw_emprendedores_publico")
+      .select(
+        `
+        estado_publicacion,
         nivel_cobertura,
         comuna_base_slug,
-        coverage_keys,
-        categoria_slug
-      `)
-      .eq("publicado", true);
+        comunas_cobertura_slugs_arr,
+        categoria_slug_final
+      `
+      )
+      .eq("estado_publicacion", "publicado");
 
     if (error) {
-      return NextResponse.json(
-        { ok: false, error: error.message },
-        { status: 500 }
-      );
+      // eslint-disable-next-line no-console
+      console.error("[tags-populares] supabase", error.message);
+      return emptyOk();
     }
 
-    const rows: Row[] = (data || []).map((row: any) => ({
-      categoria_slug: row.categoria_slug ?? null,
-      comuna_base_slug: row.comuna_base_slug ?? null,
-      nivel_cobertura: row.nivel_cobertura ?? null,
-      coverage_keys: row.coverage_keys ?? null,
+    const rows: Row[] = (data || []).map((row: Record<string, unknown>) => ({
+      categoria_slug_final: (row.categoria_slug_final as string) ?? null,
+      comuna_base_slug: (row.comuna_base_slug as string) ?? null,
+      nivel_cobertura: (row.nivel_cobertura as string) ?? null,
+      comunas_cobertura_slugs_arr: (row.comunas_cobertura_slugs_arr as string[]) ?? null,
     }));
 
     const inScope = comuna
@@ -122,7 +120,7 @@ export async function GET(req: Request) {
     const countByTag: Record<string, number> = {};
 
     for (const item of inScope) {
-      const tag = norm(item.categoria_slug);
+      const tag = norm(item.categoria_slug_final);
       if (!tag) continue;
       countByTag[tag] = (countByTag[tag] || 0) + 1;
     }
@@ -138,13 +136,9 @@ export async function GET(req: Request) {
       .slice(0, limit);
 
     return NextResponse.json({ ok: true, tags });
-  } catch (err) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: err instanceof Error ? err.message : "Error inesperado",
-      },
-      { status: 500 }
-    );
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("[tags-populares]", e);
+    return emptyOk();
   }
 }

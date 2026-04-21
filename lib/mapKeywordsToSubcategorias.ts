@@ -50,7 +50,8 @@ export async function mapKeywordsToSubcategorias(
 
   const { data: todas, error } = await supabase
     .from("subcategorias")
-    .select("id, slug, nombre, categoria_id");
+    .select("id, slug, nombre, categoria_id")
+    .eq("activo", true);
 
   if (error || !todas?.length) {
     return { subcategorias: [], primeraCategoriaId: null };

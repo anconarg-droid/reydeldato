@@ -1,78 +1,112 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
 import SimilarFichaCard from "@/components/cards/SimilarFichaCard";
 import type { SimilarFichaItem } from "@/lib/getSimilaresFicha";
-
-const MQ_MOBILE = "(max-width: 639px)";
 
 export default function SimilaresFichaSection({
   items,
   fromSlug,
+  title,
+  verMasHref,
+  verMasLabel,
+  comunaContextoNombre,
 }: {
   items: SimilarFichaItem[];
-  /** Slug de la ficha actual (para metadata.from_slug en card_view_click). */
   fromSlug: string;
+  title: string;
+  verMasHref: string | null;
+  verMasLabel: string;
+  comunaContextoNombre: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia(MQ_MOBILE);
-    const sync = () => setIsMobile(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-
-  const cap = isMobile ? 3 : 4;
-  const visible = expanded ? items : items.slice(0, cap);
-  const showVerMas = !expanded && items.length > cap;
-
   if (items.length === 0) return null;
 
   return (
-    <section style={{ marginTop: 48 }}>
-      <h2
+    <section
+      style={{
+        marginTop: 56,
+        padding: "24px 20px 22px",
+        borderRadius: 20,
+        border: "1px solid #e2e8f0",
+        background: "#f8fafc",
+        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+      }}
+    >
+      <p
         style={{
-          margin: "0 0 20px 0",
-          fontSize: 24,
-          fontWeight: 900,
-          color: "#111827",
+          margin: 0,
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: "0.14em",
+          color: "#64748b",
+          textTransform: "uppercase",
         }}
       >
-        Otros servicios en tu zona
+        Más resultados
+      </p>
+      <h2
+        style={{
+          margin: "8px 0 0 0",
+          fontSize: 22,
+          fontWeight: 900,
+          color: "#0f172a",
+          letterSpacing: "-0.03em",
+          lineHeight: 1.2,
+        }}
+      >
+        {title}
       </h2>
+      <p
+        style={{
+          margin: "8px 0 20px 0",
+          fontSize: 13,
+          fontWeight: 500,
+          color: "#64748b",
+          lineHeight: 1.45,
+          maxWidth: 640,
+        }}
+      >
+        Estas fichas son sugerencias en tu zona; no forman parte del perfil que estás viendo.
+      </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {visible.map((n, i) => (
-          <SimilarFichaCard
-            key={n.slug}
-            item={n}
-            fromSlug={fromSlug}
-            position={i + 1}
-          />
+      <div
+        className="grid grid-cols-2 min-[880px]:grid-cols-4 gap-3 sm:gap-4"
+        style={{ alignItems: "stretch" }}
+      >
+        {items.map((n, i) => (
+          <div key={n.slug} className="min-w-0 flex">
+            <SimilarFichaCard
+              item={n}
+              comunaContextoNombre={comunaContextoNombre}
+              fromSlug={fromSlug}
+              position={i + 1}
+            />
+          </div>
         ))}
       </div>
 
-      {showVerMas ? (
-        <div style={{ marginTop: 20, display: "flex", justifyContent: "center" }}>
-          <button
-            type="button"
-            onClick={() => setExpanded(true)}
+      {verMasHref ? (
+        <div style={{ marginTop: 22, display: "flex", justifyContent: "center" }}>
+          <Link
+            href={verMasHref}
             style={{
-              padding: "12px 20px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: 48,
+              padding: "0 22px",
               borderRadius: 12,
-              border: "1px solid #cbd5e1",
+              border: "1px solid #e2e8f0",
               background: "#fff",
               color: "#0f172a",
               fontWeight: 800,
-              fontSize: 15,
-              cursor: "pointer",
+              fontSize: 14,
+              textDecoration: "none",
+              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05)",
             }}
           >
-            Ver más similares
-          </button>
+            {verMasLabel}
+          </Link>
         </div>
       ) : null}
     </section>

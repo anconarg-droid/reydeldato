@@ -11,6 +11,10 @@ import {
   intentLabelFromSlug,
   comunaLabelFromSlug,
 } from "@/lib/search/autocompleteConstants";
+import {
+  isResolvedQueryExactGas,
+  suggestionMentionsGasfiteria,
+} from "@/lib/gasQueryExcludeGasfiteria";
 
 export const runtime = "nodejs";
 
@@ -90,7 +94,7 @@ export async function GET(req: NextRequest) {
 
     const qNorm = norm(q);
     const seen = new Set<string>();
-    const suggestions: AutocompleteSuggestion[] = [];
+    let suggestions: AutocompleteSuggestion[] = [];
 
     function dedupeKey(type: string, value: string, comuna?: string): string {
       return comuna ? `${type}:${value}:${comuna}` : `${type}:${value}`;
@@ -219,7 +223,7 @@ export async function GET(req: NextRequest) {
         const index = client.initIndex(indexName);
         const res = await index.search(q, {
           hitsPerPage: 20,
-          attributesToRetrieve: ["tags_slugs", "keywords_clasificacion", "sector_slug"],
+          attributesToRetrieve: ["tags_slugs", "sector_slug"],
           typoTolerance: true,
         });
         const hits = (res.hits || []) as any[];
@@ -259,6 +263,10 @@ export async function GET(req: NextRequest) {
       } catch {
         // Algolia opcional; si falla seguimos con intents/comunas/sectores
       }
+    }
+
+    if (isResolvedQueryExactGas(q)) {
+      suggestions = suggestions.filter((s) => !suggestionMentionsGasfiteria(s));
     }
 
     return NextResponse.json({

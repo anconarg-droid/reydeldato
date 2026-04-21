@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  adminPlanUpdatePatchFromUi,
+  adminPlanUpdatePatchLegacy,
+  type AdminPlanUi,
+} from "@/lib/adminEmprendimientoPlanUi";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,9 +38,11 @@ export async function POST(req: Request) {
       );
     }
 
+    const planUi = plan as AdminPlanUi;
+
     const { data: existing, error: existingError } = await supabase
       .from("emprendedores")
-      .select("id, plan, slug")
+      .select("id, slug")
       .eq("id", id)
       .maybeSingle();
 
@@ -53,10 +60,22 @@ export async function POST(req: Request) {
       );
     }
 
-    const { error: updateError } = await supabase
-      .from("emprendedores")
-      .update({ plan })
-      .eq("id", id);
+    const patchNuevo = adminPlanUpdatePatchFromUi(planUi);
+    let updateError = (
+      await supabase.from("emprendedores").update(patchNuevo).eq("id", id)
+    ).error;
+
+    if (
+      updateError &&
+      /column .* does not exist|schema cache/i.test(updateError.message)
+    ) {
+      const patchLegacy = adminPlanUpdatePatchLegacy(planUi);
+      const second = await supabase
+        .from("emprendedores")
+        .update(patchLegacy)
+        .eq("id", id);
+      updateError = second.error;
+    }
 
     if (updateError) {
       return NextResponse.json(
@@ -84,7 +103,7 @@ export async function POST(req: Request) {
       ok: true,
       item: {
         id: existing.id,
-        plan,
+        plan: planUi,
       },
     });
   } catch (error) {

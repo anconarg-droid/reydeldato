@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
     const { data: existing, error: findError } = await supabase
       .from("emprendedores")
-      .select("id, nombre, estado_publicacion")
+      .select("id, nombre_emprendimiento, estado_publicacion")
       .eq("id", id)
       .maybeSingle();
 
@@ -49,7 +49,6 @@ export async function POST(req: Request) {
       .from("emprendedores")
       .update({
         estado_publicacion: "rechazado",
-        publicado: false,
       })
       .eq("id", id);
 
@@ -64,7 +63,7 @@ export async function POST(req: Request) {
       ok: true,
       item: {
         id: existing.id,
-        nombre: existing.nombre,
+        nombre: existing.nombre_emprendimiento,
         estado_publicacion: "rechazado",
       },
     });

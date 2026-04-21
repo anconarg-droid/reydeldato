@@ -19,7 +19,12 @@ export async function GET(request: Request) {
       return badRequest(`Parámetro estado no válido: ${estado}`);
     }
 
-    const { items, error } = await loadPostulacionesPorEstado(estado);
+    const supabase = getSupabaseAdmin({
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    });
+
+    const { items, error } = await loadPostulacionesPorEstado(supabase, estado);
 
     if (error) {
       return serverError("No se pudo cargar la cola de revisión", error.message);

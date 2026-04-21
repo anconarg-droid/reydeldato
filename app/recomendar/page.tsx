@@ -7,7 +7,20 @@ export const metadata = {
     "Sugiere un negocio local para invitarlo a publicar en Rey del Dato.",
 };
 
-export default function RecomendarPage() {
+type PageProps = {
+  searchParams?: Promise<{
+    comuna?: string;
+    comuna_nombre?: string;
+    servicio?: string;
+  }>;
+};
+
+export default async function RecomendarPage({ searchParams }: PageProps) {
+  const sp = (await searchParams) ?? {};
+  const comuna = typeof sp.comuna === "string" ? sp.comuna.trim() : "";
+  const comunaNombre = typeof sp.comuna_nombre === "string" ? sp.comuna_nombre.trim() : "";
+  const servicio = typeof sp.servicio === "string" ? sp.servicio.trim() : "";
+
   return (
     <main className="min-h-screen bg-white text-slate-900">
       <div className="max-w-6xl mx-auto px-4 py-6">
@@ -19,7 +32,11 @@ export default function RecomendarPage() {
         </p>
         <h1 className="mt-1 text-2xl font-bold text-slate-900">Recomendar emprendimiento</h1>
       </div>
-      <HomeRecomienda />
+      <HomeRecomienda
+        initialComunaSlug={comuna}
+        initialComunaNombre={comunaNombre}
+        initialServicioTexto={servicio}
+      />
     </main>
   );
 }

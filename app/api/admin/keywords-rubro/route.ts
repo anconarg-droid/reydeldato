@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 function clean(value: string) {
   return (value ?? "").toString().trim().toLowerCase();
@@ -24,7 +24,7 @@ function parseKeywords(input: any): string[] {
 
 export async function GET() {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServerPublicClient();
 
     const { data, error } = await supabase
       .from("keywords_rubro")
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServerPublicClient();
 
     const { data, error } = await supabase
       .from("keywords_rubro")
@@ -115,7 +115,7 @@ export async function PATCH(req: NextRequest) {
     if (body.keywords !== undefined) updateData.keywords = keywords;
     if (typeof activo === "boolean") updateData.activo = activo;
 
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServerPublicClient();
 
     const { data, error } = await supabase
       .from("keywords_rubro")
@@ -152,7 +152,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServerPublicClient();
 
     const { error } = await supabase
       .from("keywords_rubro")

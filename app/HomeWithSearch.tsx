@@ -1,7 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
+import {
+  buscarApiItemToEmprendedorCardProps,
+  type BuscarApiItem,
+} from "@/lib/mapBuscarItemToEmprendedorCard";
 
 type ComunaSuggestion = { nombre: string; slug: string; region_nombre?: string };
 
@@ -12,31 +16,20 @@ type CategoriaConSubs = {
   subcategorias: Array<{ nombre: string; slug: string }>;
 };
 
-type Hit = {
-  objectID?: string;
-  slug?: string;
-  nombre?: string;
-  descripcion_corta?: string;
-  categoria_nombre?: string;
-  subcategorias_nombres_arr?: string[];
-  comuna_base_nombre?: string;
-  comuna_base_slug?: string;
-  nivel_cobertura?: string;
-  foto_principal_url?: string;
-  whatsapp?: string;
-  instagram?: string;
-  web?: string;
-};
-
 type SearchResponse = {
   ok: boolean;
   total?: number;
   nbHits?: number;
-  meta?: { comuna?: string; total?: number };
-  items?: Hit[];
-  hits?: Hit[];
-  deTuComuna?: Hit[];
-  otrasComunas?: Hit[];
+  meta?: {
+    comuna?: string;
+    total?: number;
+    comunaSlug?: string;
+    comunaNombre?: string;
+  };
+  items?: BuscarApiItem[];
+  hits?: BuscarApiItem[];
+  deTuComuna?: BuscarApiItem[];
+  otrasComunas?: BuscarApiItem[];
   page?: number;
   nbPages?: number;
 };
@@ -61,7 +54,11 @@ export default function HomeWithSearch({ sugerencias, categorias }: Props) {
   const [categoriaSlug, setCategoriaSlug] = useState("");
   const [subcategoriaSlug, setSubcategoriaSlug] = useState("");
 
-  const [hits, setHits] = useState<Hit[]>([]);
+  const [hits, setHits] = useState<BuscarApiItem[]>([]);
+  const [searchMeta, setSearchMeta] = useState<{
+    comunaSlug: string;
+    comunaNombre: string;
+  } | null>(null);
   const [totalHits, setTotalHits] = useState(0);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -158,11 +155,21 @@ export default function HomeWithSearch({ sugerencias, categorias }: Props) {
                   : items.length;
 
           if (ok) {
-            setHits(items);
+            setHits(items as BuscarApiItem[]);
             setTotalHits(total);
+            const m = data.meta;
+            if (m && typeof m.comunaSlug === "string") {
+              setSearchMeta({
+                comunaSlug: m.comunaSlug,
+                comunaNombre: String(m.comunaNombre ?? ""),
+              });
+            } else {
+              setSearchMeta(null);
+            }
           } else {
             setHits([]);
             setTotalHits(0);
+            setSearchMeta(null);
           }
         } else {
           setHits([]);
@@ -172,6 +179,7 @@ export default function HomeWithSearch({ sugerencias, categorias }: Props) {
       .catch(() => {
         setHits([]);
         setTotalHits(0);
+        setSearchMeta(null);
       })
       .finally(() => setLoadingSearch(false));
   }, [q, comunaInput, selectedComunaSlug, categoriaSlug, subcategoriaSlug]);
@@ -336,59 +344,16 @@ export default function HomeWithSearch({ sugerencias, categorias }: Props) {
               Escribe algo en el buscador y elige una comuna para ver resultados en tiempo real.
             </p>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {hits.map((hit) => (
-              <Link
-                key={hit.objectID || hit.slug || hit.nombre}
-                href={`/emprendedor/${hit.slug || hit.objectID}`}
-                className="card-hover-effect bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:border-slate-300 transition-all flex flex-col"
-              >
-                <div className="aspect-video bg-slate-200 relative overflow-hidden">
-                  {hit.foto_principal_url ? (
-                    <img
-                      src={hit.foto_principal_url}
-                      alt=""
-                      className="w-full h-full object-cover card-img-zoom"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-4xl">
-                      🏪
-                    </div>
-                  )}
-                </div>
-                <div className="p-4 flex-1 flex flex-col">
-                  <h3 className="font-bold text-slate-900 text-lg leading-tight mb-1">
-                    {hit.nombre || "Sin nombre"}
-                  </h3>
-                  {hit.categoria_nombre && (
-                    <span className="text-xs font-medium text-slate-500 mb-1">{hit.categoria_nombre}</span>
-                  )}
-                  {Array.isArray(hit.subcategorias_nombres_arr) && hit.subcategorias_nombres_arr.length > 0 && (
-                    <span className="text-xs text-slate-500 mb-0.5">
-                      {hit.subcategorias_nombres_arr.slice(0, 3).join(" · ")}
-                    </span>
-                  )}
-                  {hit.comuna_base_nombre && (
-                    <span className="text-xs text-slate-500 mb-2">📍 {hit.comuna_base_nombre}</span>
-                  )}
-                  {hit.descripcion_corta && (
-                    <p className="text-slate-600 text-sm line-clamp-2 mt-1 flex-1">
-                      {hit.descripcion_corta}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-100">
-                    {hit.whatsapp && (
-                      <span className="text-xs text-green-600" title="WhatsApp">📱</span>
-                    )}
-                    {hit.instagram && (
-                      <span className="text-xs text-pink-600" title="Instagram">📷</span>
-                    )}
-                    {hit.web && (
-                      <span className="text-xs text-blue-600" title="Sitio web">🌐</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
+            {hits.map((item) => (
+              <EmprendedorSearchCard
+                key={item.id || item.slug}
+                {...buscarApiItemToEmprendedorCardProps(
+                  item,
+                  searchMeta,
+                  "search"
+                )}
+              />
             ))}
           </div>
         </main>

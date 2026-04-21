@@ -317,6 +317,7 @@ export function calcularCompletitudEmprendedor(
 export function calcularCompletitudDesdeFormulario(form: {
   nombre: string;
   whatsapp: string;
+  whatsappSecundario: string;
   fotoPrincipalUrl: string;
   descripcionCorta: string;
   comunaBaseSlug: string;
@@ -334,7 +335,7 @@ export function calcularCompletitudDesdeFormulario(form: {
   return calcularCompletitudEmprendedor({
     nombreEmprendimiento: form.nombre,
     whatsappPrincipal: form.whatsapp,
-    whatsappSecundario: "",
+    whatsappSecundario: form.whatsappSecundario,
     fotoPrincipalUrl: form.fotoPrincipalUrl,
     fraseNegocio: form.descripcionCorta,
     comunaId: form.comunaBaseSlug || null,

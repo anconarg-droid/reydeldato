@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 function normSlug(s: string): string {
   return String(s ?? "").trim().toLowerCase().replace(/\s+/g, "-");
@@ -34,7 +34,7 @@ export type ResolvedSegment =
 export async function getComunaBySlug(slug: string): Promise<ComunaRow | null> {
   const norm = normSlug(slug);
   if (!norm) return null;
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
   const { data, error } = await supabase
     .from("comunas")
     .select("id, slug, nombre, region_id")
@@ -53,8 +53,12 @@ export async function getSubcategoriaBySlug(
 ): Promise<SubcategoriaRow | null> {
   const norm = normSlug(slug);
   if (!norm) return null;
-  const supabase = createSupabaseServerClient();
-  let q = supabase.from("subcategorias").select("id, slug, nombre, categoria_id").eq("slug", norm);
+  const supabase = createSupabaseServerPublicClient();
+  let q = supabase
+    .from("subcategorias")
+    .select("id, slug, nombre, categoria_id")
+    .eq("slug", norm)
+    .eq("activo", true);
   if (categoriaId) q = q.eq("categoria_id", categoriaId);
   const { data, error } = await q.maybeSingle();
   if (error || !data) return null;
@@ -67,7 +71,7 @@ export async function getSubcategoriaBySlug(
 export async function getCategoriaBySlug(slug: string): Promise<CategoriaRow | null> {
   const norm = normSlug(slug);
   if (!norm || norm === "otros") return null;
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
   const { data, error } = await supabase
     .from("categorias")
     .select("id, slug, nombre")

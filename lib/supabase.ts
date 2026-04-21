@@ -9,11 +9,3 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // Cliente público (frontend)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Cliente ADMIN (solo server). No debe usarse en el browser.
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-export const supabaseAdmin =
-  typeof window === "undefined" && supabaseServiceKey
-    ? createClient(supabaseUrl, supabaseServiceKey)
-    : null;

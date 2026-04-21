@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 export type CommuneActivityRow = {
   id: string;
@@ -14,7 +14,7 @@ export type CommuneActivityRow = {
 export async function getCommuneActivity(slug: string | null): Promise<CommuneActivityRow | null> {
   if (!slug || typeof slug !== "string" || slug.trim() === "") return null;
 
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
   const normalized = slug.trim().toLowerCase();
 
   const { data, error } = await supabase
@@ -38,7 +38,7 @@ export async function incrementCommuneActivity(
 ): Promise<void> {
   if (!slug || typeof slug !== "string" || slug.trim() === "") return;
 
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
   const normalized = slug.trim().toLowerCase();
 
   const { error } = await supabase.rpc("increment_commune_activity", {

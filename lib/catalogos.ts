@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 type ItemSlug = {
   id: number | string;
@@ -8,16 +9,13 @@ type ItemSlug = {
 };
 
 export async function getCatalogos() {
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  // Catálogos públicos: usar anon (no service_role).
+  const supabase = createSupabaseServerPublicClient();
 
   const [comunasRes, categoriasRes, subcategoriasRes] = await Promise.all([
     supabase.from("comunas").select("id,nombre,slug,region_slug"),
     supabase.from("categorias").select("id,nombre,slug"),
-    supabase.from("subcategorias").select("id,nombre,slug,categoria_id"),
+    supabase.from("subcategorias").select("id,nombre,slug,categoria_id").eq("activo", true),
   ]);
 
   const categoriasRaw = (categoriasRes.data || []) as ItemSlug[];

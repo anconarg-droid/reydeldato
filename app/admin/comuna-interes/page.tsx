@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import { formatDateTimeEsCL } from "@/lib/formatDateTimeEsCL";
 
 export const dynamic = "force-dynamic";
@@ -18,11 +18,11 @@ export default async function AdminComunaInteresPage({
   const desde = (sp.desde || "").trim();
   const hasta = (sp.hasta || "").trim();
 
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseServerPublicClient();
 
   let query = supabase
     .from("comuna_interes")
-    .select("comuna_slug, nombre, telefono, rubro, email, created_at")
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (comunaFilter) {
@@ -199,7 +199,7 @@ export default async function AdminComunaInteresPage({
             >
               <div>Comuna</div>
               <div>Nombre</div>
-              <div>Teléfono</div>
+              <div>WhatsApp</div>
               <div>Rubro</div>
               <div>Email / Fecha</div>
             </div>
@@ -218,10 +218,10 @@ export default async function AdminComunaInteresPage({
               >
                 <div>{row.comuna_slug}</div>
                 <div>{row.nombre}</div>
-                <div>{row.telefono}</div>
-                <div>{row.rubro}</div>
+                <div>{row.whatsapp ?? row.telefono ?? "—"}</div>
+                <div>{row.rubro ?? "—"}</div>
                 <div>
-                  <div>{row.email}</div>
+                  <div>{row.email ?? "—"}</div>
                   <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
                     {row.created_at ? formatDateTimeEsCL(row.created_at) : ""}
                   </div>

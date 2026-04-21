@@ -13,6 +13,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("subcategorias")
       .select("id, nombre, slug, categoria_id")
+      .eq("activo", true)
       .order("nombre", { ascending: true });
 
     if (error) {
