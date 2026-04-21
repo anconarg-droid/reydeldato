@@ -711,16 +711,17 @@ export default async function Page({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
-  if (process.env.NODE_ENV === "development" || process.env.LOG_FICHA_DEBUG === "1") {
-    // Log temporal para 500s en producción (Vercel logs).
-    // No cambia la lógica; solo ayuda a ver qué slug llega.
-    console.log("[ficha-page] slug_param", { slug });
-  }
-  const sp = (await searchParams) ?? {};
-  const item = await getEmprendedor(slug);
+  try {
+    if (process.env.NODE_ENV === "development" || process.env.LOG_FICHA_DEBUG === "1") {
+      // Log temporal para 500s en producción (Vercel logs).
+      // No cambia la lógica; solo ayuda a ver qué slug llega.
+      console.log("[ficha-page] slug_param", { slug });
+    }
+    const sp = (await searchParams) ?? {};
+    const item = await getEmprendedor(slug);
 
-  if (!item) notFound();
-  if (!emprendedorFichaVisiblePublicamente(item.estado_publicacion)) notFound();
+    if (!item) notFound();
+    if (!emprendedorFichaVisiblePublicamente(item.estado_publicacion)) notFound();
 
   const comunaBuscadaSlug =
     (Array.isArray(sp.comuna) ? sp.comuna[0] : sp.comuna) ||
@@ -1451,4 +1452,13 @@ export default async function Page({
       ) : null}
     </main>
   );
+  } catch (err) {
+    console.error("[ficha-page] caught_error", {
+      slug,
+      message: err instanceof Error ? err.message : String(err),
+      digest: (err as { digest?: string } | null)?.digest,
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    throw err;
+  }
 }
