@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { resolveQueryFromBusquedaSinonimos } from "@/lib/busquedaSinonimosResolve";
 import { isResolvedQueryExactGas } from "@/lib/gasQueryExcludeGasfiteria";
 import { normalizeText } from "@/lib/search/normalizeText";
-import { searchEmprendedoresGlobalText } from "@/lib/resultadosGlobalSupabase";
+import { searchEmprendedoresGlobalAlgolia } from "@/lib/search/searchEmprendedoresGlobalAlgolia";
 import { slugify } from "@/lib/slugify";
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import ResultadosClient from "./ResultadosClient";
@@ -211,7 +211,7 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
 
   const globalDb =
     q && !comuna
-      ? await searchEmprendedoresGlobalText(q, 24, {
+      ? await searchEmprendedoresGlobalAlgolia(q, 24, {
           regionSlug: regionFocoSlug,
         })
       : null;

@@ -3,7 +3,13 @@ dotenv.config({ path: ".env.local" });
 import algoliasearch from "algoliasearch";
 import { createClient } from "@supabase/supabase-js";
 import { indexarEmprendedor } from "@/lib/algolia";
+import { applyEmprendedoresIndexSettings } from "@/lib/algoliaIndexSettings";
 import { EMPRENDEDORES_INDEXACION_VIEW_DEFAULT } from "@/lib/algoliaEmprendedoresReindexSource";
+
+/**
+ * Script local de reindex. Preferir `GET /api/reindex/emprendedores` en servidores con el mismo índice.
+ * `ALGOLIA_INDEX_NAME` debe apuntar al mismo índice que `ALGOLIA_INDEX_EMPRENDEDORES` si se compara con producción.
+ */
 
 function req(name: string): string {
   const value = process.env[name];
@@ -38,26 +44,7 @@ async function run() {
   await index.clearObjects();
   await indexarEmprendedor(rows);
 
-  /** Alineado con los atributos que emite `lib/algolia.ts` (`toAlgoliaRecord`). */
-  await index.setSettings({
-    searchableAttributes: [
-      "unordered(nombre)",
-      "unordered(descripcion_corta)",
-      "unordered(descripcion_larga)",
-      "unordered(keywords)",
-      "unordered(comuna)",
-      "unordered(cobertura)",
-      "unordered(comunas)",
-      "unordered(modalidades)",
-    ],
-    attributesForFaceting: [
-      "filterOnly(categoria_slug)",
-      "filterOnly(subcategoria_slug)",
-    ],
-    customRanking: ["desc(publicado)"],
-    attributesToSnippet: ["descripcion_corta:20", "descripcion_larga:30"],
-    attributesToHighlight: ["nombre", "descripcion_corta", "descripcion_larga"],
-  });
+  await applyEmprendedoresIndexSettings(index);
 
   console.log(`Indexados ${rows.length} emprendimientos en Algolia.`);
 }

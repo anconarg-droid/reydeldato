@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import algoliasearch from "algoliasearch";
 import { createClient } from "@supabase/supabase-js";
 import { indexarEmprendedor } from "@/lib/algolia";
+import { applyEmprendedoresIndexSettings } from "@/lib/algoliaIndexSettings";
 import { EMPRENDEDORES_INDEXACION_VIEW_DEFAULT } from "@/lib/algoliaEmprendedoresReindexSource";
 
 export const runtime = "nodejs";
@@ -70,6 +71,8 @@ export async function GET() {
     for (const part of chunk(rows, 500)) {
       await indexarEmprendedor(part as Record<string, unknown>[]);
     }
+
+    await applyEmprendedoresIndexSettings(index);
 
     console.log("ALGOLIA_SAVE_DONE");
 

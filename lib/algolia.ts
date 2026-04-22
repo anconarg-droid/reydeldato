@@ -10,19 +10,27 @@ function arr(v: unknown): string[] {
   return v.map((x) => s(x)).filter(Boolean);
 }
 
-const INDEX_NAME = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_EMPRENDEDORES || "emprendedores";
+const INDEX_NAME =
+  process.env.ALGOLIA_INDEX_EMPRENDEDORES ||
+  process.env.NEXT_PUBLIC_ALGOLIA_INDEX_EMPRENDEDORES ||
+  "emprendedores";
 
 type EmprendedorIndexable = Record<string, any>;
 
+/**
+ * Record canónico para Algolia. `objectID` es siempre el `id` de la fila (estable).
+ * `slug` se envía aparte para navegación y búsqueda global; no se indexan filas publicadas sin slug.
+ */
 function toAlgoliaRecord(emprendedor: EmprendedorIndexable) {
-  const slug = s(emprendedor.slug);
   const id = s(emprendedor.id);
-  const objectID = slug || id;
+  if (!id) return null;
+
+  const slug = s(emprendedor.slug);
 
   return {
-    objectID,
+    objectID: id,
 
-    id: id || undefined,
+    id,
     slug,
     nombre: s(emprendedor.nombre ?? emprendedor.nombre_emprendimiento),
     descripcion_corta: s(emprendedor.descripcion_corta),
@@ -37,6 +45,8 @@ function toAlgoliaRecord(emprendedor: EmprendedorIndexable) {
     subcategoria_slug: s(
       emprendedor.subcategoria_slug ?? emprendedor.subcategoria_slug_final
     ),
+    sector_slug: s(emprendedor.sector_slug),
+    tipo_actividad: s(emprendedor.tipo_actividad),
     keywords: Array.isArray(emprendedor.keywords_finales)
       ? emprendedor.keywords_finales
       : [],
@@ -83,9 +93,14 @@ export async function indexarEmprendedor(emprendedor: EmprendedorIndexable | Emp
 
   for (const e of list) {
     const record = toAlgoliaRecord(e);
-    if (!record.objectID) continue;
+    if (!record) continue;
+    const oid = String(record.objectID);
     if (!isPublicado(e)) {
-      toDelete.push(record.objectID);
+      toDelete.push(oid);
+      continue;
+    }
+    if (!s(e.slug)) {
+      toDelete.push(oid);
       continue;
     }
     toSave.push(record);

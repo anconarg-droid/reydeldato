@@ -1,26 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAlgoliaAdminIndex } from "@/lib/algoliaServer";
+import { applyEmprendedoresIndexSettings } from "@/lib/algoliaIndexSettings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const INDEX_NAME = process.env.ALGOLIA_INDEX_EMPRENDEDORES || "emprendedores";
 
+/**
+ * Aplica settings canónicos (`lib/algoliaIndexSettings.ts`) + sinónimos de ejemplo.
+ * No definir otro `setSettings` fuera del módulo único.
+ */
 export async function POST(_req: NextRequest) {
   try {
     const index = getAlgoliaAdminIndex(INDEX_NAME);
 
-    await index.setSettings({
-      searchableAttributes: [
-        "nombre",
-        "descripcion_corta",
-        "descripcion_larga",
-        "subcategorias_nombres_arr",
-        "keywords",
-      ],
-      typoTolerance: true,
-      ignorePlurals: true,
-    });
+    await applyEmprendedoresIndexSettings(index);
 
     await index.saveSynonyms(
       [
@@ -47,7 +42,7 @@ export async function POST(_req: NextRequest) {
       ok: true,
       index: INDEX_NAME,
       message:
-        "Configuración Algolia aplicada (searchableAttributes, typoTolerance, ignorePlurals, sinónimos básicos).",
+        "Settings canónicos (algoliaIndexSettings) + sinónimos básicos aplicados.",
     });
   } catch (err) {
     console.error("[admin/algolia/configure]", err);

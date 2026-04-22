@@ -7,6 +7,12 @@ import {
 } from "@/lib/emprendedorGaleriaPivot";
 import { fichaPublicaEsMejoradaDesdeBusqueda } from "@/lib/estadoFicha";
 
+/**
+ * @deprecated Reindex legacy desde `vw_emprendedores_busqueda_v2` (shape distinto al record canónico).
+ * Settings del índice: solo `lib/algoliaIndexSettings.ts` vía `GET /api/reindex/emprendedores`.
+ * No usar para configurar Algolia; puede eliminarse cuando no haya dependencias.
+ */
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -231,85 +237,6 @@ export async function GET() {
 
     await index.replaceAllObjects(objects, {
       autoGenerateObjectIDIfNotExist: false,
-    });
-
-    await index.setSettings({
-      attributesForFaceting: [
-        "filterOnly(categoria_slug)",
-        "filterOnly(comuna_base_slug)",
-        "filterOnly(comunas_cobertura_slugs_arr)",
-        "filterOnly(regiones_cobertura_slugs_arr)",
-        "filterOnly(subcategorias_slugs_arr)",
-        "filterOnly(nivel_cobertura)",
-        "filterOnly(publicado)",
-        "filterOnly(estado_publicacion)",
-        "filterOnly(sector_slug)",
-        "filterOnly(tipo_actividad)",
-        "filterOnly(tags_slugs)",
-        "filterOnly(ficha_mejorada_contenido)",
-      ],
-      searchableAttributes: [
-        "unordered(nombre)",
-        "descripcion_corta",
-        "search_text",
-        "unordered(tags_slugs)",
-        "descripcion_larga",
-        "unordered(subcategorias_nombres_arr)",
-        "unordered(keywords)",
-        "categoria_nombre",
-        "keywords_text",
-        "comuna_base_nombre",
-        "region_nombre",
-      ],
-      customRanking: ["asc(nivel_rank)"],
-      attributesToRetrieve: [
-        "objectID",
-        "id",
-        "slug",
-        "nombre",
-        "descripcion_corta",
-        "descripcion_larga",
-        "categoria_id",
-        "categoria_nombre",
-        "categoria_slug",
-        "comuna_base_id",
-        "comuna_base_nombre",
-        "comuna_base_slug",
-        "region_nombre",
-        "region_slug",
-        "nivel_cobertura",
-        "foto_principal_url",
-        "galeria_urls",
-        "whatsapp",
-        "instagram",
-        "web",
-        "email",
-        "direccion",
-        "zona_sector",
-        "responsable_nombre",
-        "mostrar_responsable",
-        "responsable_publico",
-        "plan",
-        "estado_publicacion",
-        "publicado",
-        "subcategorias_nombres_arr",
-        "subcategorias_slugs_arr",
-        "comunas_cobertura_nombres_arr",
-        "comunas_cobertura_slugs_arr",
-        "regiones_cobertura_nombres_arr",
-        "regiones_cobertura_slugs_arr",
-        "servicios",
-        "keywords",
-        "modalidades_atencion",
-        "search_text",
-        "keywords_text",
-        "nivel_rank",
-        "sector_slug",
-        "tipo_actividad",
-        "tags_slugs",
-        "clasificacion_confianza",
-        "ficha_mejorada_contenido",
-      ],
     });
 
     return NextResponse.json({
