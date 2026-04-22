@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { resolveQueryFromBusquedaSinonimos } from "@/lib/busquedaSinonimosResolve";
 import { isResolvedQueryExactGas } from "@/lib/gasQueryExcludeGasfiteria";
 import { normalizeText } from "@/lib/search/normalizeText";
@@ -22,6 +23,58 @@ type PageProps = {
   }>;
 };
 
+/**
+ * ISO 3166-2 (sufijo tras CL-) → `regiones.slug` (Chile).
+ * Solo códigos usados oficialmente; siempre se valida contra la tabla `regiones`.
+ */
+const CHILE_ISO3166_2_SUFFIX_TO_REGION_SLUG: Record<string, string> = {
+  AP: "arica-y-parinacota",
+  TA: "tarapaca",
+  AN: "antofagasta",
+  AT: "atacama",
+  CO: "coquimbo",
+  VS: "valparaiso",
+  RM: "metropolitana",
+  LI: "ohiggins",
+  ML: "maule",
+  NB: "nuble",
+  BI: "biobio",
+  AR: "la-araucania",
+  LR: "los-rios",
+  LL: "los-lagos",
+  AI: "aysen",
+  MA: "magallanes",
+};
+
+function parseChileRegionCodeFromVercelGeo(raw: string | null): string | null {
+  const t = String(raw ?? "").trim();
+  if (!t) return null;
+  const upper = t.toUpperCase();
+  if (/^CL-[A-Z]{1,3}$/.test(upper)) {
+    return upper.slice(3);
+  }
+  if (/^[A-Z]{2}$/.test(upper)) {
+    return upper;
+  }
+  return null;
+}
+
+async function resolveRegionRowBySlug(
+  supabase: ReturnType<typeof createSupabaseServerPublicClient>,
+  slug: string
+): Promise<{ slug: string; nombre: string } | null> {
+  const s = String(slug ?? "").trim();
+  if (!s) return null;
+  const { data } = await supabase
+    .from("regiones")
+    .select("slug, nombre")
+    .eq("slug", s)
+    .maybeSingle();
+  if (!data?.slug) return null;
+  const nombre = String((data as { nombre?: unknown }).nombre ?? "").trim();
+  return { slug: String((data as { slug: string }).slug), nombre: nombre || s };
+}
+
 export default async function ResultadosPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
   const comunaRaw = (params.comuna ?? "").trim();
@@ -30,7 +83,7 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
   const subcategoriaIdRaw = (params.subcategoria_id ?? "").trim();
   const categoriaRaw = (params.categoria ?? "").trim();
   const regionRaw = (params.region ?? "").trim();
-  const regionSlug = regionRaw ? slugify(regionRaw) : "";
+  const regionSlugFromUrl = regionRaw ? slugify(regionRaw) : "";
   /** Slug de comuna canónico (sin acentos, guiones). */
   const comuna = comunaRaw ? slugify(comunaRaw) : "";
 
@@ -69,15 +122,37 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
   /** Texto de búsqueda sin acentos y en minúsculas (misma lógica que el resto del motor). */
   const q = qRawCliente ? normalizeText(qRawCliente) : "";
 
+  const supabase = createSupabaseServerPublicClient();
+
+  let regionFocoSlug: string | null = null;
   let regionFocoNombre: string | null = null;
-  if (regionSlug && q && !comuna) {
-    const supabase = createSupabaseServerPublicClient();
-    const { data: regRow } = await supabase
-      .from("regiones")
-      .select("nombre")
-      .eq("slug", regionSlug)
-      .maybeSingle();
-    regionFocoNombre = regRow?.nombre ? String(regRow.nombre).trim() : null;
+
+  if (q && !comuna) {
+    if (regionSlugFromUrl) {
+      const row = await resolveRegionRowBySlug(supabase, regionSlugFromUrl);
+      if (row) {
+        regionFocoSlug = row.slug;
+        regionFocoNombre = row.nombre;
+      }
+    } else {
+      const h = await headers();
+      const country = (h.get("x-vercel-ip-country") || "").trim().toUpperCase();
+      if (country === "CL") {
+        const geoRaw = h.get("x-vercel-ip-country-region");
+        const code = parseChileRegionCodeFromVercelGeo(geoRaw);
+        const candidateSlug =
+          code && CHILE_ISO3166_2_SUFFIX_TO_REGION_SLUG[code]
+            ? CHILE_ISO3166_2_SUFFIX_TO_REGION_SLUG[code]
+            : null;
+        if (candidateSlug) {
+          const row = await resolveRegionRowBySlug(supabase, candidateSlug);
+          if (row) {
+            regionFocoSlug = row.slug;
+            regionFocoNombre = row.nombre;
+          }
+        }
+      }
+    }
   }
 
   let synonymNotice: { qOriginal: string; qResolved: string } | null = null;
@@ -96,7 +171,7 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
   const globalDb =
     q && !comuna
       ? await searchEmprendedoresGlobalText(q, 24, {
-          regionSlug: regionSlug || null,
+          regionSlug: regionFocoSlug,
         })
       : null;
 
@@ -119,8 +194,9 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
           initialSubcategoriaId={subcategoriaId || null}
           globalDb={globalDb}
           synonymNotice={synonymNotice}
-          regionFocoSlug={regionSlug || null}
+          regionFocoSlug={regionFocoSlug}
           regionFocoNombre={regionFocoNombre}
+          resaltarCampoComunaEnBusquedaGlobal={Boolean(q && !comuna)}
         />
       </div>
     </main>

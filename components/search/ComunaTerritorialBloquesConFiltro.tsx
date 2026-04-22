@@ -28,8 +28,6 @@ type Props = {
   /** Mensaje vacío de la grilla cuando no aplica el caso “solo completos en bloque vacío”. */
   gridEmptyMessage?: string;
   trackImpressions?: TrackConfig | null;
-  /** Panel informativo cuando no hay nadie en tu comuna pero sí quienes atienden (solo datos sin filtrar). */
-  panelSinBaseEnComuna?: ReactNode;
   /** Estado vacío total sin resultados de API. */
   emptyTotal?: ReactNode;
   /** Oculta el filtro “solo perfiles activos” (p. ej. vista previa en comuna sin directorio). */
@@ -53,7 +51,6 @@ export default function ComunaTerritorialBloquesConFiltro({
   nombreComunaDisplay,
   gridEmptyMessage = "No hay resultados con estos filtros.",
   trackImpressions,
-  panelSinBaseEnComuna,
   emptyTotal,
   ocultarFiltroSoloCompletos = false,
   usarCardSimple = false,
@@ -108,6 +105,7 @@ export default function ComunaTerritorialBloquesConFiltro({
 
   const persistPrefix = `resultados:${comunaSlug}`;
   const idSafe = comunaSlug.replace(/[^a-zA-Z0-9_-]/g, "-");
+  const sinBasePeroConCobertura = enRaw.length === 0 && atiendenRaw.length > 0;
 
   if (totalRaw === 0) {
     return <>{emptyTotal}</>;
@@ -150,7 +148,7 @@ export default function ComunaTerritorialBloquesConFiltro({
         </p>
       ) : null}
 
-      {enRaw.length > 0 ? (
+      {(enRaw.length > 0 || sinBasePeroConCobertura) ? (
         <TerritorialAccordionBlock
           variant="local"
           persistPrefix={persistPrefix}
@@ -163,21 +161,30 @@ export default function ComunaTerritorialBloquesConFiltro({
           }
           subtitle="Con base en esta comuna"
         >
-          <CategoriaEmprendedoresGrid
-            items={fEn}
-            comunaSlug={comunaSlug}
-            comunaNombre={comunaNombre}
-            usarCardSimple={usarCardSimple}
-            emptyMessage={
-              aplicarSoloCompletos && enRaw.length > 0 && fEn.length === 0
-                ? "Sin resultados con perfil activo. Desactiva el filtro."
-                : gridEmptyMessage
-            }
-          />
+          {sinBasePeroConCobertura ? (
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5">
+              <p className="m-0 text-sm font-extrabold text-slate-900">
+                Aún no hay negocios con base en esta comuna para esta búsqueda.
+              </p>
+              <p className="m-0 mt-1 text-sm text-slate-600 leading-relaxed">
+                Sí encontramos negocios que atienden esta comuna desde otras comunas.
+              </p>
+            </div>
+          ) : (
+            <CategoriaEmprendedoresGrid
+              items={fEn}
+              comunaSlug={comunaSlug}
+              comunaNombre={comunaNombre}
+              usarCardSimple={usarCardSimple}
+              emptyMessage={
+                aplicarSoloCompletos && enRaw.length > 0 && fEn.length === 0
+                  ? "Sin resultados con perfil activo. Desactiva el filtro."
+                  : gridEmptyMessage
+              }
+            />
+          )}
         </TerritorialAccordionBlock>
       ) : null}
-
-      {panelSinBaseEnComuna}
 
       {atiendenRaw.length > 0 ? (
         <TerritorialAccordionBlock

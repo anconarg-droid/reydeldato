@@ -87,6 +87,7 @@ export function buscarApiItemToEmprendedorCardProps(
     emprendedorId: idRaw || undefined,
     fotoPrincipalUrl: String(item.fotoPrincipalUrl || ""),
     whatsappPrincipal: String(item.whatsappPrincipal || ""),
+    estadoPublicacion: String(item.estadoPublicacion ?? "").trim() || undefined,
     esFichaCompleta,
     estadoFicha: item.estadoFicha,
     bloqueTerritorial: item.bloque ?? null,

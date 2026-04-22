@@ -60,15 +60,15 @@ function PreviewCell({ item }: { item: AbrirComunaNegocioPreviewItem }) {
 
   return (
     <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white">
-      {/* Banner 16:9 — protagonista; ancho completo de la celda */}
-      <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-slate-100">
+      {/* Imagen cuadrada (1:1) para estandarizar cards */}
+      <div className="aspect-square w-full shrink-0 overflow-hidden bg-slate-100">
         {mostrarFoto ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={url}
               alt=""
-              className="block h-full w-full object-cover"
+              className="h-full w-full object-cover"
               loading="lazy"
               onError={() => setImgBroken(true)}
             />

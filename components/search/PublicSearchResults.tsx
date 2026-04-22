@@ -395,7 +395,7 @@ export default function PublicSearchResults({
       nombreComunaDisplay={nombreComunaLinea}
       gridEmptyMessage="No encontramos resultados."
       ocultarFiltroSoloCompletos={modoActivacionPreview}
-      usarCardSimple={modoActivacionPreview}
+      usarCardSimple={false}
       pocosResultadosServicioLabel={
         modoActivacionPreview && (activacionServicioLabel || "").trim()
           ? (activacionServicioLabel || "").trim()
@@ -405,25 +405,6 @@ export default function PublicSearchResults({
         comuna_slug: meta?.comunaSlug || comuna,
         q: meta?.q || q,
       }}
-      panelSinBaseEnComuna={
-        deTuComuna.length === 0 && atiendenTuComuna.length > 0 ? (
-          <div
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 20,
-              background: "#fff",
-              padding: 18,
-            }}
-          >
-            <h3 style={{ margin: "0 0 6px 0", fontSize: 18, fontWeight: 900, color: "#111827" }}>
-              Aún no hay resultados en tu comuna
-            </h3>
-            <p style={{ margin: 0, fontSize: 14, color: "#6b7280", lineHeight: 1.5 }}>
-              Pero estos emprendimientos sí pueden atenderte:
-            </p>
-          </div>
-        ) : null
-      }
     />
   );
 

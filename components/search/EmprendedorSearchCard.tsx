@@ -33,6 +33,8 @@ export type EmprendedorSearchCardProps = {
   nombre: string;
   fotoPrincipalUrl: string;
   whatsappPrincipal: string;
+  /** Publicación en DB; si es "publicado", se puede navegar a la ficha pública. */
+  estadoPublicacion?: string | null;
   esFichaCompleta: boolean;
   estadoFicha?: "ficha_completa" | "ficha_basica";
   bloqueTerritorial: "de_tu_comuna" | "atienden_tu_comuna" | null;
@@ -109,6 +111,8 @@ function getCoberturaTextoUnificado(item: {
   comuna?: string | null;
 }) {
   const prettyComuna = (raw: string) => tituloDesdeSlugComuna(String(raw ?? ""));
+  const prettyRegion = (raw: string) =>
+    displayTitleCaseWords(String(raw ?? "").trim().replace(/[-_]+/g, " "));
   const comunas = (item.comunas_cobertura ?? []).filter(Boolean);
   const regiones = (item.regiones_cobertura ?? []).filter(Boolean);
 
@@ -124,8 +128,9 @@ function getCoberturaTextoUnificado(item: {
 
   // CASO 2: regiones
   if (regiones.length > 0) {
-    if (regiones.length === 1) return `Atiende: ${regiones[0]}`;
-    return `Atiende: ${regiones[0]} +${regiones.length - 1}`;
+    const first = prettyRegion(regiones[0]);
+    if (regiones.length === 1) return `Atiende: ${first}`;
+    return `Atiende: ${first} +${regiones.length - 1}`;
   }
 
   // CASO 3: fallback (solo base)
@@ -310,6 +315,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
 
   const analyticsSource = p.analyticsSource ?? "search";
   const destacarListado = p.destacarMejoresOpciones === true;
+  const estadoPub = String(p.estadoPublicacion ?? "").trim().toLowerCase();
+  const fichaPublicaDisponible = estadoPub === "publicado";
+  const puedeVerFichaPublica = fichaPublicaDisponible && !p.bloquearAccesoFichaPublica;
 
   /** Dos columnas solo con perfil completo (WhatsApp + Ver detalles). Sin completo: WhatsApp mismo ancho que cada CTA del completo, centrado en la fila. */
   const footerDosColumnas = perfilCompleto;
@@ -331,20 +339,33 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   const cardShadow = hovered ? hoverShadowListado : idleShadowListado;
 
   if (p.usarCardSimple) {
+    const fichaHrefOverride = String(p.fichaPublicaHrefOverride ?? "").trim();
+    const fichaHref = fichaHrefOverride
+      ? fichaHrefOverride
+      : buildFichaHref(
+          p.slug,
+          String(p.fichaContextComunaSlug ?? "").trim()
+            ? {
+                comunaSlug: String(p.fichaContextComunaSlug ?? "").trim(),
+                comunaNombre: String(p.fichaContextComunaNombre ?? "").trim(),
+              }
+            : null,
+        );
+    const puedeNavegarFicha = fichaPublicaDisponible && !p.bloquearAccesoFichaPublica;
     return (
       <article
         className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white"
         aria-label={`${nombreDisplay}: disponible cuando la comuna esté activa`}
       >
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3">
-          <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-44">
+          <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-xl bg-slate-100">
             {mostrarFoto ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={fotoUrl}
                   alt=""
-                  className="block h-full w-full object-cover"
+                  className="h-full w-full object-cover"
                   loading="lazy"
                   onError={() => setImgBroken(true)}
                 />
@@ -360,9 +381,26 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               </div>
             )}
           </div>
-          <h3 className="m-0 mt-2 line-clamp-2 min-h-[2.5rem] w-full shrink-0 text-center text-base font-extrabold leading-snug text-slate-900">
-            {nombreDisplay}
-          </h3>
+          {puedeNavegarFicha ? (
+            <TrackedCardLink
+              slug={p.slug}
+              href={fichaHref}
+              type="view_ficha"
+              analyticsSource={analyticsSource}
+              trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+              trackingEmprendedorId={p.emprendedorId ?? null}
+              className="mt-2 block w-full"
+              aria-label={`Ver ficha: ${nombreDisplay}`}
+            >
+              <h3 className="m-0 line-clamp-2 min-h-[2.5rem] w-full text-center text-base font-extrabold leading-snug text-slate-900">
+                {nombreDisplay}
+              </h3>
+            </TrackedCardLink>
+          ) : (
+            <h3 className="m-0 mt-2 line-clamp-2 min-h-[2.5rem] w-full shrink-0 text-center text-base font-extrabold leading-snug text-slate-900">
+              {nombreDisplay}
+            </h3>
+          )}
           <p className="m-0 mt-1.5 w-full shrink-0 px-1 text-center text-[11px] font-medium leading-snug text-slate-500">
             Disponible cuando se active la comuna
           </p>
@@ -478,14 +516,14 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         }`}
       >
         {/* Imagen: altura fija en todas las cards */}
-        <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-44">
+        <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-xl bg-slate-100">
           {mostrarFoto ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={fotoUrl}
                 alt=""
-                className="block h-full w-full object-cover"
+                className="h-full w-full object-cover"
                 loading="lazy"
                 onError={() => setImgBroken(true)}
               />
@@ -661,7 +699,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           </p>
         </div>
 
-        {tieneWhatsappValido || perfilCompleto ? (
+        {tieneWhatsappValido || puedeVerFichaPublica ? (
         <div
           className={`mt-auto w-full shrink-0 border-t pt-3 ${
             perfilCompleto ? "border-slate-300/40" : "border-slate-200"
@@ -733,7 +771,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                   </TrackedCardLink>
                 ) : null}
 
-                {perfilCompleto ? (
+                {puedeVerFichaPublica ? (
                   <TrackedCardLink
                     slug={p.slug}
                     href={fichaHref}

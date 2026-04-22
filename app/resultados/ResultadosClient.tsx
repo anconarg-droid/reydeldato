@@ -133,6 +133,8 @@ type Props = {
   /** Región asociada a la comuna (o `?region=` en `/resultados`): enlaces y filtro global territorial. */
   regionFocoSlug?: string | null;
   regionFocoNombre?: string | null;
+  /** Solo búsqueda global sin comuna: resaltar input de comuna en la barra. */
+  resaltarCampoComunaEnBusquedaGlobal?: boolean;
 };
 
 export default function ResultadosClient({
@@ -148,6 +150,7 @@ export default function ResultadosClient({
   directorioComunaAbierto = true,
   regionFocoSlug = null,
   regionFocoNombre = null,
+  resaltarCampoComunaEnBusquedaGlobal = false,
 }: Props) {
   const comuna = (initialComuna ?? "").trim();
   const comunaNombre = (initialComunaNombre ?? "").trim();
@@ -178,6 +181,7 @@ export default function ResultadosClient({
         initialQDisplay={qDisplayForBar}
         initialComunaSlug={initialComuna}
         fixedComunaNombre={comunaNombre || null}
+        resaltarCampoComuna={resaltarCampoComunaEnBusquedaGlobal}
       />
     </div>
   );
@@ -364,7 +368,7 @@ export default function ResultadosClient({
         <h1 className="text-xl font-semibold text-slate-900">Resultados para &quot;{q}&quot;</h1>
         <p className="text-slate-600 text-sm mt-1">
           {(regionFocoSlug ?? "").trim()
-            ? `Resultados en ${(regionFocoNombre ?? "").trim() || "tu región"}. Puedes acotar la comuna en la barra superior.`
+            ? `Mostrando resultados en ${(regionFocoNombre ?? "").trim() || "tu región"} · Filtra por comuna para ver lo más cercano a ti`
             : "Resultados en todo Chile. Puedes filtrar por comuna para ver opciones cercanas."}
         </p>
       </header>

@@ -35,6 +35,8 @@ type Props = {
   hideComunaInput?: boolean;
   /** Nombre visible (p. ej. con tildes) para precargar el input cuando `initialComunaSlug` viene de la URL. */
   fixedComunaNombre?: string | null;
+  /** Sin comuna seleccionada: borde/ring teal para invitar a filtrar por comuna. */
+  resaltarCampoComuna?: boolean;
 };
 
 function comunaInputLabelFromProps(
@@ -55,6 +57,7 @@ export default function ResultadosSearchBar({
   initialComunaSlug,
   hideComunaInput = false,
   fixedComunaNombre = null,
+  resaltarCampoComuna = false,
 }: Props) {
   const router = useRouter();
   const [q, setQ] = useState(initialQDisplay);
@@ -289,7 +292,11 @@ export default function ResultadosSearchBar({
               aria-label="Comuna: escribe al menos 2 letras para ver sugerencias"
               placeholder="Ej: Maipú"
               autoComplete="off"
-              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400"
+              className={
+                resaltarCampoComuna && !selectedComunaSlug
+                  ? "h-11 w-full rounded-lg border border-teal-600/50 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 ring-2 ring-teal-600/35 focus:outline-none focus:ring-2 focus:ring-teal-600/45"
+                  : "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400"
+              }
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
