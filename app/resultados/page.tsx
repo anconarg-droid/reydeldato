@@ -77,6 +77,10 @@ async function resolveRegionRowBySlug(
 
 export default async function ResultadosPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
+  /** Temporal: inspeccionar headers en producción (quitar después). */
+  const h = await headers();
+  // eslint-disable-next-line no-console -- debug temporal
+  console.log("HEADERS DEBUG", Object.fromEntries(h.entries()));
   const comunaRaw = (params.comuna ?? "").trim();
   const qRaw = (params.q ?? "").trim();
   const subcategoriaRaw = (params.subcategoria ?? "").trim();
