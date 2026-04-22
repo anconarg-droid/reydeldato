@@ -159,6 +159,14 @@ export default function ResultadosClient({
   const subcategoriaSlug = (initialSubcategoriaSlug ?? "").trim();
   const subcategoriaId = (initialSubcategoriaId ?? "").trim();
 
+  /** TEMP debug: ver si llegan regionFoco desde page (quitar al cerrar el tema del copy). */
+  useEffect(() => {
+    // eslint-disable-next-line no-console -- debug temporal
+    console.log("[ResultadosClient] regionFocoSlug", regionFocoSlug);
+    // eslint-disable-next-line no-console -- debug temporal
+    console.log("[ResultadosClient] regionFocoNombre", regionFocoNombre);
+  }, [regionFocoSlug, regionFocoNombre]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.location.hash !== "#resultados") return;
@@ -367,7 +375,7 @@ export default function ResultadosClient({
       <header>
         <h1 className="text-xl font-semibold text-slate-900">Resultados para &quot;{q}&quot;</h1>
         <p className="text-slate-600 text-sm mt-1">
-          {(regionFocoSlug ?? "").trim()
+          {String(regionFocoSlug ?? "").trim() || String(regionFocoNombre ?? "").trim()
             ? `Mostrando resultados en ${(regionFocoNombre ?? "").trim() || "tu región"} · Filtra por comuna para ver lo más cercano a ti`
             : "Resultados en todo Chile. Puedes filtrar por comuna para ver opciones cercanas."}
         </p>

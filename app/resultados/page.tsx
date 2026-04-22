@@ -64,20 +64,31 @@ function parseChileRegionCodeFromVercelGeo(raw: string | null): string | null {
   return null;
 }
 
+/**
+ * Resuelve una fila en `regiones` por slug canónico.
+ * Acepta el mismo alias que el filtro global (`normRegionSlugForMatch` en resultadosGlobalSupabase):
+ * cobertura y algunas BDs usan `region-{slug}` mientras `regiones.slug` y `?region=` suelen usar `{slug}`.
+ */
 async function resolveRegionRowBySlug(
   supabase: ReturnType<typeof createSupabaseServerPublicClient>,
   slug: string
 ): Promise<{ slug: string; nombre: string } | null> {
-  const s = String(slug ?? "").trim();
+  const s = String(slug ?? "").trim().toLowerCase();
   if (!s) return null;
+  const alt = s.startsWith("region-")
+    ? s.slice("region-".length)
+    : `region-${s}`;
+  const candidates = alt && alt !== s ? [s, alt] : [s];
   const { data } = await supabase
     .from("regiones")
     .select("slug, nombre")
-    .eq("slug", s)
+    .in("slug", candidates)
+    .limit(1)
     .maybeSingle();
   if (!data?.slug) return null;
   const nombre = String((data as { nombre?: unknown }).nombre ?? "").trim();
-  return { slug: String((data as { slug: string }).slug), nombre: nombre || s };
+  const slugRow = String((data as { slug: string }).slug);
+  return { slug: slugRow, nombre: nombre || slugRow };
 }
 
 export default async function ResultadosPage({ searchParams }: PageProps) {
@@ -136,6 +147,8 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
 
   let regionFocoSlug: string | null = null;
   let regionFocoNombre: string | null = null;
+  /** Solo depuración: fila devuelta por `resolveRegionRowBySlug` cuando hay `?region=` (quitar al cerrar). */
+  let resolveRegionRowBySlugResult: { slug: string; nombre: string } | null = null;
 
   /**
    * Región en búsqueda global (sin comuna en URL):
@@ -147,6 +160,7 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
   if (q && !comuna) {
     if (regionSlugFromUrl) {
       const row = await resolveRegionRowBySlug(supabase, regionSlugFromUrl);
+      resolveRegionRowBySlugResult = row;
       if (row) {
         regionFocoSlug = row.slug;
         regionFocoNombre = row.nombre;
@@ -172,6 +186,14 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
         }
       }
     }
+    // eslint-disable-next-line no-console -- debug temporal (quitar al cerrar tema regionFoco)
+    console.log("[resultados/region DEBUG]", {
+      regionRaw,
+      regionSlugFromUrl,
+      resolveRegionRowBySlugResult,
+      regionFocoSlug,
+      regionFocoNombre,
+    });
   }
 
   let synonymNotice: { qOriginal: string; qResolved: string } | null = null;
