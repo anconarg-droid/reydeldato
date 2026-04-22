@@ -20,6 +20,11 @@ type PageProps = {
     subcategoria_id?: string;
     /** Slug de región: búsqueda global acotada territorialmente (p. ej. desde comuna en activación). */
     region?: string;
+    /**
+     * TEMP solo pruebas (quitar después): `?country=CL` fuerza país Chile para la detección automática
+     * cuando no hay `?region=`; no reemplaza a `?region=` (override principal).
+     */
+    country?: string;
   }>;
 };
 
@@ -88,6 +93,7 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
   const categoriaRaw = (params.categoria ?? "").trim();
   const regionRaw = (params.region ?? "").trim();
   const regionSlugFromUrl = regionRaw ? slugify(regionRaw) : "";
+  const countryQueryDebug = (params.country ?? "").trim().toUpperCase();
   /** Slug de comuna canónico (sin acentos, guiones). */
   const comuna = comunaRaw ? slugify(comunaRaw) : "";
 
@@ -131,6 +137,13 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
   let regionFocoSlug: string | null = null;
   let regionFocoNombre: string | null = null;
 
+  /**
+   * Región en búsqueda global (sin comuna en URL):
+   * - Override principal: `?region=` → se resuelve contra `regiones` si el slug existe (no depende de IP/país).
+   * - Sin `?region=`: detección automática solo si el país efectivo es CL (`x-vercel-ip-country`, o
+   *   TEMP `?country=CL` solo para pruebas — quitar cuando ya no haga falta).
+   * La detección por IP puede fallar dependiendo del ISP o routing del usuario.
+   */
   if (q && !comuna) {
     if (regionSlugFromUrl) {
       const row = await resolveRegionRowBySlug(supabase, regionSlugFromUrl);
@@ -139,9 +152,11 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
         regionFocoNombre = row.nombre;
       }
     } else {
-      const h = await headers();
-      const country = (h.get("x-vercel-ip-country") || "").trim().toUpperCase();
-      if (country === "CL") {
+      const countryFromHeader = (h.get("x-vercel-ip-country") || "").trim().toUpperCase();
+      /** TEMP testing: `?country=CL` antes que el header; quitar cuando no se use en dev. */
+      const countryEffective =
+        countryQueryDebug === "CL" ? "CL" : countryFromHeader;
+      if (countryEffective === "CL") {
         const geoRaw = h.get("x-vercel-ip-country-region");
         const code = parseChileRegionCodeFromVercelGeo(geoRaw);
         const candidateSlug =
