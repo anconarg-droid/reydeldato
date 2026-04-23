@@ -8,6 +8,7 @@ export default function SimilaresFichaSection({
   items,
   fromSlug,
   title,
+  subtitle,
   verMasHref,
   verMasLabel,
   comunaContextoNombre,
@@ -15,6 +16,7 @@ export default function SimilaresFichaSection({
   items: SimilarFichaItem[];
   fromSlug: string;
   title: string;
+  subtitle?: string | null;
   verMasHref: string | null;
   verMasLabel: string;
   comunaContextoNombre: string;
@@ -42,7 +44,7 @@ export default function SimilaresFichaSection({
           textTransform: "uppercase",
         }}
       >
-        Más resultados
+        Resultados similares
       </p>
       <h2
         style={{
@@ -66,7 +68,7 @@ export default function SimilaresFichaSection({
           maxWidth: 640,
         }}
       >
-        Estas fichas son sugerencias en tu zona; no forman parte del perfil que estás viendo.
+        {subtitle || "Sugerencias basadas en lo que buscas y en la cercanía al lugar que elegiste."}
       </p>
 
       <div

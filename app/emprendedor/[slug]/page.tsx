@@ -305,6 +305,33 @@ function pluralRubroTituloSimilares(texto: string): string {
 
 type SimilarFichaItem = import("@/lib/getSimilaresFicha").SimilarFichaItem;
 
+function getTituloSimilares({
+  subcategoriaNombre,
+  categoriaNombre,
+  comunaNombre,
+  todosAtiendenComuna,
+}: {
+  subcategoriaNombre?: string;
+  categoriaNombre?: string;
+  comunaNombre?: string;
+  todosAtiendenComuna: boolean;
+}) {
+  const labelRaw =
+    (subcategoriaNombre ?? "").trim() ||
+    (categoriaNombre ?? "").trim() ||
+    "negocios";
+  const label = labelRaw.toLowerCase();
+  const comuna = (comunaNombre ?? "").trim();
+
+  if (todosAtiendenComuna && comuna) {
+    return `Otros ${label} que atienden ${comuna}`;
+  }
+  if (comuna) {
+    return `Más ${label} cerca de ${comuna}`;
+  }
+  return "Negocios similares";
+}
+
 async function getSimilaresFichaUI(current: Emprendedor): Promise<SimilarFichaItem[]> {
   const subSlugs = arr(
     (current as { subcategorias_slugs_arr?: unknown }).subcategorias_slugs_arr
@@ -1166,19 +1193,37 @@ export default async function Page({
     ? pluralRubroTituloSimilares(terminoUsuarioSimilares)
     : "";
 
-  const similaresSectionTitle =
-    rubroPluralTitulo && comunaTituloSimilares
-      ? `Otras ${rubroPluralTitulo} en ${comunaTituloSimilares}`
-      : comunaTituloSimilares
-        ? `Más negocios parecidos en ${comunaTituloSimilares}`
-        : "Más negocios parecidos en tu comuna";
+  const subcategoriaLabelSimilares =
+    s((item as { subcategoria_principal_nombre?: unknown }).subcategoria_principal_nombre) ||
+    s(arr((item as { subcategorias_nombres_arr?: unknown }).subcategorias_nombres_arr)[0]);
+  const categoriaLabelSimilares = s((item as { categoria_nombre?: unknown }).categoria_nombre);
 
-  const similaresVerMasLabel =
-    rubroPluralTitulo && comunaTituloSimilares
-      ? `Ver más ${rubroPluralTitulo} en ${comunaTituloSimilares}`
-      : comunaTituloSimilares
-        ? `Ver más en ${comunaTituloSimilares}`
-        : "Ver más opciones";
+  const todosAtiendenComuna =
+    similares.length > 0 &&
+    similares.every((x) => x.bucket === "misma_comuna" || x.bucket === "atiende_comuna");
+
+  const similaresSectionTitle = getTituloSimilares({
+    subcategoriaNombre: subcategoriaLabelSimilares || undefined,
+    categoriaNombre: categoriaLabelSimilares || undefined,
+    comunaNombre: comunaTituloSimilares || undefined,
+    todosAtiendenComuna,
+  });
+
+  const labelCopy = (subcategoriaLabelSimilares || categoriaLabelSimilares || "").trim();
+  const similaresSectionSubtitle = (() => {
+    const com = comunaTituloSimilares.trim();
+    const common = labelCopy ? `Comparten el mismo tipo de servicio: ${labelCopy}.` : "Comparten el mismo tipo de servicio.";
+    if (!com) return common;
+    if (todosAtiendenComuna) return `${common} Aparecen porque atienden ${com}.`;
+    return `${common} Aparecen por cercanía a ${com} o porque la atienden.`;
+  })();
+
+  const similaresVerMasLabel = (() => {
+    const com = comunaTituloSimilares.trim();
+    if (!com) return "Ver más opciones";
+    if (todosAtiendenComuna) return `Ver más que atienden ${com}`;
+    return `Ver más cerca de ${com}`;
+  })();
 
   const similaresSlugs = similares.map((x) => x.slug);
   const comunaBaseIdForDebug = item.comuna_base_id ?? item.comuna_id ?? null;
@@ -1445,6 +1490,7 @@ export default async function Page({
           items={similares}
           fromSlug={item.slug}
           title={similaresSectionTitle}
+          subtitle={similaresSectionSubtitle}
           verMasHref={similaresVerMasHref}
           verMasLabel={similaresVerMasLabel}
           comunaContextoNombre={comunaLabelSimilares}
