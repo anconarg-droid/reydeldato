@@ -131,8 +131,23 @@ export const INTENT_ALIASES: Record<string, IntentDef> = {
       "pan amasado",
       "hallullas",
       "marraquetas",
-      "pasteleria",
       "empanadas",
+    ],
+  },
+
+  pasteleria: {
+    finalQuery: "pasteleria",
+    sectorSlug: "alimentacion",
+    aliases: [
+      "pasteleria",
+      "pastelería",
+      "reposteria",
+      "repostería",
+      "tortas",
+      "queques",
+      "kuchen",
+      "cupcakes",
+      "postres",
     ],
   },
 };
