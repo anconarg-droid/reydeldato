@@ -44,6 +44,19 @@ function pluralSuave(texto: string): string {
   return `${t}es`;
 }
 
+export function getTipoTexto(subcategoriaSlug?: string): "productos" | "clases" | "servicios" {
+  switch (s(subcategoriaSlug)) {
+    case "panaderia":
+    case "pasteleria":
+    case "comida-preparada":
+      return "productos";
+    case "clases_particulares":
+      return "clases";
+    default:
+      return "servicios";
+  }
+}
+
 function pickSupportTag(opts: {
   tagsSlugs: string[];
   subcategoriaNombre: string;
@@ -104,10 +117,12 @@ export function getLabelInteligenteSimilares(input: LabelInput): {
     categoriaNombre: catNombre,
   });
 
+  const tipoTexto = getTipoTexto(subSlug);
+  const labelLower = primaryLabel ? primaryLabel.toLowerCase() : "";
   const baseSentence =
     normalizeKey(primaryLabel) === "negocios" || normalizeKey(primaryLabel) === "servicios"
       ? "Ofrecen servicios similares."
-      : `Ofrecen servicios similares de ${primaryLabel}.`;
+      : `Ofrecen ${tipoTexto} similares de ${labelLower}.`;
 
   const tagSentence = supportTag
     ? ` Especialidad: ${prettyWordsFromSlug(supportTag).toLowerCase()}.`

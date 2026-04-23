@@ -25,6 +25,28 @@ function prettySubcategoriaSlugForDisplay(slug: string): string {
     .join(" ");
 }
 
+function detectarSubcategoria(query: string): string | null {
+  const q = normalizeText(query);
+  const map: Record<string, string> = {
+    pasteleria: "pasteleria",
+    panaderia: "panaderia",
+    gasfiter: "gasfiteria",
+    gasfiteria: "gasfiteria",
+    mecanico: "mecanico",
+  };
+  return map[q] || null;
+}
+
+function tituloBloqueExactos(subcategoriaSlug: string): string {
+  const t: Record<string, string> = {
+    pasteleria: "Pastelerías en tu zona",
+    panaderia: "Panaderías en tu zona",
+    gasfiteria: "Gasfiterías en tu zona",
+    mecanico: "Mecánicos en tu zona",
+  };
+  return t[subcategoriaSlug] || `${prettySubcategoriaSlugForDisplay(subcategoriaSlug)} en tu zona`;
+}
+
 function GlobalDbResults({
   q,
   items,
@@ -64,6 +86,14 @@ function GlobalDbResults({
     );
   }
 
+  const detectedSubcategoria = detectarSubcategoria(q);
+  const exactos = detectedSubcategoria
+    ? itemsFiltrados.filter((i) => (i.subcategoriasSlugs?.[0] || "") === detectedSubcategoria)
+    : [];
+  const relacionados = detectedSubcategoria
+    ? itemsFiltrados.filter((i) => (i.subcategoriasSlugs?.[0] || "") !== detectedSubcategoria)
+    : [];
+
   return (
     <div className="space-y-3">
       <div className="w-full">
@@ -88,23 +118,79 @@ function GlobalDbResults({
           Sin resultados con perfil activo. Desactiva el filtro.
         </div>
       ) : (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns:
-          "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
-        gap: 16,
-        alignItems: "stretch",
-      }}
-    >
-      {itemsFiltrados.map((item) => (
-        <EmprendedorSearchCard
-          key={item.slug || item.id}
-          {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
-          destacarMejoresOpciones={soloCompletos}
-        />
-      ))}
-    </div>
+        <div className="space-y-3">
+          {detectedSubcategoria ? (
+            <>
+              {exactos.length > 0 ? (
+                <div className="space-y-3">
+                  <h2 className="text-base font-extrabold text-slate-900">
+                    {tituloBloqueExactos(detectedSubcategoria)}
+                  </h2>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
+                      gap: 16,
+                      alignItems: "stretch",
+                    }}
+                  >
+                    {exactos.map((item) => (
+                      <EmprendedorSearchCard
+                        key={item.slug || item.id}
+                        {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
+                        destacarMejoresOpciones={soloCompletos}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {relacionados.length > 0 ? (
+                <div className="space-y-3">
+                  <h2 className="text-base font-extrabold text-slate-900">
+                    También podrían servirte
+                  </h2>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
+                      gap: 16,
+                      alignItems: "stretch",
+                    }}
+                  >
+                    {relacionados.map((item) => (
+                      <EmprendedorSearchCard
+                        key={item.slug || item.id}
+                        {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
+                        destacarMejoresOpciones={soloCompletos}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
+                gap: 16,
+                alignItems: "stretch",
+              }}
+            >
+              {itemsFiltrados.map((item) => (
+                <EmprendedorSearchCard
+                  key={item.slug || item.id}
+                  {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
+                  destacarMejoresOpciones={soloCompletos}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
