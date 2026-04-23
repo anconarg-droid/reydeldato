@@ -8,6 +8,8 @@ import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 export type ComunaAperturaPublicaUi = {
   /** `comunas.forzar_abierta` (apertura manual / demo). */
   comuna_abierta_forzada: boolean;
+  /** `comunas.motivo_apertura_override` (nota interna; opcional). */
+  motivo_apertura_override: string | null;
   /** Solo vista `vw_apertura_comuna_v2` + regla de mínimos (sin forzar). */
   cumple_minimos_apertura: boolean;
   /** Producto: forzada OR mínimos cumplidos — directorio tratado como abierto. */
@@ -34,13 +36,16 @@ export async function loadComunaAperturaPublicaPorSlug(
   const sb = createSupabaseServerPublicClient();
   const { data: cr } = await sb
     .from("comunas")
-    .select("id, forzar_abierta")
+    .select("id, forzar_abierta, motivo_apertura_override")
     .eq("slug", slug)
     .maybeSingle();
 
   if (!cr || (cr as { id?: unknown }).id == null) return null;
 
   const forzar = (cr as { forzar_abierta?: unknown }).forzar_abierta;
+  const motivoRaw = (cr as { motivo_apertura_override?: unknown }).motivo_apertura_override;
+  const motivo_apertura_override =
+    motivoRaw == null ? null : String(motivoRaw).trim() || null;
 
   const { data: vwRow } = await loadAperturaComunaV2Resumen(sb, slug);
 
@@ -78,6 +83,7 @@ export async function loadComunaAperturaPublicaPorSlug(
 
   return {
     comuna_abierta_forzada: Boolean(forzar),
+    motivo_apertura_override,
     cumple_minimos_apertura,
     comuna_publica_abierta,
     porcentaje_apertura_comuna,

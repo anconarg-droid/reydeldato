@@ -200,12 +200,8 @@ export function categoriaApiItemToBuscarApiItem(
     ? (regionesRaw as unknown[]).map((x) => s(x)).filter(Boolean)
     : [];
 
-  /**
-   * La API de categoría ya calculó el flag con `fichaPublicaEsMejoradaDesdeBusqueda` (misma función que `/api/buscar`).
-   * No recalcular aquí: evita dos reglas distintas para el mismo JSON.
-   */
-  const completa =
-    hit.ficha_mejorada_contenido === true || hit.esFichaCompleta === true;
+  /** Misma regla que listados: solo trial/plan vigente ({@link trialVigenteOPlanPagoActivoDesdeBusqueda}). */
+  const completa = trialVigenteOPlanPagoActivoDesdeBusqueda(hit, null);
   const fotoUrl = fotoListadoEmprendedorBusqueda(hit, null);
 
   const enTu = hit.en_tu_comuna === true;

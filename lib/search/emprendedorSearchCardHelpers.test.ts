@@ -9,6 +9,8 @@ import {
   getModalidadesChips,
   getSubcategoriaDescripcionFallback,
   isPerfilCompletoCard,
+  listadoFooterCtasDosColumnas,
+  listadoPerfilCompletoUi,
   takeModalidadesChipsPreview,
 } from "./emprendedorSearchCardHelpers";
 
@@ -153,5 +155,26 @@ describe("emprendedorSearchCardHelpers", () => {
   it("isPerfilCompletoCard respeta modo panel básica", () => {
     expect(isPerfilCompletoCard({ esFichaCompleta: true, modoVista: "completa" })).toBe(true);
     expect(isPerfilCompletoCard({ esFichaCompleta: true, modoVista: "basica" })).toBe(false);
+  });
+
+  it("listadoPerfilCompletoUi exige publicado y no bloqueo además de trial/plan", () => {
+    const base = { esFichaCompleta: true, modoVista: "completa" as const };
+    expect(listadoPerfilCompletoUi({ ...base, estadoPublicacion: "publicado" })).toBe(true);
+    expect(
+      listadoPerfilCompletoUi({
+        ...base,
+        estadoPublicacion: "publicado",
+        bloquearAccesoFichaPublica: true,
+      }),
+    ).toBe(false);
+    expect(listadoPerfilCompletoUi({ ...base, estadoPublicacion: "borrador" })).toBe(false);
+    expect(listadoPerfilCompletoUi({ ...base, estadoPublicacion: undefined })).toBe(false);
+  });
+
+  it("listadoFooterCtasDosColumnas es true con trial y publicado aunque ficha esté bloqueada", () => {
+    const base = { esFichaCompleta: true, modoVista: "completa" as const, estadoPublicacion: "publicado" };
+    expect(listadoFooterCtasDosColumnas(base)).toBe(true);
+    expect(listadoFooterCtasDosColumnas({ ...base, bloquearAccesoFichaPublica: true })).toBe(true);
+    expect(listadoFooterCtasDosColumnas({ ...base, estadoPublicacion: "borrador" })).toBe(false);
   });
 });

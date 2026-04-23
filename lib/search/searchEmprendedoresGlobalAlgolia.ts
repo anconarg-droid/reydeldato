@@ -68,8 +68,7 @@ export async function searchEmprendedoresGlobalAlgolia(
     return await searchEmprendedoresGlobalAlgoliaInner(q, limit, opts);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    // eslint-disable-next-line no-console -- fallback por operación
-    console.warn("[searchEmprendedoresGlobalAlgolia] fallback Supabase:", msg);
+    console.error("[global-search] Algolia falló; usando Supabase.", msg);
     return searchEmprendedoresGlobalText(q, limit, opts);
   }
 }
@@ -136,6 +135,7 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     .in("slug", slugsOrdered);
 
   if (vwError) {
+    console.error("[global-search] Error hidratando vw_emprendedores_publico:", vwError.message);
     return { items: [], error: vwError.message };
   }
 

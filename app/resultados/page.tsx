@@ -93,10 +93,7 @@ async function resolveRegionRowBySlug(
 
 export default async function ResultadosPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
-  /** Temporal: inspeccionar headers en producción (quitar después). */
   const h = await headers();
-  // eslint-disable-next-line no-console -- debug temporal
-  console.log("HEADERS DEBUG", Object.fromEntries(h.entries()));
   const comunaRaw = (params.comuna ?? "").trim();
   const qRaw = (params.q ?? "").trim();
   const subcategoriaRaw = (params.subcategoria ?? "").trim();
@@ -147,8 +144,6 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
 
   let regionFocoSlug: string | null = null;
   let regionFocoNombre: string | null = null;
-  /** Solo depuración: fila devuelta por `resolveRegionRowBySlug` cuando hay `?region=` (quitar al cerrar). */
-  let resolveRegionRowBySlugResult: { slug: string; nombre: string } | null = null;
 
   /**
    * Región en búsqueda global (sin comuna en URL):
@@ -160,7 +155,6 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
   if (q && !comuna) {
     if (regionSlugFromUrl) {
       const row = await resolveRegionRowBySlug(supabase, regionSlugFromUrl);
-      resolveRegionRowBySlugResult = row;
       if (row) {
         regionFocoSlug = row.slug;
         regionFocoNombre = row.nombre;
@@ -186,14 +180,6 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
         }
       }
     }
-    // eslint-disable-next-line no-console -- debug temporal (quitar al cerrar tema regionFoco)
-    console.log("[resultados/region DEBUG]", {
-      regionRaw,
-      regionSlugFromUrl,
-      resolveRegionRowBySlugResult,
-      regionFocoSlug,
-      regionFocoNombre,
-    });
   }
 
   let synonymNotice: { qOriginal: string; qResolved: string } | null = null;

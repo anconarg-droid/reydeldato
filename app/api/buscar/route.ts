@@ -15,7 +15,7 @@ import {
   enrichmentFromMaps,
   fetchLocalesYModalidadesByEmprendedorIds,
 } from "@/lib/search/cardListingEnrichment";
-import { tieneFichaCompleta } from "@/lib/tieneFichaCompleta";
+import { fichaPublicaEsMejoradaDesdeBusqueda } from "@/lib/estadoFicha";
 import { getRegionShort } from "@/utils/regionShort";
 import {
   isResolvedQueryExactGas,
@@ -64,13 +64,6 @@ function tokensFromNormalizedQuery(qNorm: string): string[] {
 
 type BloqueCliente = "de_tu_comuna" | "atienden_tu_comuna";
 
-function isTrue(v: unknown): boolean {
-  if (v === true) return true;
-  if (v === false || v == null) return false;
-  const s = String(v).trim().toLowerCase();
-  return s === "true" || s === "1" || s === "t" || s === "yes" || s === "y";
-}
-
 /** Listados: recién publicados (~30 días). */
 function esEmprendedorNuevo(createdAt: unknown): boolean {
   if (createdAt == null) return false;
@@ -86,20 +79,7 @@ function computeEsFichaCompleta(
   row: Record<string, unknown>,
   hydrated: Record<string, unknown> | null
 ): boolean {
-  const plan_activo = hydrated?.plan_activo ?? row.plan_activo;
-  const plan_expira_at = hydrated?.plan_expira_at ?? row.plan_expira_at;
-  const trial_expira_at =
-    hydrated?.trial_expira_at ??
-    (hydrated as any)?.trialExpiraAt ??
-    row.trial_expira_at ??
-    (row as any)?.trialExpiraAt;
-
-  return tieneFichaCompleta({
-    planActivo: isTrue(plan_activo),
-    planExpiraAt: plan_expira_at == null ? null : String(plan_expira_at),
-    trialExpiraAt: trial_expira_at == null ? null : String(trial_expira_at),
-    trialExpira: null,
-  });
+  return fichaPublicaEsMejoradaDesdeBusqueda(row, hydrated, 0);
 }
 
 type ComunaBaseListaInfo = {
@@ -208,6 +188,16 @@ function mapRpcRowToSearchItem(
   const createdRaw =
     hydrated?.created_at ?? (row as { created_at?: unknown }).created_at;
   out.esNuevo = esEmprendedorNuevo(createdRaw);
+
+  /** Listados: la card usa `estadoPublicacion` para CTA ficha (misma regla que `listadoPerfilCompletoUi`). */
+  const estadoPub =
+    s((hydrated as Record<string, unknown> | null)?.estado_publicacion) ||
+    s((row as Record<string, unknown>).estado_publicacion) ||
+    "";
+  out.estadoPublicacion =
+    estadoPub ||
+    /** RPC territorial solo devuelve `publicado`; compat si la columna no viene en el row. */
+    "publicado";
 
   return out;
 }
@@ -494,7 +484,7 @@ export async function GET(req: Request) {
       const { data: emps, error: empsErr } = await supabase
         .from("emprendedores")
         .select(
-          "id,foto_principal_url,frase_negocio,descripcion_libre,plan_activo,plan_expira_at,trial_expira_at,created_at"
+          "id,foto_principal_url,frase_negocio,descripcion_libre,plan_activo,plan_expira_at,trial_expira_at,trial_expira,created_at,estado_publicacion"
         )
         .in("id", ids.slice(0, 300));
       if (empsErr) {

@@ -159,14 +159,6 @@ export default function ResultadosClient({
   const subcategoriaSlug = (initialSubcategoriaSlug ?? "").trim();
   const subcategoriaId = (initialSubcategoriaId ?? "").trim();
 
-  /** TEMP debug: ver si llegan regionFoco desde page (quitar al cerrar el tema del copy). */
-  useEffect(() => {
-    // eslint-disable-next-line no-console -- debug temporal
-    console.log("[ResultadosClient] regionFocoSlug", regionFocoSlug);
-    // eslint-disable-next-line no-console -- debug temporal
-    console.log("[ResultadosClient] regionFocoNombre", regionFocoNombre);
-  }, [regionFocoSlug, regionFocoNombre]);
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.location.hash !== "#resultados") return;

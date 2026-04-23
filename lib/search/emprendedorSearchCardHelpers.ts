@@ -289,13 +289,42 @@ export function takeModalidadesChipsPreview(
   return { visible, masCount };
 }
 
-/** Perfil completo/trial en card: bloque verde + botón ver ficha. */
+/** Trial/plan vigente en card (producto); no incluye publicación ni bloqueo de ficha. */
 export function isPerfilCompletoCard(item: {
   esFichaCompleta?: boolean;
   modoVista?: ModoVistaPanel;
 }): boolean {
   const vistaBasicaPanel = (item.modoVista ?? "completa") === "basica";
   return item.esFichaCompleta === true && !vistaBasicaPanel;
+}
+
+export type ListadoPerfilCompletoUiInput = {
+  esFichaCompleta?: boolean;
+  modoVista?: ModoVistaPanel;
+  estadoPublicacion?: string | null;
+  bloquearAccesoFichaPublica?: boolean;
+};
+
+/**
+ * Listado (búsqueda/categoría): UI “perfil completo” = trial/plan **y** ficha pública navegable.
+ * Misma idea que mostrar badge + borde teal + CTA “Ver detalles” (no solo `esFichaCompleta`).
+ */
+export function listadoPerfilCompletoUi(item: ListadoPerfilCompletoUiInput): boolean {
+  if (!isPerfilCompletoCard(item)) return false;
+  const pub = String(item.estadoPublicacion ?? "").trim().toLowerCase();
+  if (pub !== "publicado") return false;
+  if (item.bloquearAccesoFichaPublica === true) return false;
+  return true;
+}
+
+/**
+ * Footer en dos columnas (WhatsApp + hueco Ver detalles): trial/plan y ficha publicada
+ * (incluye columna deshabilitada si `bloquearAccesoFichaPublica`).
+ */
+export function listadoFooterCtasDosColumnas(item: ListadoPerfilCompletoUiInput): boolean {
+  if (!isPerfilCompletoCard(item)) return false;
+  const pub = String(item.estadoPublicacion ?? "").trim().toLowerCase();
+  return pub === "publicado";
 }
 
 function normRubroCmp(s: string): string {

@@ -1,8 +1,13 @@
 /**
- * Regla de producto: apertura real (mínimos por rubro) vs override demo, y estado público final.
+ * Regla de producto: apertura real (mínimos por rubro) vs override controlado en BD, y estado público final.
  *
- * - abierta_por_minimos: vw_apertura_comuna_v2.abierta o porcentaje_apertura ≥ 100.
- * - comuna_publica_abierta: lo que ve el usuario como “comuna con directorio abierto”.
+ * **Fuente en BD (recomendado):** columnas en `public.comunas` (ver migración
+ * `20260331210000_comunas_forzar_abierta.sql`):
+ * - `forzar_abierta` — si `true`, la comuna cuenta como abierta aunque la vista v2 no cumpla mínimos.
+ * - `motivo_apertura_override` — texto opcional solo para equipo / trazabilidad; **no** entra en esta función.
+ *
+ * - `abierta_por_minimos`: `vw_apertura_comuna_v2.abierta` o `porcentaje_apertura` ≥ 100 (sin tocar conteos).
+ * - `comuna_publica_abierta`: lo que usa la app (`/[comuna]`, APIs, categoría) = `forzar_abierta` OR mínimos.
  */
 
 export type VwAperturaRow = {

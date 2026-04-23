@@ -89,7 +89,7 @@ export function buscarApiItemToEmprendedorCardProps(
     whatsappPrincipal: String(item.whatsappPrincipal || ""),
     estadoPublicacion: String(item.estadoPublicacion ?? "").trim() || undefined,
     esFichaCompleta,
-    estadoFicha: item.estadoFicha,
+    estadoFicha: esFichaCompleta ? "ficha_completa" : "ficha_basica",
     bloqueTerritorial: item.bloque ?? null,
     frase: String(item.frase || ""),
     descripcionLibre: String(item.descripcion || ""),

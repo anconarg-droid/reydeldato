@@ -18,7 +18,8 @@ import {
   getLineaTaxonomiaCard,
   getModalidadesChips,
   getSubcategoriaDescripcionFallback,
-  isPerfilCompletoCard,
+  listadoFooterCtasDosColumnas,
+  listadoPerfilCompletoUi,
   tieneModalidadLocalFisicoEnChips,
 } from "@/lib/search/emprendedorSearchCardHelpers";
 import { buildListadoPinUbicacionComuna } from "@/lib/search/listadoPinUbicacionComuna";
@@ -235,7 +236,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       );
 
   const vistaBasicaPanel = (p.modoVista ?? "completa") === "basica";
-  const perfilCompleto = isPerfilCompletoCard(p);
+  /** Badge, borde teal, sombra y CTA “Ver detalles” activo: trial/plan + publicado + sin bloqueo. */
+  const listadoUiPerfilCompleto = listadoPerfilCompletoUi(p);
+  /** WhatsApp + columna Ver detalles (enlace o deshabilitada): trial/plan + publicado. */
+  const listadoPieDosCtas = listadoFooterCtasDosColumnas(p);
   const esIntermedio = perfilIntermedioListadoPorTexto(p);
 
   const modalidadChips = getModalidadesChips({ modalidadesCardBadges: p.modalidadesCardBadges });
@@ -310,7 +314,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         ? "Atiende tu comuna"
         : null;
 
-  const showTerritorialStatusChips = perfilCompleto && (territorialLabel || p.disponibleHoy === true);
+  const showTerritorialStatusChips =
+    listadoUiPerfilCompleto && (territorialLabel || p.disponibleHoy === true);
   const showCoberturaStatusRow = showAtiendeComunaBadge || showTerritorialStatusChips;
 
   const analyticsSource = p.analyticsSource ?? "search";
@@ -319,13 +324,13 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   const fichaPublicaDisponible = estadoPub === "publicado";
   const puedeVerFichaPublica = fichaPublicaDisponible && !p.bloquearAccesoFichaPublica;
 
-  /** Dos columnas solo con perfil completo (WhatsApp + Ver detalles). Sin completo: WhatsApp mismo ancho que cada CTA del completo, centrado en la fila. */
-  const footerDosColumnas = perfilCompleto;
+  /** Dos columnas cuando hay slot de ficha (enlace o bloqueada); mismo ancho de CTAs en el bloque. */
+  const footerDosColumnas = listadoPieDosCtas;
 
-  const idleShadow = perfilCompleto
+  const idleShadow = listadoUiPerfilCompleto
     ? "0 6px 22px rgba(15, 118, 110, 0.14), 0 2px 10px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 118, 110, 0.08)"
     : "none";
-  const hoverShadow = perfilCompleto
+  const hoverShadow = listadoUiPerfilCompleto
     ? "0 12px 32px rgba(15, 118, 110, 0.18), 0 4px 14px rgba(15, 23, 42, 0.07)"
     : "0 2px 8px rgba(15, 23, 42, 0.06)";
   const idleShadowListado = destacarListado
@@ -409,14 +414,14 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     );
   }
 
-  const titleColor = perfilCompleto
+  const titleColor = listadoUiPerfilCompleto
     ? "text-neutral-950"
     : vistaBasicaPanel
       ? "text-slate-700"
       : esIntermedio
         ? "text-slate-700"
         : "text-slate-600";
-  const titleFontClass = perfilCompleto ? "font-bold" : "font-semibold";
+  const titleFontClass = listadoUiPerfilCompleto ? "font-bold" : "font-semibold";
 
   const chipBase =
     "inline-flex max-w-full shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight tracking-wide";
@@ -426,7 +431,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   const coberturaDisplay = slotOrSpace(coberturaTxt);
   const localFisicoComuna = String(p.localFisicoComunaNombre ?? "").trim();
   const ubicacionesRaw = resumenLocalesRaw;
-  const ubicacionesLines = perfilCompleto
+  const ubicacionesLines = listadoUiPerfilCompleto
     ? ubicacionesRaw
         .split(/\r?\n/)
         .map((x) => String(x ?? "").trim())
@@ -469,7 +474,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         categoriaDisplay,
         ubicacionesLines,
         tieneLocalFisico,
-        perfilCompleto,
+        listadoUiPerfilCompleto,
+        listadoPieDosCtas,
+        estadoPublicacion: p.estadoPublicacion,
       });
       if (!String(p.categoriaNombre ?? "").trim() && !(p.subcategoriasNombres?.length || p.subcategoriasSlugs?.length)) {
         // eslint-disable-next-line no-console
@@ -481,7 +488,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           resumenLocalesLinea: p.resumenLocalesLinea,
           localFisicoComunaNombre: p.localFisicoComunaNombre,
           tieneLocalFisico,
-          perfilCompleto,
+          listadoUiPerfilCompleto,
         });
       }
     }
@@ -490,7 +497,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   return (
     <article
       className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border bg-white ${
-        perfilCompleto ? "border-[#0f766e]" : "border-slate-200"
+        listadoUiPerfilCompleto ? "border-[#0f766e]" : "border-slate-200"
       }`}
       style={{
         boxShadow: cardShadow,
@@ -512,7 +519,13 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
 
       <div
         className={`flex min-h-0 min-w-0 flex-1 flex-col p-3 ${
-          perfilCompleto ? "bg-white" : vistaBasicaPanel ? "bg-white" : esIntermedio ? "bg-slate-50" : "bg-white"
+          listadoUiPerfilCompleto
+            ? "bg-white"
+            : vistaBasicaPanel
+              ? "bg-white"
+              : esIntermedio
+                ? "bg-slate-50"
+                : "bg-white"
         }`}
       >
         {/* Imagen: altura fija en todas las cards */}
@@ -527,7 +540,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 loading="lazy"
                 onError={() => setImgBroken(true)}
               />
-              {perfilCompleto ? (
+              {listadoUiPerfilCompleto ? (
                 <div
                   className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/35 via-transparent to-transparent"
                   aria-hidden
@@ -538,7 +551,11 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-3 text-center">
               <span
                 className={`text-xs font-extrabold tracking-wide ${
-                  perfilCompleto ? "text-slate-600" : esIntermedio ? "text-slate-500" : "text-slate-400"
+                  listadoUiPerfilCompleto
+                    ? "text-slate-600"
+                    : esIntermedio
+                      ? "text-slate-500"
+                      : "text-slate-400"
                 }`}
               >
                 Sin imágenes
@@ -549,7 +566,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             </div>
           )}
 
-          {perfilCompleto ? (
+          {listadoUiPerfilCompleto ? (
             <div className="pointer-events-none absolute bottom-2 left-2">
               <span className="rounded-full bg-[#0f766e] px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-sm">
                 Perfil completo
@@ -644,7 +661,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                     {territorialLabel}
                   </span>
                 ) : null}
-                {p.disponibleHoy === true && perfilCompleto ? (
+                {p.disponibleHoy === true && listadoUiPerfilCompleto ? (
                   <span className={`${chipBase} max-h-7 border border-amber-200 bg-amber-50 text-amber-900`}>
                     Disponible hoy
                   </span>
@@ -670,10 +687,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                       key={`${idx}-${label}`}
                       className={`inline-flex max-w-full shrink-0 items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-tight tracking-wide max-h-6 border ${
                         isMas
-                          ? perfilCompleto
+                          ? listadoUiPerfilCompleto
                             ? "border-slate-200 bg-slate-100 text-slate-500"
                             : "border-slate-200 bg-slate-100 text-slate-500"
-                          : perfilCompleto
+                          : listadoUiPerfilCompleto
                             ? "border-slate-200 bg-slate-50 text-slate-600"
                             : "border-slate-200 bg-slate-50 text-slate-600"
                       }`}
@@ -702,10 +719,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         {tieneWhatsappValido || puedeVerFichaPublica ? (
         <div
           className={`mt-auto w-full shrink-0 border-t pt-3 ${
-            perfilCompleto ? "border-slate-300/40" : "border-slate-200"
+            listadoUiPerfilCompleto ? "border-slate-300/40" : "border-slate-200"
           }`}
         >
-          {!perfilCompleto && tieneWhatsappValido ? (
+          {!listadoUiPerfilCompleto && tieneWhatsappValido ? (
             <p className="mb-2 w-full text-center text-[10px] font-normal leading-snug text-slate-600">
               Solo contacto por WhatsApp
             </p>
@@ -730,7 +747,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                     WhatsApp
                   </span>
                 ) : null}
-                {perfilCompleto ? (
+                {listadoPieDosCtas ? (
                   <span
                     className="flex min-w-0 flex-1 cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-1 text-center text-sm font-extrabold leading-tight text-slate-400 shadow-none"
                     style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
@@ -771,7 +788,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                   </TrackedCardLink>
                 ) : null}
 
-                {puedeVerFichaPublica ? (
+                {listadoUiPerfilCompleto ? (
                   <TrackedCardLink
                     slug={p.slug}
                     href={fichaHref}

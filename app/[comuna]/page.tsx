@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { VW_APERTURA_COMUNA_V2 } from "@/lib/aperturaComunaContrato";
 import { slugify } from "@/lib/slugify";
 import { comunaPublicaAbierta } from "@/lib/comunaPublicaAbierta";
@@ -9,6 +9,7 @@ import {
 } from "@/lib/supabase/server";
 import ResultadosClient from "@/app/resultados/ResultadosClient";
 import { busquedaComunaResultsShellClassName } from "@/lib/busquedaComunaLayoutStyles";
+import { segmentoUrlPareceRecursoEstaticoOReservado } from "@/lib/comunaDynamicPathReserved";
 
 type PageProps = {
   params: Promise<{ comuna: string }>;
@@ -29,6 +30,9 @@ type PageProps = {
 
 export default async function ComunaPage({ params, searchParams }: PageProps) {
   const { comuna } = await params;
+  if (segmentoUrlPareceRecursoEstaticoOReservado(comuna)) {
+    notFound();
+  }
   const canonical = slugify(comuna);
 
   const sb = createSupabaseServerPublicClient();

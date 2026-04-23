@@ -270,9 +270,11 @@ function mapRpcRowToHitShape(
   const rpcRec = rpcRow as Record<string, unknown>;
   const empRec = emp ?? null;
 
-  const fichaMejorada =
-    rpcRow.ficha_mejorada_contenido === true ||
-    fichaPublicaEsMejoradaDesdeBusqueda(rpcRec, empRec, galeriaPivot);
+  const fichaMejorada = fichaPublicaEsMejoradaDesdeBusqueda(
+    rpcRec,
+    empRec,
+    galeriaPivot
+  );
 
   const fotoListed = fotoListadoEmprendedorBusqueda(rpcRec, empRec);
   const nivelCoberturaStr = pickHydratedFirst(rpcRec, empRec, "cobertura_tipo", "nivel_cobertura");
