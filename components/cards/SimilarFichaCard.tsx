@@ -31,12 +31,14 @@ function urlPareceFotoReal(url: string): boolean {
 
 /** Badges sobre la imagen, alineados a búsqueda / referencia visual. */
 function badgeEnImagen(
-  bucket: SimilarFichaBucket
+  bucket: SimilarFichaBucket,
+  comunaContextoNombre: string
 ): { text: string; style: CSSProperties } | null {
+  const ctx = s(comunaContextoNombre);
   switch (bucket) {
     case "misma_comuna":
       return {
-        text: "En tu comuna",
+        text: ctx ? `En ${ctx}` : "En esta zona",
         style: {
           background: "#ecfdf5",
           color: "#047857",
@@ -45,7 +47,7 @@ function badgeEnImagen(
       };
     case "atiende_comuna":
       return {
-        text: "Atiende tu comuna",
+        text: ctx ? `Atiende ${ctx}` : "Atiende esta zona",
         style: {
           background: "#eff6ff",
           color: "#1d4ed8",
@@ -72,7 +74,7 @@ function badgeEnImagen(
       };
     case "misma_categoria":
       return {
-        text: "Mismo rubro",
+        text: "Similar a este",
         style: {
           background: "#faf5ff",
           color: "#6b21a8",
@@ -135,7 +137,7 @@ export default function SimilarFichaCard({
   const [imgBroken, setImgBroken] = useState(false);
   const mostrarFoto = urlPareceFotoReal(fotoUrl) && !imgBroken;
 
-  const badgeImg = badgeEnImagen(item.bucket);
+  const badgeImg = badgeEnImagen(item.bucket, comunaContextoNombre);
   const href = `/emprendedor/${encodeURIComponent(item.slug)}`;
   const track =
     s(fromSlug).length > 0 &&
