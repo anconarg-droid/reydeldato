@@ -83,7 +83,7 @@ export async function getSimilaresBySlug(actualSlug: string): Promise<{
     const { data: actual, error: actualError } = await supabase
       .from("vw_emprendedores_publico")
       .select(
-        "slug, comuna_base_slug, comuna_base_nombre, categoria_slug_final, categoria_nombre, subcategorias_slugs, subcategorias_nombres_arr"
+        "slug, comuna_base_slug, comuna_base_nombre, categoria_slug_final, categoria_nombre, subcategoria_slug_final"
       )
       .eq("slug", slug)
       .eq("estado_publicacion", "publicado")
@@ -97,10 +97,19 @@ export async function getSimilaresBySlug(actualSlug: string): Promise<{
     const comunaNombre = s(row.comuna_base_nombre);
     const categoriaSlug = s(row.categoria_slug_final);
     const categoriaNombre = s(row.categoria_nombre);
-    const subcategoriasSlugs = arr(row.subcategorias_slugs);
-    const subcategoriaSlug = subcategoriasSlugs[0] || "";
-    const subcategoriaNombreTitulo =
-      arr(row.subcategorias_nombres_arr)[0] || "";
+    const subcategoriaSlug = s(row.subcategoria_slug_final);
+
+    // Nombre visible de la subcategoría principal (lookup por slug). No usar arrays.
+    let subcategoriaNombreTitulo = "";
+    if (subcategoriaSlug) {
+      const { data: subRow } = await supabase
+        .from("subcategorias")
+        .select("nombre")
+        .eq("slug", subcategoriaSlug)
+        .limit(1)
+        .maybeSingle();
+      subcategoriaNombreTitulo = s((subRow as { nombre?: unknown } | null)?.nombre);
+    }
 
     const used = new Set<string>([slug]);
     const collected: Record<string, unknown>[] = [];
@@ -126,7 +135,7 @@ export async function getSimilaresBySlug(actualSlug: string): Promise<{
       let q = supabase
         .from("vw_emprendedores_publico")
         .select(
-          "nombre, slug, categoria_nombre, comuna_base_nombre, foto_principal_url, descripcion_corta, frase_negocio, subcategorias_nombres_arr, cobertura_tipo, whatsapp_principal, plan_activo, plan_expira_at, trial_expira_at, created_at, estado_publicacion, comuna_base_slug, categoria_slug_final, subcategorias_slugs"
+          "nombre, slug, categoria_nombre, comuna_base_nombre, foto_principal_url, descripcion_corta, frase_negocio, subcategorias_nombres_arr, cobertura_tipo, whatsapp_principal, plan_activo, plan_expira_at, trial_expira_at, created_at, estado_publicacion, comuna_base_slug, categoria_slug_final, subcategoria_slug_final"
         )
         .neq("slug", slug)
         .eq("estado_publicacion", "publicado")
@@ -135,8 +144,8 @@ export async function getSimilaresBySlug(actualSlug: string): Promise<{
       else q = q.eq("comuna_base_nombre", comunaNombre);
       const { data, error } = await q;
       if (error) return { items: [], meta: null };
-      const list = (data || []).filter((r: Record<string, unknown>) =>
-        arr(r.subcategorias_slugs).includes(subcategoriaSlug)
+      const list = (data || []).filter(
+        (r: Record<string, unknown>) => s(r.subcategoria_slug_final) === subcategoriaSlug
       );
       addRows(list, 1);
     }

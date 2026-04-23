@@ -76,9 +76,8 @@ export function vwPublicRowToBuscarApiItem(row: Record<string, unknown>): Buscar
 
   const subSlugs = parseStrArr(row.subcategorias_slugs).map((x) => x.toLowerCase());
   const principal = s(row.subcategoria_slug_final).toLowerCase();
-  const slugSet = new Set(subSlugs);
-  if (principal) slugSet.add(principal);
-  const mergedSlugs = [...slugSet];
+  const rest = subSlugs.filter((x) => x && x !== principal);
+  const mergedSlugs = principal ? [principal, ...rest] : rest;
 
   const subNombres = parseStrArr(row.subcategorias_nombres_arr);
   const baseSlug = s(row.comuna_base_slug);

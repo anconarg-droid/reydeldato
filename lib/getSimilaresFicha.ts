@@ -24,7 +24,7 @@ const LOG_PREFIX = "[getSimilaresFicha]";
 
 /** Solo columnas de la vista pública (sin columnas sensibles). */
 const EMP_ROW_SELECT =
-  "id, slug, nombre_emprendimiento, foto_principal_url, categoria_id, comuna_id, subcategorias_slugs";
+  "id, slug, nombre_emprendimiento, foto_principal_url, categoria_id, comuna_id, subcategoria_slug_final, subcategorias_slugs";
 
 function debugSimilaresLog(payload: Record<string, unknown>) {
   if (
@@ -102,6 +102,7 @@ type EmpRow = {
   foto_principal_url: string | null;
   categoria_id?: string | number | null;
   comuna_id?: string | number | null;
+  subcategoria_slug_final?: unknown;
   subcategorias_slugs?: unknown;
 };
 
@@ -142,7 +143,8 @@ function toItem(
 ): SimilarFichaItem {
   const comId = s(row.comuna_id);
   const catId = s(row.categoria_id);
-  const subSlug0 = s(arr(row.subcategorias_slugs)[0]);
+  // Fuente de verdad: subcategoria_slug_final (no depender de arrays desordenados).
+  const subSlug0 = s(row.subcategoria_slug_final) || s(arr(row.subcategorias_slugs)[0]);
   return {
     id: String(row.id),
     slug: s(row.slug),
@@ -190,9 +192,13 @@ async function ensureRowDisplayMaps(
   const needCat = [...new Set(rows.map((r) => s(r.categoria_id)).filter(Boolean))].filter(
     (id) => !categoriaNombreById.has(id)
   );
-  const needSubSlugs = [...new Set(rows.map((r) => s(arr(r.subcategorias_slugs)[0])).filter(Boolean))].filter(
-    (slug) => !subcategoriaNombreBySlug.has(slug)
-  );
+  const needSubSlugs = [
+    ...new Set(
+      rows
+        .map((r) => s(r.subcategoria_slug_final) || s(arr(r.subcategorias_slugs)[0]))
+        .filter(Boolean)
+    ),
+  ].filter((slug) => !subcategoriaNombreBySlug.has(slug));
 
   if (needCom.length) {
     const { data, error } = await supabase

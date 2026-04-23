@@ -167,8 +167,18 @@ export async function getEmprendedorPublicoBySlug(slug: string) {
 
   const subcategoriasNombresArr = arr(row.subcategorias_nombres_arr);
   const subcategoriasSlugsArr = arr(row.subcategorias_slugs);
-  const principalSubNombre = subcategoriasNombresArr[0] || "";
-  const principalSubSlug = subcategoriasSlugsArr[0] || "";
+  // Fuente de verdad: subcategoria_slug_final. No usar arrays para definir "principal".
+  const principalSubSlug = s(row.subcategoria_slug_final);
+  let principalSubNombre = "";
+  if (principalSubSlug) {
+    const { data: subRow } = await supabase
+      .from("subcategorias")
+      .select("nombre")
+      .eq("slug", principalSubSlug)
+      .limit(1)
+      .maybeSingle();
+    principalSubNombre = s((subRow as { nombre?: unknown } | null)?.nombre);
+  }
 
   const modalidadesAtencionArr = arr(row.modalidades_atencion_arr);
   const idStr = id != null ? s(id) : "";
