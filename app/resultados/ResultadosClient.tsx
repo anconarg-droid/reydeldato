@@ -87,12 +87,24 @@ function GlobalDbResults({
   }
 
   const detectedSubcategoria = detectarSubcategoria(q);
-  const exactos = detectedSubcategoria
-    ? itemsFiltrados.filter((i) => (i.subcategoriasSlugs?.[0] || "") === detectedSubcategoria)
+  const esExacto = (i: BuscarApiItem) =>
+    Boolean(detectedSubcategoria) &&
+    Array.isArray(i.subcategoriasSlugs) &&
+    i.subcategoriasSlugs.includes(detectedSubcategoria as string);
+
+  const exactos = detectedSubcategoria ? itemsFiltrados.filter(esExacto) : [];
+  const relacionados = detectedSubcategoria ? itemsFiltrados.filter((i) => !esExacto(i)) : [];
+
+  // Regla producto: si hay intención exacta por subcategoría, en "relacionados" mostrar primero
+  // los de la misma categoría (fallback) y luego el resto (sin eliminarlos).
+  const categoriaExacta =
+    detectedSubcategoria && exactos.length > 0 ? (exactos[0]?.categoriaNombre || "").trim() : "";
+  const relacionadosMismaCategoria = categoriaExacta
+    ? relacionados.filter((i) => String(i.categoriaNombre ?? "").trim() === categoriaExacta)
     : [];
-  const relacionados = detectedSubcategoria
-    ? itemsFiltrados.filter((i) => (i.subcategoriasSlugs?.[0] || "") !== detectedSubcategoria)
-    : [];
+  const relacionadosResto = categoriaExacta
+    ? relacionados.filter((i) => String(i.categoriaNombre ?? "").trim() !== categoriaExacta)
+    : relacionados;
 
   return (
     <div className="space-y-3">
@@ -160,7 +172,7 @@ function GlobalDbResults({
                       alignItems: "stretch",
                     }}
                   >
-                    {relacionados.map((item) => (
+                    {[...relacionadosMismaCategoria, ...relacionadosResto].map((item) => (
                       <EmprendedorSearchCard
                         key={item.slug || item.id}
                         {...buscarApiItemToEmprendedorCardProps(item, null, "search")}

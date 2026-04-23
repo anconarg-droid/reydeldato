@@ -324,13 +324,10 @@ function getTituloSimilares({
 }
 
 async function getSimilaresFichaUI(current: Emprendedor): Promise<SimilarFichaItem[]> {
-  const subSlugs = arr(
-    (current as { subcategorias_slugs_arr?: unknown }).subcategorias_slugs_arr
+  // Fuente de verdad: solo subcategoría principal final (no arrays, no keywords).
+  const subPrincipalSlug = s(
+    (current as { subcategoria_slug_final?: unknown }).subcategoria_slug_final
   );
-  const subPrincipalSlug =
-    s((current as { subcategoria_principal_slug?: unknown }).subcategoria_principal_slug) ||
-    s(subSlugs[0]) ||
-    s(arr((current as { subcategorias_slugs?: unknown }).subcategorias_slugs)[0]);
 
   return await getSimilaresFicha({
     current: {
@@ -340,7 +337,7 @@ async function getSimilaresFichaUI(current: Emprendedor): Promise<SimilarFichaIt
       comuna_base_id: current.comuna_base_id,
       region_id: current.region_id,
       categoria_id: current.categoria_id,
-      subcategoria_principal_slug: subPrincipalSlug,
+      subcategoria_principal_slug: subPrincipalSlug || null,
     },
     limit: 12,
   });
@@ -843,16 +840,12 @@ export default async function Page({
     ? arr(item.subcategorias_slugs)
     : subcategoriaSlugs;
   const subcategoriaSlugFinal = s(item.subcategoria_slug_final);
-  const subcategoriaSlugPrincipal =
-    s(item.subcategoria_principal_slug) ||
-    subcategoriaSlugFinal ||
-    prettySubcategoriaPath(subcategoriasSlugsFinal);
+  const subcategoriaSlugPrincipal = subcategoriaSlugFinal;
 
-  const subcategoriaPrincipalTitulo =
-    s(item.subcategoria_principal_nombre) ||
-    s(subcategorias[0]) ||
-    (subcategoriaSlugPrincipal ? prettyFromSlug(subcategoriaSlugPrincipal) : "") ||
-    "";
+  // Fuente de verdad: subcategoria_slug_final (si no viene, no inventar con arrays).
+  const subcategoriaPrincipalTitulo = subcategoriaSlugPrincipal
+    ? prettyFromSlug(subcategoriaSlugPrincipal)
+    : "";
 
   const etiquetaCategoriaVisible =
     isInformado(item.categoria_nombre)
