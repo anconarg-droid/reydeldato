@@ -205,7 +205,7 @@ export default function ResultadosClient({
     Boolean(subcategoriaId) ||
     Boolean(categoriaSlug);
 
-  if (comuna && tieneCriterioBusqueda && !directorioComunaAbierto) {
+  if (comuna && !directorioComunaAbierto) {
     const qParaTodoChile = (initialQDisplay ?? "").trim();
     const qNormTodoChile = qParaTodoChile ? normalizeText(qParaTodoChile) : "";
     const servicioHintParaCta =
@@ -257,7 +257,9 @@ export default function ResultadosClient({
               ? "Esta comuna sigue en activación; por ahora solo mostramos coincidencias directas para el rubro que elegiste (sin rellenar con otras categorías ni resultados generales)."
               : categoriaSlug
                 ? "Esta comuna sigue en activación; por ahora solo mostramos coincidencias directas para la categoría que elegiste (sin rellenar con otras categorías ni resultados generales)."
-                : "El directorio local completo aún no está disponible. Debajo solo verás emprendimientos que coincidan con lo que buscaste en esta comuna (sin rellenar con otras categorías ni resultados generales)."}
+                : tieneCriterioBusqueda
+                  ? "El directorio local completo aún no está disponible. Debajo solo verás emprendimientos que coincidan con lo que buscaste en esta comuna (sin rellenar con otras categorías ni resultados generales)."
+                  : "El directorio local completo aún no está disponible. Debajo puedes explorar emprendimientos que ya se han sumado y también buscar un servicio específico."}
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link

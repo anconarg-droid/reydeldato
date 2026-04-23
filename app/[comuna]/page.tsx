@@ -95,10 +95,11 @@ export default async function ComunaPage({ params, searchParams }: PageProps) {
     Boolean(subcategoriaIdRaw) ||
     Boolean(categoriaRaw);
 
-  /** Sin directorio abierto: solo landing de activación; con búsqueda en URL se muestra pantalla de activación + preview (no redirige para no perder params). */
-  if (!directorioDisponible && !tieneBusquedaOExtra) {
-    redirect(`/abrir-comuna/${encodeURIComponent(canonical)}`);
-  }
+  /**
+   * Aunque la comuna no esté activa, mostramos la experiencia de búsqueda + cards (populares o filtradas),
+   * y el banner de “activación” dentro de `ResultadosClient`. Evitamos redirigir a /abrir-comuna para
+   * que el usuario pueda explorar resultados y buscar igual.
+   */
 
   let comunaNombre: string | null = comunaRow?.nombre ? String(comunaRow.nombre) : null;
   if (!comunaNombre) {
