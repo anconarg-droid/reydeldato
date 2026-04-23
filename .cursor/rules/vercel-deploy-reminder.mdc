@@ -1,0 +1,10 @@
+---
+description: Recordatorio operativo: actualizar Vercel tras cambios
+alwaysApply: true
+---
+
+# Vercel: siempre actualizar
+
+- Después de cambios que afecten comportamiento en producción (API, páginas, SQL/migraciones aplicadas, vistas, búsqueda, taxonomía, copy crítico), **actualiza Vercel** (deploy/production) antes de dar el trabajo por cerrado.
+- Si el cambio es solo local/experimental, indícalo explícitamente; si no, asume que requiere actualización en Vercel.
+

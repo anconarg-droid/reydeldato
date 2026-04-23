@@ -65,6 +65,7 @@ import {
   getCategoriaCompacta,
   getLineaTaxonomiaCard,
 } from "@/lib/search/emprendedorSearchCardHelpers";
+import { getLabelInteligenteSimilares } from "@/lib/getLabelInteligenteSimilares";
 
 export const dynamic = "force-dynamic";
 
@@ -1189,20 +1190,17 @@ export default async function Page({
     similares.length > 0 &&
     similares.every((x) => x.bucket === "misma_comuna" || x.bucket === "atiende_comuna");
 
-  const similaresSectionTitle = getTituloSimilares({
-    categoriaNombre: categoriaLabelSimilares || undefined,
-    comunaNombre: comunaTituloSimilares || undefined,
+  const labelInteligente = getLabelInteligenteSimilares({
+    subcategoriaNombre: subcategoriaPrincipalTitulo || null,
+    subcategoriaSlug: subcategoriaSlugPrincipal || null,
+    categoriaNombre: categoriaLabelSimilares || null,
+    tagsSlugs: (item as { tags_slugs?: unknown }).tags_slugs as string[] | null,
+    comunaNombre: comunaTituloSimilares || null,
+    todosAtiendenComuna,
   });
 
-  const labelCopy = (categoriaLabelSimilares || "").trim();
-  const similaresSectionSubtitle = (() => {
-    const com = comunaTituloSimilares.trim();
-    const common = labelCopy
-      ? `Ofrecen servicios similares de ${labelCopy}.`
-      : "Ofrecen servicios similares.";
-    if (!com) return common;
-    return `${common} Aparecen porque están en ${com} o trabajan en esta zona.`;
-  })();
+  const similaresSectionTitle = labelInteligente.title;
+  const similaresSectionSubtitle = labelInteligente.subtitle;
 
   const similaresVerMasLabel = (() => {
     const com = comunaTituloSimilares.trim();
