@@ -324,10 +324,10 @@ function getTituloSimilares({
   const comuna = (comunaNombre ?? "").trim();
 
   if (todosAtiendenComuna && comuna) {
-    return `Otros ${label} que atienden ${comuna}`;
+    return `Más negocios de ${label} que atienden ${comuna}`;
   }
   if (comuna) {
-    return `Más ${label} cerca de ${comuna}`;
+    return `Más negocios de ${label} cerca de ${comuna}`;
   }
   return "Negocios similares";
 }
