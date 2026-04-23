@@ -484,7 +484,7 @@ export async function GET(req: Request) {
       const { data: emps, error: empsErr } = await supabase
         .from("emprendedores")
         .select(
-          "id,foto_principal_url,frase_negocio,descripcion_libre,plan_activo,plan_expira_at,trial_expira_at,trial_expira,created_at,estado_publicacion"
+          "id,foto_principal_url,frase_negocio,descripcion_libre,plan_activo,plan_expira_at,trial_expira_at,created_at,estado_publicacion"
         )
         .in("id", ids.slice(0, 300));
       if (empsErr) {

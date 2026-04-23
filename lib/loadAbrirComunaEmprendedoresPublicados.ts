@@ -203,7 +203,6 @@ export async function loadAbrirComunaEmprendedoresPublicados(
     "plan_activo",
     "plan_expira_at",
     "trial_expira_at",
-    "trial_expira",
     "base_comuna:comunas!comuna_base_id(nombre,slug)",
   ].join(", ");
   const empRes = await supabase.from("emprendedores").select(empSelectConBase).in("id", orderedIds);
@@ -212,7 +211,7 @@ export async function loadAbrirComunaEmprendedoresPublicados(
       ? (
           await supabase
             .from("emprendedores")
-            .select("id, plan_activo, plan_expira_at, trial_expira_at, trial_expira")
+            .select("id, plan_activo, plan_expira_at, trial_expira_at")
             .in("id", orderedIds)
         ).data
       : empRes.data;
