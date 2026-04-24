@@ -9,10 +9,23 @@ import { getRegionShort } from "@/utils/regionShort";
 const MAX_CARD_COBERTURA_LEN = 52;
 
 export function humanizeCoverageSlug(slug: string): string {
-  return String(slug || "")
+  const words = String(slug || "")
+    .trim()
     .split(/[-_]+/)
     .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .map((w) => w.toLowerCase());
+
+  if (words.length === 0) return "";
+
+  // Stopwords típicas en nombres de comuna (solo presentación).
+  const keepLower = new Set(["de", "del", "la", "las", "el", "los", "y", "e"]);
+
+  return words
+    .map((w, idx) => {
+      if (!w) return w;
+      if (idx > 0 && keepLower.has(w)) return w;
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    })
     .join(" ");
 }
 
