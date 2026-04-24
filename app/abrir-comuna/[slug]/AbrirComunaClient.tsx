@@ -92,25 +92,29 @@ export default function AbrirComunaClient({
     return { cardsConBaseEnComuna: conBase, cardsAtiendenDesdeFuera: atienden };
   }, [cardsMostradas]);
 
-  /** Copy fijo de producto: N y TOTAL vienen de la misma lógica que antes (sin cambiar RPC ni umbrales). */
-  const lineaAvanceTipos = useMemo(() => {
+  /** Misma condición que antes; solo cambia el copy mostrado. */
+  const lineaTiposNecesarios = useMemo(() => {
     if (tieneMeta && nAvance != null && meta != null) {
-      return `${nAvance.toLocaleString("es-CL")} de ${meta.toLocaleString(
-        "es-CL",
-      )} tipos de servicios necesarios ya están presentes`;
+      return `${nAvance.toLocaleString("es-CL")} de ${meta.toLocaleString("es-CL")} tipos necesarios`;
     }
+    return null;
+  }, [tieneMeta, nAvance, meta]);
+
+  /** Igual que antes: solo si no aplica la meta de tipos (`!tieneMeta` en la rama original). */
+  const lineaResumenPublicadosSinMeta = useMemo(() => {
+    if (tieneMeta && nAvance != null && meta != null) return null;
     if (!tieneMeta && cardsMostradas.length > 0) {
       const nLinea = publicadosTotal > 0 ? publicadosTotal : 0;
       if (nLinea > 0) {
-        return `Hay ${nLinea} emprendimiento${nLinea === 1 ? "" : "s"} publicado${nLinea === 1 ? "" : "s"}; seguimos sumando rubros para completar el mapa de la comuna.`;
+        return `${nLinea} emprendimiento${nLinea === 1 ? "" : "s"} publicado${nLinea === 1 ? "" : "s"} en la comuna.`;
       }
     }
     return null;
-  }, [tieneMeta, nAvance, meta, publicadosTotal, cardsMostradas.length]);
+  }, [tieneMeta, nAvance, meta, cardsMostradas.length, publicadosTotal]);
 
   const lineaPorcentajeServiciosMinimos = useMemo(() => {
     if (!tienePorcentaje) return null;
-    return `${formatPorcentajeHumano(Number(pctRaw))}% de servicios mínimos cubiertos`;
+    return `${formatPorcentajeHumano(Number(pctRaw))}% de servicios cubiertos`;
   }, [pctRaw, tienePorcentaje]);
 
   const hrefPublicarGlobal = `/publicar?comuna=${encodeURIComponent(safeData.comuna_slug)}`;
@@ -216,26 +220,31 @@ export default function AbrirComunaClient({
                 </a>
               </div>
 
-              <div className="mt-6 rounded-xl border border-slate-200/70 bg-slate-50/80 p-4 sm:p-5">
-                <h2 className="m-0 text-xs font-bold uppercase tracking-wide text-slate-400">
-                  Avance de la comuna
-                </h2>
-                {lineaPorcentajeServiciosMinimos ? (
-                  <p className="mt-2.5 text-sm font-semibold text-slate-800">{lineaPorcentajeServiciosMinimos}</p>
-                ) : (
-                  <p className="mt-2.5 text-sm font-medium text-slate-600 leading-relaxed">
-                    Vamos sumando rubros y servicios hasta cubrir los mínimos que definimos para esta comuna.
-                  </p>
-                )}
+              <div className="mt-6 rounded-xl border border-slate-200/60 bg-slate-50/50 px-3.5 py-3 sm:px-4 sm:py-3.5">
+                <h2 className="m-0 text-sm font-semibold text-slate-700">Avance de la comuna</h2>
+                <div className="mt-2 space-y-1">
+                  {lineaPorcentajeServiciosMinimos ? (
+                    <p className="m-0 text-sm font-medium text-slate-800">{lineaPorcentajeServiciosMinimos}</p>
+                  ) : (
+                    <p className="m-0 text-xs text-gray-500 leading-snug">
+                      Vamos sumando servicios hasta completar los mínimos de esta comuna.
+                    </p>
+                  )}
+                  {lineaTiposNecesarios ? (
+                    <p className="m-0 text-sm font-medium text-slate-800">{lineaTiposNecesarios}</p>
+                  ) : lineaResumenPublicadosSinMeta ? (
+                    <p className="m-0 text-xs text-gray-600 leading-snug">{lineaResumenPublicadosSinMeta}</p>
+                  ) : null}
+                </div>
 
                 {tienePorcentaje ? (
                   <div
-                    className="mt-4 h-4 w-full overflow-hidden rounded-full bg-slate-200/90"
+                    className="mt-3 h-3.5 w-full overflow-hidden rounded-full bg-slate-200/90"
                     role="progressbar"
                     aria-valuenow={Math.round(pctVisual)}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    aria-label="Porcentaje de servicios mínimos cubiertos en la comuna"
+                    aria-label="Porcentaje de servicios cubiertos en la comuna"
                   >
                     <div
                       className="h-full rounded-full bg-[#0f766e] transition-[width] duration-500 ease-out"
@@ -244,15 +253,8 @@ export default function AbrirComunaClient({
                   </div>
                 ) : null}
 
-                {lineaAvanceTipos ? (
-                  <p className="mt-3.5 text-sm text-slate-700 font-medium leading-relaxed">
-                    {lineaAvanceTipos}
-                  </p>
-                ) : null}
-
-                <p className="mt-3 text-xs text-slate-500 leading-snug">
-                  El porcentaje refleja cuántos tipos de servicio ya cumplen el mínimo que pedimos para esta etapa; no
-                  es solo la cantidad de fichas publicadas.
+                <p className="m-0 mt-2.5 text-xs text-gray-500 leading-snug">
+                  El porcentaje mide tipos de servicio con mínimo cubierto; no es solo la cantidad de fichas.
                 </p>
               </div>
             </div>
