@@ -100,22 +100,25 @@ export default function AbrirComunaClient({
     return { cardsConBaseEnComuna: conBase, cardsAtiendenDesdeFuera: atienden };
   }, [cardsMostradas]);
 
-  const lineaMeta = useMemo(() => {
+  /** Copy fijo de producto: N y TOTAL vienen de la misma lógica que antes (sin cambiar RPC ni umbrales). */
+  const lineaAvanceTipos = useMemo(() => {
     if (tieneMeta && nAvance != null && meta != null) {
-      return `Ya hay ${nAvance} de ${meta} tipos de servicios necesarios completos.`;
+      return `${nAvance.toLocaleString("es-CL")} de ${meta.toLocaleString(
+        "es-CL",
+      )} tipos de servicios necesarios ya están presentes`;
     }
     if (!tieneMeta && cardsMostradas.length > 0) {
       const nLinea = publicadosTotal > 0 ? publicadosTotal : 0;
       if (nLinea > 0) {
-        return `Ya hay ${nLinea} negocio${nLinea === 1 ? "" : "s"} con ficha publicada sumando oferta en la comuna.`;
+        return `Hay ${nLinea} emprendimiento${nLinea === 1 ? "" : "s"} publicado${nLinea === 1 ? "" : "s"}; seguimos sumando rubros para completar el mapa de la comuna.`;
       }
     }
     return null;
   }, [tieneMeta, nAvance, meta, publicadosTotal, cardsMostradas.length]);
 
-  const lineaPorcentajeTexto = useMemo(() => {
+  const lineaPorcentajeServiciosMinimos = useMemo(() => {
     if (!tienePorcentaje) return null;
-    return `Ya vamos en ${formatPorcentajeHumano(Number(pctRaw))}% del avance de tipos de servicios.`;
+    return `${formatPorcentajeHumano(Number(pctRaw))}% de servicios mínimos cubiertos`;
   }, [pctRaw, tienePorcentaje]);
 
   const hrefPublicarGlobal = `/publicar?comuna=${encodeURIComponent(safeData.comuna_slug)}`;
@@ -190,23 +193,46 @@ export default function AbrirComunaClient({
         <section className="rounded-3xl border border-slate-200/80 bg-white shadow-[0_20px_50px_-24px_rgba(15,23,42,0.25)] overflow-hidden">
           <div className="px-4 pt-8 pb-6 sm:px-6 sm:pt-9 sm:pb-7 bg-gradient-to-b from-white to-slate-50/90 md:px-8">
             <div className="mx-auto max-w-lg">
-              <span className="inline-flex items-center rounded-full border border-amber-200/90 bg-amber-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-amber-900">
-                En activación
+              <span className="inline-flex items-center rounded-full border border-teal-200/90 bg-teal-50/90 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-teal-900">
+                Catálogo en crecimiento
               </span>
 
               <h1 className="mt-6 text-2xl sm:text-[1.7rem] font-black text-slate-900 leading-tight tracking-tight">
-                {safeData.comuna_nombre} se está activando
+                {safeData.comuna_nombre} aún está creciendo en Rey del Dato
               </h1>
               {regionNombre ? (
                 <p className="mt-2 text-sm font-medium text-slate-600 leading-snug">{regionNombre}</p>
               ) : null}
 
-              <div className="mt-8 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-5 sm:p-6">
-                {lineaPorcentajeTexto ? (
-                  <p className="text-base font-semibold text-slate-900">{lineaPorcentajeTexto}</p>
+              <p className="mt-5 text-[0.9375rem] sm:text-base text-slate-700 leading-relaxed">
+                Todavía no tenemos suficientes emprendimientos para mostrar resultados completos y ordenados
+                por servicio. Mientras tanto, puedes ver los negocios que ya se han sumado.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3">
+                <Link
+                  href={hrefPublicarGlobal}
+                  className="inline-flex w-full items-center justify-center rounded-xl px-5 min-h-[52px] bg-slate-900 text-white font-extrabold text-base text-center shadow-md transition-all duration-200 hover:bg-slate-800 hover:shadow-xl hover:ring-2 hover:ring-slate-900/25 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:ring-0"
+                >
+                  Publicar mi emprendimiento
+                </Link>
+                <a
+                  href="#recomendar-emprendimiento"
+                  className="inline-flex w-full items-center justify-center rounded-xl border-2 border-slate-200 bg-white px-5 min-h-[52px] text-center text-base font-extrabold text-slate-900 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+                >
+                  Recomendar un emprendimiento
+                </a>
+              </div>
+
+              <div className="mt-10 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm">
+                <h2 className="m-0 text-sm font-extrabold uppercase tracking-wide text-slate-500">
+                  Avance de la comuna
+                </h2>
+                {lineaPorcentajeServiciosMinimos ? (
+                  <p className="mt-3 text-base font-semibold text-slate-900">{lineaPorcentajeServiciosMinimos}</p>
                 ) : (
-                  <p className="text-base font-medium text-slate-600">
-                    Estamos sumando oferta local para completar los tipos de servicios y activar el directorio en tu comuna.
+                  <p className="mt-3 text-sm font-medium text-slate-600 leading-relaxed">
+                    Vamos sumando rubros y servicios hasta cubrir los mínimos que definimos para esta comuna.
                   </p>
                 )}
 
@@ -217,36 +243,24 @@ export default function AbrirComunaClient({
                     aria-valuenow={Math.round(pctVisual)}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    aria-label="Avance de tipos de servicios para abrir la comuna"
+                    aria-label="Porcentaje de servicios mínimos cubiertos en la comuna"
                   >
                     <div
-                      className="h-full rounded-full bg-slate-900 transition-[width] duration-500 ease-out"
+                      className="h-full rounded-full bg-[#0f766e] transition-[width] duration-500 ease-out"
                       style={{ width: `${pctVisual}%` }}
                     />
                   </div>
                 ) : null}
 
-                {lineaMeta ? (
+                {lineaAvanceTipos ? (
                   <p className="mt-5 text-sm sm:text-[0.9375rem] text-slate-800 font-medium leading-relaxed">
-                    {lineaMeta}
+                    {lineaAvanceTipos}
                   </p>
                 ) : null}
 
-                <p className="mt-4 text-xs sm:text-sm text-slate-600 leading-snug">
-                  El porcentaje y la meta miden cuántos tipos de servicios ya cumplen el mínimo requerido; no solo cuántas fichas hay publicadas.
-                </p>
-              </div>
-
-              <div className="mt-10 space-y-6 text-[0.9375rem] sm:text-base text-slate-700 leading-relaxed">
-                <p className="font-semibold text-slate-900">
-                  Puedes publicar lo que haces, sin importar el rubro.
-                </p>
-                <p className="text-slate-600">
-                  Pueden sumarse servicios como gasfitería, clases, peluquería, ventas, reparaciones y
-                  muchos más.
-                </p>
-                <p className="text-slate-700">
-                  Cuando la comuna se active, los vecinos podrán encontrarte más fácil en las búsquedas.
+                <p className="mt-4 text-xs sm:text-sm text-slate-500 leading-snug">
+                  El porcentaje refleja cuántos tipos de servicio ya cumplen el mínimo que pedimos para esta etapa; no
+                  es solo la cantidad de fichas publicadas.
                 </p>
               </div>
             </div>
@@ -254,16 +268,8 @@ export default function AbrirComunaClient({
 
           <div className="border-t border-slate-100 bg-white px-4 py-8 sm:px-6 sm:py-10 md:px-8">
             <div className="mx-auto max-w-lg">
-              <Link
-                href={hrefPublicarGlobal}
-                className="inline-flex w-full items-center justify-center rounded-xl px-5 min-h-[52px] bg-slate-900 text-white font-extrabold text-base text-center shadow-md transition-all duration-200 hover:bg-slate-800 hover:shadow-xl hover:ring-2 hover:ring-slate-900/25 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:ring-0"
-              >
-                Publicar mi emprendimiento
-              </Link>
-            </div>
-
             {cardsMostradas.length > 0 ? (
-              <div className="mt-8 w-full rounded-2xl border border-slate-200/90 bg-slate-50/60 p-4 sm:p-5 md:p-6">
+              <div className="mt-0 w-full rounded-2xl border border-slate-200/90 bg-slate-50/60 p-4 sm:p-5 md:p-6">
                 <div
                   className="space-y-1 border-b border-slate-200/80 pb-4 mb-4"
                   role="region"
@@ -273,7 +279,7 @@ export default function AbrirComunaClient({
                     id="activacion-emprendedores-listado-titulo"
                     className="text-lg sm:text-xl font-bold text-slate-900 leading-snug tracking-tight"
                   >
-                    Negocios que ya se han sumado
+                    Emprendimientos disponibles en {safeData.comuna_nombre}
                   </h2>
                 </div>
                 <div className="space-y-5 w-full min-w-0">
@@ -328,29 +334,32 @@ export default function AbrirComunaClient({
                     </TerritorialAccordionBlock>
                   ) : null}
                 </div>
-                <p className="mt-4 text-xs text-slate-700 sm:text-sm leading-snug font-medium">
-                  Sé de los primeros en aparecer en el directorio de {comunaConRegion}.
+                <p className="mt-4 text-xs text-slate-600 sm:text-sm leading-snug font-medium">
+                  Puedes sumarte tú también: mientras completamos el mapa de servicios, tu ficha ya ayuda a que{" "}
+                  {safeData.comuna_nombre} se vea con más oferta en Rey del Dato.
                 </p>
               </div>
             ) : (
-              <p className="mx-auto mt-8 max-w-lg text-center text-xs text-slate-700 sm:text-sm leading-snug font-medium px-1">
-                Sé de los primeros en aparecer en el directorio de {comunaConRegion}.
+              <p className="mt-0 text-center text-sm text-slate-600 leading-relaxed px-1">
+                Aún no hay fichas para mostrar aquí. Si conoces un emprendimiento en {comunaConRegion}, recomiéndalo más
+                abajo o publica el tuyo con el botón de arriba.
               </p>
             )}
 
             <section
-              className="mx-auto mt-8 max-w-lg rounded-2xl border border-slate-300/80 bg-white p-5 sm:p-6 shadow-md"
+              id="recomendar-emprendimiento"
+              className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm scroll-mt-24"
               aria-labelledby="abrir-comuna-recom-inline-titulo"
             >
               <h2
                 id="abrir-comuna-recom-inline-titulo"
                 className="text-lg font-extrabold text-slate-900 sm:text-xl"
               >
-                Recomendar a alguien
+                Recomendar un emprendimiento
               </h2>
               <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                Solo el WhatsApp: en un paso ayudás a que más vecinos sumen en {comunaConRegion}. El número no se
-                muestra en esta página; lo usamos de forma agregada para priorizar la activación.
+                Déjanos un WhatsApp de contacto y nosotros invitamos por ese canal (el número no se muestra en esta
+                página). Así sumamos más oferta en {comunaConRegion} mientras completamos el catálogo.
               </p>
 
               {comunaInteresTotal > 0 ? (
@@ -359,26 +368,26 @@ export default function AbrirComunaClient({
                   <span className="tabular-nums">
                     {comunaInteresTotal.toLocaleString("es-CL")}
                   </span>{" "}
-                  {comunaInteresTotal === 1 ? "apoyo registrado" : "apoyos registrados"} para abrir el directorio
-                  aquí (solo número agregado, sin datos personales).
+                  {comunaInteresTotal === 1 ? "recomendación registrada" : "recomendaciones registradas"} para sumar
+                  emprendimientos en esta comuna (solo total agregado, sin datos personales).
                 </p>
               ) : (
                 <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  El total se mostrará aquí de forma agregada.
+                  El total de recomendaciones se mostrará aquí de forma agregada.
                 </p>
               )}
 
               {recomDone ? (
                 <div className="mt-5 space-y-4">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 leading-snug">
-                    ¡Gracias! Tu apoyo quedó registrado y suma al interés por activar {safeData.comuna_nombre}.
+                    ¡Gracias! Quedó registrado y suma para que haya más emprendimientos visibles en {safeData.comuna_nombre}.
                   </div>
                   <button
                     type="button"
                     onClick={resetRecomForm}
                     className="w-full h-11 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-900 transition hover:bg-slate-50"
                   >
-                    Recomendar a otra persona
+                    Hacer otra recomendación
                   </button>
                 </div>
               ) : (
@@ -420,11 +429,12 @@ export default function AbrirComunaClient({
                     onClick={submitRecomendacion}
                     className="h-11 w-full rounded-xl bg-slate-900 text-sm font-extrabold text-white transition hover:bg-slate-800 disabled:opacity-60"
                   >
-                    {recomSending ? "Enviando..." : "Enviar recomendación"}
+                    {recomSending ? "Enviando..." : "Enviar"}
                   </button>
                 </div>
               )}
             </section>
+            </div>
           </div>
         </section>
       </div>
