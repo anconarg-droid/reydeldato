@@ -366,10 +366,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
 
   const idleShadow = listadoUiPerfilCompleto
     ? "0 6px 22px rgba(15, 118, 110, 0.14), 0 2px 10px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 118, 110, 0.08)"
-    : "none";
+    : "0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08)";
   const hoverShadow = listadoUiPerfilCompleto
     ? "0 12px 32px rgba(15, 118, 110, 0.18), 0 4px 14px rgba(15, 23, 42, 0.07)"
-    : "0 2px 8px rgba(15, 23, 42, 0.06)";
+    : "0 4px 12px rgba(15, 23, 42, 0.1), 0 2px 4px rgba(15, 23, 42, 0.06)";
   const idleShadowListado = destacarListado
     ? `${idleShadow}, 0 0 0 2px #ffffff, 0 0 0 5px rgba(2, 132, 199, 0.4), 0 12px 36px rgba(2, 132, 199, 0.12)`
     : idleShadow;
@@ -396,11 +396,15 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     const puedeNavegarFicha = fichaPublicaDisponible && !p.bloquearAccesoFichaPublica;
     return (
       <article
-        className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white"
+        className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
         aria-label={`${nombreDisplay}: disponible cuando la comuna esté activa`}
       >
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3.5">
-          <div className="relative w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 aspect-square">
+          <div
+            className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 aspect-square ${
+              mostrarFoto ? "bg-slate-100" : "bg-gray-100"
+            }`}
+          >
             {mostrarFoto ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -413,11 +417,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 />
               </>
             ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-3 text-center">
-                <span className="text-xs font-extrabold tracking-wide text-slate-500">
-                  Sin imágenes
-                </span>
-                <span className="line-clamp-3 max-w-[11rem] text-[11px] font-medium leading-snug text-slate-400">
+              <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-1 px-3 py-4 text-center">
+                <span className="text-sm font-semibold text-gray-500">Sin imágenes</span>
+                <span className="max-w-[13rem] text-xs font-medium leading-snug text-gray-400">
                   {getPlaceholderSinFotoSub()}
                 </span>
               </div>
@@ -567,8 +569,12 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 : "bg-white"
         }`}
       >
-        {/* Imagen: altura fija en todas las cards */}
-        <div className="relative w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 aspect-square">
+        {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
+        <div
+          className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 aspect-square ${
+            mostrarFoto ? "bg-slate-100" : "bg-gray-100"
+          }`}
+        >
           {mostrarFoto ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -587,19 +593,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               ) : null}
             </>
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-3 text-center">
-              <span
-                className={`text-xs font-extrabold tracking-wide ${
-                  listadoUiPerfilCompleto
-                    ? "text-slate-600"
-                    : esIntermedio
-                      ? "text-slate-500"
-                      : "text-slate-400"
-                }`}
-              >
-                Sin imágenes
-              </span>
-              <span className="line-clamp-3 max-w-[11rem] text-[11px] font-medium leading-snug text-slate-400">
+            <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-1 px-3 py-4 text-center">
+              <span className="text-sm font-semibold text-gray-500">Sin imágenes</span>
+              <span className="max-w-[13rem] text-xs font-medium leading-snug text-gray-400">
                 {getPlaceholderSinFotoSub()}
               </span>
             </div>
