@@ -429,7 +429,7 @@ export default function AbrirComunaClient({
                     onClick={submitRecomendacion}
                     className="h-11 w-full rounded-xl bg-slate-900 text-sm font-extrabold text-white transition hover:bg-slate-800 disabled:opacity-60"
                   >
-                    {recomSending ? "Enviando..." : "Enviar"}
+                    {recomSending ? "Enviando..." : "Enviar recomendación"}
                   </button>
                 </div>
               )}
