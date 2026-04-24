@@ -361,9 +361,6 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   const fichaPublicaDisponible = estadoPub === "publicado";
   const puedeVerFichaPublica = fichaPublicaDisponible && !p.bloquearAccesoFichaPublica;
 
-  /** Dos columnas cuando hay slot de ficha (enlace o bloqueada); mismo ancho de CTAs en el bloque. */
-  const footerDosColumnas = listadoPieDosCtas;
-
   const idleShadow = listadoUiPerfilCompleto
     ? "0 6px 22px rgba(15, 118, 110, 0.14), 0 2px 10px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 118, 110, 0.08)"
     : "0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08)";
@@ -418,8 +415,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               </>
             ) : (
               <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-1 px-3 py-4 text-center">
-                <span className="text-sm font-semibold text-gray-500">Sin imágenes</span>
-                <span className="max-w-[13rem] text-xs font-medium leading-snug text-gray-400">
+                <span className="text-sm font-medium text-gray-400">Sin imágenes</span>
+                <span className="max-w-[13rem] text-[11px] font-medium leading-snug text-gray-300">
                   {getPlaceholderSinFotoSub()}
                 </span>
               </div>
@@ -538,7 +535,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   return (
     <article
       className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border bg-white ${
-        listadoUiPerfilCompleto ? "border-[#0f766e]" : "border-slate-200"
+        listadoUiPerfilCompleto ? "border-[#0f766e]" : "border-slate-200 opacity-[0.95]"
       }`}
       style={{
         boxShadow: cardShadow,
@@ -594,12 +591,20 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             </>
           ) : (
             <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-1 px-3 py-4 text-center">
-              <span className="text-sm font-semibold text-gray-500">Sin imágenes</span>
-              <span className="max-w-[13rem] text-xs font-medium leading-snug text-gray-400">
+              <span className="text-sm font-medium text-gray-400">Sin imágenes</span>
+              <span className="max-w-[13rem] text-[11px] font-medium leading-snug text-gray-300">
                 {getPlaceholderSinFotoSub()}
               </span>
             </div>
           )}
+
+          {!listadoUiPerfilCompleto && !vistaBasicaPanel ? (
+            <div className="pointer-events-none absolute left-2 top-2 z-[1]">
+              <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500 shadow-sm">
+                Perfil básico
+              </span>
+            </div>
+          ) : null}
 
           {listadoUiPerfilCompleto ? (
             <div className="pointer-events-none absolute bottom-2 left-2">
@@ -770,20 +775,12 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               Solo contacto por WhatsApp
             </p>
           ) : null}
-          <div
-            className={`flex w-full shrink-0 flex-row gap-2 ${
-              footerDosColumnas ? "" : "justify-center"
-            }`}
-          >
+          <div className="flex w-full shrink-0 flex-row gap-2">
             {p.bloquearAccesoFichaPublica ? (
               <>
                 {tieneWhatsappValido ? (
                   <span
-                    className={`flex cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-center text-sm font-extrabold leading-tight text-slate-400 ${
-                      footerDosColumnas
-                        ? "min-w-0 flex-1"
-                        : "w-[calc(50%-4px)] max-w-[calc(50%-4px)] min-w-0 shrink-0"
-                    }`}
+                    className="flex min-w-0 flex-1 cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-center text-sm font-extrabold leading-tight text-slate-400"
                     style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
                     aria-disabled
                   >
@@ -810,11 +807,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                     type="whatsapp"
                     trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                     trackingEmprendedorId={p.emprendedorId ?? null}
-                    className={`flex items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25 ${
-                      footerDosColumnas
-                        ? "min-w-0 flex-1"
-                        : "w-[calc(50%-4px)] max-w-[calc(50%-4px)] min-w-0 shrink-0"
-                    }`}
+                    className="flex min-w-0 flex-1 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
                     style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
                     target="_blank"
                     rel="noreferrer"
