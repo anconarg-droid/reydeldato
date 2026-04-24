@@ -8,23 +8,19 @@ import HomeComunaAutocomplete from "@/components/home/HomeComunaAutocomplete";
 export default function AbrirComunaCambiarComuna() {
   return (
     <div
-      className="mt-3 flex flex-col gap-2 sm:mt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+      className="mt-2 flex w-full flex-col gap-1.5 sm:mt-3 sm:items-end"
       role="region"
       aria-label="Cambiar de comuna"
     >
-      <div className="flex min-w-0 flex-col gap-0.5 sm:shrink-0">
-        <span className="text-xs font-semibold text-slate-700">Cambiar comuna</span>
-        <span className="text-[11px] leading-snug text-slate-500">
-          Elige otra comuna para ver cómo va su activación; si esa comuna ya está abierta, te llevamos al
-          directorio con resultados.
-        </span>
-      </div>
       <HomeComunaAutocomplete
         target="abrir-comuna"
         placeholder="Buscar otra comuna…"
         confirmButtonLabel="Ir"
-        containerClassName="w-full min-w-0 flex-1 sm:max-w-[min(100%,28.5rem)]"
+        containerClassName="w-full min-w-0 sm:max-w-[min(100%,28.5rem)]"
       />
+      <p className="m-0 max-w-full text-[11px] leading-snug text-slate-500 sm:max-w-[min(100%,28.5rem)] sm:text-right">
+        Revisa otra comuna o entra a su directorio si ya está activa.
+      </p>
     </div>
   );
 }

@@ -254,14 +254,14 @@ export default function AbrirComunaClient({
                 ) : null}
 
                 <p className="m-0 mt-2.5 text-xs text-gray-500 leading-snug">
-                  El porcentaje mide tipos de servicio con mínimo cubierto; no es solo la cantidad de fichas.
+                  El avance muestra cuántos servicios clave ya están cubiertos en esta comuna.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="border-t border-slate-100 bg-white px-4 py-8 sm:px-6 sm:py-10 md:px-8">
-            <div className="mx-auto max-w-lg">
+            <div className="mx-auto max-w-5xl">
             {cardsMostradas.length > 0 ? (
               <div className="mt-0 w-full rounded-2xl border border-slate-200/90 bg-slate-50/60 p-4 sm:p-5 md:p-6">
                 <div
@@ -293,6 +293,7 @@ export default function AbrirComunaClient({
                       <EmprendedorSearchCardsGrid
                         emptyMessage=""
                         itemCount={cardsConBaseEnComuna.length}
+                        gridClassName="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
                       >
                         {cardsConBaseEnComuna.map((cardProps) => (
                           <div key={cardProps.slug} className="min-w-0">
@@ -315,6 +316,7 @@ export default function AbrirComunaClient({
                       <EmprendedorSearchCardsGrid
                         emptyMessage=""
                         itemCount={cardsAtiendenDesdeFuera.length}
+                        gridClassName="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
                       >
                         {cardsAtiendenDesdeFuera.map((cardProps) => (
                           <div key={cardProps.slug} className="min-w-0">
@@ -339,7 +341,7 @@ export default function AbrirComunaClient({
 
             <section
               id="recomendar-emprendimiento"
-              className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm scroll-mt-24"
+              className="mx-auto mt-8 max-w-lg rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm scroll-mt-24"
               aria-labelledby="abrir-comuna-recom-inline-titulo"
             >
               <h2
