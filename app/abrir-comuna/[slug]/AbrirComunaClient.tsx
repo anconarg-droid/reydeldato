@@ -285,7 +285,7 @@ export default function AbrirComunaClient({
                       which="base"
                       instanceId="abrir-comuna-bloque-base"
                       title={tituloYaHayNegociosEnComuna(cardsConBaseEnComuna.length)}
-                      subtitle="Base o local en esta comuna"
+                      subtitle="Emprendimientos con base en esta comuna"
                       defaultCollapsed={false}
                     >
                       <EmprendedorSearchCardsGrid
@@ -307,7 +307,7 @@ export default function AbrirComunaClient({
                       which="atienden"
                       instanceId="abrir-comuna-bloque-atienden"
                       title={tituloYaHayNegociosQueAtienden(cardsAtiendenDesdeFuera.length)}
-                      subtitle="Base en otra comuna; atienden aquí"
+                      subtitle="Emprendimientos que atienden esta comuna desde otros lugares"
                       defaultCollapsed
                     >
                       <EmprendedorSearchCardsGrid
