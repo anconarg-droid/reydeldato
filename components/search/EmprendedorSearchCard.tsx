@@ -338,20 +338,22 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   const tieneContextoComunaBuscada = Boolean(
     buscadaSlugCtx && (String(p.fichaContextComunaNombre ?? "").trim() || comunaBuscadaTrim)
   );
-  const showAtiendeComunaBadge =
-    !tieneContextoComunaBuscada &&
-    p.bloqueTerritorial === "atienden_tu_comuna" &&
-    comunaBuscadaTrim.length > 0;
+  /** Siempre el mismo lenguaje en el chip principal (no "Atiende Talagante", etc.). */
   const territorialLabel =
     p.bloqueTerritorial === "de_tu_comuna"
       ? "De tu comuna"
-      : p.bloqueTerritorial === "atienden_tu_comuna" && !showAtiendeComunaBadge
+      : p.bloqueTerritorial === "atienden_tu_comuna"
         ? "Atiende tu comuna"
         : null;
 
-  const showTerritorialStatusChips =
-    listadoUiPerfilCompleto && (territorialLabel || p.disponibleHoy === true);
-  const showCoberturaStatusRow = showAtiendeComunaBadge || showTerritorialStatusChips;
+  /** Comuna de la búsqueda/vista: solo como dato secundario junto al chip unificado. */
+  const mostrarComunaBusquedaSecundaria =
+    p.bloqueTerritorial === "atienden_tu_comuna" &&
+    !tieneContextoComunaBuscada &&
+    comunaBuscadaTrim.length > 0;
+
+  const showCoberturaStatusRow =
+    territorialLabel != null || (listadoUiPerfilCompleto && p.disponibleHoy === true);
 
   const analyticsSource = p.analyticsSource ?? "search";
   const destacarListado = p.destacarMejoresOpciones === true;
@@ -660,14 +662,6 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           >
             {showCoberturaStatusRow ? (
               <>
-                {showAtiendeComunaBadge ? (
-                  <span
-                    className={`${chipBase} max-h-7 border border-blue-200 bg-blue-50 text-blue-800`}
-                    title={`Atiende ${comunaBuscadaTrim}`}
-                  >
-                    Atiende {comunaBuscadaTrim}
-                  </span>
-                ) : null}
                 {territorialLabel ? (
                   <span
                     className={`${chipBase} max-h-7 border ${
@@ -675,8 +669,17 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                         ? "border-teal-200 bg-teal-50 text-teal-900"
                         : "border-blue-200 bg-blue-50 text-blue-800"
                     }`}
+                    title={mostrarComunaBusquedaSecundaria ? `Cobertura hacia ${comunaBuscadaTrim}` : undefined}
                   >
                     {territorialLabel}
+                  </span>
+                ) : null}
+                {mostrarComunaBusquedaSecundaria ? (
+                  <span
+                    className="inline-flex max-w-full shrink-0 items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium leading-tight text-slate-500 max-h-7 truncate"
+                    title={`Comuna de la búsqueda: ${comunaBuscadaTrim}`}
+                  >
+                    {comunaBuscadaTrim}
                   </span>
                 ) : null}
                 {p.disponibleHoy === true && listadoUiPerfilCompleto ? (
