@@ -157,7 +157,8 @@ function formatDireccionCardDisplay(raw: string): string {
   if (!t.trim()) return slotOrSpace("");
   return t
     .split(/\r?\n/)
-    .map((ln) => displayTitleCaseWords(ln.trim()))
+    // Dirección debe mostrarse tal cual viene (solo trim). No abreviar ni title-case.
+    .map((ln) => String(ln ?? "").trim())
     .join("\n");
 }
 
@@ -189,26 +190,8 @@ function cleanDireccionLocalParaCard(raw: string, comunaBaseNombre: string): str
     t = t.replace(new RegExp(`\\s+${c}$`, "i"), "").trim();
   }
 
-  // Normalizar separadores y recortar basura al final/inicio
-  t = t.replace(/\s*[·,\\-–—]\s*/g, " · ").trim();
-  t = t.replace(/^(·\s*)+/, "").replace(/(\s*·)+$/, "").trim();
-
-  // Dedup simple: "X · X"
-  const parts = t
-    .split("·")
-    .map((p) => p.trim())
-    .filter(Boolean);
-  if (parts.length >= 2) {
-    const out: string[] = [];
-    const seen = new Set<string>();
-    for (const p of parts) {
-      const k = p.toLowerCase();
-      if (seen.has(k)) continue;
-      seen.add(k);
-      out.push(p);
-    }
-    t = out.join(" · ").trim();
-  }
+  // Solo limpieza superficial de puntuación sobrante (sin modificar palabras).
+  t = t.replace(/^[,\-–—·\s]+/, "").replace(/[,\-–—·\s]+$/, "").trim();
 
   return t;
 }
