@@ -9,7 +9,7 @@ type Props = {
 };
 
 /**
- * Migas sobre /abrir-comuna/[slug]: Inicio → sección "Abrir comuna" (texto) → comuna actual.
+ * Migas sobre /abrir-comuna/[slug]: Inicio → "Comunas en crecimiento" (texto) → comuna actual.
  * La región no va en migas; va bajo el título en el cliente. Cambio de comuna: autocomplete + enlace a /buscar.
  */
 export default function AbrirComunaPageChrome({
@@ -31,7 +31,7 @@ export default function AbrirComunaPageChrome({
           <span className="text-slate-300" aria-hidden>
             /
           </span>
-          <span className="font-medium text-slate-600">Abrir comuna</span>
+          <span className="font-medium text-slate-600">Comunas en crecimiento</span>
           <span className="text-slate-300" aria-hidden>
             /
           </span>
