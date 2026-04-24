@@ -29,21 +29,13 @@ type AbrirComunaData = {
   comuna_interes_total?: number;
 };
 
-function tituloBloqueBaseEnComuna(comunaNombre: string, n: number): string {
-  return `En ${comunaNombre} (${n.toLocaleString("es-CL")})`;
+/** Títulos de acordeón alineados al lenguaje territorial del producto (solo copy; mismos grupos que antes). */
+function tituloYaHayNegociosEnComuna(n: number): string {
+  return `De tu comuna (${n.toLocaleString("es-CL")})`;
 }
 
-function tituloBloqueAtiendenComuna(comunaNombre: string, n: number): string {
-  return `Atienden ${comunaNombre} (${n.toLocaleString("es-CL")})`;
-}
-
-/** Títulos de bloque en acordeón: `(cantidad, comuna)`. */
-function tituloYaHayNegociosEnComuna(n: number, comunaNombre: string): string {
-  return tituloBloqueBaseEnComuna(comunaNombre, n);
-}
-
-function tituloYaHayNegociosQueAtienden(n: number, comunaNombre: string): string {
-  return tituloBloqueAtiendenComuna(comunaNombre, n);
+function tituloYaHayNegociosQueAtienden(n: number): string {
+  return `Atienden tu comuna (${n.toLocaleString("es-CL")})`;
 }
 
 function formatPorcentajeHumano(p: number): string {
@@ -224,14 +216,14 @@ export default function AbrirComunaClient({
                 </a>
               </div>
 
-              <div className="mt-10 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm">
-                <h2 className="m-0 text-sm font-extrabold uppercase tracking-wide text-slate-500">
+              <div className="mt-6 rounded-xl border border-slate-200/70 bg-slate-50/80 p-4 sm:p-5">
+                <h2 className="m-0 text-xs font-bold uppercase tracking-wide text-slate-400">
                   Avance de la comuna
                 </h2>
                 {lineaPorcentajeServiciosMinimos ? (
-                  <p className="mt-3 text-base font-semibold text-slate-900">{lineaPorcentajeServiciosMinimos}</p>
+                  <p className="mt-2.5 text-sm font-semibold text-slate-800">{lineaPorcentajeServiciosMinimos}</p>
                 ) : (
-                  <p className="mt-3 text-sm font-medium text-slate-600 leading-relaxed">
+                  <p className="mt-2.5 text-sm font-medium text-slate-600 leading-relaxed">
                     Vamos sumando rubros y servicios hasta cubrir los mínimos que definimos para esta comuna.
                   </p>
                 )}
@@ -253,12 +245,12 @@ export default function AbrirComunaClient({
                 ) : null}
 
                 {lineaAvanceTipos ? (
-                  <p className="mt-5 text-sm sm:text-[0.9375rem] text-slate-800 font-medium leading-relaxed">
+                  <p className="mt-3.5 text-sm text-slate-700 font-medium leading-relaxed">
                     {lineaAvanceTipos}
                   </p>
                 ) : null}
 
-                <p className="mt-4 text-xs sm:text-sm text-slate-500 leading-snug">
+                <p className="mt-3 text-xs text-slate-500 leading-snug">
                   El porcentaje refleja cuántos tipos de servicio ya cumplen el mínimo que pedimos para esta etapa; no
                   es solo la cantidad de fichas publicadas.
                 </p>
@@ -282,6 +274,13 @@ export default function AbrirComunaClient({
                     Emprendimientos disponibles en {safeData.comuna_nombre}
                   </h2>
                 </div>
+                <p className="mb-4 text-sm text-slate-600 leading-relaxed">
+                  <span className="font-semibold text-slate-800">Dos grupos:</span>{" "}
+                  <strong className="font-semibold text-slate-800">De tu comuna</strong> son quienes tienen su base o
+                  local en {safeData.comuna_nombre}.{" "}
+                  <strong className="font-semibold text-slate-800">Atienden tu comuna</strong> tienen la base en otra
+                  comuna y declaran cobertura para atender aquí.
+                </p>
                 <div className="space-y-5 w-full min-w-0">
                   {cardsConBaseEnComuna.length > 0 ? (
                     <TerritorialAccordionBlock
@@ -289,11 +288,8 @@ export default function AbrirComunaClient({
                       persistPrefix={territorialPersistPrefix}
                       which="base"
                       instanceId="abrir-comuna-bloque-base"
-                      title={tituloYaHayNegociosEnComuna(
-                        cardsConBaseEnComuna.length,
-                        safeData.comuna_nombre
-                      )}
-                      subtitle="Con base en esta comuna"
+                      title={tituloYaHayNegociosEnComuna(cardsConBaseEnComuna.length)}
+                      subtitle="Base o local en esta comuna"
                       defaultCollapsed={false}
                     >
                       <EmprendedorSearchCardsGrid
@@ -314,11 +310,8 @@ export default function AbrirComunaClient({
                       persistPrefix={territorialPersistPrefix}
                       which="atienden"
                       instanceId="abrir-comuna-bloque-atienden"
-                      title={tituloYaHayNegociosQueAtienden(
-                        cardsAtiendenDesdeFuera.length,
-                        safeData.comuna_nombre
-                      )}
-                      subtitle="Desde otras comunas"
+                      title={tituloYaHayNegociosQueAtienden(cardsAtiendenDesdeFuera.length)}
+                      subtitle="Base en otra comuna; atienden aquí"
                       defaultCollapsed
                     >
                       <EmprendedorSearchCardsGrid
