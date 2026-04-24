@@ -161,6 +161,58 @@ function formatDireccionCardDisplay(raw: string): string {
     .join("\n");
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Limpia dirección solo para presentación (no persiste en DB):
+ * - si la línea viene como "Comuna · Dirección Comuna", quita comuna del inicio/fin
+ * - quita duplicados simples y separadores sobrantes
+ */
+function cleanDireccionLocalParaCard(raw: string, comunaBaseNombre: string): string {
+  let t = String(raw ?? "").trim();
+  if (!t) return "";
+
+  // Quitar emoji/label si viniera con prefijo
+  t = t.replace(/^📍\s*/g, "").trim();
+  t = t.replace(/^Local\s+en\s+/i, "").trim();
+
+  const comuna = String(comunaBaseNombre ?? "").trim();
+  if (comuna) {
+    const c = escapeRegExp(comuna);
+    // "Comuna · ..."
+    t = t.replace(new RegExp(`^${c}\\s*[·,\\-–—]\\s*`, "i"), "").trim();
+    // "... · Comuna"
+    t = t.replace(new RegExp(`\\s*[·,\\-–—]\\s*${c}$`, "i"), "").trim();
+    // "... Comuna" (al final con espacio)
+    t = t.replace(new RegExp(`\\s+${c}$`, "i"), "").trim();
+  }
+
+  // Normalizar separadores y recortar basura al final/inicio
+  t = t.replace(/\s*[·,\\-–—]\s*/g, " · ").trim();
+  t = t.replace(/^(·\s*)+/, "").replace(/(\s*·)+$/, "").trim();
+
+  // Dedup simple: "X · X"
+  const parts = t
+    .split("·")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length >= 2) {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const p of parts) {
+      const k = p.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(p);
+    }
+    t = out.join(" · ").trim();
+  }
+
+  return t;
+}
+
 function tituloDesdeSlugComuna(slug: string): string {
   const base = String(slug || "")
     .trim()
@@ -441,9 +493,11 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       : [];
   const ubicacionesVisibles = ubicacionesLines.slice(0, 2);
   const ubicacionesExtra = Math.max(0, ubicacionesLines.length - ubicacionesVisibles.length);
-  const ubicacionesDisplay = ubicacionesVisibles
-    .map((ln) => `📍 ${ln}`)
-    .map((ln) => formatDireccionCardDisplay(ln));
+  const localDireccionRaw = String(ubicacionesVisibles[0] ?? "").trim();
+  const localDireccionClean = cleanDireccionLocalParaCard(localDireccionRaw, comunaNomRaw);
+  const localDireccionDisplay = localDireccionClean
+    ? formatDireccionCardDisplay(localDireccionClean)
+    : "";
 
   if (process.env.NODE_ENV !== "production") {
     const nameKey = String(p.nombre ?? "").toLowerCase();
@@ -617,25 +671,6 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             </p>
           ) : null}
 
-          {ubicacionesDisplay.length > 0 ? (
-            <div className="w-full shrink-0 pt-0.5">
-              {ubicacionesDisplay.map((ln, idx) => (
-                <p
-                  key={`${idx}-${ln}`}
-                  className="m-0 truncate text-[13px] leading-tight text-slate-700"
-                  title={ln.trim() || undefined}
-                >
-                  {ln}
-                </p>
-              ))}
-              {ubicacionesExtra > 0 ? (
-                <p className="m-0 mt-0.5 text-xs font-medium leading-snug text-slate-500">
-                  +{ubicacionesExtra} ubicaciones más
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
           <div
             className="flex min-h-[32px] w-full shrink-0 flex-nowrap items-center gap-1.5 overflow-hidden"
             aria-hidden={!showCoberturaStatusRow}
@@ -707,6 +742,23 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               </span>
             )}
           </div>
+
+          {/* Dirección bajo modalidad "Local físico" (sin repetir comuna) */}
+          {tieneLocalFisico && localDireccionDisplay ? (
+            <div className="w-full shrink-0 pt-0.5">
+              <p
+                className="m-0 truncate text-[13px] leading-tight text-slate-700"
+                title={localDireccionDisplay.trim() || undefined}
+              >
+                {localDireccionDisplay}
+              </p>
+              {ubicacionesExtra > 0 ? (
+                <p className="m-0 mt-0.5 text-xs font-medium leading-snug text-slate-500">
+                  +{ubicacionesExtra} locales más
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <p
             className="m-0 line-clamp-2 min-h-[2.25rem] w-full shrink-0 text-sm leading-snug text-slate-500"
