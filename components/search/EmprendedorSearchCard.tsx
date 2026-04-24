@@ -726,17 +726,26 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             )}
           </div>
 
-          {/* Dirección bajo modalidad "Local físico" (sin repetir comuna) */}
-          {tieneLocalFisico && localDireccionDisplay ? (
-            <div className="w-full shrink-0 pt-0.5">
-              <p
-                className="m-0 truncate text-[13px] leading-tight text-slate-700"
-                title={localDireccionDisplay.trim() || undefined}
-              >
-                {localDireccionDisplay}
+          {/* Bloque: Local físico + dirección (separado de "Atiende") */}
+          {tieneLocalFisico ? (
+            <div className="my-1 w-full shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
+              <p className="m-0 flex items-center gap-1.5 text-[12px] font-bold leading-tight text-slate-800">
+                <span aria-hidden>🏪</span>
+                <span>Local físico</span>
               </p>
+              {localDireccionDisplay ? (
+                <p
+                  className="m-0 mt-1 flex items-start gap-1.5 text-[13px] leading-tight text-slate-700"
+                  title={localDireccionDisplay.trim() || undefined}
+                >
+                  <span aria-hidden className="mt-[1px]">
+                    📍
+                  </span>
+                  <span className="truncate">{localDireccionDisplay}</span>
+                </p>
+              ) : null}
               {ubicacionesExtra > 0 ? (
-                <p className="m-0 mt-0.5 text-xs font-medium leading-snug text-slate-500">
+                <p className="m-0 mt-1 text-xs font-medium leading-snug text-slate-500">
                   +{ubicacionesExtra} locales más
                 </p>
               ) : null}
