@@ -274,12 +274,8 @@ export default function AbrirComunaClient({
                     Emprendimientos disponibles en {safeData.comuna_nombre}
                   </h2>
                 </div>
-                <p className="mb-4 text-sm text-slate-600 leading-relaxed">
-                  <span className="font-semibold text-slate-800">Dos grupos:</span>{" "}
-                  <strong className="font-semibold text-slate-800">De tu comuna</strong> son quienes tienen su base o
-                  local en {safeData.comuna_nombre}.{" "}
-                  <strong className="font-semibold text-slate-800">Atienden tu comuna</strong> tienen la base en otra
-                  comuna y declaran cobertura para atender aquí.
+                <p className="mb-4 text-sm text-gray-600 leading-relaxed">
+                  Primero verás emprendimientos con base en esta comuna. Luego, los que atienden desde otras comunas.
                 </p>
                 <div className="space-y-5 w-full min-w-0">
                   {cardsConBaseEnComuna.length > 0 ? (
