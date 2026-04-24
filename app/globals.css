@@ -137,6 +137,24 @@
   .rd-card {
     @apply rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md;
   }
+
+  /* Home: carrusel horizontal sin scrollbar visible (mantiene scroll). */
+  .home-carousel-scroll {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge legacy */
+  }
+  .home-carousel-scroll::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+    height: 0;
+    width: 0;
+  }
+
+  /* Home: el “marco” del carrusel aporta la sombra; evita doble sombra en la card interna. */
+  .home-carousel-card-shell > article {
+    box-shadow: none !important;
+    transform: none !important;
+    border-radius: 1.25rem !important; /* alinea con el “shell” rounded-3xl + padding */
+  }
 }
 
 @keyframes rey-keywords-spin {

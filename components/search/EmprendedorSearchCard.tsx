@@ -397,8 +397,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white"
         aria-label={`${nombreDisplay}: disponible cuando la comuna esté activa`}
       >
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3">
-          <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-xl bg-slate-100">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3.5">
+          <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl bg-slate-100">
             {mostrarFoto ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -555,7 +555,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       ) : null}
 
       <div
-        className={`flex min-h-0 min-w-0 flex-1 flex-col p-3 ${
+        className={`flex min-h-0 min-w-0 flex-1 flex-col p-3.5 ${
           listadoUiPerfilCompleto
             ? "bg-white"
             : vistaBasicaPanel
@@ -566,7 +566,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         }`}
       >
         {/* Imagen: altura fija en todas las cards */}
-        <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-xl bg-slate-100">
+        <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl bg-slate-100">
           {mostrarFoto ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -605,7 +605,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
 
           {listadoUiPerfilCompleto ? (
             <div className="pointer-events-none absolute bottom-2 left-2">
-              <span className="rounded-full bg-[#0f766e] px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-sm">
+              <span className="rounded-full bg-[#0f766e] px-2.5 py-1 text-[9px] font-extrabold tracking-wide text-white shadow-sm">
                 Perfil completo
               </span>
             </div>
@@ -613,7 +613,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
 
           {p.esNuevo === true ? (
             <div className="pointer-events-none absolute top-2 right-2">
-              <span className="rounded-full border border-slate-200 bg-white/95 px-2.5 py-0.5 text-[10px] font-extrabold tracking-wide text-slate-700 shadow-sm">
+              <span className="rounded-full border border-slate-200 bg-white/95 px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-slate-700 shadow-sm">
                 Nuevo
               </span>
             </div>
@@ -621,7 +621,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         </div>
 
         {/* Cuerpo: crece; reserva footer abajo */}
-        <div className="mt-2 flex min-h-0 min-w-0 flex-1 flex-col gap-1">
+        <div className="mt-2.5 flex min-h-0 min-w-0 flex-1 flex-col gap-1.5">
           <h3
             className={`m-0 line-clamp-2 min-h-[2.75rem] w-full shrink-0 text-base leading-snug ${titleFontClass} ${titleColor}`}
           >

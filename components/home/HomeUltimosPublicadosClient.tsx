@@ -195,15 +195,15 @@ export default function HomeUltimosPublicadosClient({
   }, [hoverPaused, interactPaused, cancelScrollAnimation]);
 
   return (
-    <div className="w-full" aria-labelledby="home-ultimos-publicados-heading">
+    <div className="w-full py-2" aria-labelledby="home-ultimos-publicados-heading">
       <div className="mx-auto w-full max-w-5xl px-0">
-        <p className="mx-auto mb-4 max-w-2xl text-center text-base font-bold leading-snug text-slate-900 sm:text-lg">
+        <p className="mx-auto mb-3 max-w-2xl text-center text-lg font-extrabold leading-snug text-slate-900 sm:text-xl">
           Negocios reales ya publicados en tu comuna
         </p>
         {totalNegociosActivos != null && totalNegociosActivos > 0 ? (
-          <p className="mx-auto mb-6 max-w-xl text-center text-sm font-medium text-slate-700">
+          <p className="mx-auto mb-8 max-w-xl text-center text-base font-semibold text-slate-800 sm:text-lg">
             Más de{" "}
-            <span className="tabular-nums font-bold text-slate-900">
+            <span className="tabular-nums text-2xl font-black text-slate-900 sm:text-3xl">
               {totalNegociosActivos.toLocaleString("es-CL")}
             </span>{" "}
             negocios ya están activos
@@ -211,38 +211,48 @@ export default function HomeUltimosPublicadosClient({
         ) : null}
         <h2
           id="home-ultimos-publicados-heading"
-          className="text-center text-lg font-semibold tracking-tight text-slate-900 sm:text-xl md:text-2xl"
+          className="text-center text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl md:text-3xl"
         >
           Así se ven los servicios en tu comuna
         </h2>
-        <p className="mx-auto mt-2 max-w-xl text-center text-sm leading-relaxed text-slate-600 sm:text-[15px]">
+        <p className="mx-auto mt-2 max-w-xl text-center text-sm leading-relaxed text-slate-500 sm:text-[15px]">
           Fichas reales que aparecen cuando alguien busca
         </p>
 
-        <div
-          ref={scrollerRef}
-          className="mt-6 flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-0.5 pt-0.5 [-webkit-overflow-scrolling:touch] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
-          role="list"
-          aria-label="Emprendimientos publicados recientemente"
-          onMouseEnter={() => setHoverPaused(true)}
-          onMouseLeave={() => setHoverPaused(false)}
-          onPointerDownCapture={bumpInteractionPause}
-          onWheelCapture={bumpInteractionPause}
-          onTouchStartCapture={bumpInteractionPause}
-        >
-          {cards.map((props) => (
-            <div
-              key={props.slug}
-              data-carousel-card
-              role="listitem"
-              className="w-[min(92vw,22rem)] shrink-0"
-            >
-              <EmprendedorSearchCard {...props} />
-            </div>
-          ))}
+        <div className="relative mt-8">
+          <div
+            ref={scrollerRef}
+            className="home-carousel-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-3 pl-0.5 pr-1 pt-1 [-webkit-overflow-scrolling:touch]"
+            role="list"
+            aria-label="Emprendimientos publicados recientemente"
+            onMouseEnter={() => setHoverPaused(true)}
+            onMouseLeave={() => setHoverPaused(false)}
+            onPointerDownCapture={bumpInteractionPause}
+            onWheelCapture={bumpInteractionPause}
+            onTouchStartCapture={bumpInteractionPause}
+          >
+            {cards.map((props) => (
+              <div
+                key={props.slug}
+                data-carousel-card
+                role="listitem"
+                className="group w-[min(92vw,22rem)] shrink-0 transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px]"
+              >
+                <div className="home-carousel-card-shell rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
+                  <EmprendedorSearchCard {...props} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Indicación sutil de que hay más contenido a la derecha */}
+          <div
+            className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-white via-white/70 to-transparent"
+            aria-hidden
+          />
         </div>
 
-        <div className="mt-6 flex justify-center">
+        <div className="mt-8 flex justify-center">
           <Link
             href="/publicar"
             onClick={() =>
