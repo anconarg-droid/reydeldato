@@ -341,7 +341,7 @@ export default function AbrirComunaClient({
 
             <section
               id="recomendar-emprendimiento"
-              className="mx-auto mt-8 max-w-lg rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm scroll-mt-24"
+              className="mx-auto mt-8 max-w-lg rounded-2xl border border-slate-300/90 bg-slate-50 p-5 sm:p-6 shadow-md shadow-slate-900/5 ring-1 ring-slate-200/80 scroll-mt-24"
               aria-labelledby="abrir-comuna-recom-inline-titulo"
             >
               <h2
