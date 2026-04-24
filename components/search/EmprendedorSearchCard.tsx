@@ -398,7 +398,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         aria-label={`${nombreDisplay}: disponible cuando la comuna esté activa`}
       >
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3.5">
-          <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl bg-slate-100">
+          <div className="relative w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 aspect-square">
             {mostrarFoto ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -566,7 +566,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         }`}
       >
         {/* Imagen: altura fija en todas las cards */}
-        <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl bg-slate-100">
+        <div className="relative w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 aspect-square">
           {mostrarFoto ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
