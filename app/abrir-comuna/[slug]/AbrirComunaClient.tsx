@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import AbrirComunaNegociosPreviewGrid from "@/components/abrir-comuna/AbrirComunaNegociosPreviewGrid";
-import type { EmprendedorSearchCardProps } from "@/components/search/EmprendedorSearchCard";
+import EmprendedorSearchCard, {
+  type EmprendedorSearchCardProps,
+} from "@/components/search/EmprendedorSearchCard";
+import EmprendedorSearchCardsGrid from "@/components/search/EmprendedorSearchCardsGrid";
 import TerritorialAccordionBlock from "@/components/search/TerritorialAccordionBlock";
 import { busquedaComunaResultsShellClassName } from "@/lib/busquedaComunaLayoutStyles";
 
@@ -26,14 +28,6 @@ type AbrirComunaData = {
   /** Filas en `comuna_interes` para esta comuna (apoyo agregado; sin datos personales en UI). */
   comuna_interes_total?: number;
 };
-
-function toNegociosPreviewItems(cards: EmprendedorSearchCardProps[]) {
-  return cards.map((c) => ({
-    slug: c.slug,
-    nombre: c.nombre,
-    fotoPrincipalUrl: c.fotoPrincipalUrl,
-  }));
-}
 
 function tituloBloqueBaseEnComuna(comunaNombre: string, n: number): string {
   return `En ${comunaNombre} (${n.toLocaleString("es-CL")})`;
@@ -268,15 +262,6 @@ export default function AbrirComunaClient({
               </Link>
             </div>
 
-            <div
-              className="mx-auto max-w-lg mt-6 rounded-xl border border-amber-200/90 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 leading-relaxed"
-              role="status"
-            >
-              <p className="m-0">
-                La búsqueda por servicio estará disponible cuando la comuna esté activa.
-              </p>
-            </div>
-
             {cardsMostradas.length > 0 ? (
               <div className="mt-8 w-full rounded-2xl border border-slate-200/90 bg-slate-50/60 p-4 sm:p-5 md:p-6">
                 <div
@@ -305,9 +290,16 @@ export default function AbrirComunaClient({
                       subtitle="Con base en esta comuna"
                       defaultCollapsed={false}
                     >
-                      <AbrirComunaNegociosPreviewGrid
-                        items={toNegociosPreviewItems(cardsConBaseEnComuna)}
-                      />
+                      <EmprendedorSearchCardsGrid
+                        emptyMessage=""
+                        itemCount={cardsConBaseEnComuna.length}
+                      >
+                        {cardsConBaseEnComuna.map((cardProps) => (
+                          <div key={cardProps.slug} className="min-w-0">
+                            <EmprendedorSearchCard {...cardProps} usarCardSimple={false} />
+                          </div>
+                        ))}
+                      </EmprendedorSearchCardsGrid>
                     </TerritorialAccordionBlock>
                   ) : null}
                   {cardsAtiendenDesdeFuera.length > 0 ? (
@@ -323,15 +315,19 @@ export default function AbrirComunaClient({
                       subtitle="Desde otras comunas"
                       defaultCollapsed
                     >
-                      <AbrirComunaNegociosPreviewGrid
-                        items={toNegociosPreviewItems(cardsAtiendenDesdeFuera)}
-                      />
+                      <EmprendedorSearchCardsGrid
+                        emptyMessage=""
+                        itemCount={cardsAtiendenDesdeFuera.length}
+                      >
+                        {cardsAtiendenDesdeFuera.map((cardProps) => (
+                          <div key={cardProps.slug} className="min-w-0">
+                            <EmprendedorSearchCard {...cardProps} usarCardSimple={false} />
+                          </div>
+                        ))}
+                      </EmprendedorSearchCardsGrid>
                     </TerritorialAccordionBlock>
                   ) : null}
                 </div>
-                <p className="mt-5 text-center text-sm font-medium text-slate-700 leading-snug px-1">
-                  Pronto podrás ver todos los resultados y contactar directamente cuando la comuna esté activa.
-                </p>
                 <p className="mt-4 text-xs text-slate-700 sm:text-sm leading-snug font-medium">
                   Sé de los primeros en aparecer en el directorio de {comunaConRegion}.
                 </p>

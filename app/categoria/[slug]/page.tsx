@@ -125,8 +125,6 @@ export default async function CategoriaPage({ params, searchParams }: PageProps)
   const esVistaPorComunaParam = comunaParamTrim.length > 0;
 
   let comunaExisteEnDb = false;
-  /** Misma regla que `/[comuna]` + `ResultadosClient`: sin directorio operativo → cards sin contacto. */
-  let usarCardSimpleCategoriaPorComuna = false;
   if (esVistaPorComunaParam) {
     const slugDir = comunaParamTrim.toLowerCase();
     const { data: comunaRow } = await supabase
@@ -136,16 +134,6 @@ export default async function CategoriaPage({ params, searchParams }: PageProps)
       .maybeSingle();
     const comunaId = (comunaRow as { id?: unknown } | null)?.id;
     comunaExisteEnDb = comunaId != null;
-    if (comunaExisteEnDb) {
-      const [{ data: configRow }, aperturaUi] = await Promise.all([
-        supabase.from("comunas_config").select("activa").eq("comuna_id", comunaId).maybeSingle(),
-        loadComunaAperturaPublicaPorSlug(slugDir),
-      ]);
-      const configInactiva = configRow?.activa === false;
-      const directorioOperativo =
-        !configInactiva && (aperturaUi?.comuna_publica_abierta === true);
-      usarCardSimpleCategoriaPorComuna = !directorioOperativo;
-    }
   }
 
   const slugComunaFocal = `${comunaSlugResolved || comunaParam || ""}`.trim().toLowerCase();
@@ -361,7 +349,7 @@ export default async function CategoriaPage({ params, searchParams }: PageProps)
                     comunaSlug={comunaSlugResolved}
                     comunaNombre={comunaNombreResolved}
                     nombreComunaDisplay={nombreComunaDisplay}
-                    usarCardSimple={usarCardSimpleCategoriaPorComuna}
+                    usarCardSimple={false}
                   />
                 )}
               </div>
