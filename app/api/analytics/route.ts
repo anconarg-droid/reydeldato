@@ -6,10 +6,12 @@ import {
   recordEvent,
 } from "@/lib/analytics/recordEvent";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) return null;
+  return createClient(supabaseUrl, serviceRoleKey);
+}
 
 function s(v: unknown): string {
   if (v === null || v === undefined) return "";
@@ -23,6 +25,15 @@ function s(v: unknown): string {
  */
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabaseAdminClient();
+    if (!supabase) {
+      // Evita fallar en build/import si falta config; responde 500 en runtime.
+      return NextResponse.json(
+        { ok: false, error: "server_misconfigured" },
+        { status: 500 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const event_type = s(body?.event_type);
     const slug = s(body?.slug);
