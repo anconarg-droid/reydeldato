@@ -41,7 +41,7 @@ function AccordionChevron({
 }
 
 export type TerritorialAccordionBlockProps = {
-  /** Bloque “local” (oscuro) vs cobertura / atienden (claro). */
+  /** Bloque “local” (oscuro) vs cobertura / atienden (sección clara, misma jerarquía visual). */
   variant: "local" | "cobertura";
   /** Prefijo estable, p. ej. `abrir-comuna:slug` o `resultados:slug`. */
   persistPrefix: string;
@@ -104,22 +104,22 @@ export default function TerritorialAccordionBlock({
   const isLocal = variant === "local";
   const sectionClass = isLocal
     ? "w-full min-w-0 overflow-hidden rounded-2xl border border-slate-800/50 shadow-lg"
-    : "w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200/90 bg-slate-50/70 shadow-sm";
+    : "w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-lg border-l-4 border-l-teal-600";
   const buttonClass = isLocal
     ? "flex w-full min-h-[4.5rem] items-start gap-3 bg-slate-900 px-4 py-4 text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:min-h-0 sm:items-center sm:gap-4 sm:px-5 sm:py-5"
-    : "flex w-full min-h-[4.5rem] items-start gap-3 bg-gradient-to-b from-slate-50/95 to-slate-100/60 px-4 py-4 text-left transition-colors hover:to-slate-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 sm:min-h-0 sm:items-center sm:gap-4 sm:px-5 sm:py-5";
+    : "flex w-full min-h-[4.5rem] items-start gap-3 border-b border-slate-200/90 bg-white px-4 py-4 text-left transition-colors hover:bg-slate-50/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:min-h-0 sm:items-center sm:gap-4 sm:px-5 sm:py-5";
   const titleClass = isLocal
     ? "block text-base font-black leading-snug tracking-tight text-white sm:text-lg"
-    : "block text-base font-black leading-snug tracking-tight text-slate-800 sm:text-lg";
+    : "block text-base font-black leading-snug tracking-tight text-slate-900 sm:text-lg";
   const subtitleClass = isLocal
     ? "mt-1.5 block text-sm font-medium leading-relaxed text-slate-300"
-    : "mt-1.5 block text-sm font-medium leading-snug text-slate-600";
+    : "mt-1.5 block text-sm font-medium leading-relaxed text-slate-500";
   const chevronWrapClass = isLocal
     ? "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 sm:mt-0"
-    : "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300/90 bg-slate-50 sm:mt-0";
+    : "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900/10 sm:mt-0";
   const panelClass = isLocal
     ? "border-t border-slate-800/25 bg-gradient-to-b from-amber-50/90 to-amber-50/60 px-4 py-5 sm:px-6 sm:py-6"
-    : "border-t border-slate-200/80 bg-slate-50/50 px-4 py-4 sm:px-5 sm:py-5";
+    : "border-t border-slate-200/90 bg-white px-4 py-5 sm:px-6 sm:py-6";
 
   const btnId = `${instanceId}-titulo`;
   const panelId = `${instanceId}-panel`;
@@ -141,7 +141,7 @@ export default function TerritorialAccordionBlock({
         <span className={chevronWrapClass} aria-hidden>
           <AccordionChevron
             collapsed={collapsed}
-            iconClassName={isLocal ? "text-white" : "text-slate-700"}
+            iconClassName={isLocal ? "text-white" : "text-slate-800"}
           />
         </span>
       </button>

@@ -200,6 +200,12 @@
 
 /* Basic grid helpers (good enough for home/search headers) */
 .grid { display: grid; }
+/* Resultados / cards: mismo criterio que Tailwind (md=768px, lg=1024px). El fallback
+   no incluía grid-cols-* responsive y la rejilla quedaba en 2 columnas en desktop. */
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.gap-4 { gap: 1rem; }
+.items-stretch { align-items: stretch; }
 .gap-x-3 { column-gap: 0.75rem; }
 .gap-y-2 { row-gap: 0.5rem; }
 .w-full { width: 100%; }
@@ -211,6 +217,14 @@
 .border-slate-300 { border-color: #cbd5e1; }
 .bg-slate-50\/80 { background-color: rgba(248, 250, 252, 0.8); }
 
+/* Acordeón “Atienden”: borde izquierdo teal (fallback si no emite Tailwind) */
+.border-l-4 {
+  border-left-width: 4px;
+}
+.border-l-teal-600 {
+  border-left-color: #0d9488;
+}
+
 /* Buttons/inputs */
 .h-11 { height: 2.75rem; }
 .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
@@ -221,4 +235,19 @@
 
 @media (min-width: 640px) {
   .sm\:text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+  .sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
