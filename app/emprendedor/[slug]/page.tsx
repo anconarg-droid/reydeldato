@@ -1292,20 +1292,20 @@ export default async function Page({
 
       {!esFichaCompleta ? (
         <>
-          <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.12fr)_minmax(300px,400px)] gap-8 mb-10 items-start">
+          <section className="mb-10 grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-3">
               <div
-                className="rounded-2xl border border-slate-200 bg-slate-100 overflow-hidden min-h-[320px] xl:min-h-[420px]"
+                className="min-h-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 lg:min-h-[420px]"
               >
                 {fotoPrincipalOk ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={s(item.foto_principal_url)}
                     alt=""
-                    className="w-full h-full min-h-[320px] xl:min-h-[420px] object-cover"
+                    className="h-full min-h-[320px] w-full object-cover lg:min-h-[420px]"
                   />
                 ) : (
-                  <div className="h-full min-h-[320px] xl:min-h-[420px] flex flex-col items-center justify-center px-6 text-center bg-slate-100">
+                  <div className="flex h-full min-h-[320px] flex-col items-center justify-center bg-slate-100 px-6 text-center lg:min-h-[420px]">
                     <p className="text-sm font-extrabold tracking-wide text-slate-600">
                       {getPlaceholderSinFotoTitulo()}
                     </p>
@@ -1337,7 +1337,7 @@ export default async function Page({
               ) : null}
             </div>
 
-            <aside className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6 xl:p-7">
+            <aside className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6 lg:p-7">
               {ubicacionUnaLinea ? (
                 <p className="text-base font-semibold text-slate-700 mb-3">
                   {ubicacionUnaLinea}
@@ -1346,7 +1346,7 @@ export default async function Page({
               <div className="inline-flex mb-4 px-3 py-1.5 rounded-lg bg-slate-200/80 border border-slate-300 text-xs font-bold text-slate-700">
                 Información básica
               </div>
-              <h1 className="text-3xl xl:text-4xl font-black text-slate-900 leading-tight m-0 mb-3">
+              <h1 className="m-0 mb-3 text-3xl font-black leading-tight text-slate-900 lg:text-4xl">
                 {nombreFichaTitulo}
               </h1>
               {isInformado(subtituloHero) ? (

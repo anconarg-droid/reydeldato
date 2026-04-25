@@ -305,7 +305,7 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
   return (
     <div className="max-w-6xl mx-auto p-6">
       {/* BLOQUE SUPERIOR */}
-      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-8 mb-10">
+      <div className="mb-10 grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* FOTO PRINCIPAL */}
         <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-sm">
           <div className="h-[420px] bg-gray-100">
@@ -511,7 +511,7 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
         <div className="mb-10 rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-3xl font-black text-gray-900 mb-5">Galería</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {item.galeria_urls.map((img, i) => (
               <img
                 key={i}

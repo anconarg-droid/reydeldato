@@ -247,7 +247,32 @@
 }
 
 @media (min-width: 1024px) {
+  .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .lg\:grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .lg\:gap-8 {
+    gap: 2rem;
+  }
+  .lg\:mb-8 {
+    margin-bottom: 2rem;
+  }
+  .lg\:mb-10 {
+    margin-bottom: 2.5rem;
+  }
+  .lg\:p-7 {
+    padding: 1.75rem;
+  }
+  .lg\:p-8 {
+    padding: 2rem;
+  }
+  .lg\:min-h-\[420px\] {
+    min-height: 420px;
+  }
+  .lg\:text-4xl {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
   }
 }

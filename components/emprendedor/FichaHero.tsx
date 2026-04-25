@@ -201,7 +201,7 @@ export default function FichaHero({
   const nombreParaMostrar = displayTitleCaseWords(s(nombre));
 
   return (
-    <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.12fr)_minmax(320px,420px)] gap-6 xl:gap-8 mb-6 xl:mb-8 items-start">
+    <section className="grid grid-cols-1 gap-6 mb-6 items-start lg:grid-cols-2 lg:gap-8 lg:mb-8">
       <div className="flex min-w-0 flex-col gap-3">
         <PortalGallery
           fotoPrincipal={fotoPrincipal}
@@ -221,7 +221,7 @@ export default function FichaHero({
       </div>
 
       <div className="flex min-w-0 flex-col gap-4">
-        <aside className="rounded-3xl p-6 xl:p-8 bg-white border-2 border-amber-200/90 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.25),0_0_0_1px_rgba(251,191,36,0.12)] ring-1 ring-amber-100/80">
+        <aside className="rounded-3xl bg-white p-6 ring-1 ring-amber-100/80 border-2 border-amber-200/90 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.25),0_0_0_1px_rgba(251,191,36,0.12)] lg:p-8">
           <div className="flex flex-col gap-4">
             {ubicacionLinea ? (
               <p className="text-[15px] font-semibold text-slate-800 m-0 leading-snug">
@@ -250,7 +250,7 @@ export default function FichaHero({
               )}
             </div>
 
-            <h1 className="text-[1.85rem] xl:text-[2.65rem] font-black text-slate-950 leading-[1.08] tracking-tight m-0">
+            <h1 className="m-0 text-[1.85rem] font-black leading-[1.08] tracking-tight text-slate-950 lg:text-4xl">
               {nombreParaMostrar}
             </h1>
 
