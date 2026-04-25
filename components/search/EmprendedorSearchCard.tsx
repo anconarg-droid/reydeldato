@@ -777,78 +777,130 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             listadoUiPerfilCompleto ? "border-slate-300/40" : "border-slate-200"
           }`}
         >
-          {!listadoUiPerfilCompleto && tieneWhatsappValido ? (
-            <p className="mb-2 w-full text-center text-[10px] font-normal leading-snug text-slate-600">
-              Solo contacto por WhatsApp
-            </p>
+          {/*
+            Perfil completo: WhatsApp + Ver detalles (misma fila que antes).
+            Perfil básico: solo WhatsApp; leyenda + botón con el mismo ancho que cada columna
+            del perfil completo (~50% − mitad del gap), centrados.
+          */}
+          {p.bloquearAccesoFichaPublica ? (
+            <div className="flex w-full shrink-0 flex-row items-stretch gap-2">
+              {tieneWhatsappValido ? (
+                <span
+                  className="flex min-w-0 flex-1 cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-center text-sm font-extrabold leading-tight text-slate-400"
+                  style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                  aria-disabled
+                >
+                  WhatsApp
+                </span>
+              ) : null}
+              {listadoPieDosCtas ? (
+                <span
+                  className="flex min-w-0 flex-1 cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-1 text-center text-sm font-extrabold leading-tight text-slate-400 shadow-none"
+                  style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                  role="status"
+                  aria-disabled
+                >
+                  Ver detalles
+                </span>
+              ) : null}
+            </div>
+          ) : listadoUiPerfilCompleto && puedeVerFichaPublica && tieneWhatsappValido ? (
+            <div className="flex w-full shrink-0 flex-row items-stretch gap-2">
+              <TrackedCardLink
+                slug={p.slug}
+                href={whatsappUrl || whatsappHref}
+                type="whatsapp"
+                trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+                trackingEmprendedorId={p.emprendedorId ?? null}
+                className="flex min-w-0 flex-1 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
+                style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`WhatsApp: ${nombreDisplay}`}
+                onClick={(e) => {
+                  const url = whatsappUrl || whatsappHref;
+                  if (!url) return;
+                  e.preventDefault();
+                  const w = window.open(url, "_blank", "noopener,noreferrer");
+                  if (!w) window.location.href = url;
+                }}
+              >
+                WhatsApp
+              </TrackedCardLink>
+              <TrackedCardLink
+                slug={p.slug}
+                href={fichaHref}
+                type="view_ficha"
+                analyticsSource={analyticsSource}
+                trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+                trackingEmprendedorId={p.emprendedorId ?? null}
+                className="flex min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                aria-label={`Ver detalles: ${nombreDisplay}`}
+              >
+                Ver detalles
+              </TrackedCardLink>
+            </div>
+          ) : listadoUiPerfilCompleto && puedeVerFichaPublica && !tieneWhatsappValido ? (
+            <div className="flex min-h-[48px] w-full shrink-0 justify-center">
+              <TrackedCardLink
+                slug={p.slug}
+                href={fichaHref}
+                type="view_ficha"
+                analyticsSource={analyticsSource}
+                trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+                trackingEmprendedorId={p.emprendedorId ?? null}
+                className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                aria-label={`Ver detalles: ${nombreDisplay}`}
+              >
+                Ver detalles
+              </TrackedCardLink>
+            </div>
+          ) : !listadoUiPerfilCompleto && tieneWhatsappValido ? (
+            <div className="flex w-full flex-col items-center justify-center gap-2">
+              <p className="m-0 w-full max-w-[calc(50%-0.25rem)] text-center text-xs font-semibold leading-snug text-slate-600">
+                Solo contacto por WhatsApp
+              </p>
+              <TrackedCardLink
+                slug={p.slug}
+                href={whatsappUrl || whatsappHref}
+                type="whatsapp"
+                trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+                trackingEmprendedorId={p.emprendedorId ?? null}
+                className="flex w-full max-w-[calc(50%-0.25rem)] shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
+                style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`WhatsApp: ${nombreDisplay}`}
+                onClick={(e) => {
+                  const url = whatsappUrl || whatsappHref;
+                  if (!url) return;
+                  e.preventDefault();
+                  const w = window.open(url, "_blank", "noopener,noreferrer");
+                  if (!w) window.location.href = url;
+                }}
+              >
+                WhatsApp
+              </TrackedCardLink>
+            </div>
+          ) : puedeVerFichaPublica ? (
+            <div className="flex min-h-[48px] w-full shrink-0 justify-center">
+              <TrackedCardLink
+                slug={p.slug}
+                href={fichaHref}
+                type="view_ficha"
+                analyticsSource={analyticsSource}
+                trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+                trackingEmprendedorId={p.emprendedorId ?? null}
+                className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                aria-label={`Ver detalles: ${nombreDisplay}`}
+              >
+                Ver detalles
+              </TrackedCardLink>
+            </div>
           ) : null}
-          <div className="flex w-full shrink-0 flex-row gap-2">
-            {p.bloquearAccesoFichaPublica ? (
-              <>
-                {tieneWhatsappValido ? (
-                  <span
-                    className="flex min-w-0 flex-1 cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-center text-sm font-extrabold leading-tight text-slate-400"
-                    style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
-                    aria-disabled
-                  >
-                    WhatsApp
-                  </span>
-                ) : null}
-                {listadoPieDosCtas ? (
-                  <span
-                    className="flex min-w-0 flex-1 cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-1 text-center text-sm font-extrabold leading-tight text-slate-400 shadow-none"
-                    style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
-                    role="status"
-                    aria-disabled
-                  >
-                    Ver detalles
-                  </span>
-                ) : null}
-              </>
-            ) : (
-              <>
-                {tieneWhatsappValido ? (
-                  <TrackedCardLink
-                    slug={p.slug}
-                    href={whatsappUrl || whatsappHref}
-                    type="whatsapp"
-                    trackingComunaSlug={p.fichaContextComunaSlug ?? null}
-                    trackingEmprendedorId={p.emprendedorId ?? null}
-                    className="flex min-w-0 flex-1 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
-                    style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`WhatsApp: ${nombreDisplay}`}
-                    onClick={(e) => {
-                      const url = whatsappUrl || whatsappHref;
-                      if (!url) return;
-                      e.preventDefault();
-                      const w = window.open(url, "_blank", "noopener,noreferrer");
-                      if (!w) window.location.href = url;
-                    }}
-                  >
-                    WhatsApp
-                  </TrackedCardLink>
-                ) : null}
-
-                {listadoUiPerfilCompleto ? (
-                  <TrackedCardLink
-                    slug={p.slug}
-                    href={fichaHref}
-                    type="view_ficha"
-                    analyticsSource={analyticsSource}
-                    trackingComunaSlug={p.fichaContextComunaSlug ?? null}
-                    trackingEmprendedorId={p.emprendedorId ?? null}
-                    className="flex min-w-0 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-extrabold text-slate-700 shadow-none"
-                    style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
-                    aria-label={`Ver detalles: ${nombreDisplay}`}
-                  >
-                    Ver detalles
-                  </TrackedCardLink>
-                ) : null}
-              </>
-            )}
-          </div>
         </div>
         ) : null}
       </div>
