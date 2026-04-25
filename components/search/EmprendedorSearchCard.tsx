@@ -547,10 +547,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     >
       {vistaBasicaPanel ? (
         <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-2.5 py-2 text-center">
-          <p className="m-0 inline-block rounded-full border border-slate-300 bg-slate-200/80 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-600">
-            Perfil básico
-          </p>
-          <p className="m-0 mt-1 text-xs font-bold text-slate-700">Visible en búsquedas</p>
+          <p className="m-0 text-xs font-bold text-slate-700">Visible en búsquedas</p>
           <p className="m-0 text-xs font-bold text-slate-700">Contacto por WhatsApp</p>
         </div>
       ) : null}
@@ -582,9 +579,13 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 loading="lazy"
                 onError={() => setImgBroken(true)}
               />
-              {listadoUiPerfilCompleto ? (
+              {listadoUiPerfilCompleto || !vistaBasicaPanel ? (
                 <div
-                  className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/35 via-transparent to-transparent"
+                  className={`pointer-events-none absolute inset-0 bg-gradient-to-t via-transparent to-transparent ${
+                    listadoUiPerfilCompleto
+                      ? "from-slate-900/35"
+                      : "from-slate-900/25"
+                  }`}
                   aria-hidden
                 />
               ) : null}
@@ -598,21 +599,17 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             </div>
           )}
 
-          {!listadoUiPerfilCompleto && !vistaBasicaPanel ? (
-            <div className="pointer-events-none absolute left-2 top-2 z-[1]">
-              <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500 shadow-sm">
-                Perfil básico
-              </span>
-            </div>
-          ) : null}
-
-          {listadoUiPerfilCompleto ? (
-            <div className="pointer-events-none absolute bottom-2 left-2">
+          <div className="pointer-events-none absolute bottom-2 left-2 z-[1]">
+            {listadoUiPerfilCompleto ? (
               <span className="rounded-full bg-[#0f766e] px-2.5 py-1 text-[9px] font-extrabold tracking-wide text-white shadow-sm">
                 Perfil completo
               </span>
-            </div>
-          ) : null}
+            ) : (
+              <span className="rounded-full bg-[#94a3b8] px-2.5 py-1 text-[9px] font-extrabold tracking-wide text-white shadow-sm">
+                Perfil básico
+              </span>
+            )}
+          </div>
 
           {p.esNuevo === true ? (
             <div className="pointer-events-none absolute top-2 right-2">
