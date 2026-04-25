@@ -138,15 +138,7 @@ function GlobalDbResults({
                   <h2 className="text-base font-extrabold text-slate-900">
                     {tituloBloqueExactos(detectedSubcategoria)}
                   </h2>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
-                      gap: 16,
-                      alignItems: "stretch",
-                    }}
-                  >
+                  <div className="grid w-full grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 items-stretch">
                     {exactos.map((item) => (
                       <EmprendedorSearchCard
                         key={item.slug || item.id}
@@ -163,15 +155,7 @@ function GlobalDbResults({
                   <h2 className="text-base font-extrabold text-slate-900">
                     También podrían servirte
                   </h2>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
-                      gap: 16,
-                      alignItems: "stretch",
-                    }}
-                  >
+                  <div className="grid w-full grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 items-stretch">
                     {[...relacionadosMismaCategoria, ...relacionadosResto].map((item) => (
                       <EmprendedorSearchCard
                         key={item.slug || item.id}
@@ -184,15 +168,7 @@ function GlobalDbResults({
               ) : null}
             </>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
-                gap: 16,
-                alignItems: "stretch",
-              }}
-            >
+            <div className="grid w-full grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 items-stretch">
               {itemsFiltrados.map((item) => (
                 <EmprendedorSearchCard
                   key={item.slug || item.id}
