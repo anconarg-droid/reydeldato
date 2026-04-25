@@ -423,9 +423,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 />
               </>
             ) : (
-              <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-1 px-3 py-4 text-center">
-                <span className="text-sm font-medium text-gray-400">Sin imágenes</span>
-                <span className="max-w-[13rem] text-[11px] font-medium leading-snug text-gray-300">
+              <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-1.5 px-3 py-4 text-center">
+                <span className="text-sm font-semibold text-slate-700">Sin imágenes</span>
+                <span className="max-w-[15rem] text-xs font-medium leading-snug text-slate-600">
                   {getPlaceholderSinFotoSub()}
                 </span>
               </div>
@@ -601,9 +601,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               ) : null}
             </>
           ) : (
-            <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-1 px-3 py-4 text-center">
-              <span className="text-sm font-medium text-gray-400">Sin imágenes</span>
-              <span className="max-w-[13rem] text-[11px] font-medium leading-snug text-gray-300">
+            <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-1.5 px-3 py-4 text-center">
+              <span className="text-sm font-semibold text-slate-700">Sin imágenes</span>
+              <span className="max-w-[15rem] text-xs font-medium leading-snug text-slate-600">
                 {getPlaceholderSinFotoSub()}
               </span>
             </div>
