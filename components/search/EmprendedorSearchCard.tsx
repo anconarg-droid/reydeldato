@@ -810,20 +810,14 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 slug={p.slug}
                 href={whatsappUrl || whatsappHref}
                 type="whatsapp"
+                analyticsSource={analyticsSource}
                 trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                 trackingEmprendedorId={p.emprendedorId ?? null}
                 className="flex min-w-0 flex-1 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
                 style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 aria-label={`WhatsApp: ${nombreDisplay}`}
-                onClick={(e) => {
-                  const url = whatsappUrl || whatsappHref;
-                  if (!url) return;
-                  e.preventDefault();
-                  const w = window.open(url, "_blank", "noopener,noreferrer");
-                  if (!w) window.location.href = url;
-                }}
               >
                 WhatsApp
               </TrackedCardLink>
@@ -866,20 +860,14 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 slug={p.slug}
                 href={whatsappUrl || whatsappHref}
                 type="whatsapp"
+                analyticsSource={analyticsSource}
                 trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                 trackingEmprendedorId={p.emprendedorId ?? null}
                 className="flex w-full max-w-[calc(50%-0.25rem)] shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
                 style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 aria-label={`WhatsApp: ${nombreDisplay}`}
-                onClick={(e) => {
-                  const url = whatsappUrl || whatsappHref;
-                  if (!url) return;
-                  e.preventDefault();
-                  const w = window.open(url, "_blank", "noopener,noreferrer");
-                  if (!w) window.location.href = url;
-                }}
               >
                 WhatsApp
               </TrackedCardLink>

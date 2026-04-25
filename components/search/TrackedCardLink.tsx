@@ -176,6 +176,7 @@ export default function TrackedCardLink({
   trackingEmprendedorId = null,
 }: Props) {
   function handleClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    e.stopPropagation();
     sendTrackedCardEvent(slug, type, {
       source: analyticsSource,
       comunaSlug: trackingComunaSlug,
