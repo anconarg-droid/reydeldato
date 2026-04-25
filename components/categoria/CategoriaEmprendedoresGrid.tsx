@@ -1,13 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import EmprendedorSearchCardsGrid from "@/components/search/EmprendedorSearchCardsGrid";
-import ListadoSinFotosSeparador from "@/components/search/ListadoSinFotosSeparador";
 import {
   buscarApiItemToEmprendedorCardProps,
   type BuscarApiItem,
 } from "@/lib/mapBuscarItemToEmprendedorCard";
-import { urlTieneFotoListado } from "@/lib/search/sortItemsConFotoPrimero";
+import { sortItemsConFotoPrimeroStable } from "@/lib/search/sortItemsConFotoPrimero";
 
 type Props = {
   items: BuscarApiItem[];
@@ -33,22 +33,14 @@ export default function CategoriaEmprendedoresGrid({
       ? { comunaSlug: comunaSlug.trim(), comunaNombre: comunaNombre.trim() }
       : null;
 
-  const conFoto = items.filter((i) => urlTieneFotoListado(i.fotoPrincipalUrl));
-  const sinFoto = items.filter((i) => !urlTieneFotoListado(i.fotoPrincipalUrl));
-  const mostrarSeparadorSinFotos = conFoto.length > 0 && sinFoto.length > 0;
+  const ordenados = useMemo(
+    () => sortItemsConFotoPrimeroStable(items, (i) => i.fotoPrincipalUrl),
+    [items],
+  );
 
   return (
     <EmprendedorSearchCardsGrid emptyMessage={emptyMessage} itemCount={items.length}>
-      {conFoto.map((item) => (
-        <EmprendedorSearchCard
-          key={item.slug || item.id}
-          {...buscarApiItemToEmprendedorCardProps(item, meta, "comuna")}
-          destacarMejoresOpciones={destacarMejoresOpciones}
-          usarCardSimple={usarCardSimple}
-        />
-      ))}
-      {mostrarSeparadorSinFotos ? <ListadoSinFotosSeparador /> : null}
-      {sinFoto.map((item) => (
+      {ordenados.map((item) => (
         <EmprendedorSearchCard
           key={item.slug || item.id}
           {...buscarApiItemToEmprendedorCardProps(item, meta, "comuna")}

@@ -1,6 +1,10 @@
 /**
  * Listados públicos: dentro del mismo bloque (misma comuna / mismo contexto),
- * priorizar ítems con foto visible sin alterar el orden relativo entre sí.
+ * priorizar ítems con foto de listado visible sin alterar el orden relativo entre sí.
+ *
+ * Equivale a `[...grupoConFoto, ...grupoSinFoto]` con el orden interno de cada grupo
+ * igual al del array de entrada (p. ej. ya rotado en `/api/buscar` cada 5 min por
+ * subgrupo `:foto` / `:sin_foto`). No sustituye esa rotación en el cliente.
  */
 
 export function urlTieneFotoListado(url: unknown): boolean {
