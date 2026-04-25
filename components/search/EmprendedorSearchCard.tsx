@@ -5,7 +5,15 @@
  * y min-heights alineados; CTAs en footer con `mt-auto`. Cobertura / chips con filas de altura mínima fija.
  */
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
+
+/** Fondo del marco cuando no hay foto (textura cuadrícula suave). */
+const PLACEHOLDER_SIN_FOTO_AREA_STYLE: CSSProperties = {
+  backgroundColor: "#f8fafc",
+  backgroundImage:
+    "linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)",
+  backgroundSize: "20px 20px",
+};
 import TrackedCardLink, {
   type CardViewListingSource,
 } from "@/components/search/TrackedCardLink";
@@ -399,8 +407,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3.5">
           <div
             className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 aspect-square ${
-              mostrarFoto ? "bg-slate-100" : "bg-gray-100"
+              mostrarFoto ? "bg-slate-100" : ""
             }`}
+            style={mostrarFoto ? undefined : PLACEHOLDER_SIN_FOTO_AREA_STYLE}
           >
             {mostrarFoto ? (
               <>
@@ -566,8 +575,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
         <div
           className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 aspect-square ${
-            mostrarFoto ? "bg-slate-100" : "bg-gray-100"
+            mostrarFoto ? "bg-slate-100" : ""
           }`}
+          style={mostrarFoto ? undefined : PLACEHOLDER_SIN_FOTO_AREA_STYLE}
         >
           {mostrarFoto ? (
             <>
