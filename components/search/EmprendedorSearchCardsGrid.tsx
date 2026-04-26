@@ -18,7 +18,7 @@ const gridChildLayoutClass =
 function defaultColumns(itemCount: number): string {
   const n = Math.max(0, Math.floor(Number(itemCount) || 0));
   return n === 1
-    ? "grid-cols-1"
+    ? "grid-cols-[minmax(0,24rem)] justify-start"
     : n === 2
       ? "grid-cols-1 sm:grid-cols-2"
       : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
