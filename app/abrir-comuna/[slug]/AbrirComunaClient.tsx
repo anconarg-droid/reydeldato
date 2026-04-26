@@ -44,6 +44,15 @@ function formatPorcentajeHumano(p: number): string {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
+function gridColumnsClassName(itemCount: number): string {
+  const n = Math.max(0, Math.floor(Number(itemCount) || 0));
+  return n === 1
+    ? "grid-cols-1"
+    : n === 2
+      ? "grid-cols-1 sm:grid-cols-2"
+      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+}
+
 export default function AbrirComunaClient({
   data,
 }: {
@@ -293,7 +302,7 @@ export default function AbrirComunaClient({
                       <EmprendedorSearchCardsGrid
                         emptyMessage=""
                         itemCount={cardsConBaseEnComuna.length}
-                        gridClassName="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                        gridClassName={`grid w-full gap-4 ${gridColumnsClassName(cardsConBaseEnComuna.length)}`}
                       >
                         {cardsConBaseEnComuna.map((cardProps) => (
                           <div key={cardProps.slug} className="min-w-0">
@@ -316,7 +325,7 @@ export default function AbrirComunaClient({
                       <EmprendedorSearchCardsGrid
                         emptyMessage=""
                         itemCount={cardsAtiendenDesdeFuera.length}
-                        gridClassName="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                        gridClassName={`grid w-full gap-4 ${gridColumnsClassName(cardsAtiendenDesdeFuera.length)}`}
                       >
                         {cardsAtiendenDesdeFuera.map((cardProps) => (
                           <div key={cardProps.slug} className="min-w-0">
