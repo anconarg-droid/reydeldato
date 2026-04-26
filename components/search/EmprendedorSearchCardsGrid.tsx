@@ -15,8 +15,14 @@ const EMPTY_STYLE: CSSProperties = {
 const gridChildLayoutClass =
   "min-h-0 [&>*]:h-full [&>*]:min-h-0 [&>[data-grid-row='banner']]:h-auto [&>[data-grid-row='banner']]:min-h-0";
 
-const defaultGridClassName =
-  "grid w-full grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 items-stretch";
+function defaultColumns(itemCount: number): string {
+  const n = Math.max(0, Math.floor(Number(itemCount) || 0));
+  return n === 1
+    ? "grid-cols-1"
+    : n === 2
+      ? "grid-cols-1 sm:grid-cols-2"
+      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+}
 
 /**
  * Contenedor de grilla compartido por búsqueda pública y landing de categoría
@@ -39,8 +45,9 @@ export default function EmprendedorSearchCardsGrid({
   if (itemCount <= 0) {
     return <div style={EMPTY_STYLE}>{emptyMessage}</div>;
   }
+  const baseGridClassName = `grid w-full gap-4 items-stretch ${defaultColumns(itemCount)}`;
   return (
-    <div className={cn(gridChildLayoutClass, gridClassName ?? defaultGridClassName)}>
+    <div className={cn(gridChildLayoutClass, gridClassName ?? baseGridClassName)}>
       {children}
     </div>
   );
