@@ -47,7 +47,7 @@ function formatPorcentajeHumano(p: number): string {
 function gridColumnsClassName(itemCount: number): string {
   const n = Math.max(0, Math.floor(Number(itemCount) || 0));
   return n === 1
-    ? "grid-cols-1 max-w-sm"
+    ? "grid-cols-1 justify-items-center [&>*]:w-full [&>*]:max-w-sm"
     : n === 2
       ? "grid-cols-1 sm:grid-cols-2"
       : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
