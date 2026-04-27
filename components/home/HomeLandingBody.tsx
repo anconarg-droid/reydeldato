@@ -191,7 +191,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             id="home-diferencia-por-que"
             className="text-sm font-semibold tracking-tight text-teal-700"
           >
-            ¿Por qué funciona distinto?
+            ¿Por qué es distinto?
           </p>
           <h2
             id="home-diferencia"
@@ -200,25 +200,25 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             La diferencia
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
-            Directorio justo: cercanía y reglas claras, no presupuesto de publicidad.
+            Dejas de buscar en grupos. Encuentras todo en un solo lugar.
           </p>
           <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             {[
               {
-                t: "Sin pago por posicionamiento",
-                d: "No es pay-to-rank: nadie compra el primer lugar del listado.",
+                t: "Sin grupos ni “manda dato”",
+                d: "No más WhatsApp, Facebook ni pedir datos. Todo está ordenado y disponible.",
               },
               {
                 t: "Resultados locales primero",
-                d: "Lo de tu comuna manda frente al ruido nacional.",
+                d: "Lo más cercano a ti aparece antes. No compites con todo Chile.",
               },
               {
                 t: "Contacto directo por WhatsApp",
-                d: "Hablas con el negocio, sin intermediarios ni cobro por mensaje.",
+                d: "Hablas directo con el negocio. Sin intermediarios ni comisiones ocultas.",
               },
               {
-                t: "Fichas que rotan",
-                d: "El orden cambia en el tiempo para repartir visibilidad.",
+                t: "Fichas reales y completas",
+                d: "Fotos, ubicación y servicios claros para decidir rápido.",
               },
             ].map((x) => (
               <div
