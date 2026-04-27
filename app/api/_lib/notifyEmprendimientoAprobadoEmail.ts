@@ -40,6 +40,7 @@ export async function notifyEmprendimientoAprobadoEmail(
       .maybeSingle();
 
     const baseSite =
+      process.env.APP_BASE_URL?.trim() ||
       process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
       "http://localhost:3000";
@@ -84,18 +85,20 @@ export async function notifyEmprendimientoAprobadoEmail(
     }
 
     const fichaLinkHtml = fichaPublicaUrl
-      ? `<p>Podés ver tu ficha pública acá: <a href="${fichaPublicaUrl}">${fichaPublicaUrl}</a></p>`
+      ? `<p>👉 <a href="${fichaPublicaUrl}">${fichaPublicaUrl}</a></p>`
       : "";
     const panelLinkHtml = panelUrl
-      ? `<p>Para editar tu ficha y acceder al panel, usá este enlace: <a href="${panelUrl}">${panelUrl}</a></p>`
+      ? `<p>👉 <a href="${panelUrl}">${panelUrl}</a></p>`
       : "";
 
     const html = `<p>Hola,</p>
 
-<p>Tu emprendimiento <strong>${safeNombre}</strong> ya fue aprobado y publicado en <strong>Rey del Dato</strong>.</p>
+<p>Tu emprendimiento <strong>${safeNombre}</strong> ya fue publicado en <strong>Rey del Dato</strong>.</p>
 
+<p>Puedes ver tu ficha aquí:</p>
 ${fichaLinkHtml}
 
+<p>Para editar tu ficha y acceder a tu panel:</p>
 ${panelLinkHtml}
 
 <p>Desde tu panel puedes:</p>
@@ -118,7 +121,7 @@ ${panelLinkHtml}
 
     const enviadoOk = await sendEmail({
       to: emailTo,
-      subject: "Tu emprendimiento fue aprobado",
+      subject: "Tu emprendimiento fue publicado en Rey del Dato",
       html,
     });
 

@@ -8,12 +8,17 @@ export const REVISAR_ACCESS_TOKEN_DIAS = 7;
 /** Días de validez al renovar acceso al panel por email (POST /api/panel/reenviar-acceso). */
 export const PANEL_REENVIO_ACCESS_TOKEN_DIAS = 30;
 
-export function buildRevisarAbsoluteUrl(accessToken: string): string {
+function appBaseUrl(): string {
   const raw =
+    process.env.APP_BASE_URL?.trim() ||
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
     "http://localhost:3000";
-  const base = raw.replace(/\/$/, "");
+  return raw.replace(/\/$/, "");
+}
+
+export function buildRevisarAbsoluteUrl(accessToken: string): string {
+  const base = appBaseUrl();
   const qs = buildMejorarFichaQueryString({ token: accessToken });
   return `${base}/panel${qs}`;
 }
@@ -245,7 +250,10 @@ export async function sendRevisarMagicLinkEmail(to: string, absoluteUrl: string)
   if (!dest) return;
 
   const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM_EMAIL?.trim() || "onboarding@resend.dev";
+  const from =
+    process.env.RESEND_FROM?.trim() ||
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    "onboarding@resend.dev";
 
   if (!apiKey) {
     // eslint-disable-next-line no-console
@@ -265,8 +273,11 @@ export async function sendRevisarMagicLinkEmail(to: string, absoluteUrl: string)
     body: JSON.stringify({
       from,
       to: [dest],
-      subject: "Editá tu ficha en Rey del Dato",
-      html: `<p>Hola,</p><p>Tu emprendimiento ya está publicado. Podés editar tu ficha con este enlace (válido ${REVISAR_ACCESS_TOKEN_DIAS} días):</p><p><a href="${absoluteUrl}">${absoluteUrl}</a></p><p>Si no solicitaste esto, ignorá este mensaje.</p>`,
+      subject: "Edita tu ficha en Rey del Dato",
+      html: `<p>Hola,</p>
+<p>Puedes editar tu ficha y acceder a tu panel con este enlace (válido por ${REVISAR_ACCESS_TOKEN_DIAS} días):</p>
+<p>👉 <a href="${absoluteUrl}">${absoluteUrl}</a></p>
+<p>Si no solicitaste esto, ignora este mensaje.</p>`,
     }),
   });
 
@@ -288,7 +299,10 @@ export async function sendPanelReenvioAccessEmail(
   if (!dest) return;
 
   const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM_EMAIL?.trim() || "onboarding@resend.dev";
+  const from =
+    process.env.RESEND_FROM?.trim() ||
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    "onboarding@resend.dev";
 
   if (!apiKey) {
     // eslint-disable-next-line no-console
@@ -309,7 +323,10 @@ export async function sendPanelReenvioAccessEmail(
       from,
       to: [dest],
       subject: "Nuevo acceso a tu ficha — Rey del Dato",
-      html: `<p>Hola,</p><p>Acá tenés un enlace nuevo para editar tu ficha publicada (válido ${diasValidos} días):</p><p><a href="${absoluteUrl}">${absoluteUrl}</a></p><p>Si no solicitaste esto, ignorá este mensaje.</p>`,
+      html: `<p>Hola,</p>
+<p>Aquí tienes un enlace nuevo para editar tu ficha y acceder a tu panel (válido por ${diasValidos} días):</p>
+<p>👉 <a href="${absoluteUrl}">${absoluteUrl}</a></p>
+<p>Si no solicitaste esto, ignora este mensaje.</p>`,
     }),
   });
 

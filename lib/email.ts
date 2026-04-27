@@ -7,7 +7,11 @@ type SendEmailInput = {
 };
 
 function defaultFrom(): string {
-  return process.env.RESEND_FROM_EMAIL?.trim() || "onboarding@resend.dev";
+  const full = process.env.RESEND_FROM?.trim();
+  if (full) return full;
+  const email = process.env.RESEND_FROM_EMAIL?.trim();
+  if (email) return email;
+  return "onboarding@resend.dev";
 }
 
 function createResend(): Resend | null {
