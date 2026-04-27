@@ -140,6 +140,9 @@ export default function HomeHero({ children }: Props) {
       {/* Comparación: publicidad vs intención */}
       <section className="w-full border-t border-slate-100 bg-white">
         <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">
+          <p className="text-center text-sm font-semibold text-slate-700">
+            Tu negocio deja de perderse en grupos de WhatsApp.
+          </p>
           <h2 className="text-balance text-center text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
             Aparece en tu comuna cuando te buscan
           </h2>

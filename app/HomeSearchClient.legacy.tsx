@@ -483,7 +483,7 @@ export default function HomeSearchClient({
       </div>
 
       <p className="mt-3 text-center text-sm text-[#6b7280]">
-        Prueba: Gasfiter en Maipú · Fletes · Clases de matemáticas
+        Olvídate de los grupos y los 'manda dato'. Aquí encuentras todo en un solo lugar.
       </p>
     </section>
   );
