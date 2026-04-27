@@ -249,6 +249,23 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             Sumamos fichas cada semana. Si la tuya está en preparación, igual puedes explorar.
           </p>
 
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <p className="text-sm font-semibold text-slate-900">
+              ¿Conoces un negocio en tu comuna?
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              Ayuda a completar los servicios faltantes y activar tu comuna antes.
+            </p>
+            <div className="mt-4">
+              <Link
+                href={`/publicar${contextComunaSlug ? `?comuna=${encodeURIComponent(contextComunaSlug)}` : ""}`}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
+              >
+                Recomendar un emprendedor <span aria-hidden>→</span>
+              </Link>
+            </div>
+          </div>
+
           <div className="mt-10">
             <h3 className="text-sm font-semibold text-slate-900">Con resultados</h3>
             {loadingComunas ? (

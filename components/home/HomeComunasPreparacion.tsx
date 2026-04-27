@@ -49,6 +49,7 @@ export default function HomeComunasPreparacion({
 
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
         {items.map((c) => {
+          const publicarHref = `/publicar?comuna=${encodeURIComponent(c.slug)}`;
           const meta = c.total_requerido;
           let cumplido =
             c.total_cumplido != null && Number.isFinite(c.total_cumplido)
@@ -114,6 +115,14 @@ export default function HomeComunasPreparacion({
               <span className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-[#0f766e] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 sm:w-auto">
                 Ver avance →
               </span>
+
+              <Link
+                href={publicarHref}
+                className="mt-3 block text-center text-xs font-semibold text-slate-600 underline underline-offset-4 hover:text-slate-900 sm:text-left"
+                onClick={(e) => e.stopPropagation()}
+              >
+                ¿Falta este servicio? Recomiéndalo
+              </Link>
             </Link>
           );
         })}
