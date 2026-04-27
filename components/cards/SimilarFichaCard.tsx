@@ -4,7 +4,10 @@ import { useState } from "react";
 import type { CSSProperties } from "react";
 import { sendSimilarFichaCardViewClick } from "@/components/search/TrackedCardLink";
 import type { SimilarFichaItem } from "@/lib/getSimilaresFicha";
-import { displayTitleCaseWords } from "@/lib/displayTextFormat";
+import {
+  displayCapitalizeFirst,
+  displayTitleCaseWords,
+} from "@/lib/displayTextFormat";
 import { normalizeText } from "@/lib/search/normalizeText";
 
 function s(v: unknown): string {
@@ -50,7 +53,8 @@ export default function SimilarFichaCard({
   const subRubro = s(item.subcategoria_nombre);
   const rubroSoloSub = subRubro ? displayTitleCaseWords(subRubro) : "";
 
-  const descCorta = s(item.descripcion_corta);
+  const descCortaRaw = s(item.descripcion_corta);
+  const descCorta = descCortaRaw ? displayCapitalizeFirst(descCortaRaw) : "";
 
   const fotoUrl = s(item.foto_principal_url);
   const [imgBroken, setImgBroken] = useState(false);
@@ -112,15 +116,14 @@ export default function SimilarFichaCard({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-1 border-t border-slate-100 px-2.5 pb-3 pt-2">
-        <h3 className="m-0 line-clamp-2 break-words text-[14px] font-black leading-snug tracking-tight text-slate-950">
+        {/* Altura fija 2 líneas: alinea rubro y bloque territorial entre cards */}
+        <h3 className="m-0 min-h-[2.625rem] line-clamp-2 break-words text-[14px] font-black leading-snug tracking-tight text-slate-950">
           {nombreMostrar}
         </h3>
 
-        {descCorta ? (
-          <p className="m-0 line-clamp-2 text-[12px] font-medium leading-snug text-slate-600">
-            {descCorta}
-          </p>
-        ) : null}
+        <p className="m-0 min-h-[2.25rem] line-clamp-2 text-[12px] font-medium leading-snug text-slate-600">
+          {descCorta ? descCorta : "\u00a0"}
+        </p>
 
         {rubroSoloSub ? (
           <p className="m-0 text-[12px] font-semibold leading-snug text-slate-700">{rubroSoloSub}</p>
