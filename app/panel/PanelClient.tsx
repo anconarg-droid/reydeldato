@@ -33,6 +33,7 @@ import {
   panelPreviewSubtituloInformativo,
 } from "@/lib/panelPreviewPublica";
 import { panelPlanesVisibleEnCliente } from "@/lib/panelPlanesVisibility";
+import { displayTitleCaseWords } from "@/lib/displayTextFormat";
 
 type Metrics = {
   impresiones: number;
@@ -220,6 +221,13 @@ function nombreNegocioVisibleDesdeItem(it: Record<string, unknown>): string {
   return n || NOMBRE_NEGOCIO_FALLBACK;
 }
 
+/** Solo display: no muta BD. */
+function nombreNegocioDisplay(raw: string): string {
+  const t = String(raw ?? "").trim();
+  if (!t || t === NOMBRE_NEGOCIO_FALLBACK) return t || NOMBRE_NEGOCIO_FALLBACK;
+  return displayTitleCaseWords(t);
+}
+
 function textoRangoMetricas(range: "7d" | "30d" | "all"): string {
   if (range === "7d") {
     return "Estás viendo estadísticas de los últimos 7 días";
@@ -240,109 +248,121 @@ function MetricsResumenPanel({
   const v = (n: number) => (Number.isFinite(n) ? n : 0);
   const comoLlegar = v(data.click_waze) + v(data.click_maps);
 
-  const bloquePrincipal = [
+  const primarias = [
+    {
+      icon: "📇",
+      label: "Veces que apareció tu tarjeta en resultados",
+      value: v(data.impresiones),
+      hint: "Impresiones de tu tarjeta en listados de búsqueda.",
+    },
+    {
+      icon: "👀",
+      label: "Veces que vieron tu ficha",
+      value: v(data.visitas),
+      hint: "Aperturas de tu ficha pública.",
+    },
     {
       icon: "💬",
-      label: "WhatsApp",
+      label: "Clics en WhatsApp",
       value: v(data.click_whatsapp),
-      hint: "Contactos iniciados por WhatsApp.",
+      hint: "Veces que tocaron el botón de WhatsApp.",
     },
+  ] as const;
+
+  const secundarias = [
     {
       icon: "🧭",
-      label: "Cómo llegar",
+      label: "Clics en “Cómo llegar”",
       value: comoLlegar,
-      hint: "Clics en “Abrir en Waze” y “Ver en Maps” (suma).",
-    },
-  ] as const;
-
-  const bloqueFicha = [
-    {
-      icon: "🔍",
-      label: "Visitas al perfil",
-      value: v(data.visitas),
-      hint: "Veces que abrieron tu ficha pública.",
+      hint: "Suma de “Abrir en Waze” y “Ver en Maps”.",
     },
     {
-      icon: "👆",
-      label: "Clics en tu ficha",
+      icon: "📸",
+      label: "Clics en Instagram, web y similares",
       value: v(data.click_ficha),
-      hint: "Clics en acciones de tu ficha (contacto, web, redes, compartir, etc.).",
+      hint: "Acciones en tu ficha (Instagram, web, compartir, etc.). Puede solaparse con “Cómo llegar” según cómo se registró el evento.",
     },
   ] as const;
 
-  const ariaResumen = `${rangeLabel}. Personas que interactuaron: WhatsApp ${bloquePrincipal[0].value}, Cómo llegar ${bloquePrincipal[1].value}. Interés en la ficha: visitas al perfil ${bloqueFicha[0].value}, clics en tu ficha ${bloqueFicha[1].value}.`;
+  const ariaResumen = `${rangeLabel}. Impresiones ${primarias[0].value}, visitas a ficha ${primarias[1].value}, WhatsApp ${primarias[2].value}. Secundarias: cómo llegar ${secundarias[0].value}, otras acciones ${secundarias[1].value}.`;
 
   return (
     <div
-      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-3 sm:px-4 sm:py-3.5 shadow-sm"
+      className="w-full max-w-3xl rounded-xl border border-gray-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm"
       title={rangeLabel}
       aria-label={ariaResumen}
     >
-      <div className="space-y-5">
-        <section
-          className="space-y-3"
-          aria-labelledby="panel-metricas-interaccion-titulo"
-        >
+      <div className="space-y-3">
+        <div className="space-y-1">
           <h3
-            id="panel-metricas-interaccion-titulo"
-            className="text-center text-xs font-semibold uppercase tracking-wide text-gray-500 sm:text-left"
+            id="panel-metricas-rendimiento-titulo"
+            className="text-xs font-semibold uppercase tracking-wide text-gray-500"
           >
-            Personas que interactuaron con tu negocio
+            Rendimiento de tu ficha
           </h3>
-          <div className="grid grid-cols-2 justify-items-center gap-x-4 gap-y-3 text-center">
-            {bloquePrincipal.map((it) => (
+          <p id="panel-metricas-rendimiento-desc" className="text-[11px] leading-snug text-gray-500">
+            Estas métricas muestran cuántas veces apareciste y cuántas personas
+            intentaron contactarte.
+          </p>
+        </div>
+
+        <section
+          className="space-y-2"
+          aria-describedby="panel-metricas-rendimiento-desc"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+            Principales
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
+            {primarias.map((it) => (
               <div
                 key={it.label}
-                className="min-w-0 max-w-[9.5rem] sm:max-w-none"
+                className="min-w-0 rounded-lg border border-gray-100 bg-gray-50/80 px-2.5 py-2 text-center sm:text-left"
                 title={it.hint}
               >
-                <div className="flex items-center justify-center gap-1.5 text-gray-700">
+                <div className="flex flex-wrap items-center justify-center gap-1.5 text-gray-700 sm:justify-start">
                   <span className="text-base leading-none shrink-0" aria-hidden>
                     {it.icon}
                   </span>
-                  <span className="text-[11px] sm:text-xs font-semibold leading-snug text-gray-600">
+                  <span className="text-[10px] font-semibold leading-snug text-gray-600">
                     {it.label}
                   </span>
                 </div>
-                <p className="mt-1 text-lg sm:text-xl font-black tabular-nums text-gray-900 tracking-tight">
+                <p className="mt-1 text-center text-xl font-black tabular-nums text-gray-900 tracking-tight sm:text-left">
                   {it.value}
                 </p>
               </div>
             ))}
           </div>
-          <p className="text-center text-[11px] text-gray-500 leading-snug sm:text-left">
-            Estas acciones muestran personas que tienen interés real en tu negocio.
-          </p>
         </section>
 
         <section
-          className="space-y-3 border-t border-gray-100 pt-4"
-          aria-labelledby="panel-metricas-ficha-titulo"
+          className="space-y-2 border-t border-gray-100 pt-3"
+          aria-label="Métricas secundarias"
         >
-          <h3
-            id="panel-metricas-ficha-titulo"
-            className="text-center text-xs font-semibold uppercase tracking-wide text-gray-500 sm:text-left"
-          >
-            Interés en tu ficha
-          </h3>
-          <div className="grid grid-cols-2 justify-items-center gap-x-4 gap-y-3 text-center">
-            {bloqueFicha.map((it) => (
+          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+            Más detalle
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {secundarias.map((it) => (
               <div
                 key={it.label}
-                className="min-w-0 max-w-[9.5rem] sm:max-w-none"
+                className="min-w-0 rounded-lg border border-gray-100/90 bg-white px-2.5 py-2"
                 title={it.hint}
               >
-                <div className="flex items-center justify-center gap-1.5 text-gray-700">
-                  <span className="text-base leading-none shrink-0" aria-hidden>
+                <div className="flex items-start gap-1.5 text-gray-700">
+                  <span className="text-sm leading-none shrink-0 pt-0.5" aria-hidden>
                     {it.icon}
                   </span>
-                  <span className="text-[11px] sm:text-xs font-semibold leading-snug text-gray-600">
-                    {it.label}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold leading-snug text-gray-600">
+                      {it.label}
+                    </p>
+                    <p className="mt-0.5 text-lg font-black tabular-nums text-gray-900">
+                      {it.value}
+                    </p>
+                  </div>
                 </div>
-                <p className="mt-1 text-lg sm:text-xl font-black tabular-nums text-gray-900 tracking-tight">
-                  {it.value}
-                </p>
               </div>
             ))}
           </div>
@@ -378,25 +398,25 @@ function BloqueFichaPctYMejorar({
   if (fichaLoading) {
     return (
       <div
-        className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-5 shadow-sm"
+        className="max-w-3xl rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 shadow-sm"
         aria-hidden
       >
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="h-7 w-44 max-w-[55%] bg-gray-200 rounded animate-pulse" />
-          <div className="h-14 w-48 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="h-6 w-44 max-w-[55%] bg-gray-200 rounded animate-pulse" />
+          <div className="h-11 w-40 bg-gray-200 rounded-xl animate-pulse" />
         </div>
-        <div className="mt-4 h-4 w-full max-w-md bg-gray-200 rounded animate-pulse" />
+        <div className="mt-3 h-3 w-full max-w-md bg-gray-200 rounded animate-pulse" />
       </div>
     );
   }
   const pct = fichaInfo?.completitud.porcentaje;
   return (
-    <div className="rounded-2xl border border-gray-200 bg-gray-50/90 px-5 py-5 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="max-w-3xl rounded-xl border border-gray-200 bg-gray-50/90 px-4 py-3 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {typeof pct === "number" ? (
             <>
-              <span className="text-lg font-extrabold text-gray-900 whitespace-nowrap shrink-0">
+              <span className="text-base font-extrabold text-gray-900 whitespace-nowrap shrink-0 sm:text-lg">
                 Tu ficha:{" "}
                 <span className="tabular-nums font-black">{pct}%</span>
               </span>
@@ -414,20 +434,22 @@ function BloqueFichaPctYMejorar({
               </div>
             </>
           ) : (
-            <span className="text-lg font-semibold text-gray-600">Tu ficha</span>
+            <span className="text-base font-semibold text-gray-600 sm:text-lg">
+              Tu ficha
+            </span>
           )}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <div className="flex w-full shrink-0 sm:w-auto sm:justify-end">
           <Link
             href={editarMiFichaHref}
             prefetch={false}
-            className="inline-flex min-h-[56px] min-w-[11rem] items-center justify-center rounded-xl px-7 text-base font-bold bg-gray-900 text-white hover:bg-gray-800"
+            className="inline-flex min-h-[44px] w-full min-w-[10rem] items-center justify-center rounded-xl px-5 text-sm font-bold bg-gray-900 text-white hover:bg-gray-800 sm:w-auto sm:px-7 sm:text-base"
           >
             Editar mi ficha
           </Link>
         </div>
       </div>
-      <p className="mt-4 text-sm leading-snug text-gray-600 max-w-xl">
+      <p className="mt-2.5 text-xs leading-snug text-gray-600 sm:text-sm max-w-xl">
         Completar tu ficha puede ayudarte a recibir más contactos
       </p>
     </div>
@@ -459,7 +481,7 @@ function BloqueCuandoTerminePlan({ sinCaja }: { sinCaja?: boolean }) {
 
   return (
     <section
-      className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm text-sm text-gray-800"
+      className="max-w-3xl rounded-xl border border-gray-200 bg-white p-3 shadow-sm text-sm text-gray-800 sm:p-3.5"
       aria-label="Qué pasa cuando termina tu plan"
     >
       {contenido}
@@ -481,7 +503,7 @@ function BloqueEstadoPlan({
   if (fichaLoading) {
     return (
       <div
-        className="min-h-[100px] rounded-xl bg-gray-100 animate-pulse"
+        className="max-w-3xl min-h-[88px] rounded-xl bg-gray-100 animate-pulse"
         aria-hidden
       />
     );
@@ -503,11 +525,11 @@ function BloqueEstadoPlan({
   if (esAccesoInicial) {
     return (
       <section
-        className="rounded-xl border border-sky-200 bg-sky-50/85 p-4 shadow-sm"
+        className="max-w-3xl rounded-xl border border-sky-200 bg-sky-50/85 p-3 shadow-sm sm:p-3.5"
         aria-label="Estado del plan"
       >
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="space-y-2 text-sm text-gray-800 min-w-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1.5 text-sm text-gray-800 min-w-0">
             <h2 className="text-base font-black text-gray-900 leading-snug">
               {planUi.titulo}
             </h2>
@@ -538,14 +560,14 @@ function BloqueEstadoPlan({
 
   return (
     <section
-      className={`rounded-xl border p-4 shadow-sm ${
+      className={`max-w-3xl rounded-xl border p-3 shadow-sm sm:p-3.5 ${
         alerta
           ? "border-amber-200 bg-amber-50/90"
           : "border-emerald-200 bg-emerald-50/80"
       }`}
       aria-label="Estado del plan"
     >
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1 text-sm text-gray-800 min-w-0">
           <h2 className="text-base font-black text-gray-900 leading-snug">
             {planUi.titulo}
@@ -657,9 +679,13 @@ export default function PanelClient({
 
   const tituloHeaderPanel = useMemo(() => {
     if (!tieneNegocio) return NOMBRE_NEGOCIO_FALLBACK;
-    if (negocioItem) return nombreNegocioVisibleDesdeItem(negocioItem);
-    if (fichaInfo?.nombre) return fichaInfo.nombre;
-    return NOMBRE_NEGOCIO_FALLBACK;
+    const raw = negocioItem
+      ? nombreNegocioVisibleDesdeItem(negocioItem)
+      : fichaInfo?.nombre
+        ? String(fichaInfo.nombre).trim()
+        : "";
+    if (!raw) return NOMBRE_NEGOCIO_FALLBACK;
+    return nombreNegocioDisplay(raw);
   }, [tieneNegocio, negocioItem, fichaInfo?.nombre]);
 
   /** Vista previa informativa: no enlaces operativos (WhatsApp, compartir, ver ficha). */
@@ -944,25 +970,25 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between lg:gap-6">
-        <div className="min-w-0 flex-1 lg:max-w-md xl:max-w-lg">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_360px] lg:gap-6">
+        <div className="min-w-0 space-y-3">
           <div
-            className="flex h-full min-h-0 flex-col gap-2.5 rounded-2xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-5 py-3 sm:gap-3 sm:px-6 sm:py-4 shadow-sm ring-1 ring-gray-900/[0.04]"
+            className="max-w-3xl rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
             aria-label={`Tu negocio: ${tituloHeaderPanel}`}
           >
-            <div className="shrink-0 space-y-0.5 border-b border-gray-200/80 pb-2 sm:space-y-1 sm:pb-2.5">
-              <p className="text-lg font-black tracking-tight text-gray-900 sm:text-xl lg:text-2xl">
+            <div className="shrink-0 space-y-0.5 border-b border-gray-200/80 pb-2">
+              <p className="text-base font-black tracking-tight text-gray-900 sm:text-lg">
                 Tu negocio
               </p>
-              <p className="text-xs font-semibold text-gray-500 sm:text-sm">
+              <p className="text-[11px] font-semibold text-gray-500 sm:text-xs">
                 Gestiona tu perfil
               </p>
             </div>
-            <h1 className="min-w-0 text-pretty text-2xl font-black leading-snug text-gray-900 break-words hyphens-auto sm:text-3xl lg:text-4xl xl:text-[2.5rem] xl:leading-tight">
+            <h1 className="mt-2 min-w-0 text-pretty text-2xl font-black leading-snug text-gray-900 break-words hyphens-auto sm:text-3xl">
               {tituloHeaderPanel}
             </h1>
             {tieneNegocio && !fichaLoading && negocioItem ? (
-              <div className="mt-2 space-y-1.5 text-sm text-gray-600">
+              <div className="mt-2 space-y-1 text-sm text-gray-600">
                 {String(negocioItem.comunaBaseNombre ?? "").trim() ? (
                   <p>
                     <span className="font-semibold text-gray-700">Comuna:</span>{" "}
@@ -1004,7 +1030,7 @@ export default function PanelClient({
                 />
               ) : (
                 <p
-                  className={`mt-1.5 inline-flex w-fit max-w-full rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide sm:text-xs ${
+                  className={`mt-2 inline-flex w-fit max-w-full rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${
                     perfilCompletoEnHeader
                       ? "border-emerald-200 bg-emerald-50 text-emerald-900"
                       : "border-amber-200 bg-amber-50 text-amber-950"
@@ -1023,11 +1049,10 @@ export default function PanelClient({
               )
             ) : null}
           </div>
-        </div>
-        <div className="flex w-full min-w-0 flex-col items-center gap-3 lg:max-w-lg xl:max-w-xl lg:shrink-0">
+
           {tipoCongelacionStats ? (
             <div
-              className="w-full max-w-md mx-auto text-center text-sm leading-snug text-gray-600 px-1"
+              className="max-w-3xl text-center text-sm leading-snug text-gray-600 sm:text-left"
               role="status"
             >
               <p className="font-medium text-gray-700">
@@ -1039,19 +1064,18 @@ export default function PanelClient({
             </div>
           ) : null}
           <div
-            className={`relative w-full overflow-hidden ${
+            className={`relative max-w-3xl overflow-hidden ${
               tipoCongelacionStats === "vista"
                 ? "rounded-xl ring-1 ring-gray-200/80"
                 : ""
             }`}
           >
-            <div className="flex w-full flex-col items-center gap-3">
-              <div className="flex w-full justify-center">
+            <div className="flex flex-col gap-2.5">
+              <div className="flex w-full justify-start">
                 <div
-                  className="inline-flex max-w-full flex-wrap justify-center rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
+                  className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
                   role="group"
                   aria-label="Periodo de estadísticas"
-                  aria-disabled={statsSelectorBloqueado}
                 >
                   {(["7d", "30d", "all"] as const).map((r) => (
                     <button
@@ -1059,7 +1083,7 @@ export default function PanelClient({
                       type="button"
                       disabled={statsSelectorBloqueado}
                       onClick={() => setRange(r)}
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors disabled:cursor-not-allowed ${
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors disabled:cursor-not-allowed ${
                         rangoActivoUi === r
                           ? "bg-gray-900 text-white"
                           : "text-gray-600 hover:bg-gray-100"
@@ -1092,11 +1116,7 @@ export default function PanelClient({
               </div>
             ) : null}
           </div>
-        </div>
-      </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_minmax(300px,400px)] gap-5 xl:gap-8 items-start">
-        <div className="space-y-3 min-w-0">
           {tieneNegocio ? (
             <BloqueEstadoPlan
               fichaLoading={fichaLoading}
@@ -1109,14 +1129,14 @@ export default function PanelClient({
           {tieneNegocio &&
           !fichaLoading &&
           mostrarBloqueCuandoTerminePlan(comercial) ? (
-            <div className="rounded-2xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-4 sm:p-5 shadow-sm space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
+            <div className="max-w-3xl space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
+              <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 lg:gap-5">
                 <BloqueCuandoTerminePlan sinCaja />
-                <div className="flex flex-col items-center justify-center text-center gap-3 rounded-xl border border-amber-300/50 bg-white/90 p-4 sm:p-5 shadow-inner w-full max-w-sm mx-auto">
-                  <p className="text-lg font-black text-gray-900 leading-tight w-full text-center px-1">
+                <div className="flex w-full max-w-sm flex-col items-center justify-center gap-2.5 rounded-lg border border-amber-300/50 bg-white/90 p-3 text-center shadow-inner mx-auto lg:mx-0">
+                  <p className="w-full px-1 text-center text-base font-black leading-tight text-gray-900">
                     Compara cómo te ven
                   </p>
-                  <p className="text-xs font-semibold text-amber-900/90 uppercase tracking-wide w-full text-center">
+                  <p className="w-full text-center text-[10px] font-semibold uppercase tracking-wide text-amber-900/90">
                     Completa · Básica
                   </p>
                   <SwitchModoVista
@@ -1130,18 +1150,18 @@ export default function PanelClient({
                 <Link
                   href={planesHref}
                   prefetch={false}
-                  className="flex w-full min-h-[48px] items-center justify-center rounded-xl border-2 border-gray-900 bg-gray-900 px-4 text-center text-sm font-black text-white shadow-md transition hover:bg-gray-800 hover:border-gray-800"
+                  className="flex min-h-[44px] w-full items-center justify-center rounded-xl border-2 border-gray-900 bg-gray-900 px-4 text-center text-sm font-black text-white shadow-md transition hover:border-gray-800 hover:bg-gray-800"
                 >
                   Mantener perfil completo
                 </Link>
               ) : null}
             </div>
           ) : tieneNegocio && !fichaLoading ? (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-gray-200 bg-gray-50/90 px-4 py-4 text-center max-w-sm mx-auto w-full">
-              <p className="text-sm font-black text-gray-900 w-full text-center">
+            <div className="flex max-w-sm flex-col items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/90 px-3 py-3 text-center mx-auto lg:mx-0 lg:max-w-3xl lg:flex-row lg:justify-center lg:gap-6">
+              <p className="text-sm font-black text-gray-900">
                 Compara cómo te ven
               </p>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide w-full text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-600">
                 Completa · Básica
               </p>
               <SwitchModoVista
@@ -1168,7 +1188,7 @@ export default function PanelClient({
                   href={wa}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-center text-sm font-semibold text-sky-700 hover:underline"
+                  className="block max-w-3xl text-center text-sm font-semibold text-sky-700 hover:underline sm:text-left"
                 >
                   Activar por WhatsApp
                 </a>
@@ -1177,53 +1197,55 @@ export default function PanelClient({
           ) : null}
         </div>
 
-        <div className="min-w-0 xl:sticky xl:top-6 xl:self-start space-y-3">
+        <aside className="min-w-0 space-y-2 overflow-x-hidden lg:sticky lg:top-6 lg:self-start">
+          <h2 className="text-sm font-extrabold tracking-tight text-gray-900">
+            Así te ven en resultados
+          </h2>
           {tieneNegocio ? (
             fichaLoading ? (
               <div
-                className="rounded-2xl border border-gray-200 bg-gray-100 min-h-[280px] animate-pulse"
+                className="w-full max-w-[360px] rounded-xl border border-gray-200 bg-gray-100 min-h-[240px] animate-pulse lg:max-w-none"
                 aria-hidden
               />
             ) : previewCardProps ? (
-              <div className="max-w-[400px] mx-auto xl:mx-0 space-y-3">
-                <h2 className="text-sm font-extrabold text-gray-900 tracking-tight">
-                  Tu ficha en resultados de búsqueda
-                </h2>
+              <div className="w-full max-w-[360px] space-y-2 lg:max-w-none">
                 {previewInformativa && negocioItem ? (
                   <div
                     role="status"
-                    className="rounded-lg border border-slate-200 bg-slate-50/90 px-3 py-2.5 text-left"
+                    className="rounded-lg border border-slate-200 bg-slate-50/90 px-2.5 py-2 text-left"
                   >
-                    <p className="m-0 text-xs font-extrabold text-slate-900">
-                      Vista previa de tu ficha
+                    <p className="m-0 text-[11px] font-extrabold text-slate-900">
+                      Vista previa
                     </p>
-                    <p className="mt-1 m-0 text-[11px] font-medium leading-snug text-slate-600">
+                    <p className="mt-0.5 m-0 text-[10px] font-medium leading-snug text-slate-600">
                       {panelPreviewSubtituloInformativo(negocioItem)}
                     </p>
                   </div>
                 ) : null}
-                <EmprendedorSearchCard
-                  {...previewCardProps}
-                  modoVista={modoVista}
-                />
+                <div className="origin-top scale-[0.97] lg:scale-95">
+                  <EmprendedorSearchCard
+                    {...previewCardProps}
+                    modoVista={modoVista}
+                  />
+                </div>
               </div>
             ) : (
               <div
-                className="rounded-2xl border border-gray-200 bg-gray-50 min-h-[200px] animate-pulse"
+                className="w-full max-w-[360px] rounded-xl border border-gray-200 bg-gray-50 min-h-[180px] animate-pulse lg:max-w-none"
                 aria-hidden
               />
             )
           ) : (
-            <p className="text-sm text-gray-500 text-center xl:text-left py-4">
-              Enlaza tu ficha para verla aquí.
+            <p className="text-sm text-gray-500 py-2">
+              Enlaza tu ficha para ver la vista previa aquí.
             </p>
           )}
-        </div>
+        </aside>
       </div>
 
       {tieneNegocio && !fichaLoading && negocioItem ? (
         <section
-          className="space-y-4 pt-10 mt-8 sm:pt-12 sm:mt-10 border-t border-gray-200"
+          className="space-y-3 border-t border-gray-200 pt-8 mt-6 sm:pt-10 sm:mt-8"
           aria-label="Tu perfil completo en la web pública"
         >
           {modoVista === "basica" ? (
