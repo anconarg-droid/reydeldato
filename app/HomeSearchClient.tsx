@@ -13,7 +13,6 @@ import { getRegionShort } from "@/utils/regionShort";
 import SearchAutocompleteDropdown, {
   type AutocompleteSuggestion,
 } from "@/components/SearchAutocompleteDropdown";
-import HomeMasBuscado from "@/components/home/HomeMasBuscado";
 
 type ComunaSuggestion = {
   nombre: string;
@@ -459,14 +458,9 @@ export default function HomeSearchClient({
       </div>
       </div>
 
-      <p className="mt-5 text-center text-sm leading-relaxed text-slate-600 px-1 sm:px-2">
-        <span className="font-semibold text-slate-800">Prueba con:</span>{" "}
-        <span className="text-slate-600">
-          Gasfiter en Maipú · Clases de matemáticas · Fletes
-        </span>
+      <p className="mt-3 text-center text-sm text-[#6b7280]">
+        Prueba con: Gasfiter en Maipú · Clases de matemáticas · Fletes
       </p>
-
-      <HomeMasBuscado comunaSlug={effectiveComunaSlug} className="mt-8 sm:mt-10" />
     </section>
   );
 }
