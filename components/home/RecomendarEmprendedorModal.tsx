@@ -1,31 +1,38 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatChileWhatsappDisplay,
   normalizeAndValidateChileWhatsappStrict,
 } from "@/utils/phone";
+import { prettyComunaSlug } from "@/lib/homeConstants";
 
 type Props = {
-  comunaSlug: string;
-  disabled?: boolean;
+  initialComunaSlug?: string;
   className?: string;
 };
 
 export default function RecomendarEmprendedorModal({
-  comunaSlug,
-  disabled = false,
+  initialComunaSlug = "",
   className = "",
 }: Props) {
   const [open, setOpen] = useState(false);
   const [nombre, setNombre] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [comunaInput, setComunaInput] = useState(() =>
+    initialComunaSlug.trim() ? prettyComunaSlug(initialComunaSlug.trim()) : ""
+  );
+  const [selectedComunaSlug, setSelectedComunaSlug] = useState(() => initialComunaSlug.trim());
+  const [comunaSuggestions, setComunaSuggestions] = useState<Array<{ slug: string; nombre: string; region_nombre?: string }>>([]);
+  const [openComuna, setOpenComuna] = useState(false);
+  const [loadingComuna, setLoadingComuna] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [count, setCount] = useState<number | null>(null);
 
-  const canOpen = !disabled && Boolean(comunaSlug.trim());
+  const comunaDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const comunaBoxRef = useRef<HTMLDivElement | null>(null);
 
   const waHint = useMemo(() => {
     const raw = whatsapp.trim();
@@ -40,20 +47,68 @@ export default function RecomendarEmprendedorModal({
     setSuccessMessage(null);
     setErrorMessage(null);
     setCount(null);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const comuna_slug = selectedComunaSlug.trim();
+    if (!comuna_slug) return;
     const sp = new URLSearchParams();
-    sp.set("comuna_slug", comunaSlug);
+    sp.set("comuna_slug", comuna_slug);
     fetch(`/api/recomendaciones-emprendedores?${sp.toString()}`)
       .then((r) => r.json())
       .then((d: { ok?: boolean; count?: number }) => {
         if (d?.ok && typeof d.count === "number") setCount(d.count);
       })
       .catch(() => {});
-  }, [open, comunaSlug]);
+  }, [open, selectedComunaSlug]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      if (comunaBoxRef.current && !comunaBoxRef.current.contains(target)) {
+        setOpenComuna(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const term = comunaInput.trim();
+    if (term.length < 2) {
+      setComunaSuggestions([]);
+      return;
+    }
+    if (comunaDebounceRef.current) clearTimeout(comunaDebounceRef.current);
+    comunaDebounceRef.current = setTimeout(() => {
+      setLoadingComuna(true);
+      fetch(`/api/suggest/comunas?q=${encodeURIComponent(term)}`)
+        .then((res) => res.json())
+        .then((data: { ok?: boolean; comunas?: Array<{ slug: string; nombre: string; region_nombre?: string }> }) => {
+          if (data?.ok && Array.isArray(data.comunas)) setComunaSuggestions(data.comunas);
+          else setComunaSuggestions([]);
+        })
+        .catch(() => setComunaSuggestions([]))
+        .finally(() => setLoadingComuna(false));
+    }, 200);
+    return () => {
+      if (comunaDebounceRef.current) clearTimeout(comunaDebounceRef.current);
+    };
+  }, [open, comunaInput]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
+
+    const comuna_slug = selectedComunaSlug.trim();
+    if (!comuna_slug) {
+      setErrorMessage("Selecciona la comuna desde las sugerencias.");
+      return;
+    }
 
     const wa = normalizeAndValidateChileWhatsappStrict(whatsapp.trim());
     if (!wa.ok) {
@@ -68,7 +123,7 @@ export default function RecomendarEmprendedorModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombre_emprendimiento: nombre.trim() || "Recomendado (sin nombre)",
-          comuna_slug: comunaSlug,
+          comuna_slug,
           contacto: formatChileWhatsappDisplay(wa.normalized),
         }),
       });
@@ -82,7 +137,7 @@ export default function RecomendarEmprendedorModal({
       setWhatsapp("");
       // refrescar contador
       const sp = new URLSearchParams();
-      sp.set("comuna_slug", comunaSlug);
+      sp.set("comuna_slug", comuna_slug);
       fetch(`/api/recomendaciones-emprendedores?${sp.toString()}`)
         .then((r) => r.json())
         .then((d: { ok?: boolean; count?: number }) => {
@@ -100,7 +155,6 @@ export default function RecomendarEmprendedorModal({
     <>
       <button
         type="button"
-        disabled={!canOpen}
         onClick={() => setOpen(true)}
         className={[
           "inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60",
@@ -147,6 +201,54 @@ export default function RecomendarEmprendedorModal({
             </div>
 
             <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+              <div ref={comunaBoxRef} className="relative">
+                <label className="mb-1.5 block text-sm font-semibold text-slate-800">
+                  Comuna (obligatorio)
+                </label>
+                <input
+                  value={comunaInput}
+                  onChange={(e) => {
+                    setComunaInput(e.target.value);
+                    setSelectedComunaSlug("");
+                    setOpenComuna(true);
+                  }}
+                  onFocus={() => {
+                    if (comunaInput.trim().length >= 2) setOpenComuna(true);
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-400"
+                  placeholder="Ej: Maipú"
+                  autoComplete="off"
+                />
+                {openComuna && (comunaSuggestions.length > 0 || loadingComuna) ? (
+                  <div className="absolute z-40 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                    {loadingComuna ? (
+                      <div className="px-3 py-2 text-xs text-slate-500">Buscando comunas...</div>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto">
+                        {comunaSuggestions.map((c) => (
+                          <button
+                            key={c.slug}
+                            type="button"
+                            onMouseDown={(ev) => {
+                              ev.preventDefault();
+                              setComunaInput(c.nombre);
+                              setSelectedComunaSlug(c.slug);
+                              setOpenComuna(false);
+                              setCount(null);
+                            }}
+                            className="w-full px-3 py-2.5 text-left text-sm hover:bg-slate-50"
+                          >
+                            <div className="font-semibold text-slate-900">{c.nombre}</div>
+                            {c.region_nombre ? (
+                              <div className="mt-0.5 text-xs text-slate-500">{c.region_nombre}</div>
+                            ) : null}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-slate-800">
                   Nombre (opcional)

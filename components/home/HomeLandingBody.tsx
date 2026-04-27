@@ -250,26 +250,6 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             Sumamos fichas cada semana. Si la tuya está en preparación, igual puedes explorar.
           </p>
 
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-            <p className="text-sm font-semibold text-slate-900">
-              ¿Conoces un negocio en tu comuna?
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              Ayuda a completar los servicios faltantes y activar tu comuna antes.
-            </p>
-            <div className="mt-4">
-              <RecomendarEmprendedorModal
-                comunaSlug={contextComunaSlug}
-                disabled={!contextComunaSlug}
-              />
-              {!contextComunaSlug ? (
-                <p className="mt-2 text-xs font-medium text-slate-500">
-                  Elige una comuna (arriba) para recomendar.
-                </p>
-              ) : null}
-            </div>
-          </div>
-
           <div className="mt-10">
             <h3 className="text-sm font-semibold text-slate-900">Con resultados</h3>
             {loadingComunas ? (
@@ -303,6 +283,18 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
               <HomeComunasPreparacion items={prep.slice(0, 6)} />
             </div>
           ) : null}
+
+          <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <p className="text-sm font-semibold text-slate-900">
+              ¿Conoces un negocio en tu comuna?
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              Ayuda a completar los servicios faltantes y activar tu comuna antes.
+            </p>
+            <div className="mt-4">
+              <RecomendarEmprendedorModal initialComunaSlug={contextComunaSlug} />
+            </div>
+          </div>
         </div>
       </section>
 
