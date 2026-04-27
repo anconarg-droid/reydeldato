@@ -580,9 +580,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 ${
             homeCarousel ? "h-44" : "h-44 sm:h-48"
           } ${
-            mostrarFoto ? "bg-slate-100" : ""
+            mostrarFoto ? "bg-slate-100" : "bg-gradient-to-br from-gray-50 to-gray-100"
           }`}
-          style={mostrarFoto ? undefined : PLACEHOLDER_SIN_FOTO_AREA_STYLE}
+          style={mostrarFoto ? undefined : undefined}
         >
           {mostrarFoto ? (
             <>
@@ -609,7 +609,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 py-4 text-center">
               <span className="text-sm font-extrabold text-slate-800">Sin imágenes</span>
               <span className="max-w-[16rem] text-xs font-semibold leading-snug text-slate-600">
-                Puedes pedir referencias por WhatsApp
+                Pide referencias por WhatsApp
               </span>
             </div>
           )}
