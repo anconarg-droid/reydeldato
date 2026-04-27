@@ -126,17 +126,20 @@ export default function SimilarFichaCard({
           <p className="m-0 text-[12px] font-semibold leading-snug text-slate-700">{rubroSoloSub}</p>
         ) : null}
 
-        <div className="mt-0.5 space-y-0.5">
+        {/* Dos líneas fijas cuando hay comuna de contexto: alinea "Atiende" entre cards */}
+        <div className="mt-0.5 flex min-h-[2.75rem] flex-col justify-start gap-0.5">
           {comunaConsultada ? (
             <>
               <p className="m-0 text-[12px] font-semibold leading-snug text-teal-800">
                 📍 Atiende {comunaConsultada}
               </p>
-              {!mismoCtxYBase && comunaBase ? (
-                <p className="m-0 text-[11px] font-medium leading-snug text-slate-500">
-                  Base en {comunaBase}
-                </p>
-              ) : null}
+              <p className="m-0 min-h-[1.25rem] text-[11px] font-medium leading-snug text-slate-500">
+                {comunaBase
+                  ? mismoCtxYBase
+                    ? "Es de tu comuna"
+                    : `Base en ${comunaBase}`
+                  : "\u00a0"}
+              </p>
             </>
           ) : comunaBase ? (
             <p className="m-0 text-[12px] font-medium text-slate-600">{comunaBase}</p>
