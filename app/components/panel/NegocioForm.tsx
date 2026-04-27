@@ -4269,6 +4269,13 @@ export default function NegocioForm({
     [estadoPublicacion]
   );
 
+  const fichaEstaPublicada = useMemo(
+    () =>
+      normalizeEstadoPublicacionDb(estadoPublicacion) ===
+      ESTADO_PUBLICACION.publicado,
+    [estadoPublicacion]
+  );
+
   const applyPanelModeracionFromMedia = useCallback(
     (r: { estado?: string; moderationMessage?: string }) => {
       setEstadoPublicacion(
@@ -6228,7 +6235,7 @@ export default function NegocioForm({
                   >
                     Volver al panel
                   </Link>
-                  {fichaPublicaHref ? (
+                  {fichaEstaPublicada && fichaPublicaHref ? (
                     <button
                       type="button"
                       className="nf-post-save-nav-btn nf-post-save-nav-btn--ghost"
@@ -6242,7 +6249,20 @@ export default function NegocioForm({
                     >
                       Ver mi ficha
                     </button>
-                  ) : previewFichaHref ? (
+                  ) : (
+                    <p
+                      className="nf-post-save-nav-sub"
+                      style={{
+                        textAlign: "center",
+                        margin: "2px 0 0",
+                        color: "#64748b",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Tu ficha aún no está publicada. La revisaremos antes de que esté visible.
+                    </p>
+                  )}
+                  {previewFichaHref ? (
                     <button
                       type="button"
                       className="nf-post-save-nav-btn nf-post-save-nav-btn--ghost"
@@ -6294,7 +6314,7 @@ export default function NegocioForm({
                   >
                     Volver al inicio
                   </Link>
-                  {fichaPublicaHref ? (
+                  {fichaEstaPublicada && fichaPublicaHref ? (
                     <button
                       type="button"
                       className="nf-post-save-nav-btn nf-post-save-nav-btn--ghost"
@@ -6308,7 +6328,20 @@ export default function NegocioForm({
                     >
                       Ver cómo se ve mi ficha
                     </button>
-                  ) : previewFichaHref ? (
+                  ) : (
+                    <p
+                      className="nf-post-save-nav-sub"
+                      style={{
+                        textAlign: "center",
+                        margin: "2px 0 0",
+                        color: "#64748b",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Tu ficha aún no está publicada. La revisaremos antes de que esté visible.
+                    </p>
+                  )}
+                  {previewFichaHref ? (
                     <button
                       type="button"
                       className="nf-post-save-nav-btn nf-post-save-nav-btn--ghost"
