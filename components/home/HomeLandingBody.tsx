@@ -150,7 +150,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
           >
             Cómo funciona
           </h2>
-          <ol className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
+          <ol className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
             {[
               { n: "01", t: "Buscas en tu comuna", d: "Resultados locales primero." },
               { n: "02", t: "Eliges el servicio", d: "Información clara para decidir." },

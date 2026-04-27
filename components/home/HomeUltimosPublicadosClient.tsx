@@ -216,7 +216,7 @@ export default function HomeUltimosPublicadosClient({
         <div className="relative mt-8">
           <div
             ref={scrollerRef}
-            className="home-carousel-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-3 pl-0.5 pr-1 pt-1 [-webkit-overflow-scrolling:touch]"
+            className="home-carousel-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-3 pl-0.5 pr-6 pt-1 [-webkit-overflow-scrolling:touch] lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-x-visible lg:pr-0"
             role="list"
             aria-label="Emprendimientos publicados recientemente"
             onMouseEnter={() => setHoverPaused(true)}
@@ -230,7 +230,7 @@ export default function HomeUltimosPublicadosClient({
                 key={props.slug}
                 data-carousel-card
                 role="listitem"
-                className="group w-[min(92vw,22rem)] shrink-0 transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px]"
+                className="group w-[min(92vw,22rem)] shrink-0 transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px] lg:w-full lg:shrink"
               >
                 <div className="home-carousel-card-shell rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
                   <div className="relative">
@@ -246,7 +246,7 @@ export default function HomeUltimosPublicadosClient({
 
           {/* Indicación sutil de que hay más contenido a la derecha */}
           <div
-            className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-white via-white/70 to-transparent"
+            className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-white via-white/70 to-transparent lg:hidden"
             aria-hidden
           />
         </div>
