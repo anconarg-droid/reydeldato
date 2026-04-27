@@ -578,7 +578,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
         <div
           className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 ${
-            homeCarousel ? "h-44" : "aspect-square"
+            homeCarousel ? "h-44" : "h-44 sm:h-48"
           } ${
             mostrarFoto ? "bg-slate-100" : ""
           }`}
@@ -606,10 +606,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               ) : null}
             </>
           ) : (
-            <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-1.5 px-3 py-4 text-center">
-              <span className="text-sm font-semibold text-slate-700">Sin imágenes</span>
-              <span className="max-w-[15rem] text-xs font-medium leading-snug text-slate-600">
-                {getPlaceholderSinFotoSub()}
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 py-4 text-center">
+              <span className="text-sm font-extrabold text-slate-800">Sin imágenes</span>
+              <span className="max-w-[16rem] text-xs font-semibold leading-snug text-slate-600">
+                Puedes pedir referencias por WhatsApp
               </span>
             </div>
           )}
@@ -636,7 +636,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         </div>
 
         {/* Cuerpo: crece; reserva footer abajo */}
-        <div className="mt-2.5 flex min-h-0 min-w-0 flex-1 flex-col gap-1.5">
+        <div className="mt-3 flex min-h-0 min-w-0 flex-1 flex-col gap-3">
           <h3
             className={`m-0 line-clamp-2 min-h-[2.75rem] w-full shrink-0 text-base leading-snug ${titleFontClass} ${titleColor}`}
           >
@@ -881,9 +881,11 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             </div>
           ) : !listadoUiPerfilCompleto && tieneWhatsappValido ? (
             <div className="flex w-full flex-col items-center justify-center gap-2">
-              <p className="m-0 w-full max-w-[calc(50%-0.25rem)] text-center text-xs font-semibold leading-snug text-slate-600">
-                Solo contacto por WhatsApp
-              </p>
+              <div className="w-full max-w-[calc(50%-0.25rem)] rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
+                <p className="m-0 text-xs font-semibold leading-snug text-slate-700">
+                  Solo contacto por WhatsApp
+                </p>
+              </div>
               <TrackedCardLink
                 slug={p.slug}
                 href={whatsappUrl || whatsappHref}
