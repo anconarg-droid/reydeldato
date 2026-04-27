@@ -29,6 +29,57 @@ function comunaIdParaInsert(comunaRow: { id?: unknown } | null): unknown {
   return id;
 }
 
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const comuna_slug = s(searchParams.get("comuna_slug"));
+    if (!comuna_slug) {
+      return NextResponse.json({ ok: false, error: "Falta comuna." }, { status: 400 });
+    }
+
+    const supabase = createSupabaseServerPublicClient();
+    const { data: comuna, error: comunaError } = await supabase
+      .from("comunas")
+      .select("id")
+      .eq("slug", comuna_slug)
+      .maybeSingle();
+
+    if (comunaError) {
+      return NextResponse.json(
+        { ok: false, error: `Error buscando comuna: ${comunaError.message}` },
+        { status: 500 }
+      );
+    }
+    if (!comuna) {
+      return NextResponse.json({ ok: false, error: "No encontramos la comuna." }, { status: 400 });
+    }
+
+    const cid = comunaIdParaInsert(comuna as { id?: unknown } | null);
+    if (cid == null) {
+      return NextResponse.json({ ok: false, error: "Comuna inválida." }, { status: 400 });
+    }
+
+    const { count, error } = await supabase
+      .from("recomendaciones_emprendedores")
+      .select("id", { count: "exact", head: true })
+      .eq("comuna_id", cid);
+
+    if (error) {
+      return NextResponse.json(
+        { ok: false, error: `Error contando recomendaciones: ${error.message}` },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, count: count ?? 0 });
+  } catch (e) {
+    return NextResponse.json(
+      { ok: false, error: e instanceof Error ? e.message : "Error inesperado." },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -41,12 +92,10 @@ export async function POST(req: Request) {
     const comuna_slug = s(body?.comuna_slug);
     const contacto = s(body?.contacto);
 
-    if (!nombre_emprendimiento || nombre_emprendimiento.length < 2) {
-      return NextResponse.json(
-        { ok: false, error: "Falta el nombre del emprendimiento." },
-        { status: 400 }
-      );
-    }
+    const nombreFinal =
+      nombre_emprendimiento && nombre_emprendimiento.length >= 2
+        ? nombre_emprendimiento
+        : "Recomendado (sin nombre)";
 
     if (!comuna_slug) {
       return NextResponse.json(
@@ -104,7 +153,7 @@ export async function POST(req: Request) {
 
     const comunaRow = comuna as { id: unknown; nombre?: string } | null;
     const insertRow: Record<string, unknown> = {
-      nombre_emprendimiento,
+      nombre_emprendimiento: nombreFinal,
       whatsapp: contactoFinal,
       servicio: servicio_texto_raw || null,
       comuna: s(comunaRow?.nombre) || comuna_slug,

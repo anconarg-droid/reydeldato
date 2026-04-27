@@ -13,6 +13,7 @@ import HomeComunasPreparacion, {
 } from "@/components/home/HomeComunasPreparacion";
 import HomeUltimosPublicadosClient from "@/components/home/HomeUltimosPublicadosClient";
 import type { EmprendedorSearchCardProps } from "@/components/search/EmprendedorSearchCard";
+import RecomendarEmprendedorModal from "@/components/home/RecomendarEmprendedorModal";
 
 type Comuna = { id: number; nombre: string; slug: string; total?: number };
 
@@ -257,12 +258,15 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
               Ayuda a completar los servicios faltantes y activar tu comuna antes.
             </p>
             <div className="mt-4">
-              <Link
-                href={`/publicar${contextComunaSlug ? `?comuna=${encodeURIComponent(contextComunaSlug)}` : ""}`}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
-              >
-                Recomendar un emprendedor <span aria-hidden>→</span>
-              </Link>
+              <RecomendarEmprendedorModal
+                comunaSlug={contextComunaSlug}
+                disabled={!contextComunaSlug}
+              />
+              {!contextComunaSlug ? (
+                <p className="mt-2 text-xs font-medium text-slate-500">
+                  Elige una comuna (arriba) para recomendar.
+                </p>
+              ) : null}
             </div>
           </div>
 
