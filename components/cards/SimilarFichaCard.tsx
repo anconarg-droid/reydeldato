@@ -3,15 +3,7 @@
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import { sendSimilarFichaCardViewClick } from "@/components/search/TrackedCardLink";
-import {
-  type SimilarFichaBucket,
-  type SimilarFichaItem,
-} from "@/lib/getSimilaresFicha";
-import { normalizeText } from "@/lib/search/normalizeText";
-import {
-  getPlaceholderSinFotoSub,
-  getPlaceholderSinFotoTitulo,
-} from "@/lib/productRules";
+import type { SimilarFichaItem } from "@/lib/getSimilaresFicha";
 import { displayTitleCaseWords } from "@/lib/displayTextFormat";
 
 function s(v: unknown): string {
@@ -19,7 +11,8 @@ function s(v: unknown): string {
   return String(v).trim();
 }
 
-const MEDIA_H = 140;
+/** Compacto: ~h-32 en Tailwind */
+const MEDIA_H = 128;
 
 function urlPareceFotoReal(url: string): boolean {
   const u = url.trim();
@@ -29,66 +22,8 @@ function urlPareceFotoReal(url: string): boolean {
   return true;
 }
 
-/** Badges sobre la imagen, alineados a búsqueda / referencia visual. */
-function badgeEnImagen(
-  bucket: SimilarFichaBucket,
-  comunaContextoNombre: string
-): { text: string; style: CSSProperties } | null {
-  const ctx = s(comunaContextoNombre);
-  switch (bucket) {
-    case "misma_comuna":
-      return {
-        text: ctx ? `En ${ctx}` : "En esta zona",
-        style: {
-          background: "#ecfdf5",
-          color: "#047857",
-          border: "1px solid #a7f3d0",
-        },
-      };
-    case "atiende_comuna":
-      return {
-        text: ctx ? `Atiende ${ctx}` : "Atiende esta zona",
-        style: {
-          background: "#eff6ff",
-          color: "#1d4ed8",
-          border: "1px solid #bfdbfe",
-        },
-      };
-    case "misma_region":
-      return {
-        text: "Misma región",
-        style: {
-          background: "#fffbeb",
-          color: "#a16207",
-          border: "1px solid #fde68a",
-        },
-      };
-    case "nacional":
-      return {
-        text: "Todo Chile",
-        style: {
-          background: "#f1f5f9",
-          color: "#475569",
-          border: "1px solid #e2e8f0",
-        },
-      };
-    case "misma_categoria":
-      return {
-        text: "Similar a este",
-        style: {
-          background: "#faf5ff",
-          color: "#6b21a8",
-          border: "1px solid #e9d5ff",
-        },
-      };
-    default:
-      return null;
-  }
-}
-
 type Props = {
   item: SimilarFichaItem;
-  /** Comuna de contexto (ej. búsqueda) para línea “Atiende …” bajo la ubicación. */
   comunaContextoNombre: string;
   fromSlug?: string;
   position?: number;
@@ -104,45 +39,18 @@ export default function SimilarFichaCard({
   const nombreMostrar = nombreEmp
     ? displayTitleCaseWords(nombreEmp)
     : s(item.slug);
-  const rubro = s(item.subcategoria_nombre) || s(item.categoria_nombre) || "Servicios";
-  const comunaLinea = s(item.comuna_nombre);
+  const comunaBase = s(item.comuna_nombre);
   const ctx = s(comunaContextoNombre);
-  const mismoNombreCtxYBase =
-    Boolean(ctx && comunaLinea) &&
-    normalizeText(ctx) === normalizeText(comunaLinea);
-
-  let pinPrincipal = "";
-  let pinSecundario = "";
-  if (ctx) {
-    if (item.bucket === "misma_comuna") {
-      pinPrincipal = `En ${ctx}`;
-    } else if (item.bucket === "atiende_comuna") {
-      pinPrincipal = `Atiende ${ctx}`;
-      if (comunaLinea && !mismoNombreCtxYBase) {
-        pinSecundario = `Base en ${comunaLinea}`;
-      }
-    } else {
-      if (mismoNombreCtxYBase) {
-        pinPrincipal = `En ${ctx}`;
-      } else {
-        pinPrincipal = `Atiende ${ctx}`;
-        if (comunaLinea) pinSecundario = `Base en ${comunaLinea}`;
-      }
-    }
-  } else {
-    pinPrincipal = comunaLinea;
-  }
+  /** Una sola línea tipo “comuna” para sugerencias compactas */
+  const comunaUnaLinea = comunaBase || ctx;
 
   const fotoUrl = s(item.foto_principal_url);
   const [imgBroken, setImgBroken] = useState(false);
   const mostrarFoto = urlPareceFotoReal(fotoUrl) && !imgBroken;
 
-  const badgeImg = badgeEnImagen(item.bucket, comunaContextoNombre);
   const href = `/emprendedor/${encodeURIComponent(item.slug)}`;
   const track =
-    s(fromSlug).length > 0 &&
-    typeof position === "number" &&
-    position >= 1;
+    s(fromSlug).length > 0 && typeof position === "number" && position >= 1;
 
   function handleVerFicha() {
     if (!track) return;
@@ -159,38 +67,8 @@ export default function SimilarFichaCard({
     width: "100%",
     height: MEDIA_H,
     flexShrink: 0,
-    background: "linear-gradient(160deg, #cbd5e1 0%, #e2e8f0 55%, #f1f5f9 100%)",
+    background: "linear-gradient(160deg, #f8fafc 0%, #e2e8f0 55%, #cbd5e1 100%)",
     overflow: "hidden",
-  };
-
-  const sinFotoInner: CSSProperties = {
-    position: "relative",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "10px 12px",
-    textAlign: "center",
-    gap: 4,
-  };
-
-  const badgeBase: CSSProperties = {
-    position: "absolute",
-    left: 10,
-    top: 10,
-    zIndex: 2,
-    padding: "4px 9px",
-    borderRadius: 999,
-    fontSize: 10,
-    fontWeight: 800,
-    letterSpacing: 0.02,
-    lineHeight: 1.2,
-    maxWidth: "calc(100% - 20px)",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    boxShadow: "0 1px 4px rgba(15, 23, 42, 0.08)",
   };
 
   return (
@@ -198,10 +76,10 @@ export default function SimilarFichaCard({
       style={{
         width: "100%",
         height: "100%",
-        borderRadius: 16,
+        borderRadius: 14,
         background: "#fff",
         border: "1px solid #e2e8f0",
-        boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)",
+        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05)",
         padding: 0,
         display: "flex",
         flexDirection: "column",
@@ -230,45 +108,40 @@ export default function SimilarFichaCard({
                 position: "absolute",
                 inset: 0,
                 background:
-                  "linear-gradient(to top, rgba(15,23,42,0.35) 0%, rgba(15,23,42,0.04) 50%, transparent 72%)",
+                  "linear-gradient(to top, rgba(15,23,42,0.28) 0%, rgba(15,23,42,0.03) 45%, transparent 70%)",
                 pointerEvents: "none",
               }}
               aria-hidden
             />
           </>
         ) : (
-          <div style={sinFotoInner}>
+          <div
+            style={{
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0 10px",
+            }}
+          >
             <span
               style={{
                 fontSize: 11,
                 fontWeight: 800,
-                color: "#475569",
-                letterSpacing: "0.08em",
+                color: "#64748b",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
               }}
             >
-              {getPlaceholderSinFotoTitulo()}
-            </span>
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 500,
-                color: "#94a3b8",
-                lineHeight: 1.35,
-                maxWidth: "100%",
-              }}
-            >
-              {getPlaceholderSinFotoSub()}
+              Sin imágenes
             </span>
           </div>
         )}
-        {badgeImg ? (
-          <span style={{ ...badgeBase, ...badgeImg.style }}>{badgeImg.text}</span>
-        ) : null}
       </div>
 
       <div
         style={{
-          padding: "12px 12px 14px",
+          padding: "10px 10px 12px",
           display: "flex",
           flexDirection: "column",
           flex: 1,
@@ -280,36 +153,21 @@ export default function SimilarFichaCard({
           className="line-clamp-2 break-words"
           style={{
             margin: 0,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: 900,
             color: "#020617",
-            lineHeight: 1.22,
+            lineHeight: 1.25,
             letterSpacing: -0.02,
           }}
         >
           {nombreMostrar}
         </h3>
 
-        <p
-          style={{
-            margin: "6px 0 0 0",
-            fontSize: 12,
-            fontWeight: 500,
-            color: "#64748b",
-            lineHeight: 1.35,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {rubro}
-        </p>
-
-        {pinPrincipal ? (
+        {comunaUnaLinea ? (
           <p
             style={{
               margin: "6px 0 0 0",
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 600,
               color: "#64748b",
               lineHeight: 1.35,
@@ -318,24 +176,7 @@ export default function SimilarFichaCard({
               whiteSpace: "nowrap",
             }}
           >
-            📍 {pinPrincipal}
-          </p>
-        ) : null}
-
-        {pinSecundario ? (
-          <p
-            style={{
-              margin: "2px 0 0 0",
-              fontSize: 11,
-              fontWeight: 500,
-              color: "#94a3b8",
-              lineHeight: 1.35,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {pinSecundario}
+            {comunaUnaLinea}
           </p>
         ) : null}
 
@@ -347,14 +188,14 @@ export default function SimilarFichaCard({
             alignItems: "center",
             justifyContent: "center",
             marginTop: "auto",
-            paddingTop: 12,
+            paddingTop: 10,
             paddingBottom: 0,
-            borderRadius: 12,
-            minHeight: 44,
+            borderRadius: 10,
+            minHeight: 40,
             textDecoration: "none",
             background: "#fff",
             color: "#0f172a",
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 800,
             border: "1px solid #e2e8f0",
             boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",

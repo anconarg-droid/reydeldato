@@ -201,8 +201,8 @@ export default function FichaHero({
   const nombreParaMostrar = displayTitleCaseWords(s(nombre));
 
   return (
-    <section className="grid grid-cols-1 gap-6 mb-6 items-start lg:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.85fr)] lg:gap-8 lg:mb-8">
-      <div className="flex min-w-0 flex-col gap-3">
+    <section className="mb-6 grid grid-cols-1 items-start gap-6 lg:mb-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.9fr)]">
+      <div className="flex min-w-0 flex-col gap-6">
         <PortalGallery
           fotoPrincipal={fotoPrincipal}
           galeria={galeria}
@@ -218,9 +218,10 @@ export default function FichaHero({
           }}
         />
         {bloqueBajoGaleria}
+        {bloqueBajoPanel}
       </div>
 
-      <div className="flex min-w-0 flex-col gap-4 lg:max-w-[430px] lg:justify-self-end">
+      <div className="min-w-0 lg:max-w-[430px] lg:justify-self-end lg:self-start lg:sticky lg:top-24">
         <aside className="rounded-3xl bg-white p-6 ring-1 ring-amber-100/80 border-2 border-amber-200/90 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.25),0_0_0_1px_rgba(251,191,36,0.12)] lg:p-8">
           <div className="flex flex-col gap-4">
             {ubicacionLinea ? (
@@ -505,7 +506,6 @@ export default function FichaHero({
             />
           </div>
         </aside>
-        {bloqueBajoPanel}
       </div>
     </section>
   );

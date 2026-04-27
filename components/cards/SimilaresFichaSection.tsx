@@ -78,7 +78,7 @@ export default function SimilaresFichaSection({
         {items.map((n, i) => (
           <div
             key={n.slug}
-            className="snap-start min-w-0 flex-none w-[260px] sm:w-[280px] lg:w-[260px]"
+            className="snap-start min-w-0 flex-none w-[200px] sm:w-[220px] lg:w-[200px]"
           >
             <SimilarFichaCard
               item={n}
