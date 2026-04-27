@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import PanelBrandHomeBar from "@/components/panel/PanelBrandHomeBar";
 import PanelFichaPublicaEmbed from "@/components/panel/PanelFichaPublicaEmbed";
@@ -45,11 +45,6 @@ type Metrics = {
 };
 
 type StatsRange = "7d" | "30d" | "all";
-
-type StatsSnapshot = {
-  metrics: Metrics;
-  range: StatsRange;
-};
 
 const EMPTY_METRICS: Metrics = {
   impresiones: 0,
@@ -650,17 +645,9 @@ export default function PanelClient({
     unknown
   > | null>(null);
   const [modoVista, setModoVista] = useState<ModoVistaPanel>("completa");
-  const [snapshotVistaBasica, setSnapshotVistaBasica] =
-    useState<StatsSnapshot | null>(null);
-  const [snapshotComercial, setSnapshotComercial] =
-    useState<StatsSnapshot | null>(null);
-  const prevModoVistaRef = useRef<ModoVistaPanel>("completa");
 
   useEffect(() => {
     setModoVista("completa");
-    setSnapshotVistaBasica(null);
-    setSnapshotComercial(null);
-    prevModoVistaRef.current = "completa";
   }, [id, slug, accessToken]);
 
   const qs = panelQuery(id, slug, accessToken);
@@ -729,56 +716,15 @@ export default function PanelClient({
     return (tipoFichaPanel ?? "basica") === "completa";
   }, [comercial, tipoFichaPanel]);
 
-  useEffect(() => {
-    const prev = prevModoVistaRef.current;
-    if (prev === "completa" && modoVista === "basica" && data) {
-      setSnapshotVistaBasica({
-        metrics: { ...data },
-        range,
-      });
-    }
-    if (modoVista === "completa") {
-      setSnapshotVistaBasica(null);
-    }
-    prevModoVistaRef.current = modoVista;
-  }, [modoVista, data, range]);
-
-  useEffect(() => {
-    if (fichaLoading || !comercial) return;
-    if (!comercial.esPerfilCompletoComercial) {
-      setSnapshotComercial((prev) => {
-        if (prev) return prev;
-        if (!data) return prev;
-        return { metrics: { ...data }, range };
-      });
-    } else {
-      setSnapshotComercial(null);
-    }
-  }, [
-    fichaLoading,
-    comercial,
-    comercial?.esPerfilCompletoComercial,
-    data,
-    range,
-  ]);
-
+  /**
+   * Siempre pedimos métricas a `/api/panel` mientras haya `qs`, aunque el
+   * emprendedor esté en perfil básico o plan vencido: los eventos siguen
+   * guardándose en el servidor y así, al reactivar, ve números reales (sin
+   * “congelar” en el cliente). Solo ocultamos el bloque visual en ese caso.
+   */
   useEffect(() => {
     if (!qs) {
       setData(EMPTY_METRICS);
-      setLoading(false);
-      return;
-    }
-
-    if (modoVista === "basica") {
-      setLoading(false);
-      return;
-    }
-
-    if (
-      comercial &&
-      !comercial.esPerfilCompletoComercial &&
-      snapshotComercial !== null
-    ) {
       setLoading(false);
       return;
     }
@@ -800,52 +746,18 @@ export default function PanelClient({
       .finally(() => {
         setLoading(false);
       });
-  }, [
-    qs,
-    range,
-    modoVista,
-    comercial,
-    comercial?.esPerfilCompletoComercial,
-    snapshotComercial,
-  ]);
+  }, [qs, range]);
 
   const comercialSinPerfilCompleto =
     !fichaLoading &&
     comercial !== null &&
     !comercial.esPerfilCompletoComercial;
 
-  const { metricsMostrados, rangoMostrado, tipoCongelacionStats } =
-    useMemo(() => {
-      if (comercialSinPerfilCompleto && snapshotComercial) {
-        return {
-          metricsMostrados: snapshotComercial.metrics,
-          rangoMostrado: snapshotComercial.range,
-          tipoCongelacionStats: "comercial" as const,
-        };
-      }
-      if (modoVista === "basica" && snapshotVistaBasica) {
-        return {
-          metricsMostrados: snapshotVistaBasica.metrics,
-          rangoMostrado: snapshotVistaBasica.range,
-          tipoCongelacionStats: "vista" as const,
-        };
-      }
-      return {
-        metricsMostrados: data ?? EMPTY_METRICS,
-        rangoMostrado: range,
-        tipoCongelacionStats: null as null,
-      };
-    }, [
-      comercialSinPerfilCompleto,
-      snapshotComercial,
-      modoVista,
-      snapshotVistaBasica,
-      data,
-      range,
-    ]);
+  /** Solo oculta el cuadro de estadísticas en el panel; el fetch sigue activo. */
+  const estadisticasOcultasEnPanel = comercialSinPerfilCompleto;
 
-  const statsSelectorBloqueado = tipoCongelacionStats !== null;
-  const rangoActivoUi = statsSelectorBloqueado ? rangoMostrado : range;
+  const metricsMostrados = data ?? EMPTY_METRICS;
+  const rangoMostrado = range;
 
   // Métrica preparada para futuro:
   // Conversión a contacto = % de visitas que terminan en click de WhatsApp.
@@ -1050,72 +962,58 @@ export default function PanelClient({
             ) : null}
           </div>
 
-          {tipoCongelacionStats ? (
+          {estadisticasOcultasEnPanel ? (
             <div
-              className="max-w-3xl text-center text-sm leading-snug text-gray-600 sm:text-left"
+              className="max-w-3xl rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
               role="status"
             >
-              <p className="font-medium text-gray-700">
-                Activa perfil completo para ver tus resultados
+              <p className="font-semibold text-gray-900">
+                Estadísticas no visibles con tu plan o perfil actual
               </p>
-              <p className="mt-0.5 text-gray-500">
-                (visitas, clics y contactos)
+              <p className="mt-1.5 text-gray-700">
+                Visitas, impresiones y contactos{" "}
+                <span className="font-semibold">siguen registrándose</span> en
+                segundo plano. Al reactivar perfil completo verás aquí el total
+                real, incluido lo que ocurra mientras tanto.
               </p>
             </div>
           ) : null}
-          <div
-            className={`relative max-w-3xl overflow-hidden ${
-              tipoCongelacionStats === "vista"
-                ? "rounded-xl ring-1 ring-gray-200/80"
-                : ""
-            }`}
-          >
-            <div className="flex flex-col gap-2.5">
-              <div className="flex w-full justify-start">
-                <div
-                  className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
-                  role="group"
-                  aria-label="Periodo de estadísticas"
-                >
-                  {(["7d", "30d", "all"] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      disabled={statsSelectorBloqueado}
-                      onClick={() => setRange(r)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors disabled:cursor-not-allowed ${
-                        rangoActivoUi === r
-                          ? "bg-gray-900 text-white"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      {r === "7d"
-                        ? "7 días"
-                        : r === "30d"
-                          ? "30 días"
-                          : "Desde activación"}
-                    </button>
-                  ))}
+          {qs && !estadisticasOcultasEnPanel ? (
+            <div className="max-w-3xl">
+              <div className="flex flex-col gap-2.5">
+                <div className="flex w-full justify-start">
+                  <div
+                    className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
+                    role="group"
+                    aria-label="Periodo de estadísticas"
+                  >
+                    {(["7d", "30d", "all"] as const).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setRange(r)}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                          range === r
+                            ? "bg-gray-900 text-white"
+                            : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        {r === "7d"
+                          ? "7 días"
+                          : r === "30d"
+                            ? "30 días"
+                            : "Desde activación"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              {qs ? (
                 <MetricsResumenPanel
                   data={metricsMostrados}
                   rangeLabel={textoRangoMetricas(rangoMostrado)}
                 />
-              ) : null}
-            </div>
-            {tipoCongelacionStats === "vista" ? (
-              <div
-                className="pointer-events-none absolute inset-0 z-10 flex items-end justify-center bg-white/45 pb-2 backdrop-blur-[4px] ring-1 ring-inset ring-gray-900/[0.06] supports-[backdrop-filter]:bg-white/35 sm:pb-3 sm:backdrop-blur-[6px]"
-                aria-hidden
-              >
-                <span className="rounded-full border border-gray-300/80 bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-gray-700 shadow-sm backdrop-blur-sm">
-                  Disponible con perfil completo
-                </span>
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
           {tieneNegocio ? (
             <BloqueEstadoPlan
