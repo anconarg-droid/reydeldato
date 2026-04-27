@@ -72,11 +72,14 @@ export default function SimilaresFichaSection({
       </p>
 
       <div
-        className="grid grid-cols-2 min-[880px]:grid-cols-4 gap-3 sm:gap-4"
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [-webkit-overflow-scrolling:touch] sm:gap-4"
         style={{ alignItems: "stretch" }}
       >
         {items.map((n, i) => (
-          <div key={n.slug} className="min-w-0 flex">
+          <div
+            key={n.slug}
+            className="snap-start min-w-0 flex-none w-[260px] sm:w-[280px] lg:w-[260px]"
+          >
             <SimilarFichaCard
               item={n}
               comunaContextoNombre={comunaContextoNombre}
