@@ -143,7 +143,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-como-funciona"
       >
-        <div className="mx-auto max-w-5xl px-4 pb-20 pt-16 sm:px-6 sm:pb-24 sm:pt-20">
+        <div className="mx-auto max-w-5xl px-4 pb-12 pt-16 sm:px-6 sm:pb-14 sm:pt-20">
           <h2
             id="home-como-funciona"
             className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
@@ -173,7 +173,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
         className="border-t border-slate-100 bg-slate-50/90"
         aria-labelledby="home-ultimos-publicados-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">
           <HomeUltimosPublicadosClient
             cards={ultimosPublicadosCards}
             totalNegociosActivos={totalNegociosActivos}

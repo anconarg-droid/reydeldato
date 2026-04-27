@@ -14,10 +14,10 @@ type Props = {
 };
 
 /** Un paso de scroll: lento y suave (evita sensación de slider / banner). */
-const SCROLL_STEP_DURATION_MS = 2800;
+const SCROLL_STEP_DURATION_MS = 1800;
 
 /** Silencio entre movimientos: ritmo sobrio. */
-const PAUSE_BETWEEN_STEPS_MS = 15000;
+const PAUSE_BETWEEN_STEPS_MS = 4500;
 
 /** Sin movimiento al cargar: no “ataca” al entrar. */
 const INITIAL_IDLE_MS = 14000;
@@ -199,6 +199,7 @@ export default function HomeUltimosPublicadosClient({
     minNegocios,
     totalNegociosActivos != null && totalNegociosActivos > 0 ? totalNegociosActivos : 0
   );
+  const previewCards = cards.slice(0, 10);
 
   return (
     <div className="w-full py-2" aria-labelledby="home-ultimos-publicados-heading">
@@ -216,7 +217,7 @@ export default function HomeUltimosPublicadosClient({
         <div className="relative mt-8">
           <div
             ref={scrollerRef}
-            className="home-carousel-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-3 pl-0.5 pr-6 pt-1 [-webkit-overflow-scrolling:touch] lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-x-visible lg:pr-0"
+            className="home-carousel-scroll flex flex-nowrap gap-4 overflow-x-auto overflow-y-hidden pb-3 pl-0.5 pr-6 pt-1 [-webkit-overflow-scrolling:touch] lg:gap-6 lg:pr-0"
             role="list"
             aria-label="Emprendimientos publicados recientemente"
             onMouseEnter={() => setHoverPaused(true)}
@@ -225,14 +226,14 @@ export default function HomeUltimosPublicadosClient({
             onWheelCapture={bumpInteractionPause}
             onTouchStartCapture={bumpInteractionPause}
           >
-            {cards.map((props) => (
+            {previewCards.map((props) => (
               <div
                 key={props.slug}
                 data-carousel-card
                 role="listitem"
-                className="group w-[min(92vw,22rem)] shrink-0 transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px] lg:w-full lg:shrink"
+                className="group w-[min(92vw,22rem)] shrink-0 transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px] lg:w-[calc((100%-3rem)/3)]"
               >
-                <div className="home-carousel-card-shell rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
+                <div className="home-carousel-card-shell flex h-full min-h-[520px] flex-col rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
                   <div className="relative">
                     <div className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-900">
                       Disponible ahora
@@ -246,7 +247,7 @@ export default function HomeUltimosPublicadosClient({
 
           {/* Indicación sutil de que hay más contenido a la derecha */}
           <div
-            className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-white via-white/70 to-transparent lg:hidden"
+            className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-white via-white/70 to-transparent"
             aria-hidden
           />
         </div>
