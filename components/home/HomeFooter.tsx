@@ -2,9 +2,9 @@ import Link from "next/link";
 
 export default function HomeFooter() {
   return (
-    <footer className="border-t border-slate-200 bg-slate-50 mt-16">
+    <footer className="border-t border-slate-200 bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm" aria-label="Enlaces principales">
+        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" aria-label="Enlaces del sitio">
           <Link href="/que-es" className="text-slate-600 hover:text-slate-900">
             Qué es Rey del Dato
           </Link>
@@ -14,26 +14,11 @@ export default function HomeFooter() {
           <Link href="/contacto" className="text-slate-600 hover:text-slate-900">
             Contacto
           </Link>
-          <Link href="/informacion-util" className="text-slate-600 hover:text-slate-900">
-            Información útil
-          </Link>
-        </nav>
-
-        <nav
-          className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm"
-          aria-label="Información legal"
-        >
           <Link href="/terminos" className="text-slate-600 hover:text-slate-900">
             Términos y condiciones
           </Link>
           <Link href="/privacidad" className="text-slate-600 hover:text-slate-900">
             Política de privacidad
-          </Link>
-          <Link href="/datos" className="text-slate-600 hover:text-slate-900">
-            Tratamiento de datos
-          </Link>
-          <Link href="/legal" className="text-slate-600 hover:text-slate-900">
-            Información legal
           </Link>
         </nav>
 

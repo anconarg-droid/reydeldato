@@ -285,48 +285,35 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
         </div>
       </section>
 
-      {/* 5 · CTA emprendedor + recomendar (ancho completo, alto contraste) */}
+      {/* 5 · CTA final (ancho completo) */}
       <section
-        className="mt-0 w-full border-t border-emerald-900/20 bg-[#059669] text-white"
-        aria-labelledby="home-emprendedores"
+        className="mt-0 w-full border-t border-teal-900/20 bg-[#0f766e] text-white"
+        aria-labelledby="home-cta-final"
       >
-        <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 sm:py-20">
-          <h2
-            id="home-emprendedores"
-            className="text-3xl font-bold tracking-tight sm:text-4xl"
-          >
-            Para emprendedores
+        <div className="mx-auto max-w-5xl px-4 py-16 text-center sm:px-6 sm:py-20">
+          <p className="text-xs font-extrabold tracking-[0.18em] text-white/90">
+            PARA EMPRENDEDORES
+          </p>
+          <h2 id="home-cta-final" className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+            ¿Tienes un negocio local?
           </h2>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-emerald-50 sm:text-lg">
-            Si haces bien el trabajo, mereces aparecer cuando te buscan en tu comuna. Publicar es gratis en esta etapa.
+          <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-relaxed text-white/95 sm:text-lg">
+            Deja de perderte en grupos. Empieza a aparecer cuando te buscan.
           </p>
-          <p className="mt-6 text-center text-sm font-semibold tracking-tight text-white sm:text-left sm:text-base">
-            Empieza hoy. Es gratis.
+          <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-white/90 sm:text-base">
+            Te encuentran cuando te necesitan. Sin tarjeta. Sin compromiso.
           </p>
-          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+
+          <div className="mt-7 flex flex-col items-center gap-3">
             <Link
               href="/publicar"
-              className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-xl bg-white px-8 text-base font-extrabold text-[#047857] shadow-lg transition hover:bg-emerald-50 sm:w-auto"
+              className="inline-flex h-14 min-h-14 w-full max-w-sm items-center justify-center rounded-xl bg-white px-8 text-base font-extrabold text-[#0f766e] shadow-lg shadow-teal-900/20 transition hover:bg-teal-50"
             >
-              Publica tu emprendimiento
+              Publicar mi negocio <span aria-hidden>→</span>
             </Link>
-            <Link
-              href="/informacion-util"
-              className="text-center text-sm font-semibold text-white/95 underline underline-offset-4 hover:text-white sm:text-left"
-            >
-              Ver información útil
-            </Link>
-          </div>
-
-          <HomeRecomienda embedded embeddedOnEmerald />
-
-          <div className="mt-10 flex flex-wrap justify-center gap-6 text-sm font-semibold text-white/95 sm:justify-start">
-            <Link href="/buscar" className="underline underline-offset-4 hover:text-white">
-              Ir a buscar
-            </Link>
-            <Link href="/publicar" className="underline underline-offset-4 hover:text-white">
-              Publicar
-            </Link>
+            <p className="text-xs font-semibold text-white/85">
+              Gratis por 90 días · Luego desde $3.500/mes
+            </p>
           </div>
         </div>
       </section>
