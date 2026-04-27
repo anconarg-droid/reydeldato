@@ -1292,8 +1292,8 @@ export default async function Page({
 
       {!esFichaCompleta ? (
         <>
-          <section className="mb-10 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.9fr)]">
-            <div className="flex min-w-0 flex-col gap-3">
+          <section className="mb-10 grid grid-cols-1 items-start gap-6 lg:grid-cols-12 lg:gap-8">
+            <div className="flex min-w-0 flex-col gap-3 lg:col-span-7 xl:col-span-8">
               <div
                 className="min-h-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 lg:min-h-[420px]"
               >
@@ -1337,7 +1337,7 @@ export default async function Page({
               ) : null}
             </div>
 
-            <aside className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 p-6 lg:max-w-[430px] lg:justify-self-end lg:self-start lg:sticky lg:top-24 lg:p-7">
+            <aside className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 p-6 lg:col-span-5 xl:col-span-4 lg:max-w-[430px] lg:justify-self-end lg:self-start lg:sticky lg:top-24 lg:p-7">
               {ubicacionUnaLinea ? (
                 <p className="text-base font-semibold text-slate-700 mb-3">
                   {ubicacionUnaLinea}
