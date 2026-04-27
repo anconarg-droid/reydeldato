@@ -153,9 +153,8 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
           <ol className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
             {[
               { n: "01", t: "Buscas en tu comuna", d: "Resultados locales primero." },
-              { n: "02", t: "Revisas la ficha", d: "Información clara para decidir rápido." },
-              { n: "03", t: "Contactas por WhatsApp", d: "Directo, sin comisiones ocultas." },
-              { n: "04", t: "Si publicas, te encuentran", d: "Vecinos que ya buscan con intención." },
+              { n: "02", t: "Eliges el servicio", d: "Información clara para decidir." },
+              { n: "03", t: "Contactas por WhatsApp", d: "Directo, sin intermediarios." },
             ].map((step) => (
               <li key={step.n} className={cardBase}>
                 <div className="text-[clamp(1.75rem,4vw,2.35rem)] font-black tabular-nums leading-none tracking-[-0.04em] text-teal-700">
