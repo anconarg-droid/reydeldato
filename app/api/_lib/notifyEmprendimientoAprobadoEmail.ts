@@ -4,6 +4,7 @@ import {
   buildRevisarAbsoluteUrl,
   persistEmprendedorAccessToken,
 } from "@/lib/revisarMagicLink";
+import { formatNombreEmprendimiento } from "@/lib/formatNombreEmprendimiento";
 
 function s(v: unknown): string {
   return String(v ?? "").trim();
@@ -73,7 +74,8 @@ export async function notifyEmprendimientoAprobadoEmail(
       }
     }
 
-    const safeNombre = nombre || "tu emprendimiento";
+    const formattedNombre = formatNombreEmprendimiento(nombre);
+    const safeNombre = formattedNombre || nombre || "tu negocio";
 
     if (!emailBasicoValido(emailTo)) {
       // eslint-disable-next-line no-console
@@ -99,7 +101,7 @@ export async function notifyEmprendimientoAprobadoEmail(
       <div style="font-weight:900;letter-spacing:0.06em;font-size:12px;color:#0f766e;margin-bottom:10px;">REY DEL DATO</div>
       <h1 style="font-size:20px;line-height:1.3;margin:0 0 10px 0;color:#111827;">🚀 Tu negocio ya está visible</h1>
 
-      <p style="margin:0 0 12px 0;color:#4b5563;line-height:1.6;">Tu emprendimiento <strong style="color:#111827;">${safeNombre}</strong> ya está publicado.</p>
+      <p style="margin:0 0 12px 0;color:#4b5563;line-height:1.6;">Tu negocio <strong style="color:#111827;">“${safeNombre}”</strong> ya está publicado en Rey del Dato.</p>
 
       <p style="margin:0 0 16px 0;color:#4b5563;line-height:1.6;"><strong style="color:#111827;">Qué pasa ahora:</strong> desde ahora, personas de tu comuna pueden encontrarte y contactarte directamente por WhatsApp.</p>
 

@@ -276,13 +276,12 @@ export async function POST(req: NextRequest) {
 
     // Email de confirmación (no bloquea el flujo si falla).
     try {
-      const safeNombre = nombreEmprendimiento || "tu emprendimiento";
       await sendEmail({
         to: emailNorm,
-        subject: "Recibimos tu emprendimiento — Rey del Dato",
+        subject: "Recibimos tu solicitud — Rey del Dato",
         html: `<p>Hola,</p>
-<p>Recibimos tu emprendimiento <strong>${safeNombre}</strong>.</p>
-<p>Lo revisaremos y te avisaremos por email cuando tu negocio esté publicado.</p>
+<p>Recibimos tu solicitud para publicar tu negocio en Rey del Dato.</p>
+<p>La revisaremos y te avisaremos por email cuando tu negocio esté publicado.</p>
 <p>Gracias por confiar en Rey del Dato.</p>`,
       });
     } catch {
