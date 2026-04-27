@@ -30,7 +30,7 @@ export default function GlobalHeader() {
         >
           {/* Logo */}
           <div style={{ flexShrink: 0 }}>
-            <ReyDelDatoLogo tagline="servicios" />
+            <ReyDelDatoLogo tagline="dato" />
           </div>
 
           {/* Nav */}
