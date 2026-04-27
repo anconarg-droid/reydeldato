@@ -21,9 +21,9 @@ type Props = {
 
 const STATS = [
   { n: "Local", l: "Tu comuna primero" },
-  { n: "0", l: "intermediarios" },
-  { n: "Directo", l: "Contacto por WhatsApp" },
-  { n: "Gratis", l: "Para publicar" },
+  { n: "0", l: "Sin intermediarios" },
+  { n: "Directo", l: "WhatsApp directo" },
+  { n: "Gratis", l: "Publicar es gratis" },
 ];
 
 export default function HomeHero({ children }: Props) {
@@ -141,38 +141,38 @@ export default function HomeHero({ children }: Props) {
       <section className="w-full border-t border-slate-100 bg-white">
         <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">
           <h2 className="text-balance text-center text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            Aparece en tu comuna sin pagar publicidad
+            Aparece en tu comuna cuando te buscan
           </h2>
 
-          <div className="mx-auto mt-4 max-w-3xl text-center text-sm font-medium leading-relaxed text-slate-700 sm:text-base">
-            <p>
-              Hoy muchos negocios intentan hacerse conocidos creando páginas web, publicando en
-              redes o pagando publicidad.
-            </p>
-            <p className="mt-4">
-              Es caro, toma tiempo y muchas veces las publicaciones se pierden.
-            </p>
-            <p className="mt-4">Aquí es distinto.</p>
-            <p className="mt-2">
-              Publicas tu negocio una vez y te encuentran cuando te necesitan.
-            </p>
-          </div>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
+            Sin pagar publicidad. Sin intermediarios.
+          </p>
 
           <div className="mx-auto mt-10 max-w-xl">
             <div className="rounded-2xl border border-teal-200 bg-white p-6 text-center shadow-sm ring-1 ring-teal-100">
-              <div className="text-sm font-extrabold text-teal-800">Rey del Dato</div>
               <div className="mt-2 text-2xl font-black tracking-tight text-teal-900">
-                Empiezas gratis por 90 días
+                Empieza gratis por 90 días
               </div>
-              <div className="mt-3 text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
-                Te encuentran cuando te necesitan
-              </div>
-              <div className="mt-1 text-base font-extrabold tracking-tight text-slate-900">
-                Luego desde $3.500 al mes
-              </div>
-              <div className="mt-2 text-xs font-semibold text-slate-500">
-                Emitimos boleta o factura
-              </div>
+              <ul className="mx-auto mt-4 max-w-sm text-left text-sm font-semibold text-slate-800">
+                <li className="flex gap-2">
+                  <span className="text-teal-700" aria-hidden>
+                    •
+                  </span>
+                  <span>Te encuentran cuando te buscan</span>
+                </li>
+                <li className="mt-2 flex gap-2">
+                  <span className="text-teal-700" aria-hidden>
+                    •
+                  </span>
+                  <span>Contacto directo por WhatsApp</span>
+                </li>
+                <li className="mt-2 flex gap-2">
+                  <span className="text-teal-700" aria-hidden>
+                    •
+                  </span>
+                  <span>Sin comisiones</span>
+                </li>
+              </ul>
             </div>
 
             <div className="mt-6 flex flex-col items-center gap-2 text-center">
