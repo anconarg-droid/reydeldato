@@ -68,7 +68,8 @@ export default function SimilaresFichaSection({
           maxWidth: 640,
         }}
       >
-        {subtitle || "Sugerencias basadas en lo que buscas y en la cercanía al lugar que elegiste."}
+        {subtitle ||
+          "Negocios que pueden atenderte en tu comuna u opciones parecidas en el rubro."}
       </p>
 
       <div

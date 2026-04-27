@@ -12,24 +12,6 @@ function s(v: unknown): string {
   return String(v).trim();
 }
 
-function normalizeKey(v: string): string {
-  return s(v)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function prettyWordsFromSlug(raw: string): string {
-  const base = s(raw).replace(/[-_]+/g, " ").trim();
-  if (!base) return "";
-  // Capitalización suave palabra a palabra (evita depender de displayTitleCaseWords aquí).
-  return base
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
-}
-
 /** Plural “suave” para titulares; si es frase, se deja tal cual. */
 function pluralSuave(texto: string): string {
   const raw = s(texto);
@@ -44,51 +26,6 @@ function pluralSuave(texto: string): string {
   return `${t}es`;
 }
 
-export function getTipoTexto(subcategoriaSlug?: string): "productos" | "clases" | "servicios" {
-  switch (s(subcategoriaSlug)) {
-    case "panaderia":
-    case "pasteleria":
-    case "comida-preparada":
-      return "productos";
-    case "clases_particulares":
-      return "clases";
-    default:
-      return "servicios";
-  }
-}
-
-function pickSupportTag(opts: {
-  tagsSlugs: string[];
-  subcategoriaNombre: string;
-  subcategoriaSlug: string;
-  categoriaNombre: string;
-}): string | null {
-  const allow = new Set([
-    "calefont",
-    "destape",
-    "fuga-agua",
-    "pizzas",
-    "sushi",
-  ]);
-
-  const subN = normalizeKey(opts.subcategoriaNombre);
-  const subS = normalizeKey(opts.subcategoriaSlug);
-  const catN = normalizeKey(opts.categoriaNombre);
-
-  for (const raw of opts.tagsSlugs) {
-    const tag = s(raw);
-    if (!tag) continue;
-    if (!allow.has(tag)) continue;
-    const k = normalizeKey(tag);
-    if (!k) continue;
-    if (k === subS) continue;
-    if (subN && k === subN) continue;
-    if (catN && k === catN) continue;
-    return tag;
-  }
-  return null;
-}
-
 export function getLabelInteligenteSimilares(input: LabelInput): {
   title: string;
   subtitle: string;
@@ -97,45 +34,18 @@ export function getLabelInteligenteSimilares(input: LabelInput): {
 } {
   const comuna = s(input.comunaNombre);
   const subNombre = s(input.subcategoriaNombre);
-  const subSlug = s(input.subcategoriaSlug);
   const catNombre = s(input.categoriaNombre);
-  const tags = Array.isArray(input.tagsSlugs)
-    ? input.tagsSlugs.map((x) => s(x)).filter(Boolean)
-    : [];
 
   const primaryLabel = subNombre || catNombre || "Servicios";
 
   const rubroPlural = pluralSuave(primaryLabel) || "servicios";
   const title = comuna
-    ? `Más ${rubroPlural} cerca de ${comuna}`
+    ? `Más ${rubroPlural} que atienden ${comuna}`
     : "Negocios similares";
 
-  const supportTag = pickSupportTag({
-    tagsSlugs: tags,
-    subcategoriaNombre: subNombre,
-    subcategoriaSlug: subSlug,
-    categoriaNombre: catNombre,
-  });
-
-  const tipoTexto = getTipoTexto(subSlug);
-  const labelLower = primaryLabel ? primaryLabel.toLowerCase() : "";
-  const baseSentence =
-    normalizeKey(primaryLabel) === "negocios" || normalizeKey(primaryLabel) === "servicios"
-      ? "Ofrecen servicios similares."
-      : `Ofrecen ${tipoTexto} similares de ${labelLower}.`;
-
-  const tagSentence = supportTag
-    ? ` Especialidad: ${prettyWordsFromSlug(supportTag).toLowerCase()}.`
-    : "";
-
-  const locationSentence = comuna
-    ? input.todosAtiendenComuna
-      ? ` Aparecen porque están en ${comuna}.`
-      : ` Aparecen porque están en ${comuna} o trabajan en esta zona.`
-    : "";
-
-  const subtitle = `${baseSentence}${tagSentence}${locationSentence}`.replace(/\s+/g, " ").trim();
+  const subtitle = comuna
+    ? "Negocios que pueden atenderte en tu comuna."
+    : "Opciones en el mismo rubro o servicios parecidos.";
 
   return { title, subtitle, primaryLabel };
 }
-

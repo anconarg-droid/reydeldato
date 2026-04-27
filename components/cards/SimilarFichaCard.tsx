@@ -48,16 +48,7 @@ export default function SimilarFichaCard({
     normalizeText(comunaConsultada) === normalizeText(comunaBase);
 
   const subRubro = s(item.subcategoria_nombre);
-  const catRubro = s(item.categoria_nombre);
-  const lineaRubro1 = subRubro
-    ? displayTitleCaseWords(subRubro)
-    : catRubro
-      ? displayTitleCaseWords(catRubro)
-      : "";
-  const lineaRubro2 =
-    subRubro && catRubro && normalizeText(subRubro) !== normalizeText(catRubro)
-      ? displayTitleCaseWords(catRubro)
-      : "";
+  const rubroSoloSub = subRubro ? displayTitleCaseWords(subRubro) : "";
 
   const descCorta = s(item.descripcion_corta);
 
@@ -125,40 +116,37 @@ export default function SimilarFichaCard({
           {nombreMostrar}
         </h3>
 
-        {lineaRubro1 ? (
-          <p className="m-0 text-[12px] font-semibold leading-snug text-slate-600">{lineaRubro1}</p>
-        ) : null}
-        {lineaRubro2 ? (
-          <p className="m-0 -mt-0.5 text-[12px] font-medium leading-snug text-slate-500">{lineaRubro2}</p>
-        ) : null}
-
         {descCorta ? (
           <p className="m-0 line-clamp-2 text-[12px] font-medium leading-snug text-slate-600">
             {descCorta}
           </p>
         ) : null}
 
-        <div className="mt-1 space-y-0.5 text-[12px] font-semibold leading-snug text-slate-600">
+        {rubroSoloSub ? (
+          <p className="m-0 text-[12px] font-semibold leading-snug text-slate-700">{rubroSoloSub}</p>
+        ) : null}
+
+        <div className="mt-0.5 space-y-0.5">
           {comunaConsultada ? (
-            mismoCtxYBase ? (
-              <p className="m-0">En {comunaConsultada}</p>
-            ) : comunaBase ? (
-              <>
-                <p className="m-0">Atiende {comunaConsultada}</p>
-                <p className="m-0 text-[11px] font-medium text-slate-500">Base en {comunaBase}</p>
-              </>
-            ) : (
-              <p className="m-0">Atiende {comunaConsultada}</p>
-            )
+            <>
+              <p className="m-0 text-[12px] font-semibold leading-snug text-teal-800">
+                📍 Atiende {comunaConsultada}
+              </p>
+              {!mismoCtxYBase && comunaBase ? (
+                <p className="m-0 text-[11px] font-medium leading-snug text-slate-500">
+                  Base en {comunaBase}
+                </p>
+              ) : null}
+            </>
           ) : comunaBase ? (
-            <p className="m-0">{comunaBase}</p>
+            <p className="m-0 text-[12px] font-medium text-slate-600">{comunaBase}</p>
           ) : null}
         </div>
 
         <a
           href={href}
           onClick={handleVerFicha}
-          className="mt-auto flex min-h-[40px] items-center justify-center rounded-[10px] border border-slate-200 bg-white pt-2.5 text-[13px] font-extrabold text-slate-900 shadow-sm"
+          className="mt-auto flex min-h-[44px] items-center justify-center rounded-[10px] border-2 border-slate-300 bg-white px-3 py-2.5 text-[13px] font-extrabold text-slate-800 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-50 hover:text-slate-950"
         >
           Ver ficha
         </a>
