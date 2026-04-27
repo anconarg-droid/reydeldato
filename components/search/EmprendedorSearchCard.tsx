@@ -83,6 +83,8 @@ export type EmprendedorSearchCardProps = {
    * sin WhatsApp, ver ficha, descripción, ubicación ni modalidad.
    */
   usarCardSimple?: boolean;
+  /** Ajustes de layout para vitrina Home (altura uniforme). */
+  homeCarousel?: boolean;
 };
 
 const ACTIONS_H = 48;
@@ -251,6 +253,7 @@ function slotOrSpace(text: string): string {
 }
 
 export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
+  const homeCarousel = p.homeCarousel === true;
   const whatsappHref = buildWhatsappHref(p.whatsappPrincipal);
   /** Dígitos presentes → enlace wa.me válido; no acoplado a tipo de perfil. */
   const tieneWhatsappValido = Boolean(whatsappHref);
@@ -574,7 +577,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       >
         {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
         <div
-          className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 aspect-square ${
+          className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 ${
+            homeCarousel ? "h-44" : "aspect-square"
+          } ${
             mostrarFoto ? "bg-slate-100" : ""
           }`}
           style={mostrarFoto ? undefined : PLACEHOLDER_SIN_FOTO_AREA_STYLE}
@@ -645,7 +650,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             {lineaTaxonomia.trim() ? lineaTaxonomia.trim() : " "}
           </p>
 
-          <p className="m-0 line-clamp-3 min-h-[3.25rem] w-full shrink-0 text-sm font-medium leading-snug text-slate-700">
+          <p
+            className={`m-0 ${homeCarousel ? "line-clamp-2 min-h-[2.25rem]" : "line-clamp-3 min-h-[3.25rem]"} w-full shrink-0 text-sm font-medium leading-snug text-slate-700`}
+          >
             {descDisplay}
           </p>
 
@@ -737,8 +744,29 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             )}
           </div>
 
-          {/* Bloque: Local físico + dirección (separado de "Atiende") */}
-          {tieneLocalFisico ? (
+          {/* Bloque: Local físico + dirección (siempre ocupa alto fijo en Home). */}
+          {homeCarousel ? (
+            <div
+              className={`my-1 w-full shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 ${
+                tieneLocalFisico ? "" : "opacity-0"
+              }`}
+              style={{ height: 60 }}
+              aria-hidden={!tieneLocalFisico}
+            >
+              <p className="m-0 flex items-center gap-1.5 text-[12px] font-bold leading-tight text-slate-800">
+                <span aria-hidden>🏪</span>
+                <span>Local físico</span>
+              </p>
+              <p className="m-0 mt-1 flex items-start gap-1.5 text-[13px] leading-tight text-slate-700">
+                <span aria-hidden className="mt-[1px]">
+                  📍
+                </span>
+                <span className="truncate">
+                  {localDireccionDisplay ? localDireccionDisplay : "\u00A0"}
+                </span>
+              </p>
+            </div>
+          ) : tieneLocalFisico ? (
             <div className="my-1 w-full shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
               <p className="m-0 flex items-center gap-1.5 text-[12px] font-bold leading-tight text-slate-800">
                 <span aria-hidden>🏪</span>

@@ -6,6 +6,7 @@ import EmprendedorSearchCard, {
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { postClientAnalyticsEvent } from "@/lib/postClientAnalyticsEvent";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {
   cards: EmprendedorSearchCardProps[];
@@ -268,6 +269,33 @@ export default function HomeUltimosPublicadosClient({
         </p>
 
         <div className="relative mt-8">
+          {/* Flechas discretas */}
+          {previewCards.length > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  bumpInteractionPause();
+                  void scrollToIndex(activeIndex - 1);
+                }}
+                className="hidden md:inline-flex absolute left-0 top-1/2 z-20 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 shadow-sm size-10 hover:bg-white"
+                aria-label="Anterior"
+              >
+                <ChevronLeft className="size-5 text-slate-700" aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  bumpInteractionPause();
+                  void scrollToIndex(activeIndex + 1);
+                }}
+                className="hidden md:inline-flex absolute right-0 top-1/2 z-20 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 shadow-sm size-10 hover:bg-white"
+                aria-label="Siguiente"
+              >
+                <ChevronRight className="size-5 text-slate-700" aria-hidden />
+              </button>
+            </>
+          ) : null}
           <div
             ref={scrollerRef}
             className="home-carousel-scroll flex flex-nowrap gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-3 pl-0.5 pr-6 pt-1 [-webkit-overflow-scrolling:touch] md:gap-5 lg:gap-6 lg:pr-0 focus:outline-none"
@@ -304,7 +332,7 @@ export default function HomeUltimosPublicadosClient({
                     <div className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-900">
                       Disponible ahora
                     </div>
-                    <EmprendedorSearchCard {...props} />
+                    <EmprendedorSearchCard {...props} homeCarousel />
                   </div>
                 </div>
               </div>
