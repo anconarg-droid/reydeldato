@@ -1740,6 +1740,20 @@ export async function PUT(req: NextRequest) {
         );
       }
 
+      // Regla producto: cualquier edición (aunque mínima) deja la ficha en revisión
+      // hasta ser aprobada nuevamente por Admin.
+      const nowIso = new Date().toISOString();
+      const { error: markRevErr } = await supabase
+        .from("emprendedores")
+        .update({ estado_publicacion: ESTADO_PUBLICACION.en_revision, updated_at: nowIso })
+        .eq("id", id);
+      if (markRevErr) {
+        return NextResponse.json(
+          { ok: false, error: markRevErr.message, message: markRevErr.message },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json({
         ok: true,
         postulacion_id: up.postulacion_id,
@@ -2332,6 +2346,21 @@ export async function PATCH(req: NextRequest) {
           { status: 500 }
         );
       }
+
+      // Regla producto: cualquier edición (aunque mínima) deja la ficha en revisión
+      // hasta ser aprobada nuevamente por Admin.
+      const nowIso = new Date().toISOString();
+      const { error: markRevErr } = await supabase
+        .from("emprendedores")
+        .update({ estado_publicacion: ESTADO_PUBLICACION.en_revision, updated_at: nowIso })
+        .eq("id", id);
+      if (markRevErr) {
+        return NextResponse.json(
+          { ok: false, error: markRevErr.message, message: markRevErr.message },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json({
         ok: true,
         postulacion_id: up.postulacion_id,

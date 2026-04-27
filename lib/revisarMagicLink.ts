@@ -273,11 +273,36 @@ export async function sendRevisarMagicLinkEmail(to: string, absoluteUrl: string)
     body: JSON.stringify({
       from,
       to: [dest],
-      subject: "Edita tu ficha en Rey del Dato",
-      html: `<p>Hola,</p>
-<p>Puedes editar tu ficha y acceder a tu panel con este enlace (válido por ${REVISAR_ACCESS_TOKEN_DIAS} días):</p>
-<p>👉 <a href="${absoluteUrl}">${absoluteUrl}</a></p>
-<p>Si no solicitaste esto, ignora este mensaje.</p>`,
+      subject: "Mejora tu perfil y consigue más clientes",
+      html: `<div style="background:#f9fafb;padding:24px;font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#111827;">
+  <div style="max-width:560px;margin:0 auto;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;">
+      <div style="font-weight:900;letter-spacing:0.06em;font-size:12px;color:#0f766e;margin-bottom:10px;">REY DEL DATO</div>
+      <h1 style="font-size:20px;line-height:1.3;margin:0 0 10px 0;color:#111827;">Mejora tu perfil y consigue más clientes</h1>
+
+      <p style="margin:0 0 14px 0;color:#4b5563;line-height:1.6;">Puedes editar tu ficha y acceder a tu panel desde aquí (válido por ${REVISAR_ACCESS_TOKEN_DIAS} días).</p>
+
+      <div style="margin:0 0 14px 0;">
+        <a href="${absoluteUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:800;font-size:16px;line-height:1;border-radius:12px;padding:14px 18px;">Abrir mi panel</a>
+      </div>
+
+      <p style="margin:0 0 0 0;color:#4b5563;line-height:1.6;">Si el botón no funciona, usa este enlace: <a href="${absoluteUrl}" style="color:#0f766e;text-decoration:underline;">${absoluteUrl}</a></p>
+
+      <div style="border-top:1px solid #e5e7eb;margin:18px 0;"></div>
+
+      <p style="margin:0 0 10px 0;color:#111827;font-weight:800;">Qué hacer para recibir más contactos</p>
+      <ul style="margin:0 0 12px 18px;padding:0;color:#4b5563;line-height:1.6;">
+        <li>Sube fotos reales</li>
+        <li>Ajusta tu descripción</li>
+        <li>Completa tu información</li>
+      </ul>
+
+      <p style="margin:0;color:#4b5563;line-height:1.6;">Si no solicitaste este acceso, ignora este mensaje.</p>
+    </div>
+
+    <p style="margin:14px 0 0 0;color:#6b7280;font-size:13px;line-height:1.5;">— Equipo Rey del Dato</p>
+  </div>
+</div>`,
     }),
   });
 
@@ -322,11 +347,36 @@ export async function sendPanelReenvioAccessEmail(
     body: JSON.stringify({
       from,
       to: [dest],
-      subject: "Nuevo acceso a tu ficha — Rey del Dato",
-      html: `<p>Hola,</p>
-<p>Aquí tienes un enlace nuevo para editar tu ficha y acceder a tu panel (válido por ${diasValidos} días):</p>
-<p>👉 <a href="${absoluteUrl}">${absoluteUrl}</a></p>
-<p>Si no solicitaste esto, ignora este mensaje.</p>`,
+      subject: "Mejora tu perfil y consigue más clientes",
+      html: `<div style="background:#f9fafb;padding:24px;font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#111827;">
+  <div style="max-width:560px;margin:0 auto;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;">
+      <div style="font-weight:900;letter-spacing:0.06em;font-size:12px;color:#0f766e;margin-bottom:10px;">REY DEL DATO</div>
+      <h1 style="font-size:20px;line-height:1.3;margin:0 0 10px 0;color:#111827;">Mejora tu perfil y consigue más clientes</h1>
+
+      <p style="margin:0 0 14px 0;color:#4b5563;line-height:1.6;">Puedes editar tu ficha y acceder a tu panel desde aquí (válido por ${diasValidos} días).</p>
+
+      <div style="margin:0 0 14px 0;">
+        <a href="${absoluteUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:800;font-size:16px;line-height:1;border-radius:12px;padding:14px 18px;">Abrir mi panel</a>
+      </div>
+
+      <p style="margin:0 0 0 0;color:#4b5563;line-height:1.6;">Si el botón no funciona, usa este enlace: <a href="${absoluteUrl}" style="color:#0f766e;text-decoration:underline;">${absoluteUrl}</a></p>
+
+      <div style="border-top:1px solid #e5e7eb;margin:18px 0;"></div>
+
+      <p style="margin:0 0 10px 0;color:#111827;font-weight:800;">Qué hacer para recibir más contactos</p>
+      <ul style="margin:0 0 12px 18px;padding:0;color:#4b5563;line-height:1.6;">
+        <li>Sube fotos reales</li>
+        <li>Ajusta tu descripción</li>
+        <li>Completa tu información</li>
+      </ul>
+
+      <p style="margin:0;color:#4b5563;line-height:1.6;">Si no solicitaste este acceso, ignora este mensaje.</p>
+    </div>
+
+    <p style="margin:14px 0 0 0;color:#6b7280;font-size:13px;line-height:1.5;">— Equipo Rey del Dato</p>
+  </div>
+</div>`,
     }),
   });
 

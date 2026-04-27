@@ -136,6 +136,16 @@ export async function POST(request: Request, context: RouteContext) {
       return serverError("No se pudo guardar la edición pendiente", "Sin id de postulación");
     }
 
+    // Regla producto: cualquier edición (aunque mínima) deja la ficha en revisión
+    // hasta ser aprobada nuevamente por Admin.
+    const { error: markRevErr } = await supabase
+      .from("emprendedores")
+      .update({ estado_publicacion: "en_revision", updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (markRevErr) {
+      return serverError("No se pudo actualizar estado a revisión", markRevErr.message);
+    }
+
     return created({
       ok: true,
       postulacion_id: data.id,

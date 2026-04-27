@@ -84,33 +84,44 @@ export async function notifyEmprendimientoAprobadoEmail(
       return { fichaPublicaUrl, panelUrl };
     }
 
-    const fichaLinkHtml = fichaPublicaUrl
-      ? `<p>👉 <a href="${fichaPublicaUrl}">${fichaPublicaUrl}</a></p>`
-      : "";
-    const panelLinkHtml = panelUrl
-      ? `<p>👉 <a href="${panelUrl}">${panelUrl}</a></p>`
-      : "";
+    const panelCta =
+      panelUrl
+        ? `<a href="${panelUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:800;font-size:16px;line-height:1;border-radius:12px;padding:14px 18px;">Editar y mejorar mi perfil</a>`
+        : "";
+    const fichaSec =
+      fichaPublicaUrl
+        ? `<a href="${fichaPublicaUrl}" style="color:#0f766e;text-decoration:underline;">Ver mi ficha</a>`
+        : "";
 
-    const html = `<p>Hola,</p>
+    const html = `<div style="background:#f9fafb;padding:24px;font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#111827;">
+  <div style="max-width:560px;margin:0 auto;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;">
+      <div style="font-weight:900;letter-spacing:0.06em;font-size:12px;color:#0f766e;margin-bottom:10px;">REY DEL DATO</div>
+      <h1 style="font-size:20px;line-height:1.3;margin:0 0 10px 0;color:#111827;">🚀 Tu negocio ya está visible</h1>
 
-<p>Tu emprendimiento <strong>${safeNombre}</strong> ya fue publicado en <strong>Rey del Dato</strong>.</p>
+      <p style="margin:0 0 12px 0;color:#4b5563;line-height:1.6;">Tu emprendimiento <strong style="color:#111827;">${safeNombre}</strong> ya está publicado.</p>
 
-<p>Puedes ver tu ficha aquí:</p>
-${fichaLinkHtml}
+      <p style="margin:0 0 16px 0;color:#4b5563;line-height:1.6;"><strong style="color:#111827;">Qué pasa ahora:</strong> desde ahora, personas de tu comuna pueden encontrarte y contactarte directamente por WhatsApp.</p>
 
-<p>Para editar tu ficha y acceder a tu panel:</p>
-${panelLinkHtml}
+      <p style="margin:0 0 12px 0;color:#111827;font-weight:800;">Qué hacer ahora</p>
+      <div style="margin:0 0 14px 0;">${panelCta}</div>
+      <p style="margin:0 0 0 0;color:#4b5563;line-height:1.6;">También puedes ver tu ficha pública: ${fichaSec}</p>
 
-<p>Desde tu panel puedes:</p>
-<ul>
-  <li>Editar tu información</li>
-  <li>Subir fotos</li>
-  <li>Mejorar tu perfil</li>
-</ul>
+      <div style="border-top:1px solid #e5e7eb;margin:18px 0;"></div>
 
-<p>Mientras más completo tu perfil, más confianza generas.</p>
+      <p style="margin:0 0 10px 0;color:#111827;font-weight:800;">📈 Importante</p>
+      <p style="margin:0 0 12px 0;color:#4b5563;line-height:1.6;">Los perfiles con fotos y descripción completa reciben más contactos.</p>
+      <ul style="margin:0 0 12px 18px;padding:0;color:#4b5563;line-height:1.6;">
+        <li>Sube fotos</li>
+        <li>Mejora tu descripción</li>
+        <li>Completa tu información</li>
+      </ul>
+      <p style="margin:0;color:#4b5563;line-height:1.6;">Mientras más completo tu perfil, más clientes generas.</p>
+    </div>
 
-<p>— Equipo Rey del Dato</p>`;
+    <p style="margin:14px 0 0 0;color:#6b7280;font-size:13px;line-height:1.5;">— Equipo Rey del Dato</p>
+  </div>
+</div>`;
 
     // eslint-disable-next-line no-console
     console.log("[email][aprobacion] intentando enviar", {
@@ -121,7 +132,7 @@ ${panelLinkHtml}
 
     const enviadoOk = await sendEmail({
       to: emailTo,
-      subject: "Tu emprendimiento fue publicado en Rey del Dato",
+      subject: "🚀 Tu negocio ya está visible en Rey del Dato",
       html,
     });
 
