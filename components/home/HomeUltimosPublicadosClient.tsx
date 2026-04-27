@@ -21,7 +21,7 @@ const SCROLL_STEP_DURATION_MS = 900;
 const PAUSE_BETWEEN_STEPS_MS = 4000;
 
 /** Sin movimiento al cargar: no “ataca” al entrar. */
-const INITIAL_IDLE_MS = 14000;
+const INITIAL_IDLE_MS = 2500;
 
 const RESUME_AFTER_INTERACTION_MS = 22000;
 
@@ -256,7 +256,7 @@ export default function HomeUltimosPublicadosClient({
   }, [getStride]);
 
   return (
-    <div className="w-full py-2" aria-labelledby="home-ultimos-publicados-heading">
+    <div className="w-full py-0" aria-labelledby="home-ultimos-publicados-heading">
       <div className="mx-auto w-full max-w-5xl px-0">
         <h2
           id="home-ultimos-publicados-heading"
@@ -268,7 +268,7 @@ export default function HomeUltimosPublicadosClient({
           Estos son algunos de los servicios disponibles
         </p>
 
-        <div className="relative mt-8">
+        <div className="relative mt-5">
           {/* Flechas discretas */}
           {previewCards.length > 1 ? (
             <>
@@ -278,10 +278,10 @@ export default function HomeUltimosPublicadosClient({
                   bumpInteractionPause();
                   void scrollToIndex(activeIndex - 1);
                 }}
-                className="hidden md:inline-flex absolute left-0 top-1/2 z-20 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 shadow-sm size-10 hover:bg-white"
+                className="absolute left-2 top-1/2 z-20 -translate-y-1/2 inline-flex items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg size-11 hover:bg-teal-50"
                 aria-label="Anterior"
               >
-                <ChevronLeft className="size-5 text-slate-700" aria-hidden />
+                <ChevronLeft className="size-6 text-teal-800" aria-hidden />
               </button>
               <button
                 type="button"
@@ -289,10 +289,10 @@ export default function HomeUltimosPublicadosClient({
                   bumpInteractionPause();
                   void scrollToIndex(activeIndex + 1);
                 }}
-                className="hidden md:inline-flex absolute right-0 top-1/2 z-20 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 shadow-sm size-10 hover:bg-white"
+                className="absolute right-2 top-1/2 z-20 -translate-y-1/2 inline-flex items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg size-11 hover:bg-teal-50"
                 aria-label="Siguiente"
               >
-                <ChevronRight className="size-5 text-slate-700" aria-hidden />
+                <ChevronRight className="size-6 text-teal-800" aria-hidden />
               </button>
             </>
           ) : null}
