@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Sora } from "next/font/google";
 import { postClientAnalyticsEvent } from "@/lib/postClientAnalyticsEvent";
 import { capturePosthogEvent } from "@/lib/posthog";
+import ReyDelDatoLogo from "@/components/brand/ReyDelDatoLogo";
 
 const sora = Sora({
   subsets: ["latin"],
@@ -29,24 +29,9 @@ export default function GlobalHeader() {
           style={{ minHeight: 56, paddingTop: 10, paddingBottom: 10 }}
         >
           {/* Logo */}
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              textDecoration: "none",
-              flexShrink: 0,
-            }}
-          >
-            <Image
-              src="/rey-del-dato-logo-teal.png"
-              alt="Rey del Dato — Datos Reales"
-              width={160}
-              height={34}
-              priority
-              style={{ height: 34, width: "auto" }}
-            />
-          </Link>
+          <div style={{ flexShrink: 0 }}>
+            <ReyDelDatoLogo tagline="servicios" />
+          </div>
 
           {/* Nav */}
           <nav className="flex flex-wrap items-center justify-end gap-2 sm:gap-5">
