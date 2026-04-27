@@ -140,66 +140,65 @@ export default function HomeHero({ children }: Props) {
       {/* Comparación: publicidad vs intención */}
       <section className="w-full border-t border-slate-100 bg-white">
         <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">
-          <p className="text-center text-sm font-semibold text-slate-700">
-            Tu negocio deja de perderse en grupos de WhatsApp.
-          </p>
-          <h2 className="text-balance text-center text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            Aparece en tu comuna cuando te buscan
-          </h2>
-
-          <p className="mx-auto mt-4 max-w-2xl text-center text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
-            Sin pagar publicidad. Sin intermediarios.
-          </p>
-
-          <div className="mx-auto mt-10 max-w-xl">
-            <div className="rounded-2xl border border-teal-200 bg-white p-6 text-center shadow-sm ring-1 ring-teal-100">
-              <div className="mt-2 text-2xl font-black tracking-tight text-teal-900">
-                Empieza gratis por 90 días
-              </div>
-              <ul className="mx-auto mt-4 max-w-sm text-left text-sm font-semibold text-slate-800">
-                <li className="flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Te encuentran cuando te buscan</span>
-                </li>
-                <li className="mt-2 flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Contacto directo por WhatsApp</span>
-                </li>
-                <li className="mt-2 flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Sin comisiones</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="mt-6 flex flex-col items-center gap-2 text-center">
-              <Link
-                href="/publicar"
-                onClick={() =>
-                  capturePosthogEvent("click_publicar_home", {
-                    origen: "home_hero",
-                  })
-                }
-                className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-xl bg-teal-700 px-8 text-base font-extrabold text-white shadow-md transition hover:bg-teal-800 sm:w-auto"
-              >
-                Publica tu negocio gratis
-              </Link>
-              <p className="text-xs font-semibold text-slate-500">
-                Sin tarjeta. Sin compromiso. Te toma menos de 2 minutos.
+          <div className="grid items-start gap-10 md:grid-cols-2 md:gap-14">
+            {/* Izquierda: texto */}
+            <div className="text-left">
+              <p className="text-sm font-semibold text-slate-700">
+                Tu negocio deja de perderse en grupos de WhatsApp.
+              </p>
+              <h2 className="mt-2 text-balance text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+                Aparece en tu comuna cuando te buscan
+              </h2>
+              <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
+                Sin pagar publicidad. Sin intermediarios.
+              </p>
+              <p className="mt-6 text-sm font-semibold text-slate-800 sm:text-base">
+                No necesitas ser experto en marketing. Solo hacer bien tu trabajo.
               </p>
             </div>
-          </div>
 
-          <div className="mt-10 flex flex-col items-center gap-4 text-center sm:mt-12">
-            <p className="text-sm font-semibold text-slate-800 sm:text-base">
-              No necesitas ser experto en marketing. Solo hacer bien tu trabajo.
-            </p>
+            {/* Derecha: card + CTA */}
+            <div className="w-full">
+              <div className="rounded-2xl border border-teal-200 bg-white p-6 text-center shadow-sm ring-1 ring-teal-100">
+                <div className="mt-2 text-2xl font-black tracking-tight text-teal-900">
+                  Empieza gratis por 90 días
+                </div>
+                <ul className="mx-auto mt-4 max-w-sm text-left text-sm font-semibold text-slate-800">
+                  <li className="flex gap-2">
+                    <span className="text-teal-700" aria-hidden>
+                      •
+                    </span>
+                    <span>Te encuentran cuando te buscan</span>
+                  </li>
+                  <li className="mt-2 flex gap-2">
+                    <span className="text-teal-700" aria-hidden>
+                      •
+                    </span>
+                    <span>Contacto directo por WhatsApp</span>
+                  </li>
+                  <li className="mt-2 flex gap-2">
+                    <span className="text-teal-700" aria-hidden>
+                      •
+                    </span>
+                    <span>Sin comisiones</span>
+                  </li>
+                </ul>
+
+                <div className="mt-6 flex flex-col items-center gap-2 text-center">
+                  <Link
+                    href="/publicar"
+                    onClick={() =>
+                      capturePosthogEvent("click_publicar_home", {
+                        origen: "home_hero",
+                      })
+                    }
+                    className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-xl bg-teal-700 px-8 text-base font-extrabold text-white shadow-md transition hover:bg-teal-800 sm:w-auto"
+                  >
+                    Publica tu negocio gratis
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
