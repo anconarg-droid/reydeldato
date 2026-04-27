@@ -273,12 +273,6 @@ export default function ResultadosClient({
     </header>
   );
 
-  const tieneCriterioBusqueda =
-    Boolean(q) ||
-    Boolean(subcategoriaSlug) ||
-    Boolean(subcategoriaId) ||
-    Boolean(categoriaSlug);
-
   if (comuna && !directorioComunaAbierto) {
     const qParaTodoChile = (initialQDisplay ?? "").trim();
     const qNormTodoChile = qParaTodoChile ? normalizeText(qParaTodoChile) : "";
@@ -318,22 +312,17 @@ export default function ResultadosClient({
           className="rounded-2xl border border-amber-200/90 bg-amber-50/90 px-4 py-5 sm:px-6"
         >
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-900/80">
-            Comuna no activa por el momento
+            Directorio en crecimiento
           </p>
           <h1
             id="resultados-comuna-cerrada-titulo"
             className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900"
           >
-            {tituloComunaDisplay} aún se está activando
+            {tituloComunaDisplay} aún está creciendo en Rey del Dato
           </h1>
           <p className="mt-2 text-sm text-slate-700 leading-relaxed">
-            {subcategoriaSlug
-              ? "Esta comuna sigue en activación; por ahora solo mostramos coincidencias directas para el rubro que elegiste (sin rellenar con otras categorías ni resultados generales)."
-              : categoriaSlug
-                ? "Esta comuna sigue en activación; por ahora solo mostramos coincidencias directas para la categoría que elegiste (sin rellenar con otras categorías ni resultados generales)."
-                : tieneCriterioBusqueda
-                  ? "El directorio local completo aún no está disponible. Debajo solo verás emprendimientos que coincidan con lo que buscaste en esta comuna (sin rellenar con otras categorías ni resultados generales)."
-                  : "El directorio local completo aún no está disponible. Debajo puedes explorar emprendimientos que ya se han sumado y también buscar un servicio específico."}
+            Ya hay algunos servicios disponibles. Mientras más negocios se suman, más completo se
+            vuelve el directorio.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link

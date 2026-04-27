@@ -238,7 +238,7 @@ export default function PublicSearchResults({
       return (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 sm:px-6">
           <p className="m-0 text-sm font-semibold text-slate-900">
-            Aún no hay {label} registrados en esta comuna
+            Aún no encontramos {label} en esta comuna
           </p>
           {hp && hr ? (
             <div className="mt-4 flex flex-wrap gap-3">
