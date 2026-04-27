@@ -23,10 +23,10 @@ export default function HomeUltimosPublicadosClient({
 }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const previewCardsRef = useRef<EmprendedorSearchCardProps[]>([]);
-  const [hoverPaused, setHoverPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [interactPaused, setInteractPaused] = useState(false);
   const [pageHidden, setPageHidden] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const interactTimerRef = useRef<number | null>(null);
   const hoverPausedRef = useRef(false);
   const interactPausedRef = useRef(false);
@@ -44,8 +44,8 @@ export default function HomeUltimosPublicadosClient({
   }, []);
 
   useEffect(() => {
-    hoverPausedRef.current = hoverPaused;
-  }, [hoverPaused]);
+    hoverPausedRef.current = isHovered;
+  }, [isHovered]);
 
   useEffect(() => {
     interactPausedRef.current = interactPaused;
@@ -114,27 +114,31 @@ export default function HomeUltimosPublicadosClient({
         left: target,
         behavior: respectReducedMotion ? "auto" : "smooth",
       });
-      setActiveIndex(clamped);
+      setCurrentIndex(clamped);
     },
     [getStride, respectReducedMotion]
   );
 
   useEffect(() => {
+    const totalSlides = previewCardsRef.current.length;
     if (respectReducedMotion) return;
-    const count = previewCardsRef.current.length;
-    if (count <= 1) return;
+    if (pageHidden) return;
+    if (interactPaused) return;
+    if (isHovered) return;
+    if (totalSlides <= 1) return;
 
-    if (hoverPaused || interactPaused || pageHidden) return;
+    const interval = window.setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % totalSlides);
+    }, 3000);
 
-    const id = window.setInterval(() => {
-      if (hoverPausedRef.current || interactPausedRef.current || pageHiddenRef.current) return;
-      const c = previewCardsRef.current.length;
-      if (c <= 1) return;
-      void scrollToIndex((activeIndex + 1) % c);
-    }, AUTO_ADVANCE_MS);
+    return () => window.clearInterval(interval);
+  }, [isHovered, interactPaused, pageHidden, respectReducedMotion]);
 
-    return () => window.clearInterval(id);
-  }, [activeIndex, hoverPaused, interactPaused, pageHidden, respectReducedMotion, scrollToIndex]);
+  useEffect(() => {
+    const totalSlides = previewCardsRef.current.length;
+    if (totalSlides <= 1) return;
+    void scrollToIndex(currentIndex);
+  }, [currentIndex, scrollToIndex]);
 
   const minNegocios = 31;
   const negociosLabel = Math.max(
@@ -157,7 +161,7 @@ export default function HomeUltimosPublicadosClient({
         const idx = Math.round(el.scrollLeft / stride);
         const count = previewCardsRef.current.length || 1;
         const safe = Math.max(0, Math.min(count - 1, idx));
-        setActiveIndex(safe);
+        setCurrentIndex(safe);
       });
     };
     el.addEventListener("scroll", onScroll, { passive: true });
@@ -188,7 +192,7 @@ export default function HomeUltimosPublicadosClient({
                 type="button"
                 onClick={() => {
                   bumpInteractionPause();
-                  void scrollToIndex(activeIndex - 1);
+                  void scrollToIndex(currentIndex - 1);
                 }}
                 className="absolute left-2 top-1/2 z-20 -translate-y-1/2 inline-flex items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg size-11 hover:bg-teal-50"
                 aria-label="Anterior"
@@ -199,7 +203,7 @@ export default function HomeUltimosPublicadosClient({
                 type="button"
                 onClick={() => {
                   bumpInteractionPause();
-                  void scrollToIndex(activeIndex + 1);
+                  void scrollToIndex(currentIndex + 1);
                 }}
                 className="absolute right-2 top-1/2 z-20 -translate-y-1/2 inline-flex items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg size-11 hover:bg-teal-50"
                 aria-label="Siguiente"
@@ -214,8 +218,8 @@ export default function HomeUltimosPublicadosClient({
             role="list"
             aria-label="Emprendimientos publicados recientemente"
             tabIndex={0}
-            onMouseEnter={() => setHoverPaused(true)}
-            onMouseLeave={() => setHoverPaused(false)}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             onPointerDownCapture={bumpInteractionPause}
             onWheelCapture={bumpInteractionPause}
             onTouchStartCapture={bumpInteractionPause}
@@ -223,12 +227,12 @@ export default function HomeUltimosPublicadosClient({
               if (e.key === "ArrowRight") {
                 e.preventDefault();
                 bumpInteractionPause();
-                void scrollToIndex(activeIndex + 1);
+                void scrollToIndex(currentIndex + 1);
               }
               if (e.key === "ArrowLeft") {
                 e.preventDefault();
                 bumpInteractionPause();
-                void scrollToIndex(activeIndex - 1);
+                void scrollToIndex(currentIndex - 1);
               }
             }}
           >
@@ -270,10 +274,10 @@ export default function HomeUltimosPublicadosClient({
                 }}
                 className={[
                   "h-2 w-2 rounded-full transition-colors",
-                  i === activeIndex ? "bg-teal-700" : "bg-slate-300 hover:bg-slate-400",
+                  i === currentIndex ? "bg-teal-700" : "bg-slate-300 hover:bg-slate-400",
                 ].join(" ")}
                 aria-label={`Ir al elemento ${i + 1} de ${previewCards.length}`}
-                aria-current={i === activeIndex ? "true" : undefined}
+                aria-current={i === currentIndex ? "true" : undefined}
               />
             ))}
           </div>
