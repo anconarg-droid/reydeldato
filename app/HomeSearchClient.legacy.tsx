@@ -482,8 +482,8 @@ export default function HomeSearchClient({
       </div>
       </div>
 
-      <p className="mt-3 text-center text-sm text-[#6b7280]">
-        Deja los grupos (whatsapp y facebook).
+      <p className="mt-3 text-center text-sm font-medium text-slate-700">
+        Deja los grupos de WhatsApp y Facebook.
       </p>
     </section>
   );
