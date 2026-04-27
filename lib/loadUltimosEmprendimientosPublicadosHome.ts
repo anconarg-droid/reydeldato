@@ -30,10 +30,14 @@ export async function loadUltimosEmprendimientosPublicadosHome(): Promise<Empren
 
     const rows = Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
     const cards: EmprendedorSearchCardProps[] = [];
+    const seen = new Set<string>();
 
     for (const row of rows) {
       const item = vwPublicRowToBuscarApiItem(row);
       if (!item) continue;
+      const slug = String((item as any).slug ?? "").trim();
+      if (!slug || seen.has(slug)) continue;
+      seen.add(slug);
       cards.push(buscarApiItemToEmprendedorCardProps(item, null, "home"));
       if (cards.length >= MAX_ITEMS) break;
     }

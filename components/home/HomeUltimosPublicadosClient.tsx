@@ -14,20 +14,8 @@ type Props = {
   totalNegociosActivos?: number | null;
 };
 
-/** Un paso de scroll: lento y suave (evita sensación de slider / banner). */
-const SCROLL_STEP_DURATION_MS = 900;
-
-/** Silencio entre movimientos: ritmo sobrio. */
-const PAUSE_BETWEEN_STEPS_MS = 4000;
-
-/** Sin movimiento al cargar: no “ataca” al entrar. */
-const INITIAL_IDLE_MS = 2500;
-
-const RESUME_AFTER_INTERACTION_MS = 22000;
-
-function easeInOutSine(t: number): number {
-  return -(Math.cos(Math.PI * t) - 1) / 2;
-}
+const AUTO_ADVANCE_MS = 4000;
+const RESUME_AFTER_INTERACTION_MS = 6500;
 
 export default function HomeUltimosPublicadosClient({
   cards,
@@ -44,7 +32,6 @@ export default function HomeUltimosPublicadosClient({
   const interactPausedRef = useRef(false);
   const pageHiddenRef = useRef(false);
   const rafRef = useRef<number | null>(null);
-  const timerRef = useRef<number | null>(null);
 
   const [respectReducedMotion, setRespectReducedMotion] = useState(false);
 
@@ -101,45 +88,6 @@ export default function HomeUltimosPublicadosClient({
     }
   }, []);
 
-  const clearLoopTimer = useCallback(() => {
-    if (timerRef.current != null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  const animateScrollTo = useCallback(
-    (targetLeft: number): Promise<void> => {
-      const el = scrollerRef.current;
-      if (!el) return Promise.resolve();
-
-      cancelScrollAnimation();
-      const start = el.scrollLeft;
-      const delta = targetLeft - start;
-      if (Math.abs(delta) < 1) return Promise.resolve();
-
-      return new Promise((resolve) => {
-        const t0 = performance.now();
-        const tick = (now: number) => {
-          const t = Math.min(1, (now - t0) / SCROLL_STEP_DURATION_MS);
-          const e = easeInOutSine(t);
-          el.scrollLeft = start + delta * e;
-          if (t < 1) {
-            rafRef.current = requestAnimationFrame(tick);
-          } else {
-            rafRef.current = null;
-            resolve();
-          }
-        };
-        rafRef.current = requestAnimationFrame(tick);
-      });
-    },
-    [cancelScrollAnimation]
-  );
-
-  const animateScrollToRef = useRef(animateScrollTo);
-  animateScrollToRef.current = animateScrollTo;
-
   const getStride = useCallback(() => {
     const el = scrollerRef.current;
     if (!el) return { stride: 0, maxScroll: 0 };
@@ -162,67 +110,31 @@ export default function HomeUltimosPublicadosClient({
       const count = Math.max(1, previewCardsRef.current.length);
       const clamped = ((idx % count) + count) % count;
       const target = Math.max(0, Math.min(el.scrollWidth - el.clientWidth, clamped * stride));
-      await animateScrollToRef.current(target);
+      el.scrollTo({
+        left: target,
+        behavior: respectReducedMotion ? "auto" : "smooth",
+      });
       setActiveIndex(clamped);
     },
-    [getStride]
+    [getStride, respectReducedMotion]
   );
 
   useEffect(() => {
-    if (cards.length <= 1 || respectReducedMotion) return;
+    if (respectReducedMotion) return;
+    const count = previewCardsRef.current.length;
+    if (count <= 1) return;
 
-    let cancelled = false;
+    if (hoverPaused || interactPaused || pageHidden) return;
 
-    const schedule = (ms: number, fn: () => void) => {
-      clearLoopTimer();
-      timerRef.current = window.setTimeout(() => {
-        timerRef.current = null;
-        if (!cancelled) fn();
-      }, ms);
-    };
+    const id = window.setInterval(() => {
+      if (hoverPausedRef.current || interactPausedRef.current || pageHiddenRef.current) return;
+      const c = previewCardsRef.current.length;
+      if (c <= 1) return;
+      void scrollToIndex((activeIndex + 1) % c);
+    }, AUTO_ADVANCE_MS);
 
-    const stepOnce = async () => {
-      const count = previewCardsRef.current.length;
-      if (!count) return;
-      const next = (activeIndex + 1) % count;
-      await scrollToIndex(next);
-    };
-
-    const loop = () => {
-      if (cancelled) return;
-
-      if (hoverPausedRef.current || interactPausedRef.current || pageHiddenRef.current) {
-        schedule(400, loop);
-        return;
-      }
-
-      void stepOnce().then(() => {
-        if (cancelled) return;
-        schedule(PAUSE_BETWEEN_STEPS_MS, loop);
-      });
-    };
-
-    schedule(INITIAL_IDLE_MS, loop);
-
-    return () => {
-      cancelled = true;
-      clearLoopTimer();
-      cancelScrollAnimation();
-    };
-  }, [
-    cancelScrollAnimation,
-    cards.length,
-    clearLoopTimer,
-    respectReducedMotion,
-    scrollToIndex,
-    activeIndex,
-  ]);
-
-  useEffect(() => {
-    if (hoverPaused || interactPaused) {
-      cancelScrollAnimation();
-    }
-  }, [hoverPaused, interactPaused, cancelScrollAnimation]);
+    return () => window.clearInterval(id);
+  }, [activeIndex, hoverPaused, interactPaused, pageHidden, respectReducedMotion, scrollToIndex]);
 
   const minNegocios = 31;
   const negociosLabel = Math.max(
