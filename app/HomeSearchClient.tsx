@@ -328,7 +328,7 @@ export default function HomeSearchClient({
               }
             }}
             placeholder={SEARCH_QUERY_PLACEHOLDER}
-            className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 text-base text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-base text-slate-900 placeholder:text-slate-400 shadow-md shadow-slate-900/5 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"
           />
 
           <SearchAutocompleteDropdown
@@ -365,7 +365,7 @@ export default function HomeSearchClient({
             placeholder="¿En qué comuna?"
             aria-autocomplete="list"
             aria-label="Comuna: escribe al menos 2 letras para ver sugerencias"
-            className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 text-base text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-base text-slate-900 placeholder:text-slate-400 shadow-md shadow-slate-900/5 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"
           />
 
           {openComuna && (comunaSuggestions.length > 0 || loadingComuna) && (
@@ -428,7 +428,8 @@ export default function HomeSearchClient({
           onClick={irABuscar}
           disabled={searchSubmitting}
           aria-busy={searchSubmitting}
-          className="inline-flex h-14 w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-6 text-base font-medium text-white shadow-md transition-all duration-200 active:scale-95 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 sm:h-[56px] sm:w-auto" style={{ background: "#0f766e" }}
+          className="inline-flex w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-7 py-4 text-base font-bold text-white shadow-lg shadow-teal-900/15 transition-all duration-200 active:scale-95 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
+          style={{ background: "#0f766e" }}
         >
           {searchSubmitting ? (
             <svg
@@ -459,7 +460,7 @@ export default function HomeSearchClient({
       </div>
 
       <p className="mt-3 text-center text-sm text-[#6b7280]">
-        Prueba con: Gasfiter en Maipú · Clases de matemáticas · Fletes
+        Prueba: Gasfiter en Maipú · Fletes · Clases de matemáticas
       </p>
     </section>
   );

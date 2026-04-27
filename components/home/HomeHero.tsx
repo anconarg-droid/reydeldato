@@ -104,30 +104,13 @@ export default function HomeHero({ children }: Props) {
               marginRight: "auto",
             }}
           >
-            Sin pagar publicidad. Sin perder tiempo. Sin intermediarios.
-          </p>
-
-          <p
-            style={{
-              fontFamily: "var(--font-sora, sans-serif)",
-              marginTop: 10,
-              fontSize: "clamp(13px, 1.75vw, 15px)",
-              color: "#475569",
-              fontWeight: 600,
-              lineHeight: 1.5,
-              maxWidth: 520,
-              marginLeft: "auto",
-              marginRight: "auto",
-            }}
-          >
-            Aquí no gana el que paga.{" "}
-            <span style={{ color: "#0f766e" }}>Gana el que está cerca.</span>
+            Sin pagar publicidad. Gana el que está cerca.
           </p>
 
           {/* Search box */}
           <div
             style={{
-              marginTop: "clamp(24px, 4vw, 40px)",
+              marginTop: "clamp(28px, 4.5vw, 44px)",
               maxWidth: 680,
               marginLeft: "auto",
               marginRight: "auto",
@@ -135,7 +118,7 @@ export default function HomeHero({ children }: Props) {
               border: "1.5px solid #99f6e4",
               borderRadius: 18,
               padding: "clamp(14px, 2vw, 20px)",
-              boxShadow: "0 4px 24px rgba(15,118,110,0.08)",
+              boxShadow: "0 6px 28px rgba(15,118,110,0.10)",
             }}
           >
             <HomeSearchClient
@@ -145,7 +128,7 @@ export default function HomeHero({ children }: Props) {
           </div>
 
           <p className="mt-4 text-center text-sm font-semibold text-slate-700">
-            Si publicas, te encuentran cuando te necesitan.
+            Si no estás aquí, no te encuentran.
           </p>
 
           {children ? (
