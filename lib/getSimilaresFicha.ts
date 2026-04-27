@@ -24,7 +24,7 @@ const LOG_PREFIX = "[getSimilaresFicha]";
 
 /** Solo columnas de la vista pública (sin columnas sensibles). */
 const EMP_ROW_SELECT =
-  "id, slug, nombre_emprendimiento, foto_principal_url, categoria_id, comuna_id, subcategoria_slug_final, subcategorias_slugs";
+  "id, slug, nombre_emprendimiento, foto_principal_url, descripcion_corta, categoria_id, comuna_id, subcategoria_slug_final, subcategorias_slugs";
 
 function debugSimilaresLog(payload: Record<string, unknown>) {
   if (
@@ -56,6 +56,8 @@ export type SimilarFichaItem = {
   categoria_nombre: string | null;
   /** Primera subcategoría del emprendedor similar (lookup por slug); UI prefiere esto sobre categoría. */
   subcategoria_nombre: string | null;
+  /** Texto corto público (vista: frase_negocio como descripcion_corta). */
+  descripcion_corta: string | null;
   bucket: SimilarFichaBucket;
 };
 
@@ -100,6 +102,7 @@ type EmpRow = {
   slug: string;
   nombre_emprendimiento: string | null;
   foto_principal_url: string | null;
+  descripcion_corta?: string | null;
   categoria_id?: string | number | null;
   comuna_id?: string | number | null;
   subcategoria_slug_final?: unknown;
@@ -155,6 +158,7 @@ function toItem(
     subcategoria_nombre: subSlug0
       ? subcategoriaNombreBySlug.get(subSlug0) ?? null
       : null,
+    descripcion_corta: row.descripcion_corta != null ? s(row.descripcion_corta) || null : null,
     bucket,
   };
 }

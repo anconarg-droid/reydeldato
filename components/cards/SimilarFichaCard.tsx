@@ -5,13 +5,14 @@ import type { CSSProperties } from "react";
 import { sendSimilarFichaCardViewClick } from "@/components/search/TrackedCardLink";
 import type { SimilarFichaItem } from "@/lib/getSimilaresFicha";
 import { displayTitleCaseWords } from "@/lib/displayTextFormat";
+import { normalizeText } from "@/lib/search/normalizeText";
 
 function s(v: unknown): string {
   if (v === null || v === undefined) return "";
   return String(v).trim();
 }
 
-/** Compacto: ~h-32 en Tailwind */
+/** Compacto: ~h-32 */
 const MEDIA_H = 128;
 
 function urlPareceFotoReal(url: string): boolean {
@@ -39,10 +40,26 @@ export default function SimilarFichaCard({
   const nombreMostrar = nombreEmp
     ? displayTitleCaseWords(nombreEmp)
     : s(item.slug);
+
+  const comunaConsultada = s(comunaContextoNombre);
   const comunaBase = s(item.comuna_nombre);
-  const ctx = s(comunaContextoNombre);
-  /** Una sola línea tipo “comuna” para sugerencias compactas */
-  const comunaUnaLinea = comunaBase || ctx;
+  const mismoCtxYBase =
+    Boolean(comunaConsultada && comunaBase) &&
+    normalizeText(comunaConsultada) === normalizeText(comunaBase);
+
+  const subRubro = s(item.subcategoria_nombre);
+  const catRubro = s(item.categoria_nombre);
+  const lineaRubro1 = subRubro
+    ? displayTitleCaseWords(subRubro)
+    : catRubro
+      ? displayTitleCaseWords(catRubro)
+      : "";
+  const lineaRubro2 =
+    subRubro && catRubro && normalizeText(subRubro) !== normalizeText(catRubro)
+      ? displayTitleCaseWords(catRubro)
+      : "";
+
+  const descCorta = s(item.descripcion_corta);
 
   const fotoUrl = s(item.foto_principal_url);
   const [imgBroken, setImgBroken] = useState(false);
@@ -73,19 +90,7 @@ export default function SimilarFichaCard({
 
   return (
     <article
-      style={{
-        width: "100%",
-        height: "100%",
-        borderRadius: 14,
-        background: "#fff",
-        border: "1px solid #e2e8f0",
-        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05)",
-        padding: 0,
-        display: "flex",
-        flexDirection: "column",
-        minHeight: 0,
-        overflow: "hidden",
-      }}
+      className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm"
     >
       <div style={mediaWrap}>
         {mostrarFoto ? (
@@ -94,112 +99,66 @@ export default function SimilarFichaCard({
             <img
               src={fotoUrl}
               alt=""
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                display: "block",
-              }}
+              className="block h-full w-full object-cover"
               loading="lazy"
               onError={() => setImgBroken(true)}
             />
             <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background:
-                  "linear-gradient(to top, rgba(15,23,42,0.28) 0%, rgba(15,23,42,0.03) 45%, transparent 70%)",
-                pointerEvents: "none",
-              }}
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/25 via-slate-900/[0.03] to-transparent"
               aria-hidden
             />
           </>
         ) : (
-          <div
-            style={{
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0 10px",
-            }}
-          >
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                color: "#64748b",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-              }}
-            >
+          <div className="flex h-full flex-col items-center justify-center gap-1 px-2.5 text-center">
+            <span className="text-[11px] font-extrabold tracking-wide text-slate-600">
               Sin imágenes
+            </span>
+            <span className="text-[10px] font-semibold leading-snug text-slate-500">
+              Puedes pedir referencias por WhatsApp
             </span>
           </div>
         )}
       </div>
 
-      <div
-        style={{
-          padding: "10px 10px 12px",
-          display: "flex",
-          flexDirection: "column",
-          flex: 1,
-          minHeight: 0,
-          borderTop: "1px solid #f1f5f9",
-        }}
-      >
-        <h3
-          className="line-clamp-2 break-words"
-          style={{
-            margin: 0,
-            fontSize: 14,
-            fontWeight: 900,
-            color: "#020617",
-            lineHeight: 1.25,
-            letterSpacing: -0.02,
-          }}
-        >
+      <div className="flex min-h-0 flex-1 flex-col gap-1 border-t border-slate-100 px-2.5 pb-3 pt-2">
+        <h3 className="m-0 line-clamp-2 break-words text-[14px] font-black leading-snug tracking-tight text-slate-950">
           {nombreMostrar}
         </h3>
 
-        {comunaUnaLinea ? (
-          <p
-            style={{
-              margin: "6px 0 0 0",
-              fontSize: 12,
-              fontWeight: 600,
-              color: "#64748b",
-              lineHeight: 1.35,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {comunaUnaLinea}
+        {lineaRubro1 ? (
+          <p className="m-0 text-[12px] font-semibold leading-snug text-slate-600">{lineaRubro1}</p>
+        ) : null}
+        {lineaRubro2 ? (
+          <p className="m-0 -mt-0.5 text-[12px] font-medium leading-snug text-slate-500">{lineaRubro2}</p>
+        ) : null}
+
+        {descCorta ? (
+          <p className="m-0 line-clamp-2 text-[12px] font-medium leading-snug text-slate-600">
+            {descCorta}
           </p>
         ) : null}
+
+        <div className="mt-1 space-y-0.5 text-[12px] font-semibold leading-snug text-slate-600">
+          {comunaConsultada ? (
+            mismoCtxYBase ? (
+              <p className="m-0">En {comunaConsultada}</p>
+            ) : comunaBase ? (
+              <>
+                <p className="m-0">Atiende {comunaConsultada}</p>
+                <p className="m-0 text-[11px] font-medium text-slate-500">Base en {comunaBase}</p>
+              </>
+            ) : (
+              <p className="m-0">Atiende {comunaConsultada}</p>
+            )
+          ) : comunaBase ? (
+            <p className="m-0">{comunaBase}</p>
+          ) : null}
+        </div>
 
         <a
           href={href}
           onClick={handleVerFicha}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginTop: "auto",
-            paddingTop: 10,
-            paddingBottom: 0,
-            borderRadius: 10,
-            minHeight: 40,
-            textDecoration: "none",
-            background: "#fff",
-            color: "#0f172a",
-            fontSize: 13,
-            fontWeight: 800,
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
-          }}
+          className="mt-auto flex min-h-[40px] items-center justify-center rounded-[10px] border border-slate-200 bg-white pt-2.5 text-[13px] font-extrabold text-slate-900 shadow-sm"
         >
           Ver ficha
         </a>
