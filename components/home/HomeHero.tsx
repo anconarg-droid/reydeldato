@@ -104,7 +104,7 @@ export default function HomeHero({ children }: Props) {
               marginRight: "auto",
             }}
           >
-            Sin pagar publicidad. Gana el que está cerca.
+            Sin pagar publicidad. Sin perder tiempo.
           </p>
 
           {/* Search box */}
@@ -144,10 +144,10 @@ export default function HomeHero({ children }: Props) {
             {/* Izquierda: texto */}
             <div className="text-left">
               <p className="text-sm font-semibold text-slate-700">
-                Tu negocio deja de perderse en grupos de WhatsApp.
+                Tu negocio deja de perderse en grupos.
               </p>
               <h2 className="mt-2 text-balance text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-                Aparece en tu comuna cuando te buscan
+                Te encuentran cuando te necesitan
               </h2>
               <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
                 Sin pagar publicidad. Sin intermediarios.

@@ -483,7 +483,7 @@ export default function HomeSearchClient({
       </div>
 
       <p className="mt-3 text-center text-sm text-[#6b7280]">
-        Deja de buscar en grupos.
+        Deja los grupos (whatsapp y facebook).
       </p>
     </section>
   );
