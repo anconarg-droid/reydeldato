@@ -106,6 +106,34 @@ function GlobalDbResults({
     ? relacionados.filter((i) => String(i.categoriaNombre ?? "").trim() !== categoriaExacta)
     : relacionados;
 
+  const renderCardGrid = (arr: BuscarApiItem[]) => {
+    if (arr.length === 1) {
+      const item = arr[0]!;
+      return (
+        <div className="flex w-full justify-center">
+          <div className="w-full max-w-sm">
+            <EmprendedorSearchCard
+              key={item.slug || item.id}
+              {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
+              destacarMejoresOpciones={soloCompletos}
+            />
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="grid w-full grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 items-stretch">
+        {arr.map((item) => (
+          <EmprendedorSearchCard
+            key={item.slug || item.id}
+            {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
+            destacarMejoresOpciones={soloCompletos}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-3">
       <div className="w-full">
@@ -138,15 +166,7 @@ function GlobalDbResults({
                   <h2 className="text-base font-extrabold text-slate-900">
                     {tituloBloqueExactos(detectedSubcategoria)}
                   </h2>
-                  <div className="grid w-full grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 items-stretch">
-                    {exactos.map((item) => (
-                      <EmprendedorSearchCard
-                        key={item.slug || item.id}
-                        {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
-                        destacarMejoresOpciones={soloCompletos}
-                      />
-                    ))}
-                  </div>
+                  {renderCardGrid(exactos)}
                 </div>
               ) : null}
 
@@ -155,28 +175,12 @@ function GlobalDbResults({
                   <h2 className="text-base font-extrabold text-slate-900">
                     También podrían servirte
                   </h2>
-                  <div className="grid w-full grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 items-stretch">
-                    {[...relacionadosMismaCategoria, ...relacionadosResto].map((item) => (
-                      <EmprendedorSearchCard
-                        key={item.slug || item.id}
-                        {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
-                        destacarMejoresOpciones={soloCompletos}
-                      />
-                    ))}
-                  </div>
+                  {renderCardGrid([...relacionadosMismaCategoria, ...relacionadosResto])}
                 </div>
               ) : null}
             </>
           ) : (
-            <div className="grid w-full grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 items-stretch">
-              {itemsFiltrados.map((item) => (
-                <EmprendedorSearchCard
-                  key={item.slug || item.id}
-                  {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
-                  destacarMejoresOpciones={soloCompletos}
-                />
-              ))}
-            </div>
+            renderCardGrid(itemsFiltrados)
           )}
         </div>
       )}
