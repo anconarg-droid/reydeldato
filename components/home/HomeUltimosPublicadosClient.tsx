@@ -194,29 +194,23 @@ export default function HomeUltimosPublicadosClient({
     }
   }, [hoverPaused, interactPaused, cancelScrollAnimation]);
 
+  const minNegocios = 31;
+  const negociosLabel = Math.max(
+    minNegocios,
+    totalNegociosActivos != null && totalNegociosActivos > 0 ? totalNegociosActivos : 0
+  );
+
   return (
     <div className="w-full py-2" aria-labelledby="home-ultimos-publicados-heading">
       <div className="mx-auto w-full max-w-5xl px-0">
-        <p className="mx-auto mb-3 max-w-2xl text-center text-lg font-extrabold leading-snug text-slate-900 sm:text-xl">
-          Negocios reales ya publicados en tu comuna
-        </p>
-        {totalNegociosActivos != null && totalNegociosActivos > 0 ? (
-          <p className="mx-auto mb-8 max-w-xl text-center text-base font-semibold text-slate-800 sm:text-lg">
-            Más de{" "}
-            <span className="tabular-nums text-2xl font-black text-slate-900 sm:text-3xl">
-              {totalNegociosActivos.toLocaleString("es-CL")}
-            </span>{" "}
-            negocios ya están activos
-          </p>
-        ) : null}
         <h2
           id="home-ultimos-publicados-heading"
           className="text-center text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl md:text-3xl"
         >
-          Así se ven los servicios en tu comuna
+          Más de {negociosLabel.toLocaleString("es-CL")} negocios ya están activos en tu comuna
         </h2>
-        <p className="mx-auto mt-2 max-w-xl text-center text-sm leading-relaxed text-slate-500 sm:text-[15px]">
-          Fichas reales que aparecen cuando alguien busca
+        <p className="mx-auto mt-2 max-w-xl text-center text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">
+          Estos son algunos de los servicios disponibles
         </p>
 
         <div className="relative mt-8">
@@ -239,7 +233,12 @@ export default function HomeUltimosPublicadosClient({
                 className="group w-[min(92vw,22rem)] shrink-0 transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px]"
               >
                 <div className="home-carousel-card-shell rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
-                  <EmprendedorSearchCard {...props} />
+                  <div className="relative">
+                    <div className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-900">
+                      Disponible ahora
+                    </div>
+                    <EmprendedorSearchCard {...props} />
+                  </div>
                 </div>
               </div>
             ))}
@@ -263,7 +262,7 @@ export default function HomeUltimosPublicadosClient({
             }
             className="inline-flex h-10 min-w-[min(100%,17rem)] items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-medium text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:h-11"
           >
-            Si publicas, te encuentran cuando te necesitan en tu comuna
+            Publica tu negocio gratis
           </Link>
         </div>
       </div>
