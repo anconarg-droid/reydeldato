@@ -299,7 +299,7 @@ export default function HomeRecomienda({
             <span aria-hidden className="mr-1.5">
               👉
             </span>
-            Ayuda a activar tu comuna más rápido
+            Ayuda a completar el catálogo de tu comuna
           </p>
         ) : null}
 

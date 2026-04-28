@@ -286,10 +286,10 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
 
           <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
             <p className="text-sm font-semibold text-slate-900">
-              ¿Conoces un negocio en tu comuna?
+              ¿Conoces un negocio que debería estar aquí?
             </p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              Ayuda a completar los servicios faltantes y activar tu comuna antes.
+              Ayuda a completar el catálogo de tu comuna recomendando un emprendimiento.
             </p>
             <div className="mt-4">
               <RecomendarEmprendedorModal initialComunaSlug={contextComunaSlug} />

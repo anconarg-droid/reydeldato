@@ -345,7 +345,7 @@ export default function HomeSearchClient({
           />
         </div>
 
-        <div ref={comunaBoxRef} className="relative min-w-0 flex-1 max-w-[180px]">
+        <div ref={comunaBoxRef} className="relative min-w-[110px] flex-1 max-w-[180px]">
           <input
             value={comunaInput}
             onChange={(e) => {
@@ -362,10 +362,10 @@ export default function HomeSearchClient({
                 irABuscar();
               }
             }}
-            placeholder="¿En qué comuna?"
+            placeholder="Comuna"
             aria-autocomplete="list"
             aria-label="Comuna: escribe al menos 2 letras para ver sugerencias"
-            className="w-full min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-4 text-base text-slate-900 placeholder:text-slate-400 shadow-md shadow-slate-900/5 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"
+            className="w-full min-w-[110px] rounded-xl border border-slate-200 bg-white px-4 py-4 text-base text-slate-900 placeholder:text-slate-400 shadow-md shadow-slate-900/5 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"
           />
 
           {openComuna && (comunaSuggestions.length > 0 || loadingComuna) && (

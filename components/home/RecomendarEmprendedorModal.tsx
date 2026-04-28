@@ -182,7 +182,7 @@ export default function RecomendarEmprendedorModal({
                   RECOMENDAR
                 </div>
                 <div className="mt-2 text-xl font-extrabold tracking-tight text-slate-900">
-                  ¿Conoces un negocio en tu comuna?
+                  ¿Conoces un negocio que debería estar aquí?
                 </div>
                 {typeof count === "number" ? (
                   <div className="mt-1 text-sm font-medium text-slate-600">
