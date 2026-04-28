@@ -5,11 +5,13 @@ type Props = {
   title: string;
   lastUpdated?: string;
   children: ReactNode;
+  /** Opcional: aumenta ancho máximo para layouts con sidebar. */
+  wide?: boolean;
 };
 
-export default function LegalLayout({ title, lastUpdated, children }: Props) {
+export default function LegalLayout({ title, lastUpdated, children, wide = false }: Props) {
   return (
-    <main className="max-w-3xl mx-auto px-4 py-10 text-slate-900">
+    <main className={`${wide ? "max-w-6xl" : "max-w-3xl"} mx-auto px-4 py-10 text-slate-900`}>
       <LegalPageTopNav />
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{title}</h1>
