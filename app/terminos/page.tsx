@@ -1,4 +1,5 @@
 import LegalSection from "@/components/LegalSection";
+import ScrollSpySidebarNav from "@/components/legal/ScrollSpySidebarNav";
 
 const SECCIONES = [
   { id: "s1", label: "Identificación" },
@@ -33,27 +34,11 @@ export default function TerminosPage() {
           alignItems: "start",
         }}
       >
-        <nav className="legal-nav" style={{ position: "sticky", top: "1.5rem", display: "none" }} aria-label="Índice de términos">
-          <div style={{ display: "grid", gap: "0.25rem" }}>
-            {SECCIONES.map((s, idx) => (
-              <a
-                key={s.id}
-                href={`#${s.id}`}
-                style={{
-                  display: "block",
-                  padding: "0.25rem 0",
-                  borderLeft: "2px solid transparent",
-                  paddingLeft: "0.75rem",
-                  color: "var(--color-muted-foreground)",
-                  textDecoration: "none",
-                  fontSize: "0.875rem",
-                }}
-              >
-                <span style={{ color: "var(--color-muted-foreground)" }}>{idx + 1}.</span> {s.label}
-              </a>
-            ))}
-          </div>
-        </nav>
+        <ScrollSpySidebarNav
+          ariaLabel="Índice de términos"
+          sections={SECCIONES}
+          defaultActiveId="s1"
+        />
 
         <div style={{ minWidth: 0, display: "grid", gap: "2.5rem" }}>
           <LegalSection id="s1" splitLeadingNumber title="1. Identificación del prestador">
