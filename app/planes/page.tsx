@@ -53,111 +53,111 @@ export default function PlanesPublicosPage() {
             Planes para emprendedores
           </h1>
           <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl">
-            Publicar tu negocio es gratis. Puedes seguir con ficha básica sin
-            pagar. La ficha completa es opcional y mejora cómo se ve tu negocio.
+            Publicar es gratis. La ficha básica es gratis siempre. La ficha completa es opcional y mejora la presentación
+            y la confianza.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2 max-w-2xl">
             <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-teal-900 bg-teal-100 px-2 py-1 rounded-md">
               90 días gratis
             </span>
             <p className="text-sm font-semibold text-slate-700">
-              Empiezas gratis por 90 días en ficha completa. Luego puedes continuar desde los planes.
+              Al publicar, partes con 90 días gratis en ficha completa. Luego puedes continuar con un plan.
             </p>
           </div>
+          <p className="mt-2 text-sm font-semibold text-slate-700 max-w-2xl">
+            Precio de lanzamiento por 6 meses antes del valor normal.
+          </p>
           <p className="mt-3 text-sm font-semibold text-slate-800 max-w-2xl">
             No cambia tu posición en los resultados.{" "}
             <span className="text-[#0f766e]">Mejora cómo te ven.</span>
           </p>
         </header>
 
-        <section className="mt-8">
-          <h2 className="text-xl font-black text-slate-900">Comparar planes</h2>
-          <p className="mt-2 text-sm font-semibold text-slate-600 max-w-2xl">
-            La ficha completa es opcional. Puedes seguir gratis con ficha básica.
-          </p>
-
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 items-start">
-            {/* Columna 1: Ficha básica */}
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">Ficha básica</h3>
-                  <p className="mt-1 text-sm font-semibold text-slate-600">
-                    Gratis (siempre)
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-xs font-extrabold tracking-wide text-teal-800 uppercase">
-                    Precio
-                  </p>
-                  <p className="mt-1 text-2xl font-black text-slate-900">Gratis</p>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                <p className="text-[11px] font-extrabold tracking-wide text-slate-700 uppercase">
-                  Incluye
+        <section className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-6 items-start">
+          {/* Ficha básica */}
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black text-slate-900">Ficha básica</h2>
+                <p className="mt-1 text-sm font-semibold text-slate-600">
+                  Gratis (siempre)
                 </p>
-                <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
-                  {BENEFICIOS_BASICA.map((t) => (
-                    <li key={t} className="flex gap-2">
-                      <span className="text-teal-700" aria-hidden>
-                        •
-                      </span>
-                      <span>{t}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
-            </article>
+              <div className="shrink-0 text-right">
+                <p className="text-xs font-extrabold tracking-wide text-teal-800 uppercase">
+                  Precio
+                </p>
+                <p className="mt-1 text-2xl font-black text-slate-900">Gratis</p>
+              </div>
+            </div>
 
-            {/* Columnas 2-4: Mensual / Semestral / Anual */}
-            {ORDEN_TARJETAS_PLANES.map((p) => {
-              const precio = PRECIO_PLAN_CLP[p];
-              const ahorro = ahorroVsMensual(p);
-              const recomendado = p === "anual";
-              return (
-                <article
-                  key={p}
-                  className={`rounded-2xl border bg-white p-6 shadow-sm ${
-                    recomendado
-                      ? "border-teal-500 ring-1 ring-teal-200"
-                      : "border-slate-200"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="text-lg font-black text-slate-900">
-                        {labelPeriodicidad(p)}
-                      </h3>
-                      <p className="mt-1 text-sm font-semibold text-slate-600">
-                        {subtituloPeriodicidad(p)}
-                      </p>
+            <div className="mt-5 rounded-xl bg-slate-50 p-4">
+              <p className="text-[11px] font-extrabold tracking-wide text-slate-700 uppercase">
+                Incluye
+              </p>
+              <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
+                {BENEFICIOS_BASICA.map((t) => (
+                  <li key={t} className="flex gap-2">
+                    <span className="text-teal-700" aria-hidden>
+                      •
+                    </span>
+                    <span>{t}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </article>
+
+          {/* Planes de ficha completa */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-black text-slate-900">Ficha completa</h2>
+            <p className="text-sm font-semibold text-slate-600">
+              Opcional. No cambia tu posición: mejora cómo se ve tu negocio.
+            </p>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {ORDEN_TARJETAS_PLANES.map((p) => {
+                const precio = PRECIO_PLAN_CLP[p];
+                const ahorro = ahorroVsMensual(p);
+                const recomendado = p === "anual";
+                return (
+                  <article
+                    key={p}
+                    className={`rounded-2xl border bg-white p-5 shadow-sm ${
+                      recomendado
+                        ? "border-teal-500 ring-1 ring-teal-200"
+                        : "border-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-extrabold tracking-wide text-teal-800 uppercase">
+                          {labelPeriodicidad(p)}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-600">
+                          {subtituloPeriodicidad(p)}
+                        </p>
+                      </div>
+                      {recomendado ? (
+                        <span className="shrink-0 text-[0.65rem] font-extrabold uppercase tracking-wider text-teal-900 bg-teal-100 px-2 py-1 rounded-md">
+                          Recomendado
+                        </span>
+                      ) : null}
                     </div>
-                    {recomendado ? (
-                      <span className="shrink-0 text-[0.65rem] font-extrabold uppercase tracking-wider text-teal-900 bg-teal-100 px-2 py-1 rounded-md">
-                        Recomendado
-                      </span>
-                    ) : null}
-                  </div>
 
-                  <p className="mt-3 text-2xl font-black text-slate-900 tabular-nums">
-                    {precioPlanesDisplaySimple(precio)}
-                  </p>
-
-                  {ahorro > 0 ? (
-                    <p className="mt-1 text-xs font-semibold text-slate-600">
-                      Ahorra {precioPlanesDisplaySimple(ahorro)} vs mensual
+                    <p className="mt-3 text-2xl font-black text-slate-900 tabular-nums">
+                      {precioPlanesDisplaySimple(precio)}
                     </p>
-                  ) : (
-                    <p className="mt-1 text-xs font-semibold text-slate-600">&nbsp;</p>
-                  )}
 
-                  <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                    <p className="text-[11px] font-extrabold tracking-wide text-slate-700 uppercase">
-                      Incluye
-                    </p>
-                    <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
+                    {ahorro > 0 ? (
+                      <p className="mt-1 text-xs font-semibold text-slate-600">
+                        Ahorra {precioPlanesDisplaySimple(ahorro)} vs mensual
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs font-semibold text-slate-600">&nbsp;</p>
+                    )}
+
+                    <ul className="mt-4 space-y-2 text-sm font-semibold text-slate-800">
                       {BENEFICIOS_COMPLETA.map((t) => (
                         <li key={t} className="flex gap-2">
                           <span className="text-teal-700" aria-hidden>
@@ -167,10 +167,10 @@ export default function PlanesPublicosPage() {
                         </li>
                       ))}
                     </ul>
-                  </div>
-                </article>
-              );
-            })}
+                  </article>
+                );
+              })}
+            </div>
           </div>
         </section>
 
