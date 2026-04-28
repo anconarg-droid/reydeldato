@@ -181,7 +181,7 @@ export default function HomeHero({ children }: Props) {
                         <span className="text-teal-700" aria-hidden>
                           •
                         </span>
-                        <span>Apareces en búsquedas de tu comuna</span>
+                        <span>Apareces cuando te buscan en tu comuna</span>
                       </li>
                       <li className="flex gap-2">
                         <span className="text-teal-700" aria-hidden>
@@ -203,10 +203,13 @@ export default function HomeHero({ children }: Props) {
                       ⭐ FICHA COMPLETA
                     </p>
                     <p className="mt-2 text-2xl font-black tabular-nums text-teal-900">
-                      $3.500/mes
+                      Desde $3.500/mes
                     </p>
                     <p className="mt-1 text-xs font-medium leading-snug text-slate-600">
                       Opcional. Puedes seguir con ficha básica gratis.
+                    </p>
+                    <p className="mt-1.5 text-xs font-medium leading-snug text-slate-600">
+                      No cambia tu posición, mejora cómo te ven.
                     </p>
                     <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
                       <li className="flex gap-2">
