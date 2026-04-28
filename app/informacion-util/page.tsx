@@ -6,7 +6,7 @@ export const dynamic = "force-static";
 export default function InformacionUtilPage() {
   return (
     <main className="min-h-screen bg-slate-50 pb-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <LegalPageTopNav />
         <header className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">
@@ -18,10 +18,12 @@ export default function InformacionUtilPage() {
           </p>
         </header>
 
-        <div className="space-y-10">
+        <div className="space-y-12">
           {/* Bloque: para quienes buscan */}
-          <section className="space-y-3">
-            <h2 className="text-lg font-bold text-slate-900">Si estás buscando un servicio</h2>
+          <section className="rounded-2xl border border-slate-200 bg-white px-5 py-7 shadow-sm sm:px-6 sm:py-8">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+              🔍 Si estás buscando un servicio
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <article className="rd-card p-4">
                 <h3 className="text-sm font-semibold text-slate-900 mb-1">
@@ -65,9 +67,13 @@ export default function InformacionUtilPage() {
             </div>
           </section>
 
+          <div className="h-px w-full bg-slate-200/70" aria-hidden />
+
           {/* Bloque: para emprendedores */}
-          <section className="space-y-3">
-            <h2 className="text-lg font-bold text-slate-900">Si tienes un emprendimiento</h2>
+          <section className="rounded-2xl border border-slate-200 bg-slate-50/70 px-5 py-7 shadow-sm sm:px-6 sm:py-8">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+              🏪 Si tienes un emprendimiento
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <article className="rd-card p-4">
                 <h3 className="text-sm font-semibold text-slate-900 mb-1">
@@ -79,7 +85,7 @@ export default function InformacionUtilPage() {
                 </p>
                 <Link
                   href="/publicar"
-                  className="rd-btn-primary mt-1 px-4 py-1.5 text-xs"
+                  className="mt-2 inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
                 >
                   Publicar mi negocio ahora
                 </Link>
@@ -144,7 +150,7 @@ export default function InformacionUtilPage() {
                 {/* TODO: crear página pública de planes cuando esté definida. */}
                 <Link
                   href="/publicar"
-                  className="rd-btn-primary mt-3 px-4 py-1.5 text-xs"
+                  className="mt-3 inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
                 >
                   Publicar mi negocio
                 </Link>
@@ -163,8 +169,8 @@ export default function InformacionUtilPage() {
           </section>
 
           {/* Bloque: crecimiento de comunas */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-bold text-slate-900">
+          <section className="rounded-2xl border border-slate-200 bg-white px-5 py-7 shadow-sm sm:px-6 sm:py-8 space-y-4">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900">
               Cómo crecen las comunas
             </h2>
             <p className="text-sm text-slate-600 max-w-2xl">
@@ -173,9 +179,9 @@ export default function InformacionUtilPage() {
               recomiendan, más útil se vuelve el directorio.
             </p>
 
-            <div className="space-y-3">
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <p className="text-sm font-semibold text-slate-900">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="rounded-xl border border-slate-200 border-l-2 border-l-teal-600 bg-white p-5 pl-4 shadow-sm">
+                <p className="text-sm font-medium text-teal-900">
                   ¿Qué significa que una comuna está en crecimiento?
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
@@ -185,8 +191,8 @@ export default function InformacionUtilPage() {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <p className="text-sm font-semibold text-slate-900">
+              <div className="rounded-xl border border-slate-200 border-l-2 border-l-teal-600 bg-white p-5 pl-4 shadow-sm">
+                <p className="text-sm font-medium text-teal-900">
                   ¿Qué falta para completar una comuna?
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
@@ -196,8 +202,8 @@ export default function InformacionUtilPage() {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <p className="text-sm font-semibold text-slate-900">
+              <div className="rounded-xl border border-slate-200 border-l-2 border-l-teal-600 bg-white p-5 pl-4 shadow-sm">
+                <p className="text-sm font-medium text-teal-900">
                   ¿Cómo puedo ayudar a completar mi comuna?
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
@@ -206,8 +212,8 @@ export default function InformacionUtilPage() {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <p className="text-sm font-semibold text-slate-900">
+              <div className="rounded-xl border border-slate-200 border-l-2 border-l-teal-600 bg-white p-5 pl-4 shadow-sm">
+                <p className="text-sm font-medium text-teal-900">
                   ¿Puedo recomendar negocios aunque no sean míos?
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
