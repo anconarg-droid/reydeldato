@@ -1,7 +1,46 @@
 import Link from "next/link";
 import LegalPageTopNav from "@/components/LegalPageTopNav";
+import {
+  ORDEN_TARJETAS_PLANES,
+  PRECIO_PLAN_CLP,
+  precioPlanesDisplaySimple,
+} from "@/lib/panelPlanesPrecios";
 
 export const dynamic = "force-static";
+
+const BENEFICIOS_BASICA = [
+  "Apareces en búsquedas de tu comuna",
+  "Contacto directo por WhatsApp",
+  "Datos básicos del negocio",
+  "Sin comisiones",
+] as const;
+
+const BENEFICIOS_COMPLETA = [
+  "Galería de fotos",
+  "Instagram y sitio web",
+  "Descripción más completa",
+  "Más información para que te elijan",
+  "Estadísticas de tu ficha",
+] as const;
+
+function labelPeriodicidad(p: (typeof ORDEN_TARJETAS_PLANES)[number]): string {
+  if (p === "mensual") return "Mensual";
+  if (p === "semestral") return "Semestral";
+  return "Anual";
+}
+
+function subtituloPeriodicidad(p: (typeof ORDEN_TARJETAS_PLANES)[number]): string {
+  if (p === "mensual") return "1 mes";
+  if (p === "semestral") return "6 meses";
+  return "12 meses";
+}
+
+function ahorroVsMensual(p: (typeof ORDEN_TARJETAS_PLANES)[number]): number {
+  const mensual = PRECIO_PLAN_CLP.mensual;
+  if (p === "semestral") return mensual * 6 - PRECIO_PLAN_CLP.semestral;
+  if (p === "anual") return mensual * 12 - PRECIO_PLAN_CLP.anual;
+  return 0;
+}
 
 export default function PlanesPublicosPage() {
   return (
@@ -14,26 +53,30 @@ export default function PlanesPublicosPage() {
             Planes para emprendedores
           </h1>
           <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl">
-            Publicar tu negocio es gratis. La ficha completa es opcional y mejora
-            cómo te ven.
+            Publicar tu negocio es gratis. Puedes seguir con ficha básica sin
+            pagar. La ficha completa es opcional y mejora cómo se ve tu negocio.
+          </p>
+          <p className="mt-3 text-sm font-semibold text-slate-800 max-w-2xl">
+            No cambia tu posición en los resultados.{" "}
+            <span className="text-[#0f766e]">Mejora cómo te ven.</span>
           </p>
         </header>
 
-        <section className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
+        <section className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-6 items-start">
           {/* Ficha básica */}
           <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-black text-slate-900">Ficha básica</h2>
                 <p className="mt-1 text-sm font-semibold text-slate-600">
-                  Para empezar y aparecer cuando te buscan
+                  Gratis (siempre)
                 </p>
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-xs font-extrabold tracking-wide text-teal-800 uppercase">
-                  Gratis
+                  Precio
                 </p>
-                <p className="mt-1 text-2xl font-black text-slate-900">0</p>
+                <p className="mt-1 text-2xl font-black text-slate-900">Gratis</p>
               </div>
             </div>
 
@@ -42,98 +85,82 @@ export default function PlanesPublicosPage() {
                 Incluye
               </p>
               <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
-                <li className="flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Apareces en búsquedas de tu comuna</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Contacto directo por WhatsApp</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Datos básicos del negocio</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Sin comisiones</span>
-                </li>
+                {BENEFICIOS_BASICA.map((t) => (
+                  <li key={t} className="flex gap-2">
+                    <span className="text-teal-700" aria-hidden>
+                      •
+                    </span>
+                    <span>{t}</span>
+                  </li>
+                ))}
               </ul>
             </div>
           </article>
 
-          {/* Ficha completa */}
-          <article className="rounded-2xl border-2 border-teal-500 bg-white p-6 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-black text-slate-900">Ficha completa</h2>
-                <p className="mt-1 text-sm font-semibold text-slate-600">
-                  Opcional, para mejorar presentación y confianza
-                </p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="text-xs font-extrabold tracking-wide text-teal-800 uppercase">
-                  Desde
-                </p>
-                <p className="mt-1 text-2xl font-black text-slate-900 tabular-nums">
-                  $3.500<span className="text-sm font-extrabold text-slate-700">/mes</span>
-                </p>
-              </div>
-            </div>
+          {/* Planes de ficha completa */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-black text-slate-900">Ficha completa</h2>
+            <p className="text-sm font-semibold text-slate-600">
+              Opcional. Puedes seguir gratis con ficha básica.
+            </p>
 
-            <div className="mt-4 rounded-lg border border-teal-200 bg-teal-50/70 px-4 py-3">
-              <p className="text-sm font-extrabold text-slate-900">
-                No cambia tu posición en los resultados.{" "}
-                <span className="text-[#0f766e]">Mejora cómo se ve tu negocio.</span>
-              </p>
-            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {ORDEN_TARJETAS_PLANES.map((p) => {
+                const precio = PRECIO_PLAN_CLP[p];
+                const ahorro = ahorroVsMensual(p);
+                const recomendado = p === "anual";
+                return (
+                  <article
+                    key={p}
+                    className={`rounded-2xl border bg-white p-5 shadow-sm ${
+                      recomendado
+                        ? "border-teal-500 ring-1 ring-teal-200"
+                        : "border-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-extrabold tracking-wide text-teal-800 uppercase">
+                          {labelPeriodicidad(p)}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-600">
+                          {subtituloPeriodicidad(p)}
+                        </p>
+                      </div>
+                      {recomendado ? (
+                        <span className="shrink-0 text-[0.65rem] font-extrabold uppercase tracking-wider text-teal-900 bg-teal-100 px-2 py-1 rounded-md">
+                          Recomendado
+                        </span>
+                      ) : null}
+                    </div>
 
-            <div className="mt-5 rounded-xl bg-white p-0">
-              <p className="text-[11px] font-extrabold tracking-wide text-slate-700 uppercase">
-                Incluye
-              </p>
-              <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
-                <li className="flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Galería de fotos</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Instagram y sitio web</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Descripción más completa</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Más información para que te elijan</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-teal-700" aria-hidden>
-                    •
-                  </span>
-                  <span>Estadísticas de tu ficha</span>
-                </li>
-              </ul>
+                    <p className="mt-3 text-2xl font-black text-slate-900 tabular-nums">
+                      {precioPlanesDisplaySimple(precio)}
+                    </p>
+
+                    {ahorro > 0 ? (
+                      <p className="mt-1 text-xs font-semibold text-slate-600">
+                        Ahorra {precioPlanesDisplaySimple(ahorro)} vs mensual
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs font-semibold text-slate-600">&nbsp;</p>
+                    )}
+
+                    <ul className="mt-4 space-y-2 text-sm font-semibold text-slate-800">
+                      {BENEFICIOS_COMPLETA.map((t) => (
+                        <li key={t} className="flex gap-2">
+                          <span className="text-teal-700" aria-hidden>
+                            •
+                          </span>
+                          <span>{t}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </article>
+                );
+              })}
             </div>
-          </article>
+          </div>
         </section>
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -157,8 +184,8 @@ export default function PlanesPublicosPage() {
         </section>
 
         <p className="mt-4 text-xs text-slate-500 max-w-2xl">
-          Nota: el pago se gestiona solo desde el panel del emprendedor con acceso
-          válido. Esta página es informativa.
+          Nota: el pago de ficha completa se gestiona solo desde el panel del
+          emprendedor con acceso válido. Esta página es informativa.
         </p>
       </div>
     </main>
