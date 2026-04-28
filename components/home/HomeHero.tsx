@@ -149,15 +149,15 @@ export default function HomeHero({ children }: Props) {
               <h2 className="mt-2 text-balance text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
                 Te encuentran cuando te necesitan
               </h2>
-              <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
-                Sin pagar publicidad. Sin intermediarios.
-                <br />
-                Pagas solo si quieres mejorar cómo se ve tu ficha.
-              </p>
               <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-800 sm:text-base">
                 Todos tienen la misma oportunidad de aparecer.
                 <br />
                 Aquí no gana el que paga, gana el que está cerca.
+              </p>
+              <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
+                Sin pagar publicidad. Sin intermediarios.
+                <br />
+                Pagas solo si quieres mejorar cómo se ve tu ficha.
               </p>
               <p className="mt-6 text-sm font-semibold text-slate-800 sm:text-base">
                 No necesitas ser experto en marketing. Solo hacer bien tu trabajo.
@@ -172,9 +172,9 @@ export default function HomeHero({ children }: Props) {
                     Empieza gratis. Aparece cuando te buscan.
                   </h3>
                   <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-relaxed text-white/95">
-                    Los avisos en WhatsApp o Facebook ayudan, pero no alcanzan cuando alguien te busca fuera del grupo.
+                    Los avisos en WhatsApp o Facebook ayudan,
                     <br />
-                    Aquí empiezas a aparecer cuando te buscan.
+                    pero aquí apareces cuando te buscan.
                   </p>
                 </div>
 
@@ -213,10 +213,11 @@ export default function HomeHero({ children }: Props) {
                       Desde $3.500/mes
                     </p>
                     <p className="mt-1 text-xs font-medium leading-snug text-slate-600">
-                      Opcional. Puedes seguir con ficha básica gratis.
+                      Opcional. Puedes quedarte gratis con ficha básica.
                     </p>
-                    <p className="mt-1.5 text-xs font-medium leading-snug text-slate-600">
-                      No cambia tu posición, mejora cómo te ven.
+                    <p className="mt-2 text-sm font-extrabold leading-snug text-slate-900">
+                      No cambia tu posición,{" "}
+                      <span className="text-teal-800">mejora cómo te ven.</span>
                     </p>
                     <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
                       <li className="flex gap-2">
