@@ -33,7 +33,7 @@ function norm(v: string) {
     .trim();
 }
 
-const SEARCH_QUERY_PLACEHOLDER = "¿Qué necesitas? Ej: gasfiter, electricista...";
+const SEARCH_QUERY_PLACEHOLDER = "Ej: gasfiter, electricista, cortinas...";
 
 function prettyComunaSlug(raw: string) {
   const v = String(raw ?? "").trim();
@@ -287,7 +287,7 @@ export default function HomeSearchClient({
     <section className="w-full mx-auto">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
         <div className="flex w-full flex-row items-center gap-2">
-          <div ref={queryBoxRef} className="relative min-w-0 flex-[2]">
+          <div ref={queryBoxRef} className="relative min-w-0 flex-[2.35] md:flex-[2.7]">
             <input
             ref={queryInputRef}
             value={q}
@@ -344,7 +344,7 @@ export default function HomeSearchClient({
           />
         </div>
 
-        <div ref={comunaBoxRef} className="relative min-w-[110px] flex-1 max-w-[180px]">
+        <div ref={comunaBoxRef} className="relative min-w-[120px] flex-1 max-w-[180px]">
           <input
             value={comunaInput}
             onChange={(e) => {
@@ -361,7 +361,7 @@ export default function HomeSearchClient({
                 irABuscar();
               }
             }}
-            placeholder="Comuna"
+            placeholder="Tu comuna"
             aria-autocomplete="list"
             aria-label="Comuna: escribe al menos 2 letras para ver sugerencias"
             className="w-full min-w-[110px] rounded-xl border border-slate-200 bg-white px-4 py-4 text-base text-slate-900 placeholder:text-slate-400 shadow-md shadow-slate-900/5 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"

@@ -13,7 +13,6 @@ import HomeComunasPreparacion, {
 } from "@/components/home/HomeComunasPreparacion";
 import HomeUltimosPublicadosClient from "@/components/home/HomeUltimosPublicadosClient";
 import type { EmprendedorSearchCardProps } from "@/components/search/EmprendedorSearchCard";
-import RecomendarEmprendedorModal from "@/components/home/RecomendarEmprendedorModal";
 
 type Comuna = { id: number; nombre: string; slug: string; total?: number };
 
@@ -153,9 +152,9 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
           </h2>
           <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
             {[
-              { n: "01", t: "Buscas en tu comuna", d: "Resultados locales primero." },
-              { n: "02", t: "Eliges el servicio", d: "Información clara para decidir." },
-              { n: "03", t: "Contactas por WhatsApp", d: "Directo, sin intermediarios." },
+              { n: "01", t: "Buscas en tu comuna", d: "Primero mostramos opciones cercanas." },
+              { n: "02", t: "Comparas opciones reales", d: "Ves descripción, comuna y forma de contacto." },
+              { n: "03", t: "Contactas directo", d: "Hablas por WhatsApp, sin intermediarios." },
             ].map((step) => (
               <li key={step.n} className={cardBase}>
                 <div className="text-[clamp(1.75rem,4vw,2.35rem)] font-black tabular-nums leading-none tracking-[-0.04em] text-teal-700">
@@ -192,21 +191,24 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             id="home-diferencia"
             className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
           >
-            ¿Por qué Rey del Dato?
+            La diferencia
           </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+            Orden local, contacto directo y reglas claras.
+          </p>
           <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
             {[
               {
-                t: "Resultados de tu comuna",
-                d: "Primero mostramos lo que está cerca y los negocios que atienden tu zona.",
+                t: "Primero lo cercano",
+                d: "Mostramos negocios de tu comuna y quienes atienden tu zona.",
               },
               {
-                t: "Negocios reales",
-                d: "Cada ficha tiene nombre, descripción y contacto directo. Sin formularios ni intermediarios.",
+                t: "Sin pagar por posición",
+                d: "No gana el que más paga. La ficha completa mejora cómo se ve, no compra ranking.",
               },
               {
-                t: "Todos tienen la misma oportunidad",
-                d: "No gana el que más paga. Aparece quien está cerca y hace bien su trabajo.",
+                t: "Datos reales",
+                d: "Nombre, descripción, comuna y WhatsApp directo para decidir rápido.",
               },
             ].map((x) => (
               <div
@@ -234,7 +236,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             Comunas
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
-            Sumamos fichas cada semana. Si tu comuna está creciendo, igual puedes explorar.
+            Algunas comunas ya tienen resultados. Otras están completando su catálogo.
           </p>
 
           <div className="mt-10">
@@ -276,10 +278,10 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
               ¿Conoces un negocio que debería estar aquí?
             </p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              Ayuda a completar el catálogo de tu comuna recomendando un emprendimiento.
+              Recomienda un negocio local y ayúdanos a completar el catálogo de tu comuna.
             </p>
             <div className="mt-4">
-              <RecomendarEmprendedorModal initialComunaSlug={contextComunaSlug} />
+              <HomeRecomienda embedded initialComunaSlug={contextComunaSlug} />
             </div>
           </div>
         </div>
@@ -311,9 +313,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             >
               Publicar mi negocio
             </Link>
-            <p className="text-xs font-semibold text-white/85">
-              Gratis por 90 días · Luego desde $3.500/mes
-            </p>
+            <p className="text-xs font-semibold text-white/85">Publicar es gratis. La ficha completa es opcional.</p>
             <p className="text-xs font-medium leading-snug text-white/80 max-w-sm">
               Empieza gratis. Mejora tu ficha cuando lo necesites.
             </p>

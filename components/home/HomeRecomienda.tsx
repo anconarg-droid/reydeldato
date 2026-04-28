@@ -130,8 +130,8 @@ export default function HomeRecomienda({
     let contactoParaApi = contactoValue;
 
     if (embedded) {
-      if (!nombre || !contactoValue) {
-        setErrorMessage("Completá el nombre y el WhatsApp.");
+      if (!contactoValue) {
+        setErrorMessage("Ingresa el WhatsApp del negocio.");
         return;
       }
       const wa = normalizeAndValidateChileWhatsappStrict(contactoValue);
@@ -306,51 +306,6 @@ export default function HomeRecomienda({
         <form onSubmit={handleSubmit} className={embedded ? "space-y-5" : "space-y-4"}>
           {embedded ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                <div>
-                  <label className={labelClass}>Nombre del emprendimiento</label>
-                  <input
-                    type="text"
-                    value={nombreEmprendimiento}
-                    onChange={(e) => setNombreEmprendimiento(e.target.value)}
-                    placeholder="Ej: Taller Mecánico Ramírez / Peluquería Andrea / Gasfitería Express"
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>WhatsApp</label>
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    value={contacto}
-                    onChange={(e) => setContacto(e.target.value)}
-                    placeholder="Ej: +56 9 8765 4321"
-                    className={inputClass}
-                    aria-invalid={whatsappEmbeddedHint.show}
-                  />
-                  <p
-                    className={
-                      onEmerald ? "mt-1.5 text-xs text-emerald-100/85" : "mt-1.5 text-xs text-slate-500"
-                    }
-                  >
-                    Número de contacto del negocio (para que puedan escribirle directamente)
-                  </p>
-                  {whatsappEmbeddedHint.show ? (
-                    <p
-                      className={
-                        onEmerald
-                          ? "mt-1 text-xs font-medium text-amber-200"
-                          : "mt-1 text-xs font-medium text-amber-800"
-                      }
-                      role="alert"
-                    >
-                      {whatsappEmbeddedHint.text}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-
               <div
                 className={
                   onEmerald
@@ -359,7 +314,7 @@ export default function HomeRecomienda({
                 }
               >
                 <div ref={comunaBoxRef} className="relative sm:col-span-1">
-                  <label className={labelClass}>Comuna donde trabaja</label>
+                  <label className={labelClass}>Comuna (obligatoria)</label>
                   <input
                     type="text"
                     value={comunaInput}
@@ -409,15 +364,49 @@ export default function HomeRecomienda({
                 </div>
 
                 <div>
-                  <label className={labelClass}>¿Qué servicio ofrece? (opcional)</label>
+                  <label className={labelClass}>WhatsApp (obligatorio)</label>
                   <input
-                    type="text"
-                    value={servicioTexto}
-                    onChange={(e) => setServicioTexto(e.target.value)}
-                    placeholder="Ej: filtraciones, instalación de lavaplatos, destapes"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={contacto}
+                    onChange={(e) => setContacto(e.target.value)}
+                    placeholder="Ej: +56 9 8765 4321"
                     className={inputClass}
+                    aria-invalid={whatsappEmbeddedHint.show}
                   />
+                  {whatsappEmbeddedHint.show ? (
+                    <p
+                      className={
+                        onEmerald
+                          ? "mt-1.5 text-xs font-medium text-amber-200"
+                          : "mt-1.5 text-xs font-medium text-amber-800"
+                      }
+                      role="alert"
+                    >
+                      {whatsappEmbeddedHint.text}
+                    </p>
+                  ) : (
+                    <p
+                      className={
+                        onEmerald ? "mt-1.5 text-xs text-emerald-100/85" : "mt-1.5 text-xs text-slate-500"
+                      }
+                    >
+                      Para que puedan escribirle directo
+                    </p>
+                  )}
                 </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Nombre del negocio (opcional)</label>
+                <input
+                  type="text"
+                  value={nombreEmprendimiento}
+                  onChange={(e) => setNombreEmprendimiento(e.target.value)}
+                  placeholder="Ej: Gasfitería Express / Minimarket Don Luis"
+                  className={inputClass}
+                />
               </div>
             </>
           ) : (

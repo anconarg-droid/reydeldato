@@ -70,7 +70,7 @@ export default function HomeHero({ children }: Props) {
                   flexShrink: 0,
                 }}
               />
-              Directorio local · Chile
+              Servicios y comercios locales · Chile
             </span>
           </div>
 
@@ -87,7 +87,7 @@ export default function HomeHero({ children }: Props) {
               maxWidth: 720,
             }}
           >
-            Encuentra servicios reales
+            Encuentra servicios y comercios reales
             <br />
             <span style={{ color: "#0f766e" }}>en tu comuna</span>
           </h1>
@@ -105,8 +105,8 @@ export default function HomeHero({ children }: Props) {
               marginRight: "auto",
             }}
           >
-            Buscas un gasfiter y te aparecen negocios de otra ciudad. Rey del Dato prioriza lo que está cerca y quienes
-            atienden tu comuna.
+            Muchas personas de tu comuna ofrecen lo que buscas. Rey del Dato prioriza lo cercano y quienes atienden tu
+            zona.
           </p>
 
           {/* Search box */}
@@ -130,7 +130,7 @@ export default function HomeHero({ children }: Props) {
           </div>
 
           <p className="mt-4 text-center text-sm font-semibold text-slate-700">
-            Sin publicidad. Sin intermediarios.
+            Primero lo local. Contacto directo por WhatsApp.
           </p>
 
           {children ? (
@@ -144,14 +144,13 @@ export default function HomeHero({ children }: Props) {
         <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-2xl text-left">
             <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              El problema que todos conocen
+              Puede estar más cerca de lo que crees
             </h2>
             <p className="mt-5 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-700 sm:text-base">
-              Necesitas cambiar las cortinas. Preguntas en el grupo de WhatsApp y nadie responde. Buscas en Google y
-              aparecen negocios de otra ciudad, o páginas llenas de publicidad.
+              Muchas veces buscas en Google y aparecen negocios de otras comunas o quienes pagan más publicidad. Pero
+              puede haber una costurera, un gasfiter, una enfermera, un abogado o un local cerca de tu casa.
               {"\n\n"}
-              Rey del Dato existe para eso: encontrar al cortinero de tu comuna, o a alguien cercano que atienda tu zona,
-              con WhatsApp directo y sin vueltas.
+              Rey del Dato ordena esa información por comuna para que encuentres opciones reales cerca de ti.
             </p>
           </div>
         </div>
@@ -167,18 +166,18 @@ export default function HomeHero({ children }: Props) {
               <h2 className="mt-2 text-balance text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
                 Te encuentran cuando te necesitan
               </h2>
+              <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
+                Muchas veces tus próximos clientes están cerca, pero no saben que existes.
+                <br />
+                En Rey del Dato puedes aparecer en tu comuna sin pagar publicidad ni intermediarios.
+              </p>
               <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-800 sm:text-base">
                 Todos tienen la misma oportunidad de aparecer.
                 <br />
                 Aquí no gana el que paga, gana el que está cerca.
               </p>
               <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
-                Sin pagar publicidad. Sin intermediarios.
-                <br />
-                Pagas solo si quieres mejorar cómo se ve tu ficha.
-              </p>
-              <p className="mt-6 text-sm font-semibold text-slate-800 sm:text-base">
-                No necesitas ser experto en marketing. Solo hacer bien tu trabajo.
+                Sin pagar publicidad. Sin intermediarios. Pagas solo si quieres mejorar cómo se ve tu ficha.
               </p>
             </div>
 
