@@ -154,6 +154,11 @@ export default function HomeHero({ children }: Props) {
                 <br />
                 Pagas solo si quieres mejorar cómo se ve tu ficha.
               </p>
+              <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-800 sm:text-base">
+                Todos tienen la misma oportunidad de aparecer.
+                <br />
+                Aquí no gana el que paga, gana el que está cerca.
+              </p>
               <p className="mt-6 text-sm font-semibold text-slate-800 sm:text-base">
                 No necesitas ser experto en marketing. Solo hacer bien tu trabajo.
               </p>
@@ -167,7 +172,9 @@ export default function HomeHero({ children }: Props) {
                     Empieza gratis. Aparece cuando te buscan.
                   </h3>
                   <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-relaxed text-white/95">
-                    Dejas de depender de grupos y empiezas a aparecer cuando te buscan.
+                    Los avisos en WhatsApp o Facebook ayudan, pero no alcanzan cuando alguien te busca fuera del grupo.
+                    <br />
+                    Aquí empiezas a aparecer cuando te buscan.
                   </p>
                 </div>
 
