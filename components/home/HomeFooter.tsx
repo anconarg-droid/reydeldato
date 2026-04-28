@@ -8,7 +8,13 @@ export default function HomeFooter() {
   const isTerminos = pathname === "/terminos";
   const isPrivacidad = pathname === "/privacidad";
   return (
-    <footer className="border-t border-slate-200 bg-slate-50">
+    <footer
+      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-slate-50"
+      style={{
+        background: "var(--color-background, var(--background))",
+        borderTop: "0.5px solid var(--color-border, var(--border))",
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 py-8">
         <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" aria-label="Enlaces del sitio">
           <Link href="/que-es" className="text-slate-600 hover:text-slate-900">
