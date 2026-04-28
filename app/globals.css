@@ -4,6 +4,11 @@
  */
 @import "../node_modules/tailwindcss/index.css";
 
+html,
+body {
+  height: 100%;
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
