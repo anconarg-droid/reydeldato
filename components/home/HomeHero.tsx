@@ -223,6 +223,12 @@ export default function HomeHero({ children }: Props) {
                     <p className="mt-2 text-2xl font-black tabular-nums text-teal-900">
                       Desde $3.500/mes
                     </p>
+                    <Link
+                      href="/planes"
+                      className="mt-2 inline-flex w-fit text-sm font-semibold text-teal-800 hover:text-teal-900"
+                    >
+                      Ver planes →
+                    </Link>
                     <p className="mt-2 text-sm font-extrabold leading-snug text-slate-900">
                       No cambia tu posición,{" "}
                       <span className="font-black text-[#0f766e]">mejora cómo te ven.</span>

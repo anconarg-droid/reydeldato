@@ -148,12 +148,17 @@ export default function InformacionUtilPage() {
                   confianza y más contactos.
                 </p>
                 <Link
-                  href="/planes"
+                  href="/publicar"
                   className="mt-3 inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
                 >
-                  Ver planes
+                  Publicar mi negocio
                 </Link>
-                {/* TODO: crear página pública de planes cuando esté definida. */}
+                <Link
+                  href="/planes"
+                  className="mt-3 inline-flex w-fit text-sm font-semibold text-teal-800 hover:text-teal-900"
+                >
+                  Ver planes y precios →
+                </Link>
               </article>
             </div>
             <div className="max-w-2xl space-y-2 pt-1">
