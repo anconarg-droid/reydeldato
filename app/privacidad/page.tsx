@@ -1,16 +1,61 @@
-import LegalLayout from "@/components/LegalLayout";
 import LegalSection from "@/components/LegalSection";
-import PrivacidadSidebarNav from "./PrivacidadSidebarNav";
+
+const SECCIONES = [
+  { id: "p1", label: "Responsable" },
+  { id: "p2", label: "Base legal" },
+  { id: "p3", label: "Datos recopilados" },
+  { id: "p4", label: "Uso" },
+  { id: "p5", label: "Datos públicos" },
+  { id: "p6", label: "Derechos" },
+  { id: "p7", label: "Seguridad" },
+  { id: "p8", label: "Cookies" },
+  { id: "p9", label: "Contacto" },
+] as const;
 
 export default function PrivacidadPage() {
   return (
-    <LegalLayout title="Política de Privacidad" lastUpdated="Abril 2026" wide>
-      <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-[160px_minmax(0,1fr)] sm:gap-x-10 sm:gap-y-0">
-        <div className="hidden sm:block">
-          <PrivacidadSidebarNav />
-        </div>
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "2rem 1rem" }}>
+      <div style={{ marginBottom: "2rem" }}>
+        <h1 style={{ fontSize: "1.875rem", lineHeight: "2.25rem", fontWeight: 600, color: "var(--color-foreground)" }}>
+          Política de Privacidad
+        </h1>
+        <p style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--color-muted-foreground)" }}>
+          Última actualización: Abril 2026
+        </p>
+      </div>
 
-        <div className="space-y-10 min-w-0">
+      <div
+        className="legal-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr",
+          gap: "0 2.5rem",
+          alignItems: "start",
+        }}
+      >
+        <nav className="legal-nav" style={{ position: "sticky", top: "1.5rem", display: "none" }} aria-label="Índice de privacidad">
+          <div style={{ display: "grid", gap: "0.25rem" }}>
+            {SECCIONES.map((s, idx) => (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                style={{
+                  display: "block",
+                  padding: "0.25rem 0",
+                  borderLeft: "2px solid transparent",
+                  paddingLeft: "0.75rem",
+                  color: "var(--color-muted-foreground)",
+                  textDecoration: "none",
+                  fontSize: "0.875rem",
+                }}
+              >
+                <span style={{ color: "var(--color-muted-foreground)" }}>{idx + 1}.</span> {s.label}
+              </a>
+            ))}
+          </div>
+        </nav>
+
+        <div style={{ minWidth: 0, display: "grid", gap: "2.5rem" }}>
           <LegalSection id="p1" splitLeadingNumber title="1. Responsable del tratamiento">
             <p>Rey del Dato SpA, RUT 78.403.835-1, es responsable del tratamiento de datos.</p>
           </LegalSection>
@@ -89,6 +134,13 @@ export default function PrivacidadPage() {
           </LegalSection>
         </div>
       </div>
-    </LegalLayout>
+
+      <style>{`
+        @media (min-width: 640px) {
+          .legal-grid { grid-template-columns: 160px 1fr !important; }
+          .legal-nav { display: block !important; }
+        }
+      `}</style>
+    </div>
   );
 }

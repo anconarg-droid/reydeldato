@@ -1,16 +1,61 @@
-import LegalLayout from "@/components/LegalLayout";
 import LegalSection from "@/components/LegalSection";
-import TerminosSidebarNav from "./TerminosSidebarNav";
+
+const SECCIONES = [
+  { id: "s1", label: "Identificación" },
+  { id: "s2", label: "Naturaleza" },
+  { id: "s3", label: "Responsabilidad" },
+  { id: "s4", label: "Publicación" },
+  { id: "s5", label: "Uso" },
+  { id: "s6", label: "Propiedad" },
+  { id: "s7", label: "Modificaciones" },
+  { id: "s8", label: "Legislación" },
+  { id: "s9", label: "Contacto" },
+] as const;
 
 export default function TerminosPage() {
   return (
-    <LegalLayout title="Términos y Condiciones" lastUpdated="Abril 2026" wide>
-      <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-[160px_minmax(0,1fr)] sm:gap-x-10 sm:gap-y-0">
-        <div className="hidden sm:block">
-          <TerminosSidebarNav />
-        </div>
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "2rem 1rem" }}>
+      <div style={{ marginBottom: "2rem" }}>
+        <h1 style={{ fontSize: "1.875rem", lineHeight: "2.25rem", fontWeight: 600, color: "var(--color-foreground)" }}>
+          Términos y Condiciones
+        </h1>
+        <p style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--color-muted-foreground)" }}>
+          Última actualización: Abril 2026
+        </p>
+      </div>
 
-        <div className="space-y-10 min-w-0">
+      <div
+        className="legal-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr",
+          gap: "0 2.5rem",
+          alignItems: "start",
+        }}
+      >
+        <nav className="legal-nav" style={{ position: "sticky", top: "1.5rem", display: "none" }} aria-label="Índice de términos">
+          <div style={{ display: "grid", gap: "0.25rem" }}>
+            {SECCIONES.map((s, idx) => (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                style={{
+                  display: "block",
+                  padding: "0.25rem 0",
+                  borderLeft: "2px solid transparent",
+                  paddingLeft: "0.75rem",
+                  color: "var(--color-muted-foreground)",
+                  textDecoration: "none",
+                  fontSize: "0.875rem",
+                }}
+              >
+                <span style={{ color: "var(--color-muted-foreground)" }}>{idx + 1}.</span> {s.label}
+              </a>
+            ))}
+          </div>
+        </nav>
+
+        <div style={{ minWidth: 0, display: "grid", gap: "2.5rem" }}>
           <LegalSection id="s1" splitLeadingNumber title="1. Identificación del prestador">
             <p>
               Este sitio web es operado por <strong>Rey del Dato SpA</strong>, RUT 78.403.835-1, con domicilio en Padre
@@ -101,6 +146,13 @@ export default function TerminosPage() {
           </LegalSection>
         </div>
       </div>
-    </LegalLayout>
+
+      <style>{`
+        @media (min-width: 640px) {
+          .legal-grid { grid-template-columns: 160px 1fr !important; }
+          .legal-nav { display: block !important; }
+        }
+      `}</style>
+    </div>
   );
 }
