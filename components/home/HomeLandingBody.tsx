@@ -194,9 +194,9 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             La diferencia
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
-            Menos ruido. Más cercanía.
+            Orden local, contacto directo y reglas claras.
           </p>
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
+          <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
             {[
               {
                 t: "Mostramos lo que está en tu comuna",
@@ -278,6 +278,15 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
       {/* 5 · Recomendar negocio */}
       <section className="border-t border-slate-100 bg-white" aria-labelledby="home-recomendar">
         <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 sm:py-20">
+          <h2
+            id="home-recomendar"
+            className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl"
+          >
+            ¿Conoces un negocio local que debería estar aquí?
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+            Recomiéndalo y ayúdanos a completar el catálogo de tu comuna.
+          </p>
           <HomeRecomienda embedded initialComunaSlug={contextComunaSlug} />
         </div>
       </section>

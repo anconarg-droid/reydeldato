@@ -257,7 +257,7 @@ export default function HomeRecomienda({
                 : "text-lg sm:text-xl font-bold text-slate-900 mb-1"
           }
         >
-          {embedded ? "¿Conoces un buen servicio?" : "Recomienda un buen emprendimiento"}
+          {embedded ? "Entre todos completamos el directorio" : "Recomienda un buen emprendimiento"}
         </h2>
         {!embedded ? (
           <p className="text-slate-600 text-sm mb-5 max-w-2xl">

@@ -105,8 +105,7 @@ export default function HomeHero({ children }: Props) {
               marginRight: "auto",
             }}
           >
-            Buscas un servicio y te aparecen opciones de otras comunas o publicidad. Aquí encuentras personas reales
-            cerca de ti.
+            Hay mucha gente de tu comuna que ofrece lo que buscas. Priorizamos lo cercano y quienes atienden tu zona.
           </p>
 
           {/* Search box */}
@@ -130,7 +129,7 @@ export default function HomeHero({ children }: Props) {
           </div>
 
           <p className="mt-4 text-center text-sm font-semibold text-slate-700">
-            Primero lo cercano. Después el resto.
+            Primero lo local. Contacto directo por WhatsApp.
           </p>
 
           {children ? (
