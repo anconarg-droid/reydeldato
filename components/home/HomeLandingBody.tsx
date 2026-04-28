@@ -188,38 +188,25 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
         aria-labelledby="home-diferencia-por-que home-diferencia"
       >
         <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
-          <p
-            id="home-diferencia-por-que"
-            className="text-sm font-semibold tracking-tight text-teal-700"
-          >
-            ¿Por qué es distinto?
-          </p>
           <h2
             id="home-diferencia"
             className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
           >
-            La diferencia
+            ¿Por qué Rey del Dato?
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
-            Dejas de buscar en grupos. Encuentras todo en un solo lugar.
-          </p>
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
             {[
               {
-                t: "Sin grupos ni “manda dato”",
-                d: "No más WhatsApp, Facebook ni pedir datos. Todo está ordenado y disponible.",
+                t: "Resultados de tu comuna",
+                d: "Primero mostramos lo que está cerca y los negocios que atienden tu zona.",
               },
               {
-                t: "Resultados locales primero",
-                d: "Lo más cercano a ti aparece antes. No compites con todo Chile.",
+                t: "Negocios reales",
+                d: "Cada ficha tiene nombre, descripción y contacto directo. Sin formularios ni intermediarios.",
               },
               {
-                t: "Contacto directo por WhatsApp",
-                d: "Hablas directo con el negocio. Sin intermediarios ni comisiones ocultas.",
-              },
-              {
-                t: "Fichas reales y completas",
-                d: "Fotos, ubicación y servicios claros para decidir rápido.",
+                t: "Todos tienen la misma oportunidad",
+                d: "No gana el que más paga. Aparece quien está cerca y hace bien su trabajo.",
               },
             ].map((x) => (
               <div
@@ -247,7 +234,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             Comunas
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
-            Sumamos fichas cada semana. Si la tuya está en preparación, igual puedes explorar.
+            Sumamos fichas cada semana. Si tu comuna está creciendo, igual puedes explorar.
           </p>
 
           <div className="mt-10">
@@ -308,10 +295,10 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             PARA EMPRENDEDORES
           </p>
           <h2 id="home-cta-final" className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-            ¿Tienes un negocio local?
+            Empieza gratis.
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-relaxed text-white/95 sm:text-lg">
-            Deja de perderte en grupos. Empieza a aparecer cuando te buscan.
+            Tu próximo cliente puede estar cerca.
           </p>
           <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-white/90 sm:text-base">
             Te encuentran cuando te necesitan. Sin tarjeta. Sin compromiso.
@@ -322,7 +309,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
               href="/publicar"
               className="inline-flex h-14 min-h-14 w-full max-w-sm items-center justify-center rounded-xl bg-white px-8 text-base font-extrabold text-[#0f766e] shadow-lg shadow-teal-900/20 transition hover:bg-teal-50"
             >
-              Publicar mi negocio <span aria-hidden>→</span>
+              Publicar mi negocio
             </Link>
             <p className="text-xs font-semibold text-white/85">
               Gratis por 90 días · Luego desde $3.500/mes

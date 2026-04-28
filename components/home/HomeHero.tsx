@@ -87,7 +87,8 @@ export default function HomeHero({ children }: Props) {
               maxWidth: 720,
             }}
           >
-            Encuentra servicios reales{" "}
+            Encuentra servicios reales
+            <br />
             <span style={{ color: "#0f766e" }}>en tu comuna</span>
           </h1>
 
@@ -96,15 +97,16 @@ export default function HomeHero({ children }: Props) {
               fontFamily: "var(--font-sora, sans-serif)",
               marginTop: 18,
               fontSize: "clamp(15px, 2.1vw, 18px)",
-              color: "#0f172a",
-              fontWeight: 700,
+              color: "#334155",
+              fontWeight: 650,
               lineHeight: 1.45,
               maxWidth: 640,
               marginLeft: "auto",
               marginRight: "auto",
             }}
           >
-            Sin pagar publicidad. Sin perder tiempo.
+            Buscas un gasfiter y te aparecen negocios de otra ciudad. Rey del Dato prioriza lo que está cerca y quienes
+            atienden tu comuna.
           </p>
 
           {/* Search box */}
@@ -128,12 +130,30 @@ export default function HomeHero({ children }: Props) {
           </div>
 
           <p className="mt-4 text-center text-sm font-semibold text-slate-700">
-            Si no estás aquí, no te encuentran.
+            Sin publicidad. Sin intermediarios.
           </p>
 
           {children ? (
             <div style={{ marginTop: 32, textAlign: "left" }}>{children}</div>
           ) : null}
+        </div>
+      </section>
+
+      {/* Historia real */}
+      <section className="w-full bg-transparent border-t border-slate-100">
+        <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">
+          <div className="mx-auto max-w-2xl text-left">
+            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+              El problema que todos conocen
+            </h2>
+            <p className="mt-5 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-700 sm:text-base">
+              Necesitas cambiar las cortinas. Preguntas en el grupo de WhatsApp y nadie responde. Buscas en Google y
+              aparecen negocios de otra ciudad, o páginas llenas de publicidad.
+              {"\n\n"}
+              Rey del Dato existe para eso: encontrar al cortinero de tu comuna, o a alguien cercano que atienda tu zona,
+              con WhatsApp directo y sin vueltas.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -143,9 +163,7 @@ export default function HomeHero({ children }: Props) {
           <div className="grid items-start gap-10 md:grid-cols-2 md:gap-14">
             {/* Izquierda: texto */}
             <div className="text-left">
-              <p className="text-sm font-semibold text-slate-700">
-                Tu negocio deja de perderse en grupos.
-              </p>
+              <p className="text-sm font-semibold text-slate-700">Tu negocio aparece cuando alguien cerca te busca.</p>
               <h2 className="mt-2 text-balance text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
                 Te encuentran cuando te necesitan
               </h2>
@@ -236,13 +254,13 @@ export default function HomeHero({ children }: Props) {
                         <span className="text-teal-700" aria-hidden>
                           •
                         </span>
-                        <span>Más información para que te elijan</span>
+                        <span>Más información para generar confianza</span>
                       </li>
                       <li className="flex gap-2">
                         <span className="text-teal-700" aria-hidden>
                           •
                         </span>
-                        <span>Genera más confianza y más contactos</span>
+                        <span>Más claridad para que te contacten directo</span>
                       </li>
                     </ul>
                   </div>
@@ -257,7 +275,7 @@ export default function HomeHero({ children }: Props) {
                       }
                       className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-xl bg-teal-700 px-8 text-base font-extrabold text-white shadow-md transition hover:bg-teal-800 sm:w-auto"
                     >
-                      Publica tu negocio gratis
+                      Publicar mi negocio
                     </Link>
                     <p className="text-[11px] font-medium text-slate-500">
                       Sin tarjeta · Sin compromiso · 2 minutos

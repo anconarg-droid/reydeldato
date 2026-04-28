@@ -33,8 +33,7 @@ function norm(v: string) {
     .trim();
 }
 
-const SEARCH_QUERY_PLACEHOLDER =
-  "Ej: gasfiter, peluquera, mecánico, clases, comida";
+const SEARCH_QUERY_PLACEHOLDER = "¿Qué necesitas? Ej: gasfiter, electricista...";
 
 function prettyComunaSlug(raw: string) {
   const v = String(raw ?? "").trim();
@@ -458,10 +457,6 @@ export default function HomeSearchClient({
         </button>
       </div>
       </div>
-
-      <p className="mt-3 text-center text-sm font-medium text-slate-700">
-        Deja los grupos de WhatsApp y Facebook.
-      </p>
     </section>
   );
 }

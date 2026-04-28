@@ -35,8 +35,8 @@ export default function HomeComunasPreparacion({
       aria-labelledby="comunas-preparacion-heading"
     >
       <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
-        Estamos completando el directorio comuna por comuna. Algunas comunas ya muestran resultados, pero todavía
-        necesitan más servicios clave para ser más útiles.
+        Estamos completando el catálogo comuna por comuna. Algunas comunas ya muestran resultados, pero todavía
+        necesitan más servicios clave para que el directorio sea más útil.
       </p>
       <h2
         id="comunas-preparacion-heading"
@@ -109,7 +109,7 @@ export default function HomeComunasPreparacion({
 
               <p className="mt-4 text-sm font-semibold text-slate-900">{faltanLine}</p>
               <p className="mt-2 text-sm leading-snug text-slate-600">
-                <span aria-hidden>✨ </span>Sé uno de los primeros en sumar tu servicio
+                Sé uno de los primeros en sumar tu servicio
               </p>
 
               <span className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-[#0f766e] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 sm:w-auto">
