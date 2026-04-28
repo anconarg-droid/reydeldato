@@ -13,8 +13,8 @@ export default function InformacionUtilPage() {
             Información útil
           </h1>
           <p className="text-sm sm:text-base text-slate-500 max-w-2xl">
-            Consejos, respuestas y ayuda para usar Rey del Dato mejor, tanto si buscas un servicio
-            como si tienes un emprendimiento.
+            Guía rápida para entender cómo funciona Rey del Dato, tanto si buscas un servicio como
+            si tienes un negocio.
           </p>
         </header>
 
@@ -26,7 +26,7 @@ export default function InformacionUtilPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <article className="rd-card p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                <h3 className="text-sm font-bold text-slate-950 mb-1">
                   Cómo encontrar servicios en tu comuna
                 </h3>
                 <p className="text-sm text-slate-600">
@@ -36,7 +36,7 @@ export default function InformacionUtilPage() {
                 </p>
               </article>
               <article className="rd-card p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                <h3 className="text-sm font-bold text-slate-950 mb-1">
                   Cómo entender los resultados cercanos
                 </h3>
                 <p className="text-sm text-slate-600">
@@ -46,7 +46,7 @@ export default function InformacionUtilPage() {
                 </p>
               </article>
               <article className="rd-card p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                <h3 className="text-sm font-bold text-slate-950 mb-1">
                   Qué significa &quot;En tu comuna&quot;
                 </h3>
                 <p className="text-sm text-slate-600">
@@ -55,7 +55,7 @@ export default function InformacionUtilPage() {
                 </p>
               </article>
               <article className="rd-card p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                <h3 className="text-sm font-bold text-slate-950 mb-1">
                   Qué significa &quot;Atiende tu comuna&quot;
                 </h3>
                 <p className="text-sm text-slate-600">
@@ -76,7 +76,7 @@ export default function InformacionUtilPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <article className="rd-card p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                <h3 className="text-sm font-bold text-slate-950 mb-1">
                   Cómo publicar en Rey del Dato
                 </h3>
                 <p className="text-sm text-slate-600 mb-2">
@@ -91,7 +91,7 @@ export default function InformacionUtilPage() {
                 </Link>
               </article>
               <article className="rd-card p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                <h3 className="text-sm font-bold text-slate-950 mb-1">
                   Qué datos necesitas
                 </h3>
                 <p className="text-sm text-slate-600">
@@ -104,7 +104,7 @@ export default function InformacionUtilPage() {
                 </p>
               </article>
               <article className="rd-card p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-1">Tu panel</h3>
+                <h3 className="text-sm font-bold text-slate-950 mb-1">Tu panel</h3>
                 <p className="text-sm text-slate-600">
                   Después de publicar, tendrás acceso a tu panel para editar tu información,
                   actualizar fotos, cambiar datos de contacto y ver estadísticas básicas de visitas y
@@ -118,34 +118,34 @@ export default function InformacionUtilPage() {
                 </p>
               </article>
               <article className="rd-card p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                <h3 className="text-sm font-bold text-slate-950 mb-1">
                   Beneficios de una ficha completa
                 </h3>
                 <p className="text-sm text-slate-600">
-                  La ficha completa agrega fotos, Instagram, más descripción y datos de contacto. No
+                  La ficha completa agrega fotos, Instagram y más información de tu negocio. No
                   cambia tu posición en los resultados, pero mejora cómo te ven y puede generar más
                   confianza.
                 </p>
               </article>
               <article className="rd-card p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                <h3 className="text-sm font-bold text-slate-950 mb-1">
                   Cómo aparecer cuando te buscan
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Elige bien tu categoría, comuna base y comunas de cobertura. Si atiendes varias
-                  comunas o una región completa, indícalo correctamente para aparecer cuando alguien
-                  busque en esas zonas.
+                  Elige bien tu categoría, comuna base y cobertura. Si atiendes varias comunas o una
+                  región completa, indícalo correctamente para aparecer cuando alguien busque en esas
+                  zonas.
                 </p>
               </article>
               <article className="rd-card p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-1">Planes</h3>
+                <h3 className="text-sm font-bold text-slate-950 mb-1">Planes</h3>
                 <p className="text-sm text-slate-600">
                   Publicar tu negocio es gratis y siempre puedes aparecer con ficha básica.
                 </p>
                 <p className="text-sm text-slate-600 mt-2">
                   La ficha completa es opcional y parte desde $3.500/mes. No cambia tu posición en
-                  los resultados: mejora cómo se ve tu negocio, agrega más información y puede
-                  ayudarte a generar más confianza y más contactos.
+                  los resultados: mejora cómo se ve tu negocio y puede ayudarte a generar más
+                  confianza y más contactos.
                 </p>
                 {/* TODO: crear página pública de planes cuando esté definida. */}
                 <Link
@@ -174,9 +174,12 @@ export default function InformacionUtilPage() {
               Cómo crecen las comunas
             </h2>
             <p className="text-sm text-slate-600 max-w-2xl">
-              Rey del Dato crece comuna por comuna. Algunas comunas ya muestran servicios disponibles,
-              pero todavía están completando su catálogo. Mientras más negocios se publican o
-              recomiendan, más útil se vuelve el directorio.
+              Rey del Dato crece comuna por comuna.
+            </p>
+            <p className="text-sm text-slate-600 max-w-2xl">
+              Algunas comunas ya tienen servicios disponibles, pero todavía están completando su
+              catálogo. Mientras más negocios se publican o se recomiendan, más útil se vuelve el
+              directorio.
             </p>
 
             <div className="grid grid-cols-1 gap-4">
