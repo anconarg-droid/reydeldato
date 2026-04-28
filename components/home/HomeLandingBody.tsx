@@ -327,6 +327,9 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             <p className="text-xs font-semibold text-white/85">
               Gratis por 90 días · Luego desde $3.500/mes
             </p>
+            <p className="text-xs font-medium leading-snug text-white/80 max-w-sm">
+              Si no continúas, tu negocio sigue visible con datos básicos.
+            </p>
           </div>
         </div>
       </section>
