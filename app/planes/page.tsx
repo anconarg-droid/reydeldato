@@ -185,6 +185,21 @@ export default function PlanesPublicosPage() {
             Mejora cómo se ve tu negocio para generar más confianza. No cambia
             tu posición — apareces igual, pero te ven mejor.
           </p>
+          <p
+            style={{
+              marginTop: "-0.75rem",
+              marginBottom: "1.5rem",
+              maxWidth: 640,
+              fontSize: 14,
+              color: "var(--color-text-secondary, #475569)",
+              lineHeight: 1.5,
+              whiteSpace: "pre-line",
+              fontWeight: 600,
+            }}
+          >
+            No cambia tu posición en los resultados.{"\n"}Apareces igual, pero
+            con mejor presentación.
+          </p>
 
           <PlanesPublicosClient />
         </section>
