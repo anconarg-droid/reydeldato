@@ -30,14 +30,15 @@ export default async function PlanesPage({
     redirect(q ? `/panel?${q}` : "/panel");
   }
 
-  if (!idParam && !slug && !accessToken) {
+  // /panel/planes no es público: requiere access_token (mismo mecanismo que panel).
+  if (accessToken.length < 8) {
     redirect("/panel");
   }
 
-  let emprendedorId = idParam;
+  let emprendedorId = "";
   const supabase = createSupabaseServerPublicClient();
 
-  if (!emprendedorId && accessToken.length >= 8) {
+  if (accessToken.length >= 8) {
     const admin = getSupabaseAdminFromEnv();
     const resolved = await resolveEmprendedorIdForPanelMetrics(
       admin,
@@ -46,17 +47,7 @@ export default async function PlanesPage({
     emprendedorId = resolved ?? "";
   }
 
-  if (!emprendedorId && slug) {
-    const { data: empBySlug } = await supabase
-      .from("vw_emprendedores_publico")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
-    emprendedorId =
-      empBySlug && typeof (empBySlug as { id?: unknown }).id === "string"
-        ? (empBySlug as { id: string }).id
-        : "";
-  }
+  // Nota: no resolvemos por slug/id sin access_token para evitar exponer planes como landing pública.
 
   if (!emprendedorId) {
     const sp = new URLSearchParams();
