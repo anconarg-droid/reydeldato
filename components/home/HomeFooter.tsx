@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 export default function HomeFooter() {
   const pathname = usePathname();
   const isTerminos = pathname === "/terminos";
+  const isPrivacidad = pathname === "/privacidad";
   return (
     <footer className="border-t border-slate-200 bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -25,7 +26,12 @@ export default function HomeFooter() {
           >
             Términos y condiciones
           </Link>
-          <Link href="/privacidad" className="text-slate-600 hover:text-slate-900">
+          <Link
+            href="/privacidad"
+            className={
+              isPrivacidad ? "font-medium text-slate-900" : "text-slate-600 hover:text-slate-900"
+            }
+          >
             Política de privacidad
           </Link>
         </nav>
