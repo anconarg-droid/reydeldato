@@ -458,10 +458,10 @@ function BloqueCuandoTerminePlan({ sinCaja }: { sinCaja?: boolean }) {
         Cuando termine tu plan:
       </h2>
       <ul className="list-disc pl-4 space-y-1 text-sm text-gray-800 leading-snug">
-        <li>Visible en búsquedas</li>
-        <li>Pasarás a perfil básico</li>
-        <li>Perfil más simple en resultados</li>
-        <li>Contacto por WhatsApp</li>
+        <li>Sigue visible en el directorio (ficha básica y WhatsApp)</li>
+        <li>Pasarás a ficha básica: menos fotos, texto y enlaces que la completa</li>
+        <li>En zonas con directorio en crecimiento, la ficha completa suele resaltarse más</li>
+        <li>Vecinos pueden recomendar negocios; publicar sigue siendo gratuito</li>
       </ul>
     </>
   );

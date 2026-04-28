@@ -22,6 +22,7 @@ import {
   planesWebpayDeshabilitadoCliente,
 } from "@/lib/planesPanelWebpay";
 import {
+  COPY_PLAN_GRATIS_LUEGO_BASICO,
   copyBloqueSuperiorPlanesDesdeEstado,
   copyBloqueSuperiorPlanesSinContextoNegocio,
 } from "@/lib/panelComercialCopy";
@@ -29,16 +30,16 @@ import type { PanelComercialPayload } from "@/lib/panelComercialPayload";
 import PanelBrandHomeBar from "@/components/panel/PanelBrandHomeBar";
 
 const BENEFICIOS = [
-  "Apareces en 'mejores opciones' dentro de tu comuna",
+  "Destacas más en el directorio en crecimiento de tu zona (más contexto y confianza)",
   "Más personas ven tu negocio y entran a tu perfil",
-  "Puedes mostrar más información, fotos y enlaces",
+  "Ficha completa: más fotos, descripción e información útil que la ficha básica",
   "Generas más confianza y aumentas tus contactos",
 ] as const;
 
 const PERDIDAS = [
-  "Tu perfil pasa a modo básico",
-  "Dejas de aparecer en 'mejores opciones'",
-  "Tendrás menos visibilidad en tu comuna",
+  "Sigues publicado con ficha básica: WhatsApp y datos esenciales",
+  "Pierdes la ficha completa (menos fotos, texto y enlaces)",
+  "En el directorio en crecimiento, quienes tienen ficha completa suelen resaltarse más",
 ] as const;
 
 type TarjetaDef = {
@@ -507,11 +508,19 @@ export default function PlanesPanelClient({
 
       <section
         className="rounded-2xl border border-amber-200/90 bg-amber-50/40 p-6 sm:p-7"
-        aria-label="Si no activas plan"
+        aria-label="Si no continúas con ficha completa"
       >
         <h2 className="text-lg font-black text-gray-900">
-          Qué pasa si no activas un plan
+          Si no continúas con la ficha completa
         </h2>
+        <p className="mt-3 text-sm font-medium text-gray-800 leading-relaxed">
+          {COPY_PLAN_GRATIS_LUEGO_BASICO}
+        </p>
+        <p className="mt-2 text-xs text-gray-600 leading-relaxed">
+          En comunas con directorio en crecimiento ya hay servicios visibles; el
+          catálogo sigue ampliándose. Los vecinos pueden recomendar negocios y
+          publicar sigue siendo gratuito.
+        </p>
         <ul className="mt-4 list-disc pl-5 text-sm text-gray-800 space-y-2 leading-relaxed">
           {PERDIDAS.map((x) => (
             <li key={x}>{x}</li>

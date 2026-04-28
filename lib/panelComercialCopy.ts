@@ -17,6 +17,13 @@ export {
 } from "@/lib/getEstadoComercialEmprendedor";
 
 /**
+ * Mensaje fijo de producto: trial, precio referencial y continuidad en ficha básica.
+ * Usar en panel / planes (no implica cambiar precios en checkout).
+ */
+export const COPY_PLAN_GRATIS_LUEGO_BASICO =
+  "Gratis por 90 días. Luego puedes mantener tu ficha completa desde $3.500/mes. Si no continúas, tu negocio sigue visible con datos básicos.";
+
+/**
  * Línea secundaria compacta (API / resúmenes).
  */
 export function subtituloEstadoComercialPanel(opts: {
@@ -34,7 +41,7 @@ export function subtituloEstadoComercialPanel(opts: {
       ? `Periodo de prueba vigente hasta el ${f}.`
       : "Periodo de prueba vigente.";
   }
-  return "Sin plan de pago activo. En listados tu negocio se muestra como perfil básico.";
+  return "Sin plan de pago activo: tu negocio sigue visible como perfil básico (contacto y datos esenciales).";
 }
 
 export type CopyBloqueEstadoPlanes = {
@@ -59,10 +66,9 @@ export function copyBloqueSuperiorPlanesDesdeEstado(opts: {
       return {
         titulo: "Tu ficha está activa",
         texto: dTxt
-          ? `Estás en periodo de prueba. Te quedan ${dTxt} días para mantener tu perfil completo antes de pasar a modo básico.`
-          : "Estás en periodo de prueba. Activa un plan para mantener tu perfil completo antes de pasar a modo básico.",
-        subtexto:
-          "Activa un plan para mantener tu perfil completo y recibir más contactos.",
+          ? `Periodo de prueba: te quedan ${dTxt} días con ficha completa.`
+          : "Periodo de prueba: tienes ficha completa activa.",
+        subtexto: COPY_PLAN_GRATIS_LUEGO_BASICO,
       };
     case "plan_activo":
     case "plan_por_vencer":
@@ -78,9 +84,8 @@ export function copyBloqueSuperiorPlanesDesdeEstado(opts: {
       return {
         titulo: "Tu ficha está en modo básico",
         texto:
-          "Si no activas un plan, tu negocio tendrá menos visibilidad y dejará de aparecer en 'mejores opciones'.",
-        subtexto:
-          "Activa un plan para mantener tu perfil completo y recibir más contactos.",
+          "Tu negocio sigue publicado: los vecinos pueden contactarte por WhatsApp. Con ficha completa destacas más en el directorio en crecimiento de tu zona.",
+        subtexto: COPY_PLAN_GRATIS_LUEGO_BASICO,
       };
   }
 }
@@ -88,10 +93,10 @@ export function copyBloqueSuperiorPlanesDesdeEstado(opts: {
 /** Bloque superior de `/panel/planes` sin id/comercial válido (sin mensajes de error). */
 export function copyBloqueSuperiorPlanesSinContextoNegocio(): CopyBloqueEstadoPlanes {
   return {
-    titulo: "Tu ficha está en modo básico",
-    texto:
-      "Activa un plan para mantener tu ficha completa activa y recibir más contactos.",
-    subtexto: "",
+    titulo: "Planes de ficha completa",
+    texto: COPY_PLAN_GRATIS_LUEGO_BASICO,
+    subtexto:
+      "Ficha completa: más fotos, descripción y enlaces. Ficha básica: visible con lo esencial y WhatsApp.",
   };
 }
 
@@ -124,16 +129,15 @@ export function copyBannerComercialPanelDesdeEstado(opts: {
     case "trial_activo":
       return {
         titulo: "Tu ficha está activa (periodo de prueba)",
-        texto:
-          "Aprovecha estos días para recibir visitas y contactos. Activa un plan antes de que termine para mantener tu visibilidad.",
+        texto: `Aprovecha estos días para recibir visitas y contactos. ${COPY_PLAN_GRATIS_LUEGO_BASICO}`,
         cta: "Ver planes",
       };
     case "trial_por_vencer":
       return {
         titulo: "Tu periodo de prueba está por terminar",
         texto: dTxt
-          ? `Te quedan ${dTxt} días para seguir apareciendo como perfil completo. Activa un plan para no perder visibilidad.`
-          : "Te quedan pocos días para seguir apareciendo como perfil completo. Activa un plan para no perder visibilidad.",
+          ? `Te quedan ${dTxt} días con ficha completa. ${COPY_PLAN_GRATIS_LUEGO_BASICO}`
+          : `Tu periodo de prueba está por terminar. ${COPY_PLAN_GRATIS_LUEGO_BASICO}`,
         cta: "Activar plan ahora",
       };
     case "plan_activo":
@@ -153,16 +157,17 @@ export function copyBannerComercialPanelDesdeEstado(opts: {
       };
     case "basico":
       return {
-        titulo: "⚠️ Tu ficha está en modo básico",
+        titulo: "Tu ficha está en modo básico",
         texto:
-          'Tu negocio ya no aparece en "mejores opciones" dentro de tu comuna.\n\nEso significa menos visitas y menos contactos.\n\nActiva un plan para volver a destacarte.',
+          "Tu negocio sigue visible con datos básicos. En el directorio en crecimiento de tu zona, la ficha completa ayuda a que más vecinos te encuentren y confíen en ti.\n\n" +
+          COPY_PLAN_GRATIS_LUEGO_BASICO,
         cta: "Ver planes",
       };
     case "vencido_reciente":
       return {
         titulo: "Tu ficha volvió a modo básico",
         texto:
-          "Tu plan venció recientemente. Actívalo de nuevo para recuperar tu visibilidad y volver a aparecer como perfil completo.",
+          "Tu plan venció recientemente: sigues visible con datos básicos. Reactiva la ficha completa para destacar de nuevo en el directorio en crecimiento de tu zona.",
         cta: "Volver a activar",
       };
   }
