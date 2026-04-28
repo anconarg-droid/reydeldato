@@ -9,7 +9,7 @@ export default function HomeFooter() {
   const isPrivacidad = pathname === "/privacidad";
   return (
     <footer
-      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-slate-50"
+      className="border-t bg-slate-50"
       style={{
         background: "var(--color-background, var(--background))",
         borderTop: "0.5px solid var(--color-border, var(--border))",

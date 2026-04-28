@@ -138,28 +138,6 @@ export default function HomeHero({ children }: Props) {
         </div>
       </section>
 
-      {/* Historia real */}
-      <section className="w-full bg-transparent border-t border-slate-100">
-        <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="mx-auto max-w-2xl text-left">
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              Puede estar más cerca de lo que crees
-            </h2>
-            <div className="mt-5 space-y-4 text-sm font-medium leading-relaxed text-slate-700 sm:text-base">
-              <p>
-                Muchas veces buscas y aparecen negocios de otras comunas o los que pagan más.
-              </p>
-              <p>
-                Pero puede haber alguien a pocas cuadras que hace exactamente lo que necesitas.
-              </p>
-              <p>
-                Rey del Dato muestra primero lo que está cerca.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Comparación: publicidad vs intención */}
       <section className="w-full border-t border-slate-100 bg-white">
         <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">

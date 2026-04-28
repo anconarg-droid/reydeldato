@@ -38,7 +38,7 @@ export default function RootLayout({
         <PostHogProvider>
           <div className="min-h-screen flex flex-col">
             <GlobalHeader />
-            <main className="flex-1 pb-[80px]">{children}</main>
+            <main className="flex-1">{children}</main>
             <HomeFooter />
           </div>
         </PostHogProvider>
