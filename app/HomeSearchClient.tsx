@@ -287,8 +287,8 @@ export default function HomeSearchClient({
   return (
     <section className="w-full mx-auto">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
-        <div className="grid w-full gap-3 items-stretch grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center">
-        <div ref={queryBoxRef} className="relative min-w-0">
+        <div className="grid w-full gap-3 items-stretch grid-cols-1 items-center sm:grid-cols-[minmax(280px,2fr)_minmax(160px,1fr)_auto]">
+          <div ref={queryBoxRef} className="relative min-w-0">
           <input
             ref={queryInputRef}
             value={q}
@@ -328,7 +328,7 @@ export default function HomeSearchClient({
               }
             }}
             placeholder={SEARCH_QUERY_PLACEHOLDER}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-base text-slate-900 placeholder:text-slate-400 shadow-md shadow-slate-900/5 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"
+            className="w-full min-w-[280px] rounded-xl border border-slate-200 bg-white px-4 py-4 text-base text-slate-900 placeholder:text-slate-400 shadow-md shadow-slate-900/5 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"
           />
 
           <SearchAutocompleteDropdown
@@ -365,7 +365,7 @@ export default function HomeSearchClient({
             placeholder="¿En qué comuna?"
             aria-autocomplete="list"
             aria-label="Comuna: escribe al menos 2 letras para ver sugerencias"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-base text-slate-900 placeholder:text-slate-400 shadow-md shadow-slate-900/5 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"
+            className="w-full min-w-[160px] rounded-xl border border-slate-200 bg-white px-4 py-4 text-base text-slate-900 placeholder:text-slate-400 shadow-md shadow-slate-900/5 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-600/15"
           />
 
           {openComuna && (comunaSuggestions.length > 0 || loadingComuna) && (
