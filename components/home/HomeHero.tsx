@@ -163,6 +163,9 @@ export default function HomeHero({ children }: Props) {
                 <div className="mt-2 text-2xl font-black tracking-tight text-teal-900">
                   Empieza gratis por 90 días
                 </div>
+                <p className="mx-auto mt-3 max-w-sm text-xs font-medium leading-snug text-slate-600 sm:text-sm">
+                  Si no continúas, tu negocio sigue visible con datos básicos.
+                </p>
                 <ul className="mx-auto mt-4 max-w-sm text-left text-sm font-semibold text-slate-800">
                   <li className="flex gap-2">
                     <span className="text-teal-700" aria-hidden>
