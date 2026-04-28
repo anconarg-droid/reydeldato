@@ -63,8 +63,10 @@ export default function PlanesPublicosPage() {
               lineHeight: 1.5,
             }}
           >
-            Publicar tu negocio es gratis en esta etapa. Si quieres mejorar cómo
-            se ve, hay planes opcionales.
+            Planes de lanzamiento{"\n"}
+            {"\n"}
+            Publica tu negocio sin riesgo.{"\n"}
+            Empiezas gratis y decides después si quieres mejorar tu ficha.
           </p>
         </header>
 
