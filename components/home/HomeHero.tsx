@@ -172,9 +172,9 @@ export default function HomeHero({ children }: Props) {
                     Empieza gratis. Aparece cuando te buscan.
                   </h3>
                   <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-relaxed text-white/95">
-                    Los avisos en WhatsApp o Facebook ayudan,
+                    En WhatsApp o Facebook te ven algunos.
                     <br />
-                    pero aquí apareces cuando te buscan.
+                    Aquí te encuentran cuando te buscan.
                   </p>
                 </div>
 
@@ -212,12 +212,12 @@ export default function HomeHero({ children }: Props) {
                     <p className="mt-2 text-2xl font-black tabular-nums text-teal-900">
                       Desde $3.500/mes
                     </p>
-                    <p className="mt-1 text-xs font-medium leading-snug text-slate-600">
-                      Opcional. Puedes quedarte gratis con ficha básica.
-                    </p>
                     <p className="mt-2 text-sm font-extrabold leading-snug text-slate-900">
                       No cambia tu posición,{" "}
-                      <span className="text-teal-800">mejora cómo te ven.</span>
+                      <span className="font-black text-[#0f766e]">mejora cómo te ven.</span>
+                    </p>
+                    <p className="mt-2 text-xs font-medium leading-snug text-slate-600">
+                      Opcional. Puedes seguir gratis con tu ficha básica.
                     </p>
                     <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
                       <li className="flex gap-2">
