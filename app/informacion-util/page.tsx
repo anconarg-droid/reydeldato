@@ -147,6 +147,12 @@ export default function InformacionUtilPage() {
                   los resultados: mejora cómo se ve tu negocio y puede ayudarte a generar más
                   confianza y más contactos.
                 </p>
+                <Link
+                  href="/planes"
+                  className="mt-3 inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+                >
+                  Ver planes
+                </Link>
                 {/* TODO: crear página pública de planes cuando esté definida. */}
                 <Link
                   href="/publicar"
