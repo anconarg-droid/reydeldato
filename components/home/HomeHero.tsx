@@ -36,7 +36,7 @@ export default function HomeHero({ children }: Props) {
       <section
         className="w-full text-center"
         style={{
-          background: "linear-gradient(160deg, #f0fdfa 0%, #ffffff 55%, #f8fafc 100%)",
+          background: "linear-gradient(160deg, #eaf6f2 0%, #f7f8f6 55%)",
           paddingTop: "clamp(40px, 6vw, 72px)",
           paddingBottom: "clamp(32px, 4vw, 56px)",
         }}
