@@ -28,32 +28,58 @@ export default function ContactoPage() {
         Si tienes dudas sobre publicaciones, fichas o cómo funciona Rey del Dato, escríbenos.
       </p>
 
-      <LegalSection title="Correo">
-        <p>
-          <a
-            className="font-medium text-slate-900 underline underline-offset-2 hover:text-slate-700"
-            href="mailto:contacto@reydeldato.cl"
-          >
-            contacto@reydeldato.cl
-          </a>
-        </p>
-      </LegalSection>
+      <LegalSection title="Contacto">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">
+              Correo
+            </p>
+            <a
+              className="mt-1 inline-block font-medium text-slate-900 underline underline-offset-2 hover:text-slate-700"
+              href="mailto:contacto@reydeldato.cl"
+            >
+              contacto@reydeldato.cl
+            </a>
+          </div>
 
-      <LegalSection title="WhatsApp">
-        <p>+56 9 7594 9281</p>
-      </LegalSection>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">
+              WhatsApp
+            </p>
+            <p className="mt-1 font-medium text-slate-900">+56 9 7594 9281</p>
+          </div>
 
-      <LegalSection title="Horario de respuesta">
-        <p>Lunes a viernes · 9:00 a 18:00</p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 sm:col-span-2">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">
+              Horario
+            </p>
+            <p className="mt-1 font-medium text-slate-900">
+              Lunes a viernes · 9:00 a 18:00
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Respondemos normalmente en menos de 24 horas hábiles.
+            </p>
+          </div>
+        </div>
       </LegalSection>
 
       <LegalSection title="¿Sobre qué puedes escribirnos?">
-        <ul className="list-disc pl-5 space-y-2">
-          <li>Publicar tu emprendimiento</li>
-          <li>Corregir datos de una ficha</li>
-          <li>Dudas sobre la plataforma</li>
-          <li>Privacidad, términos o información legal</li>
-          <li>Recomendar un servicio</li>
+        <ul className="space-y-2">
+          {[
+            "Publicar tu emprendimiento",
+            "Corregir datos de una ficha",
+            "Dudas sobre la plataforma",
+            "Privacidad, términos o información legal",
+            "Recomendar un servicio",
+          ].map((t) => (
+            <li key={t} className="flex items-start gap-2">
+              <span
+                className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-teal-700"
+                aria-hidden
+              />
+              <span>{t}</span>
+            </li>
+          ))}
         </ul>
       </LegalSection>
 
@@ -62,14 +88,14 @@ export default function ContactoPage() {
           href={CONTACTO_WHATSAPP_WA_ME}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-6 text-sm font-semibold text-white shadow-md transition hover:bg-[#20BD5A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 text-sm font-semibold text-white shadow-md transition hover:bg-[#20BD5A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]"
         >
           <IconWhatsApp className="h-5 w-5 shrink-0 text-white" />
           Escribir por WhatsApp
         </a>
         <a
           href={mailtoHref}
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
+          className="inline-flex h-11 items-center justify-center rounded-full border border-slate-300 bg-transparent px-6 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
         >
           Enviar correo
         </a>
