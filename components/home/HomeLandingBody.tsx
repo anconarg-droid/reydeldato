@@ -125,6 +125,26 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
     };
   }, [contextComunaSlug]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const targetHash = "#home-como-funciona";
+
+    function scrollToHash() {
+      if (window.location.hash !== targetHash) return;
+      // El elemento puede aparecer después (Suspense/hidratación), reintentar en el próximo frame.
+      window.requestAnimationFrame(() => {
+        document.getElementById("home-como-funciona")?.scrollIntoView({
+          block: "start",
+          behavior: "smooth",
+        });
+      });
+    }
+
+    scrollToHash();
+    window.addEventListener("hashchange", scrollToHash);
+    return () => window.removeEventListener("hashchange", scrollToHash);
+  }, []);
+
   const comunasCards: ComunaAbiertaItem[] = comunas
     .filter((c) => (Number(c.total || 0) || 0) > 0)
     .slice(0, COMUNAS_PREVIEW)

@@ -154,12 +154,6 @@ export default function InformacionUtilPage() {
                   Ver planes
                 </Link>
                 {/* TODO: crear página pública de planes cuando esté definida. */}
-                <Link
-                  href="/publicar"
-                  className="mt-3 inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
-                >
-                  Publicar mi negocio
-                </Link>
               </article>
             </div>
             <div className="max-w-2xl space-y-2 pt-1">
