@@ -151,54 +151,107 @@ export default function HomeHero({ children }: Props) {
               </h2>
               <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
                 Sin pagar publicidad. Sin intermediarios.
+                <br />
+                Pagas solo si quieres mejorar cómo se ve tu ficha.
               </p>
               <p className="mt-6 text-sm font-semibold text-slate-800 sm:text-base">
                 No necesitas ser experto en marketing. Solo hacer bien tu trabajo.
               </p>
             </div>
 
-            {/* Derecha: card + CTA */}
+            {/* Derecha: card planes (gratis / ficha completa) + CTA */}
             <div className="w-full">
-              <div className="rounded-2xl border border-teal-200 bg-white p-6 text-center shadow-sm ring-1 ring-teal-100">
-                <div className="mt-2 text-2xl font-black tracking-tight text-teal-900">
-                  Empieza gratis. Siempre apareces con datos básicos.
+              <div className="overflow-hidden rounded-2xl border border-teal-200 bg-white text-center shadow-sm ring-1 ring-teal-100">
+                <div className="bg-[#0f766e] px-5 py-5 text-white sm:px-6">
+                  <h3 className="text-xl font-black leading-tight tracking-tight sm:text-2xl">
+                    Empieza gratis. Aparece cuando te buscan.
+                  </h3>
+                  <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-relaxed text-white/95">
+                    Dejas de depender de grupos y empiezas a aparecer cuando te buscan.
+                  </p>
                 </div>
-                <p className="mx-auto mt-3 max-w-sm text-xs font-medium leading-snug text-slate-600 sm:text-sm">
-                  Ficha completa desde $3.500/mes.
-                </p>
-                <ul className="mx-auto mt-4 max-w-sm text-left text-sm font-semibold text-slate-800">
-                  <li className="flex gap-2">
-                    <span className="text-teal-700" aria-hidden>
-                      •
-                    </span>
-                    <span>Te encuentran cuando te buscan</span>
-                  </li>
-                  <li className="mt-2 flex gap-2">
-                    <span className="text-teal-700" aria-hidden>
-                      •
-                    </span>
-                    <span>Contacto directo por WhatsApp</span>
-                  </li>
-                  <li className="mt-2 flex gap-2">
-                    <span className="text-teal-700" aria-hidden>
-                      •
-                    </span>
-                    <span>Sin comisiones</span>
-                  </li>
-                </ul>
 
-                <div className="mt-6 flex flex-col items-center gap-2 text-center">
-                  <Link
-                    href="/publicar"
-                    onClick={() =>
-                      capturePosthogEvent("click_publicar_home", {
-                        origen: "home_hero",
-                      })
-                    }
-                    className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-xl bg-teal-700 px-8 text-base font-extrabold text-white shadow-md transition hover:bg-teal-800 sm:w-auto"
-                  >
-                    Publica tu negocio gratis
-                  </Link>
+                <div className="space-y-4 px-4 pb-5 pt-4 text-left sm:px-5">
+                  <div className="rounded-xl bg-slate-50 px-4 py-4">
+                    <p className="text-[11px] font-extrabold tracking-wide text-teal-900">
+                      ✓ INCLUIDO GRATIS
+                    </p>
+                    <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
+                      <li className="flex gap-2">
+                        <span className="text-teal-700" aria-hidden>
+                          •
+                        </span>
+                        <span>Apareces en búsquedas de tu comuna</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-teal-700" aria-hidden>
+                          •
+                        </span>
+                        <span>Contacto directo por WhatsApp</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-teal-700" aria-hidden>
+                          •
+                        </span>
+                        <span>Sin comisiones</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="rounded-xl border-2 border-teal-500 bg-white px-4 py-4 shadow-md shadow-teal-900/10">
+                    <p className="text-[11px] font-extrabold tracking-wide text-teal-800">
+                      ⭐ FICHA COMPLETA
+                    </p>
+                    <p className="mt-2 text-2xl font-black tabular-nums text-teal-900">
+                      $3.500/mes
+                    </p>
+                    <p className="mt-1 text-xs font-medium leading-snug text-slate-600">
+                      Opcional. Puedes seguir con ficha básica gratis.
+                    </p>
+                    <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
+                      <li className="flex gap-2">
+                        <span className="text-teal-700" aria-hidden>
+                          •
+                        </span>
+                        <span>Galería de fotos</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-teal-700" aria-hidden>
+                          •
+                        </span>
+                        <span>Link a Instagram</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-teal-700" aria-hidden>
+                          •
+                        </span>
+                        <span>Más información para que te elijan</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-teal-700" aria-hidden>
+                          •
+                        </span>
+                        <span>Genera más confianza y más contactos</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-2 pt-1 text-center">
+                    <Link
+                      href="/publicar"
+                      onClick={() =>
+                        capturePosthogEvent("click_publicar_home", {
+                          origen: "home_hero",
+                        })
+                      }
+                      className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-xl bg-teal-700 px-8 text-base font-extrabold text-white shadow-md transition hover:bg-teal-800 sm:w-auto"
+                    >
+                      Publica tu negocio gratis
+                    </Link>
+                    <p className="text-[11px] font-medium text-slate-500">
+                      Sin tarjeta · Sin compromiso · 2 minutos
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

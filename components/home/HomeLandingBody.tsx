@@ -328,7 +328,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
               Gratis por 90 días · Luego desde $3.500/mes
             </p>
             <p className="text-xs font-medium leading-snug text-white/80 max-w-sm">
-              Siempre apareces gratis con perfil básico.
+              Empieza gratis. Mejora tu ficha cuando lo necesites.
             </p>
           </div>
         </div>
