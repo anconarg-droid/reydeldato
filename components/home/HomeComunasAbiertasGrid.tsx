@@ -39,6 +39,11 @@ function ComunaDisponibleCard({
           : "group flex w-full flex-col rounded-2xl border-2 border-slate-200 bg-white p-5 text-left shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 sm:p-6"
       }
     >
+      {featured ? (
+        <span className="mb-3 inline-flex w-fit items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900">
+          Con resultados
+        </span>
+      ) : null}
       <p
         className={
           featured
@@ -54,7 +59,7 @@ function ComunaDisponibleCard({
       <p className="mt-2 text-sm font-medium text-slate-600 sm:text-base">
         {serviciosActivosHoy(count)}
       </p>
-      <span className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-black px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 group-hover:bg-zinc-900 active:scale-95 sm:w-auto sm:self-start">
+      <span className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-[#0d7a5f] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 group-hover:bg-[#0b6a52] active:scale-95 sm:w-auto sm:self-start">
         Ver servicios →
       </span>
     </button>

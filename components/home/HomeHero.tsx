@@ -181,6 +181,20 @@ export default function HomeHero({ children }: Props) {
                 <br />
                 Aquí no gana el que paga, gana el que está cerca.
               </p>
+
+              {/* Stats (balance visual vs card derecha) */}
+              <div className="mt-8 grid grid-cols-2 gap-4 max-w-md">
+                {STATS.map((s) => (
+                  <div key={`${s.n}-${s.l}`} className="min-w-0">
+                    <div className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#0f766e] leading-none">
+                      {s.n}
+                    </div>
+                    <div className="mt-1 text-xs sm:text-sm font-medium text-slate-500 leading-snug">
+                      {s.l}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Derecha: card planes (gratis / ficha completa) + CTA */}
@@ -288,48 +302,6 @@ export default function HomeHero({ children }: Props) {
           </div>
         </div>
       </section>
-
-      {/* Stats bar */}
-      <div
-        style={{
-          borderTop: "1px solid #f0fdfa",
-          borderBottom: "1px solid #f1f5f9",
-          background: "#fff",
-          display: "flex",
-          justifyContent: "center",
-          flexWrap: "wrap",
-          gap: "clamp(16px, 4vw, 48px)",
-          padding: "clamp(16px, 2.5vw, 24px) 24px",
-        }}
-      >
-        {STATS.map((s) => (
-          <div key={`${s.n}-${s.l}`} style={{ textAlign: "center", minWidth: 80 }}>
-            <div
-              style={{
-                fontFamily: "var(--font-sora, sans-serif)",
-                fontSize: "clamp(18px, 3vw, 24px)",
-                fontWeight: 800,
-                color: "#0f766e",
-                letterSpacing: "-0.03em",
-                lineHeight: 1,
-              }}
-            >
-              {s.n}
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--font-sora, sans-serif)",
-                fontSize: 11,
-                color: "#64748b",
-                fontWeight: 500,
-                marginTop: 4,
-              }}
-            >
-              {s.l}
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

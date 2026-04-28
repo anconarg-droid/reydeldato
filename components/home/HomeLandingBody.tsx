@@ -296,7 +296,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
         className="mt-0 w-full border-t border-teal-900/20 bg-[#0f766e] text-white"
         aria-labelledby="home-cta-final"
       >
-        <div className="mx-auto max-w-5xl px-4 py-16 text-center sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 pt-16 pb-24 text-center sm:px-6 sm:pt-20 sm:pb-28">
           <p className="text-xs font-extrabold tracking-[0.18em] text-white/90">
             PARA EMPRENDEDORES
           </p>
