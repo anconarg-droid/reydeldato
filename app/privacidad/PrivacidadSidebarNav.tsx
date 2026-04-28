@@ -32,7 +32,10 @@ export default function PrivacidadSidebarNav() {
   const items = useMemo(() => SECCIONES, []);
 
   return (
-    <nav aria-label="Índice de privacidad" className="space-y-1 text-sm">
+    <nav
+      aria-label="Índice de privacidad"
+      className="space-y-1 text-sm sticky top-6 self-start"
+    >
       {items.map((it, idx) => {
         const isActive = active === it.id;
         return (

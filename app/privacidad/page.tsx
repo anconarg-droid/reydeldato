@@ -5,14 +5,12 @@ import PrivacidadSidebarNav from "./PrivacidadSidebarNav";
 export default function PrivacidadPage() {
   return (
     <LegalLayout title="Política de Privacidad" lastUpdated="Abril 2026" wide>
-      <div className="grid grid-cols-1 gap-10 min-[480px]:grid-cols-[160px_minmax(0,1fr)]">
-        <aside className="hidden min-[480px]:block">
-          <div className="sticky top-24">
-            <PrivacidadSidebarNav />
-          </div>
-        </aside>
+      <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-[160px_minmax(0,1fr)] sm:gap-x-10 sm:gap-y-0">
+        <div className="hidden sm:block">
+          <PrivacidadSidebarNav />
+        </div>
 
-        <div className="space-y-10">
+        <div className="space-y-10 min-w-0">
           <LegalSection id="p1" splitLeadingNumber title="1. Responsable del tratamiento">
             <p>Rey del Dato SpA, RUT 78.403.835-1, es responsable del tratamiento de datos.</p>
           </LegalSection>

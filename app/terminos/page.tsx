@@ -5,14 +5,12 @@ import TerminosSidebarNav from "./TerminosSidebarNav";
 export default function TerminosPage() {
   return (
     <LegalLayout title="Términos y Condiciones" lastUpdated="Abril 2026" wide>
-      <div className="grid grid-cols-1 gap-10 min-[480px]:grid-cols-[160px_minmax(0,1fr)]">
-        <aside className="hidden min-[480px]:block">
-          <div className="sticky top-24">
-            <TerminosSidebarNav />
-          </div>
-        </aside>
+      <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-[160px_minmax(0,1fr)] sm:gap-x-10 sm:gap-y-0">
+        <div className="hidden sm:block">
+          <TerminosSidebarNav />
+        </div>
 
-        <div className="space-y-10">
+        <div className="space-y-10 min-w-0">
           <LegalSection id="s1" splitLeadingNumber title="1. Identificación del prestador">
             <p>
               Este sitio web es operado por <strong>Rey del Dato SpA</strong>, RUT 78.403.835-1, con domicilio en Padre
