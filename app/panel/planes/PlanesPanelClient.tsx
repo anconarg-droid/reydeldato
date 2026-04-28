@@ -146,10 +146,12 @@ const allowClientPlanActivate =
 export default function PlanesPanelClient({
   id,
   slug,
+  accessToken = "",
   pagoFlash = null,
 }: {
   id: string;
   slug: string;
+  accessToken?: string;
   pagoFlash?: "fallo" | null;
 }) {
   const [nombre, setNombre] = useState("");
@@ -299,12 +301,18 @@ export default function PlanesPanelClient({
     setRedirigiendoPago(true);
     let navegandoWebpay = false;
     try {
+      const tok = String(accessToken ?? "").trim();
+      if (tok.length < 8) {
+        setPagoIniciarError(MSG_PAGO);
+        return;
+      }
       const r = await fetch("/api/pagos/crear", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           emprendedorId: cleanId,
           planCodigo: planKeyParaApi(selectedPlan),
+          access_token: tok,
         }),
       });
 
@@ -345,6 +353,7 @@ export default function PlanesPanelClient({
     slugForWa,
     modoSoloContacto,
     comercialListo,
+    accessToken,
   ]);
 
   const tarjetasOrdenadas = ORDEN_TARJETAS_PLANES.map((k) =>

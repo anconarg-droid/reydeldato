@@ -70,6 +70,7 @@ export default async function PlanesPage({
       <PlanesPanelClientGate
         id={emprendedorId}
         slug={slug}
+        accessToken={accessToken}
         pagoFlash={pago === "fallo" ? "fallo" : null}
       />
     </main>

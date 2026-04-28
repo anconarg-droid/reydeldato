@@ -18,17 +18,20 @@ const PlanesPanelClient = dynamic(() => import("./PlanesPanelClient"), {
 export default function PlanesPanelClientGate({
   id,
   slug,
+  accessToken = "",
   pagoFlash,
 }: {
   id: string;
   slug: string;
+  accessToken?: string;
   pagoFlash?: "fallo" | null;
 }) {
   return (
     <PlanesPanelClient
-      key={`${id}:${slug}:${pagoFlash ?? ""}`}
+      key={`${id}:${slug}:${accessToken}:${pagoFlash ?? ""}`}
       id={id}
       slug={slug}
+      accessToken={accessToken}
       pagoFlash={pagoFlash ?? null}
     />
   );

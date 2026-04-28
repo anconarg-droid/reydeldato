@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { generarBuyOrderTransbank, generarSessionIdTransbank } from "@/lib/pagoTransbankIds";
+import { resolveEmprendedorIdForPanelMetrics } from "@/lib/panelNegocioAccessToken";
 import {
   isPlanCodigoPago,
   montoClpPorPlanCodigo,
@@ -31,6 +32,14 @@ function s(v: unknown): string {
 
 export async function POST(req: NextRequest) {
   try {
+    // Feature flag server-side: bloquea creación de pagos aunque la UI esté oculta.
+    if (process.env.PLANES_WEBPAY_DESHABILITADO === "true") {
+      return NextResponse.json(
+        { ok: false, error: "payment_disabled" },
+        { status: 503 }
+      );
+    }
+
     let body: Record<string, unknown>;
     try {
       body = (await req.json()) as Record<string, unknown>;
@@ -41,8 +50,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const emprendedorId = s(body.emprendedorId ?? body.id);
+    const accessToken = s(body.access_token ?? body.accessToken);
+    const emprendedorIdRaw = s(body.emprendedorId ?? body.id);
     const planRaw = s(body.planCodigo ?? body.plan).toLowerCase();
+
+    if (!accessToken || accessToken.length < 8) {
+      return NextResponse.json(
+        { ok: false, error: "missing_access_token" },
+        { status: 401 }
+      );
+    }
+
+    const resolvedEmprendedorId = await resolveEmprendedorIdForPanelMetrics(
+      supabase,
+      accessToken
+    );
+
+    if (!resolvedEmprendedorId) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_access_token" },
+        { status: 403 }
+      );
+    }
+
+    const emprendedorId = emprendedorIdRaw || resolvedEmprendedorId;
+    if (emprendedorId !== resolvedEmprendedorId) {
+      return NextResponse.json(
+        { ok: false, error: "access_token_mismatch" },
+        { status: 403 }
+      );
+    }
 
     if (!emprendedorId) {
       return NextResponse.json(
