@@ -116,33 +116,38 @@ export default function InformacionUtilPage() {
                   Beneficios de una ficha completa
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Las fichas con fotos, buena descripción y datos de contacto completos reciben más
-                  visitas y generan más mensajes.
+                  La ficha completa agrega fotos, Instagram, más descripción y datos de contacto. No
+                  cambia tu posición en los resultados, pero mejora cómo te ven y puede generar más
+                  confianza.
                 </p>
               </article>
               <article className="rd-card p-4">
                 <h3 className="text-sm font-semibold text-slate-900 mb-1">
-                  Cómo aparecer en más búsquedas
+                  Cómo aparecer cuando te buscan
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Elige bien tus categorías y comunas de cobertura.
-                </p>
-                <p className="text-sm text-slate-600 mt-2">
-                  Si atiendes varias comunas o una región completa, indícalo correctamente para
-                  aparecer cuando la gente busque en esas zonas.
+                  Elige bien tu categoría, comuna base y comunas de cobertura. Si atiendes varias
+                  comunas o una región completa, indícalo correctamente para aparecer cuando alguien
+                  busque en esas zonas.
                 </p>
               </article>
               <article className="rd-card p-4">
                 <h3 className="text-sm font-semibold text-slate-900 mb-1">Planes</h3>
-                <p className="text-sm text-slate-600">Publicar es gratis en esta etapa.</p>
-                <p className="text-sm text-slate-600 mt-2">
-                  Más adelante existirán planes opcionales para mejorar tu ficha (más fotos, mejor
-                  presentación y otras mejoras), pero la visibilidad seguirá dependiendo de la
-                  búsqueda y la comuna, no de pagar.
+                <p className="text-sm text-slate-600">
+                  Publicar tu negocio es gratis y siempre puedes aparecer con ficha básica.
                 </p>
                 <p className="text-sm text-slate-600 mt-2">
-                  Todos los emprendimientos tienen las mismas oportunidades de aparecer.
+                  La ficha completa es opcional y parte desde $3.500/mes. No cambia tu posición en
+                  los resultados: mejora cómo se ve tu negocio, agrega más información y puede
+                  ayudarte a generar más confianza y más contactos.
                 </p>
+                {/* TODO: crear página pública de planes cuando esté definida. */}
+                <Link
+                  href="/publicar"
+                  className="rd-btn-primary mt-3 px-4 py-1.5 text-xs"
+                >
+                  Publicar mi negocio
+                </Link>
               </article>
             </div>
             <div className="max-w-2xl space-y-2 pt-1">
@@ -157,72 +162,63 @@ export default function InformacionUtilPage() {
             </div>
           </section>
 
-          {/* Bloque: cobertura y apertura de comunas */}
+          {/* Bloque: crecimiento de comunas */}
           <section className="space-y-4">
             <h2 className="text-lg font-bold text-slate-900">
-              Cómo abrimos nuevas comunas
+              Cómo crecen las comunas
             </h2>
             <p className="text-sm text-slate-600 max-w-2xl">
-              Rey del Dato se expande comuna por comuna. Cuando una zona reúne suficientes
-              emprendimientos locales, pasa a estar activa y puede comenzar a recibir búsquedas y
-              contactos desde el buscador.
+              Rey del Dato crece comuna por comuna. Algunas comunas ya muestran servicios disponibles,
+              pero todavía están completando su catálogo. Mientras más negocios se publican o
+              recomiendan, más útil se vuelve el directorio.
             </p>
 
-            <div className="space-y-2">
-              <details className="group rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold text-slate-900">
-                  <span>¿Qué significa que una comuna esté &quot;en apertura&quot;?</span>
-                  <span className="ml-2 text-slate-400 group-open:hidden">+</span>
-                  <span className="ml-2 text-slate-400 hidden group-open:inline">−</span>
-                </summary>
-                <p className="mt-2 text-sm text-slate-600">
-                  Significa que la comuna aún no cumple todos los tipos de servicios necesarios (cada uno con el
-                  mínimo de oferta requerido), aunque ya pueda haber fichas publicadas. Puedes ayudar
-                  recomendando negocios que cubran lo que falta.
+            <div className="space-y-3">
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <p className="text-sm font-semibold text-slate-900">
+                  ¿Qué significa que una comuna está en crecimiento?
                 </p>
-              </details>
+                <p className="mt-2 text-sm text-slate-600">
+                  Significa que ya puede tener algunos servicios disponibles, pero su catálogo aún no
+                  está completo. Puedes buscar, explorar negocios disponibles y ayudar recomendando
+                  emprendimientos.
+                </p>
+              </div>
 
-              <details className="group rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold text-slate-900">
-                  <span>¿Qué se necesita para abrir una comuna?</span>
-                  <span className="ml-2 text-slate-400 group-open:hidden">+</span>
-                  <span className="ml-2 text-slate-400 hidden group-open:inline">−</span>
-                </summary>
-                <p className="mt-2 text-sm text-slate-600">
-                  Hay que completar una lista de tipos de servicios: cada uno debe alcanzar un mínimo de oferta
-                  en la comuna. Cuando todos cumplen, el directorio público se considera listo para esa
-                  comuna. La lista puede actualizarse con el tiempo.
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <p className="text-sm font-semibold text-slate-900">
+                  ¿Qué falta para completar una comuna?
                 </p>
-              </details>
+                <p className="mt-2 text-sm text-slate-600">
+                  Faltan negocios reales en rubros clave, como gasfitería, electricidad, peluquería,
+                  mecánica, comida preparada, fletes u otros servicios importantes para la vida
+                  diaria.
+                </p>
+              </div>
 
-              <details className="group rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold text-slate-900">
-                  <span>¿Cómo puedo ayudar a abrir mi comuna?</span>
-                  <span className="ml-2 text-slate-400 group-open:hidden">+</span>
-                  <span className="ml-2 text-slate-400 hidden group-open:inline">−</span>
-                </summary>
-                <p className="mt-2 text-sm text-slate-600">
-                  Puedes registrar tu propio negocio o servicio o recomendarnos negocios locales que deberían
-                  estar en Rey del Dato. Cada publicación suma oferta y ayuda a completar los tipos de servicios
-                  que faltan.
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <p className="text-sm font-semibold text-slate-900">
+                  ¿Cómo puedo ayudar a completar mi comuna?
                 </p>
-              </details>
+                <p className="mt-2 text-sm text-slate-600">
+                  Puedes publicar tu emprendimiento gratis o recomendar un negocio que conozcas.
+                  Mientras más datos reales tengamos, más útil será el directorio para todos.
+                </p>
+              </div>
 
-              <details className="group rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold text-slate-900">
-                  <span>¿Puedo recomendar negocios aunque no sean míos?</span>
-                  <span className="ml-2 text-slate-400 group-open:hidden">+</span>
-                  <span className="ml-2 text-slate-400 hidden group-open:inline">−</span>
-                </summary>
-                <p className="mt-2 text-sm text-slate-600">
-                  Sí. De hecho, es una de las mejores formas de apoyar el proyecto. Cuéntanos de
-                  negocios que confíes en tu comuna y los invitaremos a sumarse.
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <p className="text-sm font-semibold text-slate-900">
+                  ¿Puedo recomendar negocios aunque no sean míos?
                 </p>
-              </details>
+                <p className="mt-2 text-sm text-slate-600">
+                  Sí. Puedes recomendar un negocio local dejando sus datos de contacto. Nosotros
+                  podremos invitarlo a publicar.
+                </p>
+              </div>
             </div>
 
             <p className="text-sm text-slate-600 max-w-2xl pt-2">
-              ¿Quieres ayudar a abrir tu comuna?{" "}
+              ¿Quieres ayudar a completar tu comuna?{" "}
               <Link
                 href="/publicar"
                 className="font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-800"
