@@ -63,7 +63,7 @@ export default function PlanesPublicosPage() {
               lineHeight: 1.5,
             }}
           >
-            Publicar tu negocio es gratis para siempre. Si quieres mejorar cómo
+            Publicar tu negocio es gratis en esta etapa. Si quieres mejorar cómo
             se ve, hay planes opcionales.
           </p>
         </header>
@@ -151,8 +151,9 @@ export default function PlanesPublicosPage() {
               whiteSpace: "pre-line",
             }}
           >
-            Tu ficha pasa a básica con WhatsApp y datos de contacto. Sigues
-            visible en las búsquedas de tu comuna, no te bajamos del directorio.
+            Si no continúas, tu negocio sigue publicado.{"\n"}
+            Tu ficha pasa a básica (solo WhatsApp y datos).{"\n"}
+            Sigues apareciendo en tu comuna.
           </p>
         </section>
 
@@ -182,8 +183,7 @@ export default function PlanesPublicosPage() {
               whiteSpace: "pre-line",
             }}
           >
-            Mejora cómo se ve tu negocio para generar más confianza. No cambia
-            tu posición — apareces igual, pero te ven mejor.
+            Mejora cómo se ve tu negocio para generar más confianza.
           </p>
           <p
             style={{

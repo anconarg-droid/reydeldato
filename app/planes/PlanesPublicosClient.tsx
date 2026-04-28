@@ -110,6 +110,15 @@ export default function PlanesPublicosClient() {
           >
             Si quieres mantener la ficha completa activa después de los 90 días.
           </p>
+          <p
+            style={{
+              marginTop: "0.35rem",
+              fontSize: 13,
+              color: "var(--color-text-secondary, #475569)",
+            }}
+          >
+            Puedes activar o desactivar cuando quieras.
+          </p>
         </div>
 
         <div className="mt-4 space-y-3">
@@ -187,7 +196,7 @@ export default function PlanesPublicosClient() {
             textDecoration: "none",
           }}
         >
-          Publicar mi negocio
+          Publicar mi negocio gratis
         </Link>
       </article>
     </div>
