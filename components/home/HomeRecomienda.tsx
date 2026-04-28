@@ -259,17 +259,6 @@ export default function HomeRecomienda({
         >
           {embedded ? "¿Conoces un buen servicio?" : "Recomienda un buen emprendimiento"}
         </h2>
-        {embedded ? (
-          <p
-            className={
-              onEmerald
-                ? "text-center text-sm font-semibold text-emerald-100/95 mb-3"
-                : "text-center text-sm font-semibold text-slate-800 mb-3"
-            }
-          >
-            Entre todos construimos este directorio
-          </p>
-        ) : null}
         {!embedded ? (
           <p className="text-slate-600 text-sm mb-5 max-w-2xl">
             ¿Conoces un buen servicio? Ayúdanos a completar el directorio. Cuéntanos cómo contactarlos para
@@ -283,25 +272,9 @@ export default function HomeRecomienda({
                 : "text-slate-600 text-sm mb-5 max-w-2xl leading-relaxed"
             }
           >
-            Ayúdanos a completar el directorio con más servicios locales. Si tienes el WhatsApp del negocio, cuéntanos
-            cómo contactarlos.
+            Ayuda a completar tu comuna recomendando un negocio.
           </p>
         )}
-
-        {embedded ? (
-          <p
-            className={
-              onEmerald
-                ? "mb-5 text-center text-sm font-semibold text-white sm:text-left"
-                : "mb-5 text-center text-sm font-semibold text-slate-900"
-            }
-          >
-            <span aria-hidden className="mr-1.5">
-              👉
-            </span>
-            Ayuda a completar el catálogo de tu comuna
-          </p>
-        ) : null}
 
         <form onSubmit={handleSubmit} className={embedded ? "space-y-5" : "space-y-4"}>
           {embedded ? (
@@ -510,7 +483,7 @@ export default function HomeRecomienda({
                   : "text-center text-sm text-slate-600 pt-1"
               }
             >
-              Te toma menos de 1 minuto completar esto
+              Te toma menos de 1 minuto.
             </p>
           ) : null}
 

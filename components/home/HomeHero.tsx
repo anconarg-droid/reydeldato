@@ -105,8 +105,8 @@ export default function HomeHero({ children }: Props) {
               marginRight: "auto",
             }}
           >
-            Muchas personas de tu comuna ofrecen lo que buscas. Rey del Dato prioriza lo cercano y quienes atienden tu
-            zona.
+            Buscas un servicio y te aparecen opciones de otras comunas o publicidad. Aquí encuentras personas reales
+            cerca de ti.
           </p>
 
           {/* Search box */}
@@ -130,7 +130,7 @@ export default function HomeHero({ children }: Props) {
           </div>
 
           <p className="mt-4 text-center text-sm font-semibold text-slate-700">
-            Primero lo local. Contacto directo por WhatsApp.
+            Primero lo cercano. Después el resto.
           </p>
 
           {children ? (
@@ -146,12 +146,17 @@ export default function HomeHero({ children }: Props) {
             <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
               Puede estar más cerca de lo que crees
             </h2>
-            <p className="mt-5 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-700 sm:text-base">
-              Muchas veces buscas en Google y aparecen negocios de otras comunas o quienes pagan más publicidad. Pero
-              puede haber una costurera, un gasfiter, una enfermera, un abogado o un local cerca de tu casa.
-              {"\n\n"}
-              Rey del Dato ordena esa información por comuna para que encuentres opciones reales cerca de ti.
-            </p>
+            <div className="mt-5 space-y-4 text-sm font-medium leading-relaxed text-slate-700 sm:text-base">
+              <p>
+                Muchas veces buscas y aparecen negocios de otras comunas o los que pagan más.
+              </p>
+              <p>
+                Pero puede haber alguien a pocas cuadras que hace exactamente lo que necesitas.
+              </p>
+              <p>
+                Rey del Dato muestra primero lo que está cerca.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -167,17 +172,15 @@ export default function HomeHero({ children }: Props) {
                 Te encuentran cuando te necesitan
               </h2>
               <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
-                Muchas veces tus próximos clientes están cerca, pero no saben que existes.
-                <br />
-                En Rey del Dato puedes aparecer en tu comuna sin pagar publicidad ni intermediarios.
+                Tus próximos clientes pueden estar cerca, pero no saben que existes.
+              </p>
+              <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
+                En Rey del Dato apareces cuando alguien busca en tu comuna. Sin pagar publicidad. Sin intermediarios.
               </p>
               <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-800 sm:text-base">
                 Todos tienen la misma oportunidad de aparecer.
                 <br />
                 Aquí no gana el que paga, gana el que está cerca.
-              </p>
-              <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
-                Sin pagar publicidad. Sin intermediarios. Pagas solo si quieres mejorar cómo se ve tu ficha.
               </p>
             </div>
 

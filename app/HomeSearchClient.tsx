@@ -287,7 +287,7 @@ export default function HomeSearchClient({
     <section className="w-full mx-auto">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
         <div className="flex w-full flex-row items-center gap-2">
-          <div ref={queryBoxRef} className="relative min-w-0 flex-[2.35] md:flex-[2.7]">
+          <div ref={queryBoxRef} className="relative min-w-0 flex-[2.35] md:flex-[2.85]">
             <input
             ref={queryInputRef}
             value={q}
@@ -344,7 +344,7 @@ export default function HomeSearchClient({
           />
         </div>
 
-        <div ref={comunaBoxRef} className="relative min-w-[120px] flex-1 max-w-[180px]">
+        <div ref={comunaBoxRef} className="relative min-w-[140px] flex-1 max-w-[220px]">
           <input
             value={comunaInput}
             onChange={(e) => {
