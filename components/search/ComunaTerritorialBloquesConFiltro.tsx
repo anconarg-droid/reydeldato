@@ -192,6 +192,9 @@ export default function ComunaTerritorialBloquesConFiltro({
           persistPrefix={persistPrefix}
           which="atienden"
           instanceId={`resultados-${idSafe}-atienden`}
+          className={
+            enRaw.length > 0 || sinBasePeroConCobertura ? "mt-6 sm:mt-7" : ""
+          }
           title={
             <>
               Atienden {nombreComunaDisplay} ({aplicarSoloCompletos ? fAt.length : atiendenRaw.length})

@@ -25,7 +25,7 @@ function AccordionChevron({
 }) {
   return (
     <svg
-      className={`h-5 w-5 transition-transform duration-200 ease-out ${
+      className={`h-5 w-5 shrink-0 transition-transform duration-200 ease-out ${
         collapsed ? "-rotate-90" : "rotate-0"
       } ${iconClassName}`}
       viewBox="0 0 24 24"
@@ -34,6 +34,7 @@ function AccordionChevron({
       strokeWidth={2.25}
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden
     >
       <path d="M6 9l6 6 6-6" />
     </svg>
@@ -41,7 +42,7 @@ function AccordionChevron({
 }
 
 export type TerritorialAccordionBlockProps = {
-  /** Bloque “local” (oscuro) vs cobertura / atienden (sección clara, misma jerarquía visual). */
+  /** Bloque “local” (marca verde) vs cobertura / atienden (fondo teal claro). */
   variant: "local" | "cobertura";
   /** Prefijo estable, p. ej. `abrir-comuna:slug` o `resultados:slug`. */
   persistPrefix: string;
@@ -103,26 +104,31 @@ export default function TerritorialAccordionBlock({
 
   const isLocal = variant === "local";
   const sectionClass = isLocal
-    ? "w-full min-w-0 overflow-hidden rounded-2xl border border-slate-800/50 shadow-lg"
-    : "w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-lg border-l-4 border-l-teal-600";
+    ? "w-full min-w-0 overflow-hidden rounded-2xl border border-emerald-800/35 bg-[#0d7a5f] shadow-lg"
+    : "w-full min-w-0 overflow-hidden rounded-2xl border border-teal-200 bg-emerald-50 shadow-md";
   const buttonClass = isLocal
-    ? "flex w-full min-h-[4.5rem] items-start gap-3 bg-slate-900 px-4 py-4 text-left transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:min-h-0 sm:items-center sm:gap-4 sm:px-5 sm:py-5"
-    : "flex w-full min-h-[4.5rem] items-start gap-3 border-b border-slate-200/90 bg-white px-4 py-4 text-left transition-colors hover:bg-slate-50/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:min-h-0 sm:items-center sm:gap-4 sm:px-5 sm:py-5";
+    ? "flex w-full min-h-[4.5rem] cursor-pointer items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-[#0b6b54] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d7a5f] sm:min-h-0 sm:items-center sm:gap-4 sm:px-4 sm:py-4"
+    : "flex w-full min-h-[4.5rem] cursor-pointer items-start gap-3 border-b border-teal-200/90 bg-emerald-50/90 px-4 py-4 text-left transition-colors hover:bg-emerald-100/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:min-h-0 sm:items-center sm:gap-4 sm:px-4 sm:py-4";
   const titleClass = isLocal
     ? "block text-base font-black leading-snug tracking-tight text-white sm:text-lg"
-    : "block text-base font-black leading-snug tracking-tight text-slate-900 sm:text-lg";
+    : "block text-base font-black leading-snug tracking-tight text-teal-900 sm:text-lg";
   const subtitleClass = isLocal
-    ? "mt-1.5 block text-sm font-medium leading-relaxed text-slate-300"
-    : "mt-1.5 block text-sm font-medium leading-relaxed text-slate-500";
+    ? "mt-1.5 block text-sm font-medium leading-relaxed text-emerald-50"
+    : "mt-1.5 block text-sm font-medium leading-relaxed text-teal-800/75";
+  const hintClass = isLocal
+    ? "mt-1.5 block text-[11px] font-medium leading-snug text-white/75"
+    : "mt-1.5 block text-[11px] font-medium leading-snug text-teal-700/70";
   const chevronWrapClass = isLocal
-    ? "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 sm:mt-0"
-    : "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900/10 sm:mt-0";
+    ? "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border border-white/35 bg-white/15 shadow-sm transition-colors hover:bg-white/25 sm:mt-0 sm:size-10"
+    : "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border border-teal-300/80 bg-white shadow-sm transition-colors hover:bg-teal-50 sm:mt-0 sm:size-10";
   const panelClass = isLocal
-    ? "border-t border-slate-800/25 bg-gradient-to-b from-amber-50/90 to-amber-50/60 px-4 py-5 sm:px-6 sm:py-6"
-    : "border-t border-slate-200/90 bg-white px-4 py-5 sm:px-6 sm:py-6";
+    ? "border-t border-emerald-900/25 bg-white px-4 py-5 sm:px-5 sm:py-6"
+    : "border-t border-teal-200/90 bg-white px-4 py-5 sm:px-5 sm:py-6";
 
   const btnId = `${instanceId}-titulo`;
   const panelId = `${instanceId}-panel`;
+
+  const toggleLabel = collapsed ? "Abrir bloque" : "Cerrar bloque";
 
   return (
     <section className={`${sectionClass} ${className}`.trim()}>
@@ -133,15 +139,17 @@ export default function TerritorialAccordionBlock({
         className={buttonClass}
         aria-expanded={!collapsed}
         aria-controls={panelId}
+        aria-label={toggleLabel}
       >
-        <span className="min-w-0 flex-1">
+        <span className="min-w-0 flex-1 pr-1">
           <span className={titleClass}>{title}</span>
           <span className={subtitleClass}>{subtitle}</span>
+          <span className={hintClass}>Ver / ocultar resultados</span>
         </span>
         <span className={chevronWrapClass} aria-hidden>
           <AccordionChevron
             collapsed={collapsed}
-            iconClassName={isLocal ? "text-white" : "text-slate-800"}
+            iconClassName={isLocal ? "text-white" : "text-teal-900"}
           />
         </span>
       </button>
