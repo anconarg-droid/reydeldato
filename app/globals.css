@@ -168,6 +168,38 @@ body {
   }
 }
 
+/* Home hero: ticker de rubros (subcategorías con publicados). */
+@keyframes home-rubros-ticker-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.home-rubros-ticker {
+  overflow: hidden;
+  width: 100%;
+}
+
+.home-rubros-ticker__track {
+  display: flex;
+  width: max-content;
+  animation: home-rubros-ticker-marquee 30s linear infinite;
+}
+
+.home-rubros-ticker:hover .home-rubros-ticker__track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-rubros-ticker__track {
+    animation: none;
+    transform: none;
+  }
+}
+
 /*
   Fallback de estilos:
   En algunos entornos, Tailwind v4 + Turbopack no está generando utilidades,

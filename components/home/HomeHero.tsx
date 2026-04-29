@@ -4,6 +4,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Sora } from "next/font/google";
 import HomeSearchClient from "@/app/HomeSearchClient";
+import HomeRubrosTicker from "@/components/home/HomeRubrosTicker";
+import type { RubroTickerItem } from "@/lib/loadRubrosTickerHome";
 import { CHIPS_HERO } from "@/lib/homeConstants";
 import { capturePosthogEvent } from "@/lib/posthog";
 import { useSearchParams } from "next/navigation";
@@ -17,6 +19,8 @@ const sora = Sora({
 
 type Props = {
   children?: ReactNode;
+  /** Subcategorías con al menos un publicado; con menos de 5 no se muestra ticker. */
+  rubrosTicker?: RubroTickerItem[];
 };
 
 const STATS = [
@@ -26,7 +30,7 @@ const STATS = [
   { n: "Gratis", l: "Publicar es gratis" },
 ];
 
-export default function HomeHero({ children }: Props) {
+export default function HomeHero({ children, rubrosTicker = [] }: Props) {
   const searchParams = useSearchParams();
   const initialComunaSlug = searchParams.get("comuna") ?? null;
 
@@ -127,6 +131,8 @@ export default function HomeHero({ children }: Props) {
               initialComunaSlug={initialComunaSlug}
             />
           </div>
+
+          <HomeRubrosTicker items={rubrosTicker} />
 
           <p className="mt-4 text-center text-sm font-semibold text-slate-700">
             Primero lo local. Contacto directo por WhatsApp.

@@ -277,8 +277,18 @@ export async function loadConteosCategoriasIndex(opts: {
       const ek = empIdKey(row);
       if (!ek) continue;
 
+      const subsRow = collectSubSlugsFromVwRow(row);
+
       if (!comunaMode) {
         globalTotals.set(catId, (globalTotals.get(catId) || 0) + 1);
+        if (subsRow.length) {
+          let subSet = subSlugsByCatId.get(catId);
+          if (!subSet) {
+            subSet = new Set<string>();
+            subSlugsByCatId.set(catId, subSet);
+          }
+          for (const sub of subsRow) subSet.add(sub);
+        }
       } else {
         const rowForClass = rowHasCoberturaColumn(row)
           ? row
@@ -299,6 +309,14 @@ export async function loadConteosCategoriasIndex(opts: {
         }
         if (tier === "base") agg.base.add(ek);
         else agg.atiende.add(ek);
+        if (subsRow.length) {
+          let subSet = subSlugsByCatId.get(catId);
+          if (!subSet) {
+            subSet = new Set<string>();
+            subSlugsByCatId.set(catId, subSet);
+          }
+          for (const sub of subsRow) subSet.add(sub);
+        }
       }
     }
 

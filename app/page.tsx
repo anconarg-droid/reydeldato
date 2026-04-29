@@ -1,10 +1,14 @@
 import { Suspense } from "react";
 import HomeHero from "@/components/home/HomeHero";
 import HomeLandingBody from "@/components/home/HomeLandingBody";
+import { loadRubrosTickerHome } from "@/lib/loadRubrosTickerHome";
 import { loadUltimosEmprendimientosPublicadosHome } from "@/lib/loadUltimosEmprendimientosPublicadosHome";
 
 export default async function HomePage() {
-  const fromDb = await loadUltimosEmprendimientosPublicadosHome();
+  const [fromDb, rubrosTicker] = await Promise.all([
+    loadUltimosEmprendimientosPublicadosHome(),
+    loadRubrosTickerHome(),
+  ]);
   const ultimosPublicadosCards = fromDb;
 
   return (
@@ -16,7 +20,7 @@ export default async function HomePage() {
           </div>
         }
       >
-        <HomeHero />
+        <HomeHero rubrosTicker={rubrosTicker} />
       </Suspense>
       <Suspense
         fallback={
