@@ -10,11 +10,10 @@ export default function InformacionUtilPage() {
         <LegalPageTopNav />
         <header className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">
-            Información útil
+            Cómo funciona Rey del Dato
           </h1>
           <p className="text-sm sm:text-base text-slate-500 max-w-2xl">
-            Guía rápida para entender cómo funciona Rey del Dato, tanto si buscas un negocio local como
-            si tienes un negocio.
+            Encuentra o publica negocios locales en tu comuna, sin intermediarios.
           </p>
         </header>
 
@@ -22,7 +21,7 @@ export default function InformacionUtilPage() {
           {/* Bloque: para quienes buscan */}
           <section className="rounded-2xl border border-slate-200 bg-white px-5 py-7 shadow-sm sm:px-6 sm:py-8">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-              🔍 Si estás buscando un negocio local
+              🔍 Si estás buscando en tu comuna
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <article className="rd-card p-4">
@@ -30,9 +29,8 @@ export default function InformacionUtilPage() {
                   Cómo encontrar negocios locales en tu comuna
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Escribe qué necesitas (ej. gasfiter, panadería, clases de inglés) y elige tu
-                  comuna. El buscador te mostrará primero los emprendimientos ubicados en tu comuna y
-                  luego los que también la atienden.
+                  Escribe qué necesitas y tu comuna. Te mostramos primero negocios cercanos y luego
+                  quienes atienden tu zona.
                 </p>
               </article>
               <article className="rd-card p-4">
@@ -40,9 +38,8 @@ export default function InformacionUtilPage() {
                   Cómo entender los resultados cercanos
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Si no hay muchos negocios en tu comuna, verás servicios de comunas cercanas que
-                  igual pueden atender tu zona. Siempre indicamos desde dónde atienden y si están o
-                  no en tu comuna.
+                  Si no hay muchos negocios en tu comuna, verás opciones de comunas cercanas que
+                  pueden atender tu zona. Siempre indicamos desde dónde atienden.
                 </p>
               </article>
               <article className="rd-card p-4">
@@ -50,7 +47,7 @@ export default function InformacionUtilPage() {
                   Qué significa &quot;En tu comuna&quot;
                 </h3>
                 <p className="text-sm text-slate-600">
-                  El badge &quot;En tu comuna&quot; indica que el emprendimiento tiene su base en la
+                  El badge &quot;En tu comuna&quot; indica que el negocio tiene su base en la
                   misma comuna que estás buscando. Son los negocios locales de tu zona.
                 </p>
               </article>
@@ -59,8 +56,8 @@ export default function InformacionUtilPage() {
                   Qué significa &quot;Atiende tu comuna&quot;
                 </h3>
                 <p className="text-sm text-slate-600">
-                  El badge &quot;Atiende tu comuna&quot; indica que el emprendimiento está en otra
-                  comuna pero ofrece su servicio en la tuya (por ejemplo, fletes o servicios a
+                  El badge &quot;Atiende tu comuna&quot; indica que el negocio está en otra
+                  comuna pero ofrece atención en la tuya (por ejemplo, fletes o negocios a
                   domicilio).
                 </p>
               </article>
@@ -72,16 +69,15 @@ export default function InformacionUtilPage() {
           {/* Bloque: para emprendedores */}
           <section className="rounded-2xl border border-slate-200 bg-slate-50/70 px-5 py-7 shadow-sm sm:px-6 sm:py-8">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-              🏪 Si tienes un emprendimiento
+              🏪 Si quieres publicar tu negocio
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <article className="rd-card p-4">
                 <h3 className="text-sm font-bold text-slate-950 mb-1">
-                  Cómo publicar en Rey del Dato
+                  Cómo publicar
                 </h3>
                 <p className="text-sm text-slate-600 mb-2">
-                  Completa el formulario con los datos básicos de tu negocio: nombre, comuna, rubro,
-                  descripción y contacto.
+                  Publicar toma menos de 2 minutos. Solo necesitas nombre, comuna y contacto.
                 </p>
                 <Link
                   href="/publicar"
@@ -95,12 +91,7 @@ export default function InformacionUtilPage() {
                   Qué datos necesitas
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Te pediremos datos básicos de tu negocio:
-                  <br />
-                  WhatsApp, descripción clara del servicio, comuna base y las comunas donde atiendes.
-                </p>
-                <p className="text-sm text-slate-600 mt-2">
-                  Con esto ya puedes aparecer en las búsquedas.
+                  WhatsApp, descripción clara y comuna. Con eso ya puedes aparecer.
                 </p>
               </article>
               <article className="rd-card p-4">
@@ -138,20 +129,23 @@ export default function InformacionUtilPage() {
                 </p>
               </article>
               <article className="rd-card p-4">
-                <h3 className="text-sm font-bold text-slate-950 mb-1">Planes</h3>
+                <h3 className="text-sm font-bold text-slate-950 mb-1">Planes de lanzamiento</h3>
                 <p className="text-sm text-slate-600">
-                  Publicar tu negocio es gratis y siempre puedes aparecer con ficha básica.
+                  Publicar tu negocio es gratis. Empiezas con 90 días de ficha completa sin costo.
                 </p>
                 <p className="text-sm text-slate-600 mt-2">
-                  La ficha completa es opcional y parte desde $3.500/mes. No cambia tu posición en
-                  los resultados: mejora cómo se ve tu negocio y puede ayudarte a generar más
-                  confianza y más contactos.
+                  Después puedes seguir con un plan para mejorar cómo se ve tu negocio o quedarte con
+                  la ficha básica.
+                </p>
+                <p className="text-sm text-slate-600 mt-2">
+                  No cambias tu posición en los resultados. Solo mejoras tu presentación para generar
+                  más confianza.
                 </p>
                 <Link
                   href="/publicar"
                   className="mt-3 inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
                 >
-                  Publicar mi negocio
+                  Publicar mi negocio gratis
                 </Link>
                 <Link
                   href="/planes"
@@ -161,6 +155,9 @@ export default function InformacionUtilPage() {
                 </Link>
               </article>
             </div>
+            <p className="text-sm text-slate-600">
+              Impulsamos el comercio local, dando visibilidad a negocios reales de cada comuna.
+            </p>
             <div className="max-w-2xl space-y-2 pt-1">
               <p className="text-sm text-slate-600">
                 Mientras más completa tu ficha (fotos, descripción y contacto), más posibilidades
@@ -182,7 +179,7 @@ export default function InformacionUtilPage() {
               Rey del Dato crece comuna por comuna.
             </p>
             <p className="text-sm text-slate-600 max-w-2xl">
-              Algunas comunas ya tienen servicios disponibles, pero todavía están completando su
+              Algunas comunas ya tienen negocios disponibles, pero todavía están completando su
               catálogo. Mientras más negocios se publican o se recomiendan, más útil se vuelve el
               directorio.
             </p>
@@ -193,9 +190,9 @@ export default function InformacionUtilPage() {
                   ¿Qué significa que una comuna está en crecimiento?
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  Significa que ya puede tener algunos servicios disponibles, pero su catálogo aún no
+                  Significa que ya puede tener algunos negocios disponibles, pero su catálogo aún no
                   está completo. Puedes buscar, explorar negocios disponibles y ayudar recomendando
-                  emprendimientos.
+                  negocios.
                 </p>
               </div>
 
@@ -205,7 +202,7 @@ export default function InformacionUtilPage() {
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
                   Faltan negocios reales en rubros clave, como gasfitería, electricidad, peluquería,
-                  mecánica, comida preparada, fletes u otros servicios importantes para la vida
+                  mecánica, comida preparada, fletes u otras necesidades importantes para la vida
                   diaria.
                 </p>
               </div>
@@ -215,7 +212,7 @@ export default function InformacionUtilPage() {
                   ¿Cómo puedo ayudar a completar mi comuna?
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  Puedes publicar tu emprendimiento gratis o recomendar un negocio que conozcas.
+                  Puedes publicar tu negocio gratis o recomendar un negocio que conozcas.
                   Mientras más datos reales tengamos, más útil será el directorio para todos.
                 </p>
               </div>
@@ -237,7 +234,7 @@ export default function InformacionUtilPage() {
                 href="/publicar"
                 className="font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-800"
               >
-                Publica tu emprendimiento
+                Publica tu negocio
               </Link>{" "}
               o recomienda uno.
             </p>
