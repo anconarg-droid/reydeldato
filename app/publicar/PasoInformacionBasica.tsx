@@ -451,25 +451,27 @@ export default function PasoInformacionBasica({
 
       <div style={sectionTitleStyle}>Lo esencial</div>
 
-      <div style={gridStyle}>
-        <div>
+      <div className={esencialGridClass}>
+        <div className="min-w-0 flex flex-col">
           <label style={labelStyle}>Nombre del emprendimiento *</label>
           <input
             value={form.nombre}
             onChange={(e) => setField("nombre", e.target.value)}
             placeholder="Ej: Panadería La Esquina"
+            className="w-full"
             style={inputStyle}
           />
           {errors.nombre ? <p style={errorStyle}>{errors.nombre}</p> : null}
         </div>
 
-        <div>
+        <div className="min-w-0 flex flex-col">
           <label style={labelStyle}>Email de contacto *</label>
           <input
             type="email"
             value={form.email}
             onChange={(e) => setField("email", e.target.value)}
             placeholder="nombre@dominio.com"
+            className="w-full"
             style={inputStyle}
           />
           <div style={helperStyle}>
@@ -501,13 +503,14 @@ export default function PasoInformacionBasica({
           {errors.email ? <p style={errorStyle}>{errors.email}</p> : null}
         </div>
 
-        <div>
+        <div className="col-span-full flex min-w-0 flex-col">
           <label style={labelStyle}>WhatsApp principal *</label>
           <input
             type="tel"
             value={form.whatsapp}
             onChange={(e) => setField("whatsapp", e.target.value)}
             placeholder="+56912345678 o 912345678"
+            className="w-full"
             style={inputStyle}
           />
           <div style={helperStyle}>
@@ -521,7 +524,7 @@ export default function PasoInformacionBasica({
           {errors.whatsapp ? <p style={errorStyle}>{errors.whatsapp}</p> : null}
         </div>
 
-        <div style={{ gridColumn: "1 / -1" }}>
+        <div className="col-span-full flex min-w-0 flex-col">
           <label style={labelStyle}>Descripción de tu emprendimiento *</label>
           <textarea
             value={form.descripcionNegocio}
@@ -533,6 +536,7 @@ export default function PasoInformacionBasica({
               }
             }}
             placeholder="Ej: Vendemos pan amasado, empanadas y kuchen por encargo en Calera de Tango."
+            className="w-full"
             style={textareaStyle}
           />
           <div style={helperStyle}>
@@ -562,7 +566,7 @@ export default function PasoInformacionBasica({
 
       <div style={sectionTitleStyle}>Dónde aparecerás</div>
 
-      <div style={gridStyle}>
+      <div className={ubicacionGridClass}>
         <div style={{ gridColumn: "1 / -1", position: "relative" }}>
           <div
             style={{
@@ -1019,8 +1023,8 @@ export default function PasoInformacionBasica({
         ) : null}
       </div>
 
-      <div style={footerStyle}>
-        <div style={{ flex: 1, minWidth: 260 }}>
+      <div className={footerOuterClass}>
+        <div className={footerTermsClass}>
           <label
             htmlFor="acepta-terminos-privacidad"
             style={{
@@ -1124,9 +1128,16 @@ export default function PasoInformacionBasica({
           </div>
         </div>
 
-        <button type="button" onClick={submitForm} style={primaryButtonStyle}>
-          Publicar y empezar a recibir contactos
-        </button>
+        <div className={primaryButtonWrapClass}>
+          <button
+            type="button"
+            onClick={submitForm}
+            className={primaryButtonClass}
+            style={primaryButtonStyle}
+          >
+            Publicar y empezar a recibir contactos
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1175,11 +1186,13 @@ const dividerStyle: React.CSSProperties = {
   margin: "24px 0",
 };
 
-const gridStyle: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-  gap: 18,
-};
+/** Grilla "Lo esencial": 1 col en mobile, 2 desde md. WhatsApp y descripción ocupan todo el ancho. */
+const esencialGridClass =
+  "grid w-full grid-cols-1 gap-5 md:grid-cols-2 md:gap-6";
+
+/** Misma idea para ubicación/cobertura (hijos suelen usar gridColumn full). */
+const ubicacionGridClass =
+  "grid w-full grid-cols-1 gap-5 md:grid-cols-2 md:gap-[18px]";
 
 const labelStyle: React.CSSProperties = {
   display: "block",
@@ -1226,16 +1239,16 @@ const errorStyle: React.CSSProperties = {
   fontWeight: 700,
 };
 
-const footerStyle: React.CSSProperties = {
-  marginTop: 28,
-  paddingTop: 20,
-  borderTop: "1px solid #e5e7eb",
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 12,
-  flexWrap: "wrap",
-  alignItems: "center",
-};
+const footerOuterClass =
+  "mt-7 flex w-full flex-col gap-4 border-t border-[#e5e7eb] pt-5 md:flex-row md:items-start md:gap-6";
+
+const footerTermsClass = "min-w-0 w-full md:min-w-0 md:flex-1 md:max-w-xl";
+
+const primaryButtonWrapClass =
+  "flex w-full shrink-0 md:flex-1 md:items-center md:justify-center";
+
+const primaryButtonClass =
+  "inline-flex w-full min-h-[48px] items-center justify-center md:w-auto md:min-w-[14rem]";
 
 const primaryButtonStyle: React.CSSProperties = {
   background: "#0d9488",
