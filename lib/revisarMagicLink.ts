@@ -2,11 +2,14 @@ import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildMejorarFichaQueryString } from "@/lib/mejorarFichaQuery";
 
-/** Días de validez del link mágico tras aprobar / publicar. */
+/** Días de validez del link mágico del panel (`access_token` + `access_token_expira_at`). */
 export const REVISAR_ACCESS_TOKEN_DIAS = 7;
 
-/** Días de validez al renovar acceso al panel por email (POST /api/panel/reenviar-acceso). */
-export const PANEL_REENVIO_ACCESS_TOKEN_DIAS = 30;
+/**
+ * Mismo plazo que {@link REVISAR_ACCESS_TOKEN_DIAS} (POST /api/panel/reenviar-acceso).
+ * El copy del email debe coincidir con este valor.
+ */
+export const PANEL_REENVIO_ACCESS_TOKEN_DIAS = REVISAR_ACCESS_TOKEN_DIAS;
 
 function appBaseUrl(): string {
   const raw =
@@ -78,6 +81,163 @@ export async function persistEmprendedorAccessTokenForDays(
   }
 
   return { token, expiraAt };
+}
+
+/**
+ * Mantiene el `access_token` actual si sigue vigente; solo emite uno nuevo si falta o venció.
+ * No invalida el enlace al guardar/editar la ficha (evita rotar token en cada aprobación de edición).
+ */
+export async function ensureEmprendedorPanelAccessUrl(
+  supabase: SupabaseClient,
+  emprendedorId: string
+): Promise<{ url: string; refreshed: boolean; expiraAt: string | null }> {
+  const id = String(emprendedorId ?? "").trim();
+  if (!id) {
+    throw new Error("ensureEmprendedorPanelAccessUrl: falta emprendedorId");
+  }
+
+  const { data: row, error } = await supabase
+    .from("emprendedores")
+    .select("access_token, access_token_expira_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const tok =
+    row && typeof row === "object"
+      ? String((row as { access_token?: unknown }).access_token ?? "").trim()
+      : "";
+  const expRaw =
+    row && typeof row === "object"
+      ? (row as { access_token_expira_at?: unknown }).access_token_expira_at
+      : null;
+  const expStr = expRaw != null ? String(expRaw).trim() : "";
+  const nowMs = Date.now();
+
+  if (tok.length >= 8 && expStr) {
+    const expMs = new Date(expStr).getTime();
+    if (!Number.isNaN(expMs) && expMs > nowMs) {
+      return {
+        url: buildRevisarAbsoluteUrl(tok),
+        refreshed: false,
+        expiraAt: expStr,
+      };
+    }
+  }
+
+  const { token, expiraAt } = await persistEmprendedorAccessToken(supabase, id);
+  return {
+    url: buildRevisarAbsoluteUrl(token),
+    refreshed: true,
+    expiraAt,
+  };
+}
+
+function escapeHtmlAttr(s: string): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function escapeHtmlText(s: string): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+export type PanelReenvioEmprendimientoItem = {
+  url: string;
+  nombre: string;
+  comuna: string;
+  estado: string;
+};
+
+/**
+ * Un solo correo con un bloque por emprendimiento (MVP: mismo email, varios negocios).
+ */
+export async function sendPanelReenvioAccessEmailMulti(
+  to: string,
+  diasValidos: number,
+  items: PanelReenvioEmprendimientoItem[]
+): Promise<void> {
+  const dest = String(to ?? "").trim().toLowerCase();
+  if (!dest || items.length === 0) return;
+
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from =
+    process.env.RESEND_FROM?.trim() ||
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    "onboarding@resend.dev";
+
+  if (!apiKey) {
+    // eslint-disable-next-line no-console
+    console.warn("[panel-reenviar-acceso] RESEND_API_KEY no configurada; link no enviado:", {
+      to: dest,
+      count: items.length,
+    });
+    return;
+  }
+
+  const blocks = items
+    .map((it) => {
+      const nombre = escapeHtmlText(it.nombre || "Sin nombre");
+      const comuna = escapeHtmlText(it.comuna || "—");
+      const estado = escapeHtmlText(it.estado || "—");
+      const href = escapeHtmlAttr(it.url);
+      return `<div style="border:1px solid #e5e7eb;border-radius:14px;padding:16px;margin-bottom:14px;background:#fafafa;">
+  <p style="margin:0 0 6px 0;font-size:15px;font-weight:800;color:#111827;">${nombre}</p>
+  <p style="margin:0 0 4px 0;font-size:13px;color:#4b5563;"><strong>Comuna:</strong> ${comuna}</p>
+  <p style="margin:0 0 12px 0;font-size:13px;color:#4b5563;"><strong>Estado:</strong> ${estado}</p>
+  <a href="${href}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:800;font-size:15px;line-height:1;border-radius:12px;padding:12px 16px;">Abrir panel</a>
+</div>`;
+    })
+    .join("");
+
+  const intro =
+    items.length === 1
+      ? `<p style="margin:0 0 14px 0;color:#4b5563;line-height:1.6;">Puedes editar tu ficha y acceder a tu panel desde este enlace (válido por ${diasValidos} días).</p>`
+      : `<p style="margin:0 0 14px 0;color:#4b5563;line-height:1.6;">Encontramos <strong>${items.length}</strong> emprendimientos asociados a este correo. Cada uno tiene su propio acceso al panel (válido por ${diasValidos} días).</p>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [dest],
+      subject:
+        items.length === 1
+          ? "Acceso a tu panel — Rey del Dato"
+          : "Acceso a tus paneles — Rey del Dato",
+      html: `<div style="background:#f9fafb;padding:24px;font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#111827;">
+  <div style="max-width:560px;margin:0 auto;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;">
+      <div style="font-weight:900;letter-spacing:0.06em;font-size:12px;color:#0f766e;margin-bottom:10px;">REY DEL DATO</div>
+      <h1 style="font-size:20px;line-height:1.3;margin:0 0 10px 0;color:#111827;">${
+        items.length === 1 ? "Tu acceso al panel" : "Tus accesos al panel"
+      }</h1>
+      ${intro}
+      ${blocks}
+      <p style="margin:14px 0 0 0;color:#4b5563;line-height:1.6;font-size:13px;">Si no solicitaste este acceso, ignora este mensaje.</p>
+    </div>
+    <p style="margin:14px 0 0 0;color:#6b7280;font-size:13px;line-height:1.5;">— Equipo Rey del Dato</p>
+  </div>
+</div>`,
+    }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Resend ${res.status}: ${txt}`);
+  }
 }
 
 export type EmprendedorRevisarRow = {
@@ -280,7 +440,7 @@ export async function sendRevisarMagicLinkEmail(to: string, absoluteUrl: string)
       <div style="font-weight:900;letter-spacing:0.06em;font-size:12px;color:#0f766e;margin-bottom:10px;">REY DEL DATO</div>
       <h1 style="font-size:20px;line-height:1.3;margin:0 0 10px 0;color:#111827;">Mejora tu perfil y consigue más clientes</h1>
 
-      <p style="margin:0 0 14px 0;color:#4b5563;line-height:1.6;">Puedes editar tu ficha y acceder a tu panel desde aquí (válido por ${REVISAR_ACCESS_TOKEN_DIAS} días).</p>
+      <p style="margin:0 0 14px 0;color:#4b5563;line-height:1.6;">Puedes editar tu ficha y acceder a tu panel desde este enlace (válido por ${REVISAR_ACCESS_TOKEN_DIAS} días).</p>
 
       <div style="margin:0 0 14px 0;">
         <a href="${absoluteUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:800;font-size:16px;line-height:1;border-radius:12px;padding:14px 18px;">Abrir mi panel</a>
@@ -313,77 +473,21 @@ export async function sendRevisarMagicLinkEmail(to: string, absoluteUrl: string)
 }
 
 /**
- * Email de renovación de acceso al panel (mismo destino `/panel?token=...`).
+ * Email de renovación de acceso (un solo enlace); delega en {@link sendPanelReenvioAccessEmailMulti}.
  */
 export async function sendPanelReenvioAccessEmail(
   to: string,
   absoluteUrl: string,
   diasValidos: number
 ): Promise<void> {
-  const dest = String(to ?? "").trim().toLowerCase();
-  if (!dest) return;
-
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from =
-    process.env.RESEND_FROM?.trim() ||
-    process.env.RESEND_FROM_EMAIL?.trim() ||
-    "onboarding@resend.dev";
-
-  if (!apiKey) {
-    // eslint-disable-next-line no-console
-    console.warn("[panel-reenviar-acceso] RESEND_API_KEY no configurada; link no enviado:", {
-      to: dest,
+  await sendPanelReenvioAccessEmailMulti(to, diasValidos, [
+    {
       url: absoluteUrl,
-    });
-    return;
-  }
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+      nombre: "Tu emprendimiento",
+      comuna: "—",
+      estado: "—",
     },
-    body: JSON.stringify({
-      from,
-      to: [dest],
-      subject: "Mejora tu perfil y consigue más clientes",
-      html: `<div style="background:#f9fafb;padding:24px;font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#111827;">
-  <div style="max-width:560px;margin:0 auto;">
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;">
-      <div style="font-weight:900;letter-spacing:0.06em;font-size:12px;color:#0f766e;margin-bottom:10px;">REY DEL DATO</div>
-      <h1 style="font-size:20px;line-height:1.3;margin:0 0 10px 0;color:#111827;">Mejora tu perfil y consigue más clientes</h1>
-
-      <p style="margin:0 0 14px 0;color:#4b5563;line-height:1.6;">Puedes editar tu ficha y acceder a tu panel desde aquí (válido por ${diasValidos} días).</p>
-
-      <div style="margin:0 0 14px 0;">
-        <a href="${absoluteUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:800;font-size:16px;line-height:1;border-radius:12px;padding:14px 18px;">Abrir mi panel</a>
-      </div>
-
-      <p style="margin:0 0 0 0;color:#4b5563;line-height:1.6;">Si el botón no funciona, usa este enlace: <a href="${absoluteUrl}" style="color:#0f766e;text-decoration:underline;">${absoluteUrl}</a></p>
-
-      <div style="border-top:1px solid #e5e7eb;margin:18px 0;"></div>
-
-      <p style="margin:0 0 10px 0;color:#111827;font-weight:800;">Qué hacer para recibir más contactos</p>
-      <ul style="margin:0 0 12px 18px;padding:0;color:#4b5563;line-height:1.6;">
-        <li>Sube fotos reales</li>
-        <li>Ajusta tu descripción</li>
-        <li>Completa tu información</li>
-      </ul>
-
-      <p style="margin:0;color:#4b5563;line-height:1.6;">Si no solicitaste este acceso, ignora este mensaje.</p>
-    </div>
-
-    <p style="margin:14px 0 0 0;color:#6b7280;font-size:13px;line-height:1.5;">— Equipo Rey del Dato</p>
-  </div>
-</div>`,
-    }),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Resend ${res.status}: ${txt}`);
-  }
+  ]);
 }
 
 /**

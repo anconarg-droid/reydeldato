@@ -37,7 +37,10 @@ import {
 import { comunaIdsFromSlugs } from "@/lib/comunasCoberturaIds";
 import { filtrarKeywordsPorSubcategoria } from "@/lib/keywordsValidation";
 import { readKeywordsUsuarioFromPostulacionRow } from "@/lib/keywordsUsuarioPostulacion";
-import { issueRevisarMagicLinkAfterPublish } from "@/lib/revisarMagicLink";
+import {
+  ensureEmprendedorPanelAccessUrl,
+  issueRevisarMagicLinkAfterPublish,
+} from "@/lib/revisarMagicLink";
 import { notifyEmprendimientoAprobadoEmail } from "@/app/api/_lib/notifyEmprendimientoAprobadoEmail";
 
 type RouteContext = {
@@ -1503,14 +1506,22 @@ export async function POST(request: Request, context: RouteContext) {
         publicacion: "publicado",
       });
 
-      const magicEdicion = await issueRevisarMagicLinkAfterPublish(
-        supabase,
-        emprendedorIdExisting,
-        s(p.email) || null
-      );
+      let panelUrlEdicion: string | null = null;
+      try {
+        const ensured = await ensureEmprendedorPanelAccessUrl(
+          supabase,
+          emprendedorIdExisting
+        );
+        panelUrlEdicion = ensured.url;
+      } catch (e) {
+        console.error(
+          "[aprobar edicion_publicado] ensureEmprendedorPanelAccessUrl:",
+          e instanceof Error ? e.message : String(e)
+        );
+      }
       await notifyEmprendimientoAprobadoEmail(supabase, emprendedorIdExisting, {
         nombreFallback: pubEdicion.nombre,
-        panelUrlIfKnown: magicEdicion.url ?? null,
+        panelUrlIfKnown: panelUrlEdicion,
       });
 
       return ok({
