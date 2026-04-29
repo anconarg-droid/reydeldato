@@ -196,7 +196,7 @@ export default function PlanesPublicosClient() {
             textDecoration: "none",
           }}
         >
-          Publicar mi negocio gratis
+          Empezar gratis
         </Link>
       </article>
     </div>

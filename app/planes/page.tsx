@@ -53,21 +53,51 @@ export default function PlanesPublicosPage() {
           <h1 style={{ marginTop: "1rem", fontSize: 28, fontWeight: 600 }}>
             Planes para emprendedores
           </h1>
-          <p
-            style={{
-              marginTop: "0.75rem",
-              marginBottom: "2rem",
-              maxWidth: 640,
-              fontSize: 14,
-              color: "var(--color-text-secondary, #475569)",
-              lineHeight: 1.5,
-            }}
-          >
-            Planes de lanzamiento{"\n"}
-            {"\n"}
-            Publica tu negocio sin riesgo.{"\n"}
-            Empiezas gratis y decides después si quieres mejorar tu ficha.
-          </p>
+          <div className="mx-auto mt-3 mb-8 flex max-w-xl flex-col items-center gap-3 px-2 text-center">
+            <p
+              style={{
+                margin: 0,
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: "0.02em",
+                color: "#0d7a5f",
+              }}
+            >
+              Planes de lanzamiento
+            </p>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 22,
+                fontWeight: 700,
+                lineHeight: 1.25,
+                color: "#0f172a",
+              }}
+            >
+              Publica tu negocio sin riesgo.
+            </p>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 14,
+                color: "var(--color-text-secondary, #475569)",
+                lineHeight: 1.55,
+              }}
+            >
+              Empiezas gratis y decides después si quieres mejorar tu ficha.
+            </p>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 14,
+                fontWeight: 600,
+                lineHeight: 1.45,
+                color: "#0d7a5f",
+              }}
+            >
+              Tu negocio sigue visible aunque no pagues.
+            </p>
+          </div>
         </header>
 
         <section
@@ -141,7 +171,7 @@ export default function PlanesPublicosPage() {
             DÍA 91 EN ADELANTE
           </span>
           <h2 style={{ marginTop: "0.75rem", fontSize: 15, fontWeight: 500 }}>
-            Día 91 — sigues publicado, con ficha básica
+            Día 91 — tu negocio sigue publicado
           </h2>
           <p
             style={{
@@ -150,10 +180,11 @@ export default function PlanesPublicosPage() {
               color: "var(--color-text-secondary, #475569)",
               lineHeight: 1.55,
               maxWidth: 760,
+              whiteSpace: "pre-line",
             }}
           >
-            Tu negocio sigue visible en las búsquedas de tu comuna. El contacto
-            pasa a ser solo por WhatsApp, sin galería ni información extra.
+            Tu ficha pasa a básica (solo WhatsApp y datos).{"\n"}
+            Sigues apareciendo en tu comuna.
           </p>
         </section>
 
