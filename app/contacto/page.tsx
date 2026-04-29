@@ -29,7 +29,7 @@ export default function ContactoPage() {
       </p>
 
       <LegalSection title="Contacto">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
             <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">
               Correo

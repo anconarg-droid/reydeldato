@@ -9,7 +9,7 @@ export default function BuscarLoading() {
         <div className="h-7 w-48 rounded bg-slate-200 animate-pulse mb-4" />
         <div className="h-4 w-80 rounded bg-slate-200 animate-pulse mb-6" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {cards.map((_, idx) => (
             <div
               key={idx}

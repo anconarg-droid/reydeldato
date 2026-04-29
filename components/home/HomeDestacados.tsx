@@ -34,13 +34,13 @@ export default function HomeDestacados() {
         Emprendimientos destacados cerca de ti
       </h2>
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="rounded-2xl bg-slate-100 animate-pulse aspect-[3/4]" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           {items.slice(0, 8).map((item) => (
             <Link
               key={item.id || item.slug}

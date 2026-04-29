@@ -308,14 +308,14 @@ function MetricsResumenPanel({
           <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
             Principales
           </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-2">
             {primarias.map((it) => (
               <div
                 key={it.label}
-                className="min-w-0 rounded-lg border border-gray-100 bg-gray-50/80 px-2.5 py-2 text-center sm:text-left"
+                className="min-w-0 rounded-lg border border-gray-100 bg-gray-50/80 px-2.5 py-2 text-center md:text-left"
                 title={it.hint}
               >
-                <div className="flex flex-wrap items-center justify-center gap-1.5 text-gray-700 sm:justify-start">
+                <div className="flex flex-wrap items-center justify-center gap-1.5 text-gray-700 md:justify-start">
                   <span className="text-base leading-none shrink-0" aria-hidden>
                     {it.icon}
                   </span>
@@ -323,7 +323,7 @@ function MetricsResumenPanel({
                     {it.label}
                   </span>
                 </div>
-                <p className="mt-1 text-center text-xl font-black tabular-nums text-gray-900 tracking-tight sm:text-left">
+                <p className="mt-1 text-center text-xl font-black tabular-nums text-gray-900 tracking-tight md:text-left">
                   {it.value}
                 </p>
               </div>
@@ -338,7 +338,7 @@ function MetricsResumenPanel({
           <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
             Más detalle
           </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
             {secundarias.map((it) => (
               <div
                 key={it.label}

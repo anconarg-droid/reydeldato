@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 
 const MENSAJE_EXITO =
-  "Te enviamos un nuevo enlace si el correo existe.";
+  "Si encontramos negocios asociados a ese correo, enviaremos un enlace.";
 
 export default function PanelEnlaceVencidoClient() {
   const [email, setEmail] = useState("");

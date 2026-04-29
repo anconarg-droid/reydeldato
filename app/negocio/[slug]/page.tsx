@@ -124,7 +124,7 @@ export default async function Page({
               </p>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-700">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 text-sm text-slate-700">
               {item.categoria_nombre && (
                 <div>
                   <span className="font-semibold">Categoría:</span>{" "}

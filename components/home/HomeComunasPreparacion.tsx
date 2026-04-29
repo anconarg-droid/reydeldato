@@ -48,7 +48,7 @@ export default function HomeComunasPreparacion({
         Mientras más negocios reales se suman, mejores resultados muestra cada comuna.
       </p>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
         {items.map((c) => {
           const meta = c.total_requerido;
           let cumplido =

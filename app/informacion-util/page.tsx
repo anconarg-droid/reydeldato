@@ -23,7 +23,7 @@ export default function InformacionUtilPage() {
             <h2 className="text-xl sm:text-2xl font-black text-slate-900">
               🔍 Si estás buscando en tu comuna
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <article className="rd-card p-4">
                 <h3 className="text-sm font-bold text-slate-950 mb-1">
                   Cómo encontrar negocios locales en tu comuna
@@ -71,7 +71,7 @@ export default function InformacionUtilPage() {
             <h2 className="text-xl sm:text-2xl font-black text-slate-900">
               🏪 Si quieres publicar tu negocio
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <article className="rd-card p-4">
                 <h3 className="text-sm font-bold text-slate-950 mb-1">
                   Cómo publicar

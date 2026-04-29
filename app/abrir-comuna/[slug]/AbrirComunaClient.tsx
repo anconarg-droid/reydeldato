@@ -49,8 +49,8 @@ function gridColumnsClassName(itemCount: number): string {
   return n === 1
     ? "grid-cols-1 justify-items-center [&>*]:w-full [&>*]:max-w-sm"
     : n === 2
-      ? "grid-cols-1 sm:grid-cols-2"
-      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+      ? "grid-cols-1 md:grid-cols-2"
+      : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
 }
 
 export default function AbrirComunaClient({

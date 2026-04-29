@@ -97,7 +97,7 @@ export default function HomeComunasAbiertasGrid({
 
   if (items.length === 2) {
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
         {items.map((c) => (
           <ComunaDisponibleCard
             key={c.slug}
@@ -112,7 +112,7 @@ export default function HomeComunasAbiertasGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {items.map((c) => (
         <ComunaDisponibleCard
           key={c.slug}
