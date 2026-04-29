@@ -580,7 +580,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
         <div
           className={`relative w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 ${
-            homeCarousel ? "h-44" : "aspect-[4/3]"
+            homeCarousel ? "h-44" : "h-[150px] sm:h-[160px] md:h-[150px] lg:h-[145px]"
           }`}
           style={mostrarFoto ? undefined : undefined}
         >
