@@ -579,9 +579,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       >
         {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
         <div
-          className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 ${
-            homeCarousel ? "h-44" : "h-[160px] md:h-[180px]"
-          } ${mostrarFoto ? "bg-slate-100" : "bg-slate-100"}`}
+          className={`relative w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 ${
+            homeCarousel ? "h-44" : "aspect-[4/3]"
+          }`}
           style={mostrarFoto ? undefined : undefined}
         >
           {mostrarFoto ? (
@@ -590,7 +590,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               <img
                 src={fotoUrl}
                 alt={nombreDisplay}
-                className="h-full w-full object-cover object-center"
+                className="absolute inset-0 h-full w-full object-cover object-center"
                 loading="lazy"
                 decoding="async"
                 onError={() => setImgBroken(true)}
