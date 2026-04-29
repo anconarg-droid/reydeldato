@@ -187,9 +187,22 @@ export default function PlanesPublicosClient() {
           })}
         </div>
 
+        <p
+          style={{
+            marginTop: "1rem",
+            marginBottom: 0,
+            textAlign: "center",
+            fontSize: 12,
+            lineHeight: 1.45,
+            color: "var(--color-text-tertiary, #64748b)",
+          }}
+        >
+          Empiezas con ficha completa gratis por 90 días.
+        </p>
+
         <Link
           href="/publicar"
-          className="mt-5 inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold"
+          className="mt-3 inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold"
           style={{
             background: "#0d7a5f",
             color: "#fff",

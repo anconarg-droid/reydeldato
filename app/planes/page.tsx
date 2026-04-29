@@ -51,7 +51,7 @@ export default function PlanesPublicosPage() {
           />
 
           <h1 style={{ marginTop: "1rem", fontSize: 28, fontWeight: 600 }}>
-            Planes para emprendedores
+            Publica tu negocio sin riesgo
           </h1>
           <div className="mx-auto mt-3 mb-8 flex max-w-xl flex-col items-center gap-3 px-2 text-center">
             <p
@@ -63,18 +63,7 @@ export default function PlanesPublicosPage() {
                 color: "#0d7a5f",
               }}
             >
-              Planes de lanzamiento
-            </p>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 22,
-                fontWeight: 700,
-                lineHeight: 1.25,
-                color: "#0f172a",
-              }}
-            >
-              Publica tu negocio sin riesgo.
+              Precio de lanzamiento
             </p>
             <p
               style={{
@@ -214,7 +203,7 @@ export default function PlanesPublicosPage() {
               whiteSpace: "pre-line",
             }}
           >
-            Mejora cómo se ve tu negocio para generar más confianza.
+            Muestra tu trabajo y genera más confianza.
           </p>
           <p
             style={{
