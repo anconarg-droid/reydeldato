@@ -40,7 +40,7 @@ function ComunaDirectorioHeader({
   return (
     <header className="mt-3">
       <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-        Encuentra servicios en <span className="text-sky-700">{tituloComunaDisplay}</span>
+        Encuentra servicios y comercios en <span className="text-sky-700">{tituloComunaDisplay}</span>
       </h1>
       {tieneBusquedaActiva ? (
         <p className="mt-2 text-sm text-slate-600">
@@ -50,8 +50,7 @@ function ComunaDirectorioHeader({
         </p>
       ) : (
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Estás viendo todos los servicios de {tituloComunaDisplay}.{" "}
-          <span className="text-[#0d7a5f]">Escribe qué necesitas arriba para filtrar.</span>
+          Negocios locales y personas que atienden tu comuna.
         </p>
       )}
     </header>
