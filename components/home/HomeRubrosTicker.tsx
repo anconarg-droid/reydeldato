@@ -2,6 +2,14 @@ import type { RubroTickerItem } from "@/lib/loadRubrosTickerHome";
 
 const MIN_RUBROS = 5;
 
+function formatRubro(str: string): string {
+  return str
+    .replace(/_/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
+}
+
 /** Copias del listado en el track; sincronizar con `@keyframes ticker` en globals.css (-100%/copies). */
 const TICKER_COPIES = 4 as const;
 
@@ -34,7 +42,7 @@ function TickerSegment({
             </span>
           ) : null}
           <span className="shrink-0 cursor-default whitespace-nowrap text-[13px] text-slate-500">
-            {item.label}
+            {formatRubro(item.label)}
           </span>
         </span>
       ))}
