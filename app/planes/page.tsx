@@ -141,7 +141,7 @@ export default function PlanesPublicosPage() {
             DÍA 91 EN ADELANTE
           </span>
           <h2 style={{ marginTop: "0.75rem", fontSize: 15, fontWeight: 500 }}>
-            Si no continúas, tu negocio sigue publicado
+            Día 91 — sigues publicado, con ficha básica
           </h2>
           <p
             style={{
@@ -150,12 +150,10 @@ export default function PlanesPublicosPage() {
               color: "var(--color-text-secondary, #475569)",
               lineHeight: 1.55,
               maxWidth: 760,
-              whiteSpace: "pre-line",
             }}
           >
-            Si no continúas, tu negocio sigue publicado.{"\n"}
-            Tu ficha pasa a básica (solo WhatsApp y datos).{"\n"}
-            Sigues apareciendo en tu comuna.
+            Tu negocio sigue visible en las búsquedas de tu comuna. El contacto
+            pasa a ser solo por WhatsApp, sin galería ni información extra.
           </p>
         </section>
 
