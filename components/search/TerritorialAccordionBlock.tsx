@@ -108,8 +108,8 @@ export default function TerritorialAccordionBlock({
     ? "w-full min-w-0 overflow-hidden rounded-2xl border border-emerald-800/35 bg-[#0d7a5f] shadow-lg"
     : "w-full min-w-0 overflow-hidden rounded-2xl border border-teal-200 bg-emerald-50 shadow-md";
   const buttonClass = isLocal
-    ? "group flex w-full min-h-[4.5rem] cursor-pointer items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-[#0b6b54] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d7a5f] sm:min-h-0 sm:px-4 sm:py-4"
-    : "group flex w-full min-h-[4.5rem] cursor-pointer items-center justify-between gap-3 border-b border-teal-200/90 bg-emerald-50/90 px-4 py-4 text-left transition-colors hover:bg-emerald-100/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:min-h-0 sm:px-4 sm:py-4";
+    ? "group flex w-full min-h-[4.5rem] cursor-pointer items-center justify-between gap-3 px-4 py-[0.85rem] text-left transition-colors hover:bg-[#0b6b54] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d7a5f] sm:min-h-0 sm:px-4 sm:py-[0.85rem]"
+    : "group flex w-full min-h-[4.5rem] cursor-pointer items-center justify-between gap-3 border-b border-teal-200/90 bg-emerald-50/90 px-4 py-[0.85rem] text-left transition-colors hover:bg-emerald-100/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:min-h-0 sm:px-4 sm:py-[0.85rem]";
   const titleClass = isLocal
     ? "block text-base font-black leading-snug tracking-tight text-white sm:text-lg"
     : "block text-base font-black leading-snug tracking-tight text-teal-900 sm:text-lg";

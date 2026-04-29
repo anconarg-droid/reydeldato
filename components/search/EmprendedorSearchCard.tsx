@@ -469,7 +469,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       : esIntermedio
         ? "text-slate-700"
         : "text-slate-600";
-  const titleFontClass = listadoUiPerfilCompleto ? "font-bold" : "font-semibold";
+  const titleFontClassResponsive = listadoUiPerfilCompleto
+    ? "font-semibold md:font-bold"
+    : "font-semibold";
 
   const chipBase =
     "inline-flex max-w-full shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight tracking-wide";
@@ -578,7 +580,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
         <div
           className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 ${
-            homeCarousel ? "h-44" : "h-44 sm:h-48"
+            homeCarousel ? "h-44" : "h-[140px] md:h-44"
           } ${
             mostrarFoto ? "bg-slate-100" : "bg-gradient-to-br from-gray-50 to-gray-100"
           }`}
@@ -627,7 +629,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           </div>
 
           {p.esNuevo === true ? (
-            <div className="pointer-events-none absolute top-2 right-2">
+            <div className="pointer-events-none absolute top-2 right-2 hidden md:block">
               <span className="rounded-full border border-slate-200 bg-white/95 px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-slate-700 shadow-sm">
                 Nuevo
               </span>
@@ -638,41 +640,41 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         {/* Cuerpo: crece; reserva footer abajo */}
         <div className="mt-3 flex min-h-0 min-w-0 flex-1 flex-col gap-3">
           <h3
-            className={`m-0 line-clamp-2 min-h-[2.75rem] w-full shrink-0 text-base leading-snug ${titleFontClass} ${titleColor}`}
+            className={`m-0 line-clamp-2 min-h-[2.5rem] w-full shrink-0 text-[16px] leading-snug ${titleFontClassResponsive} ${titleColor}`}
           >
             {nombreDisplay}
           </h3>
 
           <p
-            className="m-0 min-h-[1rem] w-full shrink-0 text-xs font-semibold leading-snug text-slate-400"
+            className="m-0 min-h-[1rem] w-full shrink-0 text-[13px] font-medium leading-snug text-slate-500"
             title={lineaTaxonomia.trim() || undefined}
           >
             {lineaTaxonomia.trim() ? lineaTaxonomia.trim() : " "}
           </p>
 
           <p
-            className={`m-0 ${homeCarousel ? "line-clamp-2 min-h-[2.25rem]" : "line-clamp-3 min-h-[3.25rem]"} w-full shrink-0 text-sm font-medium leading-snug text-slate-700`}
+            className={`m-0 hidden md:block ${homeCarousel ? "line-clamp-2 min-h-[2.25rem]" : "line-clamp-3 min-h-[3.25rem]"} w-full shrink-0 text-sm font-medium leading-snug text-slate-700`}
           >
             {descDisplay}
           </p>
 
-          <p className="m-0 min-h-[1rem] w-full shrink-0 text-[11px] leading-tight text-slate-500">
+          <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 text-[11px] leading-tight text-slate-500">
             {confianzaTexto || " "}
           </p>
 
           {/* Ubicación: primero el contexto (comuna), luego direcciones reales (hasta 2). */}
-          <p className="m-0 min-h-[1.375rem] w-full shrink-0 truncate text-sm font-medium leading-tight text-slate-800">
+          <p className="m-0 min-h-[1.375rem] w-full shrink-0 truncate text-[13px] font-medium leading-tight text-slate-800">
             <span aria-hidden>📍 </span>
             {pinUbicacion.primary}
           </p>
           {pinUbicacion.secondary ? (
-            <p className="m-0 min-h-[1rem] w-full shrink-0 truncate text-[11px] leading-tight text-slate-500">
+            <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 truncate text-[11px] leading-tight text-slate-500">
               {pinUbicacion.secondary}
             </p>
           ) : null}
 
           <div
-            className="flex min-h-[32px] w-full shrink-0 flex-nowrap items-center gap-1.5 overflow-hidden"
+            className="hidden md:flex min-h-[32px] w-full shrink-0 flex-nowrap items-center gap-1.5 overflow-hidden"
             aria-hidden={!showCoberturaStatusRow}
           >
             {showCoberturaStatusRow ? (
@@ -711,7 +713,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           </div>
 
           <div
-            className="flex min-h-[26px] max-h-[26px] w-full shrink-0 flex-wrap content-start items-center gap-1 overflow-hidden"
+            className="hidden md:flex min-h-[26px] max-h-[26px] w-full shrink-0 flex-wrap content-start items-center gap-1 overflow-hidden"
             aria-label="Forma de atención"
           >
             {modalidadesLimitadas.length > 0 ? (
@@ -767,7 +769,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               </p>
             </div>
           ) : tieneLocalFisico ? (
-            <div className="my-1 w-full shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
+            <div className="my-1 hidden w-full shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 md:block">
               <p className="m-0 flex items-center gap-1.5 text-[12px] font-bold leading-tight text-slate-800">
                 <span aria-hidden>🏪</span>
                 <span>Local físico</span>
@@ -792,7 +794,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           ) : null}
 
           <p
-            className="m-0 line-clamp-2 min-h-[2.25rem] w-full shrink-0 text-sm leading-snug text-slate-500"
+            className="m-0 hidden md:block line-clamp-2 min-h-[2.25rem] w-full shrink-0 text-sm leading-snug text-slate-500"
             title={coberturaTxt.trim() || undefined}
           >
             {coberturaDisplay}
@@ -833,7 +835,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               ) : null}
             </div>
           ) : listadoUiPerfilCompleto && puedeVerFichaPublica && tieneWhatsappValido ? (
-            <div className="flex w-full shrink-0 flex-row items-stretch gap-2">
+            <div className="flex w-full shrink-0 flex-col items-stretch gap-2 md:flex-row">
               <TrackedCardLink
                 slug={p.slug}
                 href={whatsappUrl || whatsappHref}
@@ -841,8 +843,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 analyticsSource={analyticsSource}
                 trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                 trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex min-w-0 flex-1 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
-                style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                className="flex w-full min-w-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25 md:flex-1"
+                style={{ minHeight: 44, height: ACTIONS_H }}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`WhatsApp: ${nombreDisplay}`}
@@ -856,8 +858,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 analyticsSource={analyticsSource}
                 trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                 trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
-                style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                className="flex w-full min-w-0 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50 md:flex-1"
+                style={{ minHeight: 44, height: ACTIONS_H }}
                 aria-label={`Ver detalles: ${nombreDisplay}`}
               >
                 Ver detalles
@@ -881,7 +883,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             </div>
           ) : !listadoUiPerfilCompleto && tieneWhatsappValido ? (
             <div className="flex w-full flex-col items-center justify-center gap-2">
-              <div className="w-full max-w-[calc(50%-0.25rem)] rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
+              <div className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center md:max-w-[calc(50%-0.25rem)]">
                 <p className="m-0 text-xs font-semibold leading-snug text-slate-700">
                   Solo contacto por WhatsApp
                 </p>
@@ -893,8 +895,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 analyticsSource={analyticsSource}
                 trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                 trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex w-full max-w-[calc(50%-0.25rem)] shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
-                style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                className="flex w-full shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25 md:max-w-[calc(50%-0.25rem)]"
+                style={{ minHeight: 44, height: ACTIONS_H }}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`WhatsApp: ${nombreDisplay}`}

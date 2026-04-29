@@ -39,7 +39,11 @@ export default function CategoriaEmprendedoresGrid({
   );
 
   return (
-    <EmprendedorSearchCardsGrid emptyMessage={emptyMessage} itemCount={items.length}>
+    <EmprendedorSearchCardsGrid
+      emptyMessage={emptyMessage}
+      itemCount={items.length}
+      gridClassName="grid w-full grid-cols-1 gap-4 px-3 md:grid-cols-2 items-stretch"
+    >
       {ordenados.map((item) => (
         <EmprendedorSearchCard
           key={item.slug || item.id}

@@ -189,7 +189,7 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
               <div className="overflow-hidden rounded-2xl border border-teal-200 bg-white text-center shadow-sm ring-1 ring-teal-100">
                 <div className="bg-white px-5 pt-4 pb-1 text-center sm:px-6">
                   <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-teal-800">
-                    Impulsando el comercio local
+                    PARA EMPRENDEDORES
                   </p>
                 </div>
                 <div className="bg-[#0f766e] px-5 py-5 text-white sm:px-6">
