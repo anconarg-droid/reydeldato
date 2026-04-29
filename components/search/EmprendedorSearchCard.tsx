@@ -580,7 +580,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
         <div
           className={`relative w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 ${
-            homeCarousel ? "h-44" : "aspect-square"
+            homeCarousel ? "h-44" : "h-[180px] md:h-[160px] xl:h-[150px]"
           }`}
           style={mostrarFoto ? undefined : undefined}
         >
@@ -640,25 +640,25 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           {/* Cuerpo: crece; reserva footer abajo */}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
           <h3
-            className={`m-0 line-clamp-2 min-h-[2.5rem] w-full shrink-0 text-[16px] leading-snug ${titleFontClassResponsive} ${titleColor}`}
+            className={`m-0 line-clamp-2 min-h-[2.5rem] w-full shrink-0 text-base font-semibold leading-snug ${titleColor}`}
           >
             {nombreDisplay}
           </h3>
 
           <p
-            className="m-0 min-h-[1rem] w-full shrink-0 text-[13px] font-medium leading-snug text-slate-500"
+            className="m-0 min-h-[1rem] w-full shrink-0 text-xs font-medium leading-snug text-slate-500"
             title={lineaTaxonomia.trim() || undefined}
           >
             {lineaTaxonomia.trim() ? lineaTaxonomia.trim() : " "}
           </p>
 
           <p
-            className={`m-0 hidden md:block ${homeCarousel ? "line-clamp-2 min-h-[2.25rem]" : "line-clamp-3 min-h-[3.25rem]"} w-full shrink-0 text-sm font-medium leading-snug text-slate-700`}
+            className={`m-0 ${homeCarousel ? "line-clamp-2" : "line-clamp-2 md:line-clamp-3"} w-full shrink-0 text-sm font-medium leading-relaxed text-slate-700`}
           >
             {descDisplay}
           </p>
 
-          <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 text-[11px] leading-tight text-slate-500">
+          <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 text-xs leading-tight text-slate-500">
             {confianzaTexto || " "}
           </p>
 
@@ -794,7 +794,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           ) : null}
 
           <p
-            className="m-0 hidden md:block line-clamp-2 min-h-[2.25rem] w-full shrink-0 text-sm leading-snug text-slate-500"
+            className="m-0 line-clamp-1 min-h-[1rem] w-full shrink-0 text-xs leading-snug text-slate-500"
             title={coberturaTxt.trim() || undefined}
           >
             {coberturaDisplay}
@@ -835,7 +835,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               ) : null}
             </div>
           ) : listadoUiPerfilCompleto && puedeVerFichaPublica && tieneWhatsappValido ? (
-            <div className="flex w-full shrink-0 flex-col items-stretch gap-2 md:flex-row">
+            <div className="flex w-full shrink-0 flex-row items-stretch gap-2">
               <TrackedCardLink
                 slug={p.slug}
                 href={whatsappUrl || whatsappHref}
@@ -843,7 +843,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 analyticsSource={analyticsSource}
                 trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                 trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex w-full min-w-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25 md:flex-1"
+                className="flex min-w-0 flex-1 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
                 style={{ minHeight: 44, height: ACTIONS_H }}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -858,7 +858,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 analyticsSource={analyticsSource}
                 trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                 trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex w-full min-w-0 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50 md:flex-1"
+                className="flex min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
                 style={{ minHeight: 44, height: ACTIONS_H }}
                 aria-label={`Ver detalles: ${nombreDisplay}`}
               >
