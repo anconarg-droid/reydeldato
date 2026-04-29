@@ -1321,7 +1321,7 @@ export default async function Page({
                   <p className="m-0 mb-3 text-[12px] font-extrabold uppercase tracking-wide text-slate-600">
                     Galería
                   </p>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                     {galeria.slice(0, 8).map((u, idx) => (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img

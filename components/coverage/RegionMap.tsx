@@ -48,7 +48,7 @@ export function RegionMap({
       <p className="mt-1 text-sm text-[#6B7280]">
         Tu comuna destacada. Haz clic en otra para ver su avance.
       </p>
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 md:gap-4">
         {comunas.map((c) => {
           const isCurrent = currentComunaSlug !== null && c.slug === currentComunaSlug;
           return (

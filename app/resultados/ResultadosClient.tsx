@@ -170,7 +170,7 @@ function GlobalDbResults({
                   <h2 className="text-base font-extrabold text-slate-900">
                     {tituloBloqueExactos(detectedSubcategoria)}
                   </h2>
-                  <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
+                  <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 items-stretch">
                     {exactos.map((item) => (
                       <EmprendedorSearchCard
                         key={item.slug || item.id}
@@ -187,7 +187,7 @@ function GlobalDbResults({
                   <h2 className="text-base font-extrabold text-slate-900">
                     También podrían servirte
                   </h2>
-                  <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
+                  <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 items-stretch">
                     {[...relacionadosMismaCategoria, ...relacionadosResto].map((item) => (
                       <EmprendedorSearchCard
                         key={item.slug || item.id}
@@ -200,7 +200,7 @@ function GlobalDbResults({
               ) : null}
             </>
           ) : (
-            <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
+            <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 items-stretch">
               {itemsFiltrados.map((item) => (
                 <EmprendedorSearchCard
                   key={item.slug || item.id}

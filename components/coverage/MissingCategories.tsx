@@ -151,7 +151,7 @@ export function MissingCategories({ cityName, citySlug, categories }: MissingCat
         Si conoces a alguien que tenga uno de estos negocios, invítalo a registrarse.
       </p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         {categories.map((rubro, index) => {
           const registered = Number(rubro.registered ?? 0);
           const goal = Number(rubro.goal ?? 0);

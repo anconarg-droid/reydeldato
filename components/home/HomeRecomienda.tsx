@@ -282,8 +282,8 @@ export default function HomeRecomienda({
               <div
                 className={
                   onEmerald
-                    ? "grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 pt-1 border-t border-white/14"
-                    : "grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 pt-1 border-t border-slate-200/80"
+                    ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 pt-1 border-t border-white/14"
+                    : "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 pt-1 border-t border-slate-200/80"
                 }
               >
                 <div ref={comunaBoxRef} className="relative sm:col-span-1">
@@ -384,7 +384,7 @@ export default function HomeRecomienda({
             </>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
                 <div>
                   <label className={labelClass}>Nombre del emprendimiento</label>
                   <input
@@ -408,7 +408,7 @@ export default function HomeRecomienda({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
                 <div ref={comunaBoxRef} className="relative">
                   <label className={labelClass}>Comuna donde trabaja</label>
                   <input

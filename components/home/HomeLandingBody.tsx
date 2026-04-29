@@ -262,7 +262,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
           <div className="mt-10">
             <h3 className="text-sm font-semibold text-slate-900">Con resultados</h3>
             {loadingComunas ? (
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="h-[180px] animate-pulse rounded-2xl bg-slate-100" />
                 ))}

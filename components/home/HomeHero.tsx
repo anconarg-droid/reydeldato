@@ -170,7 +170,7 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
               </p>
 
               {/* Stats (balance visual vs card derecha) */}
-              <div className="mt-8 grid grid-cols-2 gap-4 max-w-md">
+              <div className="mt-8 grid max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
                 {STATS.map((s) => (
                   <div key={`${s.n}-${s.l}`} className="min-w-0">
                     <div className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#0f766e] leading-none">

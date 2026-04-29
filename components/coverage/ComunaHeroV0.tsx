@@ -79,7 +79,7 @@ export function ComunaHeroV0({
             style={{ width: `${Math.min(porcentaje, 100)}%` }}
           />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           <div className="text-center p-3 rounded-lg bg-[#F9FAFB]">
             <p className="text-2xl font-bold text-[#111827]">{registrados}</p>
             <p className="text-xs text-[#6B7280] font-medium">registrados</p>

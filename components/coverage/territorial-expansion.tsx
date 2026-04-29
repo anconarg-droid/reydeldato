@@ -51,7 +51,7 @@ export function TerritorialExpansion({
         subtitle="Estamos activando comunas paso a paso. Revisa el avance nacional, regional y de tu comuna."
       />
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className={`rounded-xl border-2 bg-white p-5 shadow-sm ${cardBorderClass(countryPct)}`}>
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Nacional</p>
           <h3 className="mt-1 text-xl font-bold text-slate-900">Chile</h3>

@@ -15,7 +15,7 @@ export function CitySection({ label, title, subtitle, cities }: CitySectionProps
     <section className="space-y-6">
       {label && <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>}
       <SectionTitle title={title} subtitle={subtitle} />
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         {cities.map((city) => (
           <ComunaCard key={city.slug || city.name} city={city} />
         ))}

@@ -35,7 +35,7 @@ export default function HomeComunasActivas() {
   return (
     <section className="w-full">
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
@@ -44,7 +44,7 @@ export default function HomeComunasActivas() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {list.map((c) => (
             <Link
               key={c.slug}

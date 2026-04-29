@@ -27,7 +27,7 @@ export default function HomeMasBuscado({ comunaSlug, className = "" }: Props) {
         Lo más buscado en tu comuna
       </h2>
       <ul
-        className="mt-3 grid grid-cols-3 gap-2"
+        className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 sm:gap-3"
         aria-labelledby="home-mas-buscado-heading"
       >
         {HOME_MAS_BUSCADO_ITEMS.map((item) => (
