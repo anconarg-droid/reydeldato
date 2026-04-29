@@ -8,7 +8,6 @@ import {
   type BuscarApiItem,
 } from "@/lib/mapBuscarItemToEmprendedorCard";
 import { sortItemsConFotoPrimeroStable } from "@/lib/search/sortItemsConFotoPrimero";
-import styles from "./CategoriaEmprendedoresGrid.module.css";
 
 type Props = {
   items: BuscarApiItem[];
@@ -43,7 +42,7 @@ export default function CategoriaEmprendedoresGrid({
     <EmprendedorSearchCardsGrid
       emptyMessage={emptyMessage}
       itemCount={items.length}
-      gridClassName={styles.comunaCardsGrid}
+      gridClassName="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 items-stretch"
     >
       {ordenados.map((item) => (
         <EmprendedorSearchCard

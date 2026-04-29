@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import type { Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import HomeFooter from '@/components/home/HomeFooter'
@@ -19,6 +20,11 @@ export const metadata: Metadata = {
     ],
     apple: "/rey-del-dato-logo-teal.png",
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({

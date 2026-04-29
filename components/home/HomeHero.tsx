@@ -150,7 +150,7 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
       {/* Comparación: publicidad vs intención */}
       <section className="w-full border-t border-slate-100 bg-white">
         <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="grid items-start gap-10 md:grid-cols-2 md:gap-14">
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-14">
             {/* Izquierda: texto */}
             <div className="text-left">
               <p className="text-sm font-semibold text-slate-700">Tu negocio aparece cuando alguien cerca te busca.</p>
