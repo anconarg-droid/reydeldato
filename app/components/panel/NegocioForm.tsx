@@ -7618,7 +7618,7 @@ export default function NegocioForm({
 
       <PanelCard
           title="Ubicación y cobertura"
-          subtitle="Tu comuna base y hasta dónde llega tu servicio."
+          subtitle="Tu comuna base y hasta dónde llega tu negocio."
         >
         <div
           style={{

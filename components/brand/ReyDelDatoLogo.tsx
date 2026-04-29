@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const TAGLINES = {
-  servicios: "Encuentra servicios en tu comuna",
+  servicios: "Encuentra servicios y comercios en tu comuna",
   dato: "El dato de tu comuna",
   impulsando: "Impulsando negocios de tu comuna",
 } as const;

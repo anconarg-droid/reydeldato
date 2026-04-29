@@ -363,7 +363,7 @@ export default function PasoUbicacionCobertura({
       <h2 style={sectionTitle}>Ubicación y cobertura</h2>
 
       <div style={infoBoxStyle}>
-        Indica desde qué comuna operas y hasta dónde llega tu servicio. Esto nos
+        Indica desde qué comuna operas y hasta dónde llega tu negocio. Esto nos
         permite mostrar tu emprendimiento a las personas correctas.
       </div>
 
@@ -488,7 +488,7 @@ export default function PasoUbicacionCobertura({
       <div style={sectionBoxStyle}>
         <div style={sectionMiniTitleStyle}>2. Tu zona de atención</div>
         <div style={sectionHelpStyle}>
-          Elige el alcance de tu servicio: solo comuna, varias comunas cercanas,
+          Elige el alcance de tu negocio: solo comuna, varias comunas cercanas,
           una o varias regiones, o cobertura nacional.
         </div>
 

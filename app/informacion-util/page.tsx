@@ -13,7 +13,7 @@ export default function InformacionUtilPage() {
             Información útil
           </h1>
           <p className="text-sm sm:text-base text-slate-500 max-w-2xl">
-            Guía rápida para entender cómo funciona Rey del Dato, tanto si buscas un servicio como
+            Guía rápida para entender cómo funciona Rey del Dato, tanto si buscas un negocio local como
             si tienes un negocio.
           </p>
         </header>
@@ -22,12 +22,12 @@ export default function InformacionUtilPage() {
           {/* Bloque: para quienes buscan */}
           <section className="rounded-2xl border border-slate-200 bg-white px-5 py-7 shadow-sm sm:px-6 sm:py-8">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-              🔍 Si estás buscando un servicio
+              🔍 Si estás buscando un negocio local
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <article className="rd-card p-4">
                 <h3 className="text-sm font-bold text-slate-950 mb-1">
-                  Cómo encontrar servicios en tu comuna
+                  Cómo encontrar negocios locales en tu comuna
                 </h3>
                 <p className="text-sm text-slate-600">
                   Escribe qué necesitas (ej. gasfiter, panadería, clases de inglés) y elige tu

@@ -109,7 +109,7 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
               marginRight: "auto",
             }}
           >
-            Hay mucha gente de tu comuna que ofrece lo que buscas. Priorizamos lo cercano y quienes atienden tu zona.
+            Hay gente de tu comuna que ofrece lo que buscas. Priorizamos lo cercano y quienes atienden tu zona.
           </p>
 
           {/* Search box */}

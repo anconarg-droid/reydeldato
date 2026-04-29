@@ -5,7 +5,7 @@ export default function LegalPage() {
   return (
     <LegalLayout title="Información legal" lastUpdated="Abril 2026">
       <LegalSection title="1. Titular del sitio">
-        <p>Rey del Dato es una plataforma de directorio de emprendimientos y servicios locales.</p>
+        <p>Rey del Dato es una plataforma de directorio de emprendimientos y negocios locales.</p>
         <p>
           Para contacto general, escríbenos a{" "}
           <a className="underline underline-offset-2" href="mailto:contacto@reydeldato.cl">

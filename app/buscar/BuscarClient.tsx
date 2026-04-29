@@ -1166,15 +1166,15 @@ export default function BuscarClient({
               <div className={`flex flex-col flex-1 min-w-0 ${!initialComuna ? "min-w-[160px] relative" : ""}`}>
                 <label className="text-sm font-medium text-slate-700 mb-1">
                   {comunaLabel
-                    ? `¿Qué servicio buscas en ${comunaLabel}?`
-                    : "¿Qué servicio buscas?"}
+                    ? `¿Qué necesitas en ${comunaLabel}?`
+                    : "¿Qué necesitas?"}
                 </label>
                 <div className={`flex flex-1 min-w-0 ${initialComuna ? "gap-2 items-end" : ""}`}>
                   <div ref={queryBoxRef} className="flex flex-col flex-1 min-w-0 relative">
                     <input
                       type="text"
                       className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 placeholder:text-slate-400"
-                      placeholder="Ej: gasfiter, panadería, clases de inglés"
+                      placeholder="¿Qué necesitas? Ej: gasfiter, carnicería, comida..."
                       value={qInput}
                       onChange={(e) => {
                         setQInput(e.target.value);

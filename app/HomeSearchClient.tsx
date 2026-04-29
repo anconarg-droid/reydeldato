@@ -33,7 +33,7 @@ function norm(v: string) {
     .trim();
 }
 
-const SEARCH_QUERY_PLACEHOLDER = "Ej: gasfiter, electricista, cortinas...";
+const SEARCH_QUERY_PLACEHOLDER = "¿Qué necesitas? Ej: gasfiter, carnicería, comida...";
 
 function prettyComunaSlug(raw: string) {
   const v = String(raw ?? "").trim();
@@ -453,7 +453,7 @@ export default function HomeSearchClient({
               />
             </svg>
           ) : null}
-          <span>Buscar servicios</span>
+          <span>Buscar</span>
         </button>
       </div>
       </div>

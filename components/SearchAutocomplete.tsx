@@ -203,7 +203,7 @@ const EXTRA_CONTEXT_SUGGESTIONS = [
 ];
 
 export default function SearchAutocomplete({
-  placeholder = "Ej: gasfiter, dentista, empanadas...",
+  placeholder = "¿Qué necesitas? Ej: gasfiter, carnicería, comida...",
   initialQuery = "",
   onChange,
 }: Props) {

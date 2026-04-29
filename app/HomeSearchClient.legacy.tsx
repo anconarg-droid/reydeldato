@@ -477,7 +477,7 @@ export default function HomeSearchClient({
               />
             </svg>
           ) : null}
-          <span>Buscar servicios</span>
+          <span>Buscar</span>
         </button>
       </div>
       </div>

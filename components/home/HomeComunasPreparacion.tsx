@@ -36,7 +36,7 @@ export default function HomeComunasPreparacion({
     >
       <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
         Estamos completando el catálogo comuna por comuna. Algunas comunas ya muestran resultados, pero todavía
-        necesitan más servicios clave para que el directorio sea más útil.
+        necesitan más negocios clave para que el directorio sea más útil.
       </p>
       <h2
         id="comunas-preparacion-heading"
@@ -45,7 +45,7 @@ export default function HomeComunasPreparacion({
         Comunas en crecimiento
       </h2>
       <p className="mt-2 max-w-2xl text-sm text-slate-600">
-        Mientras más servicios reales se suman, mejores resultados muestra cada comuna.
+        Mientras más negocios reales se suman, mejores resultados muestra cada comuna.
       </p>
 
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
@@ -64,8 +64,8 @@ export default function HomeComunasPreparacion({
             const faltan = Math.max(0, meta - cumplido);
             faltanLine =
               faltan === 1
-                ? "Falta 1 servicio clave para completar mejor el catálogo"
-                : `Faltan ${faltan} servicios clave para completar mejor el catálogo`;
+                ? "Falta 1 negocio clave para completar mejor el catálogo"
+                : `Faltan ${faltan} negocios clave para completar mejor el catálogo`;
           } else {
             const totalFaltanRubros = c.faltantesTop.reduce(
               (acc, f) => acc + Math.max(0, f.faltan),
@@ -74,8 +74,8 @@ export default function HomeComunasPreparacion({
             faltanLine =
               totalFaltanRubros > 0
                 ? totalFaltanRubros === 1
-                  ? "Falta 1 servicio clave por cubrir"
-                  : `Faltan ${totalFaltanRubros} servicios clave por cubrir`
+                  ? "Falta 1 negocio clave por cubrir"
+                  : `Faltan ${totalFaltanRubros} negocios clave por cubrir`
                 : "Seguimos sumando oferta para completar mejor el catálogo.";
           }
 
@@ -103,13 +103,13 @@ export default function HomeComunasPreparacion({
 
               {meta != null && meta > 0 && cumplido != null ? (
                 <p className="mt-3 text-sm font-medium tabular-nums text-slate-800">
-                  {cumplido} de {meta} servicios clave completos
+                  {cumplido} de {meta} negocios clave completos
                 </p>
               ) : null}
 
               <p className="mt-4 text-sm font-semibold text-slate-900">{faltanLine}</p>
               <p className="mt-2 text-sm leading-snug text-slate-600">
-                Sé uno de los primeros en sumar tu servicio
+                Sé uno de los primeros en sumar tu negocio
               </p>
 
               <span className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-[#0f766e] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 sm:w-auto">

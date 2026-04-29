@@ -219,7 +219,7 @@ export default function ResultadosSearchBar({
         (comunaInput.split(" —")[0] ?? "").trim() ||
         prettyComunaSlug(selectedComunaSlug)
       }?`
-    : "Ej: gasfiter, peluquero, clases de inglés";
+    : "¿Qué necesitas? Ej: gasfiter, carnicería, comida...";
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">

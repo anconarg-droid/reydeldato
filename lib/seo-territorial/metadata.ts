@@ -89,7 +89,7 @@ export function buildMetadataSegment(
   options?: MetadataOptions
 ): Metadata {
   const title = `${segmentNombre} en ${comunaNombre} | ${SITE_NAME}`;
-  const description = `Encuentra ${segmentNombre.toLowerCase()} en ${comunaNombre}. Emprendedores y servicios locales. Contacta por WhatsApp.`;
+  const description = `Encuentra ${segmentNombre.toLowerCase()} en ${comunaNombre}. Emprendedores y negocios locales. Contacta por WhatsApp.`;
   const canonical = buildCanonical(comunaSlug, segmentSlug);
   return {
     title,
