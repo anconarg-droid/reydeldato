@@ -8,6 +8,7 @@
  *
  * - `abierta_por_minimos`: `vw_apertura_comuna_v2.abierta` o `porcentaje_apertura` ≥ 100 (sin tocar conteos).
  * - `comuna_publica_abierta`: lo que usa la app (`/[comuna]`, APIs, categoría) = `forzar_abierta` OR mínimos.
+ *   En SQL, `vw_apertura_comuna_v2.comuna_abierta` replica la misma condición (lectura directa / diagnóstico).
  */
 
 export type VwAperturaRow = {

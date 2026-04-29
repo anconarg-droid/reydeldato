@@ -10,22 +10,19 @@ function formatRubro(str: string): string {
     .replace(/^\w/, (c) => c.toUpperCase());
 }
 
-/** Copias del listado en el track; sincronizar con `@keyframes ticker` en globals.css (-100%/copies). */
-const TICKER_COPIES = 4 as const;
-
-function TickerSegment({
+function RubrosTickerHalf({
   items,
   segmentKey,
   ariaHidden,
 }: {
   items: RubroTickerItem[];
   segmentKey: string;
-  /** Copias extra del marquee: ocultas en AT para no repetir el listado. */
+  /** Segunda copia: oculta en AT para no repetir el listado. */
   ariaHidden?: boolean;
 }) {
   return (
     <div
-      className="flex shrink-0 cursor-default items-center gap-0 pr-14"
+      className="flex shrink-0 cursor-default flex-row flex-nowrap items-center"
       aria-hidden={ariaHidden ? true : undefined}
     >
       {items.map((item, i) => (
@@ -59,7 +56,7 @@ export default function HomeRubrosTicker({
 
   return (
     <div
-      className="home-rubros-ticker mx-auto mt-3 w-full max-w-[680px] cursor-default"
+      className="ticker-wrap mx-auto mt-3 w-full max-w-[680px] cursor-default"
       role="region"
       aria-labelledby="home-rubros-ticker-heading"
     >
@@ -69,15 +66,9 @@ export default function HomeRubrosTicker({
       >
         Ejemplos de servicios que puedes buscar
       </p>
-      <div className="home-rubros-ticker-track cursor-default">
-        {Array.from({ length: TICKER_COPIES }, (_, i) => (
-          <TickerSegment
-            key={i}
-            items={items}
-            segmentKey={`s${i}`}
-            ariaHidden={i > 0}
-          />
-        ))}
+      <div className="ticker-track cursor-default">
+        <RubrosTickerHalf items={items} segmentKey="a" />
+        <RubrosTickerHalf items={items} segmentKey="b" ariaHidden />
       </div>
     </div>
   );

@@ -30,6 +30,8 @@ export type AperturaComunaV2Row = {
   total_requerido?: unknown;
   total_cumplido?: unknown;
   abierta?: unknown;
+  forzar_abierta?: unknown;
+  comuna_abierta?: unknown;
 };
 
 /**
@@ -45,7 +47,9 @@ export async function loadAperturaComunaV2Resumen(
 
   const view = await supabase
     .from(VW_APERTURA_COMUNA_V2)
-    .select("porcentaje_apertura, total_requerido, total_cumplido, abierta")
+    .select(
+      "porcentaje_apertura, total_requerido, total_cumplido, abierta, forzar_abierta, comuna_abierta"
+    )
     .eq("comuna_slug", slug)
     .maybeSingle();
 
@@ -88,6 +92,8 @@ export async function loadAperturaComunaV2Resumen(
       total_requerido: r.total_rubros_meta,
       total_cumplido: r.rubros_cumplidos,
       abierta: r.abierta,
+      forzar_abierta: r.forzar_abierta,
+      comuna_abierta: r.comuna_abierta,
     },
     warn: null,
   };

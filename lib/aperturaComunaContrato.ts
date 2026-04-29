@@ -5,7 +5,8 @@
  * Todo debe leer la misma vista de Supabase:
  * - `VW_APERTURA_COMUNA_V2` → `total_requerido` = rubros activos en `rubros_apertura`;
  *   `total_cumplido` = rubros con mínimo cumplido vía `contar_grupos_apertura_por_comuna`
- *   (faltantes = 0). `abierta` solo si todos los rubros activos cumplen.
+ *   (faltantes = 0). `abierta` = solo mínimos; `forzar_abierta` y `comuna_abierta` leen
+ *   `comunas.forzar_abierta` y la regla pública (override OR mínimos OR % ≥ 100).
  * - `contar_apertura_real_por_comuna(slug)` devuelve la misma fila agregada (diagnóstico).
  *
  * Usos en esta app:

@@ -161,27 +161,41 @@ body {
     border-radius: 1.25rem !important; /* alinea con el “shell” rounded-3xl + padding */
   }
 
-  /* Home hero: ticker de rubros (marquee; capa components para ganar a utilidades). */
-  .home-rubros-ticker {
+  /* Home hero: ticker de rubros (2 mitades = -50% en ticker-scroll). */
+  .ticker-wrap {
     overflow: hidden;
     width: 100%;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 5%,
+      black 95%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 5%,
+      black 95%,
+      transparent 100%
+    );
   }
 
-  .home-rubros-ticker-track {
+  .ticker-track {
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
     width: max-content;
-    animation: ticker 30s linear infinite;
+    animation: ticker-scroll 25s linear infinite;
     will-change: transform;
   }
 
-  .home-rubros-ticker-track:hover {
+  .ticker-track:hover {
     animation-play-state: paused;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .home-rubros-ticker-track {
+    .ticker-track {
       animation: none !important;
       transform: none !important;
     }
@@ -194,13 +208,13 @@ body {
   }
 }
 
-/* Debe coincidir con TICKER_COPIES en HomeRubrosTicker (4 segmentos = -25%). */
-@keyframes ticker {
+/* Home rubros: track = copia A + copia A (mitad = -50%). */
+@keyframes ticker-scroll {
   from {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-25%);
+    transform: translateX(-50%);
   }
 }
 
