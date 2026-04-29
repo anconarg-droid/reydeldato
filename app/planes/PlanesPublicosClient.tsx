@@ -52,10 +52,9 @@ const PLANES = [
 
 export default function PlanesPublicosClient() {
   return (
-    <div
-      className="grid grid-cols-2 gap-5 items-start max-[720px]:grid-cols-1"
-    >
+    <div className="grid w-full grid-cols-1 items-start gap-8 md:grid-cols-2 md:gap-8">
       <article
+        className="w-full"
         style={{
           border: "0.5px solid var(--color-border-tertiary)",
           borderRadius: "0.75rem",
@@ -90,6 +89,7 @@ export default function PlanesPublicosClient() {
       </article>
 
       <article
+        className="w-full"
         style={{
           border: "0.5px solid var(--color-border-tertiary)",
           borderRadius: "0.75rem",
@@ -126,7 +126,7 @@ export default function PlanesPublicosClient() {
             return (
               <div
                 key={p.key}
-                className={`relative flex items-start justify-between gap-3 rounded-[0.6rem] px-4 py-[0.85rem] ${
+                className={`relative flex w-full flex-col items-stretch justify-between gap-3 rounded-[0.6rem] px-4 py-[0.85rem] sm:flex-row sm:items-start ${
                   p.recomendado
                     ? "border border-[#0d7a5f] bg-[#f4faf7]"
                     : "border border-slate-300 bg-white"
@@ -165,7 +165,7 @@ export default function PlanesPublicosClient() {
                   </div>
                 </div>
 
-                <div style={{ textAlign: "right" }}>
+                <div className="text-left sm:text-right">
                   <div style={{ fontSize: 14, fontWeight: 700 }}>
                     {p.precio}
                   </div>
@@ -200,17 +200,19 @@ export default function PlanesPublicosClient() {
           Empiezas con ficha completa gratis por 90 días.
         </p>
 
-        <Link
-          href="/publicar"
-          className="mt-3 inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold"
-          style={{
-            background: "#0d7a5f",
-            color: "#fff",
-            textDecoration: "none",
-          }}
-        >
-          Empezar gratis
-        </Link>
+        <div className="mt-3 flex w-full justify-center">
+          <Link
+            href="/publicar"
+            className="inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold md:w-auto md:min-w-[16rem]"
+            style={{
+              background: "#0d7a5f",
+              color: "#fff",
+              textDecoration: "none",
+            }}
+          >
+            Empezar gratis
+          </Link>
+        </div>
       </article>
     </div>
   );
