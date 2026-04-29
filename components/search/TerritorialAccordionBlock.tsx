@@ -16,17 +16,18 @@ export function accordionCollapsedStorageKey(
   return `${persistPrefix}:bloque-${mid}-colapsado`;
 }
 
-function AccordionChevron({
-  collapsed,
+/** Flecha hacia abajo; rota 180° cuando el bloque está abierto. */
+function AccordionChevronDown({
+  expanded,
   iconClassName,
 }: {
-  collapsed: boolean;
+  expanded: boolean;
   iconClassName: string;
 }) {
   return (
     <svg
-      className={`h-5 w-5 shrink-0 transition-transform duration-200 ease-out ${
-        collapsed ? "-rotate-90" : "rotate-0"
+      className={`size-[15px] shrink-0 transition-transform duration-200 ease-out ${
+        expanded ? "rotate-180" : "rotate-0"
       } ${iconClassName}`}
       viewBox="0 0 24 24"
       fill="none"
@@ -61,7 +62,7 @@ export type TerritorialAccordionBlockProps = {
 };
 
 /**
- * Barra acordeón full width: título + subtítulo + chevron; mismo patrón en búsqueda y abrir-comuna.
+ * Barra acordeón full width: título + subtítulo a la izquierda, pill “Ver resultados” a la derecha.
  */
 export default function TerritorialAccordionBlock({
   variant,
@@ -107,28 +108,25 @@ export default function TerritorialAccordionBlock({
     ? "w-full min-w-0 overflow-hidden rounded-2xl border border-emerald-800/35 bg-[#0d7a5f] shadow-lg"
     : "w-full min-w-0 overflow-hidden rounded-2xl border border-teal-200 bg-emerald-50 shadow-md";
   const buttonClass = isLocal
-    ? "flex w-full min-h-[4.5rem] cursor-pointer items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-[#0b6b54] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d7a5f] sm:min-h-0 sm:items-center sm:gap-4 sm:px-4 sm:py-4"
-    : "flex w-full min-h-[4.5rem] cursor-pointer items-start gap-3 border-b border-teal-200/90 bg-emerald-50/90 px-4 py-4 text-left transition-colors hover:bg-emerald-100/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:min-h-0 sm:items-center sm:gap-4 sm:px-4 sm:py-4";
+    ? "group flex w-full min-h-[4.5rem] cursor-pointer items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-[#0b6b54] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d7a5f] sm:min-h-0 sm:px-4 sm:py-4"
+    : "group flex w-full min-h-[4.5rem] cursor-pointer items-center justify-between gap-3 border-b border-teal-200/90 bg-emerald-50/90 px-4 py-4 text-left transition-colors hover:bg-emerald-100/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:min-h-0 sm:px-4 sm:py-4";
   const titleClass = isLocal
     ? "block text-base font-black leading-snug tracking-tight text-white sm:text-lg"
     : "block text-base font-black leading-snug tracking-tight text-teal-900 sm:text-lg";
   const subtitleClass = isLocal
     ? "mt-1.5 block text-sm font-medium leading-relaxed text-emerald-50"
     : "mt-1.5 block text-sm font-medium leading-relaxed text-teal-800/75";
-  const hintClass = isLocal
-    ? "mt-1.5 block text-[11px] font-medium leading-snug text-white/75"
-    : "mt-1.5 block text-[11px] font-medium leading-snug text-teal-700/70";
-  const chevronWrapClass = isLocal
-    ? "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border border-white/35 bg-white/15 shadow-sm transition-colors hover:bg-white/25 sm:mt-0 sm:size-10"
-    : "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border border-teal-300/80 bg-white shadow-sm transition-colors hover:bg-teal-50 sm:mt-0 sm:size-10";
+  const pillClass = isLocal
+    ? "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/20 bg-white/12 px-3 py-1.5 text-[13px] font-medium text-white transition-colors group-hover:bg-white/20"
+    : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#99f6e4] bg-white px-3 py-1.5 text-[13px] font-medium text-[#0d7a5f] transition-colors group-hover:bg-teal-50";
   const panelClass = isLocal
     ? "border-t border-emerald-900/25 bg-white px-4 py-5 sm:px-5 sm:py-6"
     : "border-t border-teal-200/90 bg-white px-4 py-5 sm:px-5 sm:py-6";
 
   const btnId = `${instanceId}-titulo`;
   const panelId = `${instanceId}-panel`;
-
-  const toggleLabel = collapsed ? "Abrir bloque" : "Cerrar bloque";
+  const expanded = !collapsed;
+  const pillLabel = collapsed ? "Ver resultados" : "Ocultar";
 
   return (
     <section className={`${sectionClass} ${className}`.trim()}>
@@ -137,19 +135,18 @@ export default function TerritorialAccordionBlock({
         id={btnId}
         onClick={toggle}
         className={buttonClass}
-        aria-expanded={!collapsed}
+        aria-expanded={expanded}
         aria-controls={panelId}
-        aria-label={toggleLabel}
       >
-        <span className="min-w-0 flex-1 pr-1">
+        <span className="min-w-0 flex-1 pr-2 text-left">
           <span className={titleClass}>{title}</span>
           <span className={subtitleClass}>{subtitle}</span>
-          <span className={hintClass}>Ver / ocultar resultados</span>
         </span>
-        <span className={chevronWrapClass} aria-hidden>
-          <AccordionChevron
-            collapsed={collapsed}
-            iconClassName={isLocal ? "text-white" : "text-teal-900"}
+        <span className={pillClass}>
+          {pillLabel}
+          <AccordionChevronDown
+            expanded={expanded}
+            iconClassName={isLocal ? "text-white" : "text-[#0d7a5f]"}
           />
         </span>
       </button>
