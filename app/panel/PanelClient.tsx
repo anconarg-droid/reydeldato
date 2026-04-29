@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import PanelBrandHomeBar from "@/components/panel/PanelBrandHomeBar";
+import PanelFichaPublicaEmbed from "@/components/panel/PanelFichaPublicaEmbed";
 import { SwitchModoVista } from "@/components/panel/SwitchModoVista";
 import type { PerfilCompleto } from "@/lib/calcularCompletitudEmprendedor";
 import type { TipoFicha } from "@/lib/calcularTipoFicha";
@@ -23,7 +24,10 @@ import {
   aplicarModoBasicoSearchCardProps,
   type ModoVistaPanel,
 } from "@/lib/panelModoVista";
-import { panelNegocioItemToSearchCardProps } from "@/lib/panelItemToSearchCardProps";
+import {
+  panelNegocioItemToSearchCardProps,
+  panelSlugFichaPublicaDesdeItem,
+} from "@/lib/panelItemToSearchCardProps";
 import {
   panelPreviewDebeBloquearAccionesPublicas,
   panelPreviewSubtituloInformativo,
@@ -232,106 +236,134 @@ function textoRangoMetricas(range: "7d" | "30d" | "all"): string {
 function MetricsResumenPanel({
   data,
   rangeLabel,
-  range,
-  onRangeChange,
 }: {
   data: Metrics;
   rangeLabel: string;
-  range: StatsRange;
-  onRangeChange: (r: StatsRange) => void;
 }) {
   const v = (n: number) => (Number.isFinite(n) ? n : 0);
   const comoLlegar = v(data.click_waze) + v(data.click_maps);
 
-  const celdas = [
+  const primarias = [
     {
-      label: "Veces en resultados",
+      icon: "📇",
+      label: "Veces que apareció tu tarjeta en resultados",
       value: v(data.impresiones),
       hint: "Impresiones de tu tarjeta en listados de búsqueda.",
     },
     {
-      label: "Visitas a tu ficha",
+      icon: "👀",
+      label: "Veces que vieron tu ficha",
       value: v(data.visitas),
       hint: "Aperturas de tu ficha pública.",
     },
     {
+      icon: "💬",
       label: "Clics en WhatsApp",
       value: v(data.click_whatsapp),
       hint: "Veces que tocaron el botón de WhatsApp.",
     },
+  ] as const;
+
+  const secundarias = [
     {
-      label: "Cómo llegar (Waze/Maps)",
+      icon: "🧭",
+      label: "Clics en “Cómo llegar”",
       value: comoLlegar,
       hint: "Suma de “Abrir en Waze” y “Ver en Maps”.",
     },
+    {
+      icon: "📸",
+      label: "Clics en Instagram, web y similares",
+      value: v(data.click_ficha),
+      hint: "Acciones en tu ficha (Instagram, web, compartir, etc.). Puede solaparse con “Cómo llegar” según cómo se registró el evento.",
+    },
   ] as const;
 
-  const ariaResumen = `${rangeLabel}. Impresiones ${celdas[0].value}, visitas ${celdas[1].value}, WhatsApp ${celdas[2].value}, cómo llegar ${celdas[3].value}.`;
+  const ariaResumen = `${rangeLabel}. Impresiones ${primarias[0].value}, visitas a ficha ${primarias[1].value}, WhatsApp ${primarias[2].value}. Secundarias: cómo llegar ${secundarias[0].value}, otras acciones ${secundarias[1].value}.`;
 
   return (
-    <section
-      className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+    <div
+      className="w-full max-w-3xl rounded-xl border border-gray-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm"
       title={rangeLabel}
       aria-label={ariaResumen}
     >
-      <h3
-        id="panel-metricas-rendimiento-titulo"
-        className="text-sm font-extrabold tracking-tight text-gray-900"
-      >
-        Rendimiento de tu ficha
-      </h3>
-      <p
-        id="panel-metricas-rendimiento-desc"
-        className="mt-1 text-[11px] leading-snug text-gray-500"
-      >
-        Cuántas veces apareciste y cómo interactuaron contigo.
-      </p>
-
-      <div
-        className="mt-3 inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-gray-50 p-1"
-        role="group"
-        aria-label="Periodo de estadísticas"
-      >
-        {(["7d", "30d", "all"] as const).map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => onRangeChange(r)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              range === r
-                ? "bg-gray-900 text-white"
-                : "text-gray-600 hover:bg-gray-100"
-            }`}
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <h3
+            id="panel-metricas-rendimiento-titulo"
+            className="text-xs font-semibold uppercase tracking-wide text-gray-500"
           >
-            {r === "7d"
-              ? "7 días"
-              : r === "30d"
-                ? "30 días"
-                : "Desde activación"}
-          </button>
-        ))}
-      </div>
+            Rendimiento de tu ficha
+          </h3>
+          <p id="panel-metricas-rendimiento-desc" className="text-[11px] leading-snug text-gray-500">
+            Estas métricas muestran cuántas veces apareciste y cuántas personas
+            intentaron contactarte.
+          </p>
+        </div>
 
-      <div
-        className="mt-3 grid grid-cols-2 gap-3"
-        aria-describedby="panel-metricas-rendimiento-desc"
-      >
-        {celdas.map((it) => (
-          <div
-            key={it.label}
-            className="min-w-0 rounded-lg border border-gray-100 bg-gray-50/90 px-3 py-3 text-center"
-            title={it.hint}
-          >
-            <p className="text-[20px] font-semibold tabular-nums leading-none text-gray-900">
-              {it.value}
-            </p>
-            <p className="mt-2 text-[11px] font-medium leading-snug text-gray-600">
-              {it.label}
-            </p>
+        <section
+          className="space-y-2"
+          aria-describedby="panel-metricas-rendimiento-desc"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+            Principales
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
+            {primarias.map((it) => (
+              <div
+                key={it.label}
+                className="min-w-0 rounded-lg border border-gray-100 bg-gray-50/80 px-2.5 py-2 text-center sm:text-left"
+                title={it.hint}
+              >
+                <div className="flex flex-wrap items-center justify-center gap-1.5 text-gray-700 sm:justify-start">
+                  <span className="text-base leading-none shrink-0" aria-hidden>
+                    {it.icon}
+                  </span>
+                  <span className="text-[10px] font-semibold leading-snug text-gray-600">
+                    {it.label}
+                  </span>
+                </div>
+                <p className="mt-1 text-center text-xl font-black tabular-nums text-gray-900 tracking-tight sm:text-left">
+                  {it.value}
+                </p>
+              </div>
+            ))}
           </div>
-        ))}
+        </section>
+
+        <section
+          className="space-y-2 border-t border-gray-100 pt-3"
+          aria-label="Métricas secundarias"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+            Más detalle
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {secundarias.map((it) => (
+              <div
+                key={it.label}
+                className="min-w-0 rounded-lg border border-gray-100/90 bg-white px-2.5 py-2"
+                title={it.hint}
+              >
+                <div className="flex items-start gap-1.5 text-gray-700">
+                  <span className="text-sm leading-none shrink-0 pt-0.5" aria-hidden>
+                    {it.icon}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold leading-snug text-gray-600">
+                      {it.label}
+                    </p>
+                    <p className="mt-0.5 text-lg font-black tabular-nums text-gray-900">
+                      {it.value}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -361,7 +393,7 @@ function BloqueFichaPctYMejorar({
   if (fichaLoading) {
     return (
       <div
-        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 shadow-sm"
+        className="max-w-3xl rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 shadow-sm"
         aria-hidden
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -374,7 +406,7 @@ function BloqueFichaPctYMejorar({
   }
   const pct = fichaInfo?.completitud.porcentaje;
   return (
-    <div className="w-full rounded-xl border border-gray-200 bg-gray-50/90 p-4 shadow-sm">
+    <div className="max-w-3xl rounded-xl border border-gray-200 bg-gray-50/90 px-4 py-3 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {typeof pct === "number" ? (
@@ -444,7 +476,7 @@ function BloqueCuandoTerminePlan({ sinCaja }: { sinCaja?: boolean }) {
 
   return (
     <section
-      className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm text-sm text-gray-800"
+      className="max-w-3xl rounded-xl border border-gray-200 bg-white p-3 shadow-sm text-sm text-gray-800 sm:p-3.5"
       aria-label="Qué pasa cuando termina tu plan"
     >
       {contenido}
@@ -466,7 +498,7 @@ function BloqueEstadoPlan({
   if (fichaLoading) {
     return (
       <div
-        className="w-full min-h-[88px] rounded-xl bg-gray-100 animate-pulse"
+        className="max-w-3xl min-h-[88px] rounded-xl bg-gray-100 animate-pulse"
         aria-hidden
       />
     );
@@ -488,7 +520,7 @@ function BloqueEstadoPlan({
   if (esAccesoInicial) {
     return (
       <section
-        className="w-full rounded-xl border border-sky-200 bg-sky-50/85 p-4 shadow-sm"
+        className="max-w-3xl rounded-xl border border-sky-200 bg-sky-50/85 p-3 shadow-sm sm:p-3.5"
         aria-label="Estado del plan"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -523,7 +555,7 @@ function BloqueEstadoPlan({
 
   return (
     <section
-      className={`w-full rounded-xl border p-4 shadow-sm ${
+      className={`max-w-3xl rounded-xl border p-3 shadow-sm sm:p-3.5 ${
         alerta
           ? "border-amber-200 bg-amber-50/90"
           : "border-emerald-200 bg-emerald-50/80"
@@ -674,6 +706,11 @@ export default function PanelClient({
     return { ...withMode, bloquearAccesoFichaPublica: previewInformativa };
   }, [negocioItem, tipoFichaPanel, slug, modoVista, previewInformativa]);
 
+  const slugFichaPublica = useMemo(() => {
+    if (!negocioItem) return "";
+    return panelSlugFichaPublicaDesdeItem(negocioItem, slug);
+  }, [negocioItem, slug]);
+
   const perfilCompletoEnHeader = useMemo(() => {
     if (comercial) return comercial.esPerfilCompletoComercial;
     return (tipoFichaPanel ?? "basica") === "completa";
@@ -721,6 +758,18 @@ export default function PanelClient({
 
   const metricsMostrados = data ?? EMPTY_METRICS;
   const rangoMostrado = range;
+
+  // Métrica preparada para futuro:
+  // Conversión a contacto = % de visitas que terminan en click de WhatsApp.
+  // NO se muestra aún en UI porque al inicio habrá poco tráfico y el % puede ser engañoso.
+  const conversionContactoOculta =
+    (metricsMostrados?.visitas ?? 0) > 0
+      ? Math.round(
+          ((metricsMostrados?.click_whatsapp ?? 0) /
+            (metricsMostrados?.visitas ?? 1)) *
+            100
+        )
+      : 0;
 
   useEffect(() => {
     const cleanId = id?.trim() ?? "";
@@ -800,7 +849,7 @@ export default function PanelClient({
 
   if (loading || data === null) {
     return (
-      <div className="w-full max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
+      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
         <PanelBrandHomeBar />
         Cargando…
       </div>
@@ -808,7 +857,7 @@ export default function PanelClient({
   }
 
   return (
-    <div className="w-full max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-8 space-y-4">
+    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-8 space-y-4">
       <PanelBrandHomeBar />
       {planesUiVisible && pagoResult === "exito" ? (
         <p
@@ -833,10 +882,10 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-2 md:gap-5">
-        <div className="min-w-0 flex flex-col gap-5">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_360px] lg:gap-6">
+        <div className="min-w-0 space-y-3">
           <div
-            className="w-full rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 p-4 shadow-sm ring-1 ring-gray-900/[0.04]"
+            className="max-w-3xl rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
             aria-label={`Tu negocio: ${tituloHeaderPanel}`}
           >
             <div className="shrink-0 space-y-0.5 border-b border-gray-200/80 pb-2">
@@ -913,28 +962,88 @@ export default function PanelClient({
             ) : null}
           </div>
 
-          {tieneNegocio ? (
-            <div className="flex flex-col gap-2">
-              <h2 className="text-sm font-extrabold tracking-tight text-gray-900">
-                Plan actual
-              </h2>
-              <BloqueEstadoPlan
-                fichaLoading={fichaLoading}
-                comercial={comercial}
-                planesHref={planesHref}
-                planesUiVisible={planesUiVisible}
-              />
+          {estadisticasOcultasEnPanel ? (
+            <div
+              className="max-w-3xl rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
+              role="status"
+            >
+              <p className="font-semibold text-gray-900">
+                Estadísticas no visibles con tu plan o perfil actual
+              </p>
+              <p className="mt-1.5 text-gray-700">
+                Visitas, impresiones y contactos{" "}
+                <span className="font-semibold">siguen registrándose</span> en
+                segundo plano. Al reactivar perfil completo verás aquí el total
+                real, incluido lo que ocurra mientras tanto.
+              </p>
             </div>
+          ) : null}
+          {qs && !estadisticasOcultasEnPanel ? (
+            <div className="max-w-3xl">
+              <div className="flex flex-col gap-2.5">
+                <div className="flex w-full justify-start">
+                  <div
+                    className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
+                    role="group"
+                    aria-label="Periodo de estadísticas"
+                  >
+                    {(["7d", "30d", "all"] as const).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setRange(r)}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                          range === r
+                            ? "bg-gray-900 text-white"
+                            : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        {r === "7d"
+                          ? "7 días"
+                          : r === "30d"
+                            ? "30 días"
+                            : "Desde activación"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <MetricsResumenPanel
+                  data={metricsMostrados}
+                  rangeLabel={textoRangoMetricas(rangoMostrado)}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {tieneNegocio ? (
+            <BloqueEstadoPlan
+              fichaLoading={fichaLoading}
+              comercial={comercial}
+              planesHref={planesHref}
+              planesUiVisible={planesUiVisible}
+            />
           ) : null}
 
           {tieneNegocio &&
           !fichaLoading &&
           mostrarBloqueCuandoTerminePlan(comercial) ? (
-            <section
-              className="w-full space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-4 shadow-sm"
-              aria-label="Cuando termine tu plan"
-            >
-              <BloqueCuandoTerminePlan sinCaja />
+            <div className="max-w-3xl space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
+              <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 lg:gap-5">
+                <BloqueCuandoTerminePlan sinCaja />
+                <div className="flex w-full max-w-sm flex-col items-center justify-center gap-2.5 rounded-lg border border-amber-300/50 bg-white/90 p-3 text-center shadow-inner mx-auto lg:mx-0">
+                  <p className="w-full px-1 text-center text-base font-black leading-tight text-gray-900">
+                    Compara cómo te ven
+                  </p>
+                  <p className="w-full text-center text-[10px] font-semibold uppercase tracking-wide text-amber-900/90">
+                    Completa · Básica
+                  </p>
+                  <SwitchModoVista
+                    value={modoVista}
+                    onChange={setModoVista}
+                    size="prominent"
+                  />
+                </div>
+              </div>
               {planesUiVisible ? (
                 <Link
                   href={planesHref}
@@ -944,7 +1053,21 @@ export default function PanelClient({
                   Mantener perfil completo
                 </Link>
               ) : null}
-            </section>
+            </div>
+          ) : tieneNegocio && !fichaLoading ? (
+            <div className="flex max-w-sm flex-col items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/90 px-3 py-3 text-center mx-auto lg:mx-0 lg:max-w-3xl lg:flex-row lg:justify-center lg:gap-6">
+              <p className="text-sm font-black text-gray-900">
+                Compara cómo te ven
+              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+                Completa · Básica
+              </p>
+              <SwitchModoVista
+                value={modoVista}
+                onChange={setModoVista}
+                size="prominent"
+              />
+            </div>
           ) : null}
 
           {tieneNegocio ? (
@@ -963,7 +1086,7 @@ export default function PanelClient({
                   href={wa}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-full text-center text-sm font-semibold text-sky-700 hover:underline sm:text-left"
+                  className="block max-w-3xl text-center text-sm font-semibold text-sky-700 hover:underline sm:text-left"
                 >
                   Activar por WhatsApp
                 </a>
@@ -972,93 +1095,105 @@ export default function PanelClient({
           ) : null}
         </div>
 
-        <div className="min-w-0 flex flex-col gap-5">
-          {estadisticasOcultasEnPanel ? (
-            <div
-              className="w-full rounded-xl border border-amber-200/90 bg-amber-50/90 p-4 text-sm leading-snug text-gray-800"
-              role="status"
-            >
-              <p className="font-semibold text-gray-900">
-                Estadísticas no visibles con tu plan o perfil actual
-              </p>
-              <p className="mt-1.5 text-gray-700">
-                Visitas, impresiones y contactos{" "}
-                <span className="font-semibold">siguen registrándose</span> en
-                segundo plano. Al reactivar perfil completo verás aquí el total
-                real, incluido lo que ocurra mientras tanto.
+        <aside className="min-w-0 space-y-2 overflow-x-hidden lg:sticky lg:top-6 lg:self-start">
+          <h2 className="text-sm font-extrabold tracking-tight text-gray-900">
+            Así te ven en resultados
+          </h2>
+          {tieneNegocio ? (
+            fichaLoading ? (
+              <div
+                className="w-full max-w-[360px] rounded-xl border border-gray-200 bg-gray-100 min-h-[240px] animate-pulse lg:max-w-none"
+                aria-hidden
+              />
+            ) : previewCardProps ? (
+              <div className="w-full max-w-[360px] space-y-2 lg:max-w-none">
+                {previewInformativa && negocioItem ? (
+                  <div
+                    role="status"
+                    className="rounded-lg border border-slate-200 bg-slate-50/90 px-2.5 py-2 text-left"
+                  >
+                    <p className="m-0 text-[11px] font-extrabold text-slate-900">
+                      Vista previa
+                    </p>
+                    <p className="mt-0.5 m-0 text-[10px] font-medium leading-snug text-slate-600">
+                      {panelPreviewSubtituloInformativo(negocioItem)}
+                    </p>
+                  </div>
+                ) : null}
+                <div className="origin-top scale-[0.97] lg:scale-95">
+                  <EmprendedorSearchCard
+                    {...previewCardProps}
+                    modoVista={modoVista}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div
+                className="w-full max-w-[360px] rounded-xl border border-gray-200 bg-gray-50 min-h-[180px] animate-pulse lg:max-w-none"
+                aria-hidden
+              />
+            )
+          ) : (
+            <p className="text-sm text-gray-500 py-2">
+              Enlaza tu ficha para ver la vista previa aquí.
+            </p>
+          )}
+        </aside>
+      </div>
+
+      {tieneNegocio && !fichaLoading && negocioItem ? (
+        <section
+          className="space-y-3 border-t border-gray-200 pt-8 mt-6 sm:pt-10 sm:mt-8"
+          aria-label="Tu perfil completo en la web pública"
+        >
+          {modoVista === "basica" ? (
+            <div className="space-y-3 max-w-2xl">
+              <h2 className="text-base font-black text-gray-900 leading-tight">
+                Aprovecha todo tu perfil
+              </h2>
+              <ul className="space-y-2 text-sm text-gray-800 leading-snug">
+                <li className="flex gap-2.5 items-start">
+                  <span className="text-emerald-600 font-bold shrink-0" aria-hidden>
+                    ✓
+                  </span>
+                  <span>Muestra tu trabajo con fotos</span>
+                </li>
+                <li className="flex gap-2.5 items-start">
+                  <span className="text-emerald-600 font-bold shrink-0" aria-hidden>
+                    ✓
+                  </span>
+                  <span>Explicas mejor lo que haces</span>
+                </li>
+                <li className="flex gap-2.5 items-start">
+                  <span className="text-emerald-600 font-bold shrink-0" aria-hidden>
+                    ✓
+                  </span>
+                  <span>Más formas para que te contacten</span>
+                </li>
+              </ul>
+              <p className="mt-4 rounded-lg border border-amber-200/90 bg-amber-50/95 px-3 py-3.5 text-base font-black leading-snug text-gray-900 shadow-sm sm:px-4 sm:py-4 sm:text-lg">
+                Perfil básico = contacto solo por WhatsApp
               </p>
             </div>
-          ) : null}
-          {qs && !estadisticasOcultasEnPanel ? (
-            <MetricsResumenPanel
-              data={metricsMostrados}
-              rangeLabel={textoRangoMetricas(rangoMostrado)}
-              range={range}
-              onRangeChange={setRange}
-            />
-          ) : null}
-
-          <section
-            className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-            aria-label="Vista previa en resultados de búsqueda"
-          >
-            <h2 className="text-sm font-extrabold tracking-tight text-gray-900">
-              Así te ven en resultados
-            </h2>
-            {tieneNegocio ? (
-              fichaLoading ? (
-                <div
-                  className="mt-4 w-full rounded-xl border border-gray-200 bg-gray-100 min-h-[240px] animate-pulse"
-                  aria-hidden
-                />
-              ) : previewCardProps ? (
-                <div className="mt-4 space-y-3">
-                  <div className="flex flex-col items-center gap-2">
-                    <p className="text-center text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                      Completa · Básica
-                    </p>
-                    <SwitchModoVista
-                      value={modoVista}
-                      onChange={setModoVista}
-                      size="prominent"
-                    />
-                  </div>
-                  {previewInformativa && negocioItem ? (
-                    <div
-                      role="status"
-                      className="rounded-lg border border-slate-200 bg-slate-50/90 px-2.5 py-2 text-left"
-                    >
-                      <p className="m-0 text-[11px] font-extrabold text-slate-900">
-                        Vista previa
-                      </p>
-                      <p className="mt-0.5 m-0 text-[10px] font-medium leading-snug text-slate-600">
-                        {panelPreviewSubtituloInformativo(negocioItem)}
-                      </p>
-                    </div>
-                  ) : null}
-                  <div className="w-full overflow-x-auto">
-                    <div className="origin-top mx-auto inline-block min-w-0 max-w-full scale-[0.96] sm:scale-[0.94]">
-                      <EmprendedorSearchCard
-                        {...previewCardProps}
-                        modoVista={modoVista}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="mt-4 w-full rounded-xl border border-gray-200 bg-gray-50 min-h-[180px] animate-pulse"
-                  aria-hidden
-                />
-              )
-            ) : (
-              <p className="mt-3 text-sm text-gray-500">
-                Enlaza tu ficha para ver la vista previa aquí.
+          ) : (
+            <div className="space-y-1">
+              <h2 className="text-base font-extrabold text-gray-900">
+                Tu perfil completo (página pública)
+              </h2>
+              <p className="text-xs text-gray-600">
+                Así te ven al abrir tu ficha desde la búsqueda.
               </p>
-            )}
-          </section>
-        </div>
-      </div>
+            </div>
+          )}
+          <PanelFichaPublicaEmbed
+            slug={slugFichaPublica}
+            modoVista={modoVista}
+            item={negocioItem}
+            urlSlugParam={slug}
+            vistaPublicaBloqueada={previewInformativa}
+          />
+        </section>
+      ) : null}
     </div>
   );
 }
