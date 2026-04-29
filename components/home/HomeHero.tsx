@@ -132,7 +132,10 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
             />
           </div>
 
-          <HomeRubrosTicker items={rubrosTicker} />
+          <HomeRubrosTicker
+            key={rubrosTicker.map((r) => r.slug).join("|")}
+            items={rubrosTicker}
+          />
 
           <p className="mt-4 text-center text-sm font-semibold text-slate-700">
             Primero lo local. Contacto directo por WhatsApp.
@@ -184,14 +187,17 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
             {/* Derecha: card planes (gratis / ficha completa) + CTA */}
             <div className="w-full">
               <div className="overflow-hidden rounded-2xl border border-teal-200 bg-white text-center shadow-sm ring-1 ring-teal-100">
+                <div className="bg-white px-5 pt-4 pb-1 text-center sm:px-6">
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-teal-800">
+                    Impulsando el comercio local
+                  </p>
+                </div>
                 <div className="bg-[#0f766e] px-5 py-5 text-white sm:px-6">
                   <h3 className="text-xl font-black leading-tight tracking-tight sm:text-2xl">
-                    Empieza gratis. Aparece cuando te buscan.
+                    Impulsando el comercio local, sin intermediarios.
                   </h3>
                   <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-relaxed text-white/95">
-                    En WhatsApp o Facebook te ven algunos.
-                    <br />
-                    Aquí te encuentran cuando te buscan.
+                    Cuando alguien busca en tu comuna, puedes aparecer y recibir contacto directo.
                   </p>
                 </div>
 
@@ -235,12 +241,9 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
                     >
                       Ver planes →
                     </Link>
-                    <p className="mt-2 text-sm font-extrabold leading-snug text-slate-900">
-                      No cambia tu posición,{" "}
-                      <span className="font-black text-[#0f766e]">mejora cómo te ven.</span>
-                    </p>
-                    <p className="mt-2 text-xs font-medium leading-snug text-slate-600">
-                      Opcional. Puedes seguir gratis con tu ficha básica.
+                    <p className="mt-2 text-sm font-semibold leading-snug text-slate-800">
+                      Por una suma pequeña puedes mejorar tu ficha. Si no, sigues publicado con
+                      contacto directo por WhatsApp.
                     </p>
                     <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-800">
                       <li className="flex gap-2">
@@ -253,7 +256,7 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
                         <span className="text-teal-700" aria-hidden>
                           •
                         </span>
-                        <span>Link a Instagram</span>
+                        <span>Link a redes o web</span>
                       </li>
                       <li className="flex gap-2">
                         <span className="text-teal-700" aria-hidden>

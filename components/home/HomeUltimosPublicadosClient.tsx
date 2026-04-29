@@ -14,7 +14,7 @@ type Props = {
   totalNegociosActivos?: number | null;
 };
 
-const AUTO_ADVANCE_MS = 4000;
+const AUTO_ADVANCE_MS = 3000;
 const RESUME_AFTER_INTERACTION_MS = 6500;
 
 export default function HomeUltimosPublicadosClient({
@@ -119,26 +119,32 @@ export default function HomeUltimosPublicadosClient({
     [getStride, respectReducedMotion]
   );
 
+  const slideCount = Math.min(10, cards.length);
+
   useEffect(() => {
-    const totalSlides = previewCardsRef.current.length;
     if (respectReducedMotion) return;
     if (pageHidden) return;
     if (interactPaused) return;
     if (isHovered) return;
-    if (totalSlides <= 1) return;
+    if (slideCount <= 1) return;
 
     const interval = window.setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % totalSlides);
-    }, 3000);
+      setCurrentIndex((prev) => (prev + 1) % slideCount);
+    }, AUTO_ADVANCE_MS);
 
     return () => window.clearInterval(interval);
-  }, [isHovered, interactPaused, pageHidden, respectReducedMotion]);
+  }, [
+    slideCount,
+    isHovered,
+    interactPaused,
+    pageHidden,
+    respectReducedMotion,
+  ]);
 
   useEffect(() => {
-    const totalSlides = previewCardsRef.current.length;
-    if (totalSlides <= 1) return;
+    if (slideCount <= 1) return;
     void scrollToIndex(currentIndex);
-  }, [currentIndex, scrollToIndex]);
+  }, [currentIndex, scrollToIndex, slideCount]);
 
   const minNegocios = 31;
   const negociosLabel = Math.max(
@@ -147,6 +153,7 @@ export default function HomeUltimosPublicadosClient({
   );
   const previewCards = cards.slice(0, 10);
   previewCardsRef.current = previewCards;
+  const multiSlide = previewCards.length > 1;
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -178,110 +185,120 @@ export default function HomeUltimosPublicadosClient({
           id="home-ultimos-publicados-heading"
           className="text-center text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl md:text-3xl"
         >
-          Más de {negociosLabel.toLocaleString("es-CL")} negocios ya están activos en tu comuna
+          Más de {negociosLabel.toLocaleString("es-CL")} negocios ya están publicados
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-center text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">
-          Estos son algunos de los servicios disponibles
+          Estos son algunos servicios disponibles en distintas comunas.
         </p>
 
-        <div className="relative mt-5">
-          {/* Flechas discretas */}
-          {previewCards.length > 1 ? (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  bumpInteractionPause();
-                  void scrollToIndex(currentIndex - 1);
-                }}
-                className="absolute left-2 top-1/2 z-20 -translate-y-1/2 inline-flex items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg size-11 hover:bg-teal-50"
-                aria-label="Anterior"
-              >
-                <ChevronLeft className="size-6 text-teal-800" aria-hidden />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
+        <div
+          {...(multiSlide
+            ? {
+                onMouseEnter: () => setIsHovered(true),
+                onMouseLeave: () => setIsHovered(false),
+              }
+            : {})}
+        >
+          <div className="relative mt-5">
+            {multiSlide ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    bumpInteractionPause();
+                    void scrollToIndex(currentIndex - 1);
+                  }}
+                  className="absolute left-2 top-1/2 z-20 -translate-y-1/2 inline-flex items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg size-11 hover:bg-teal-50"
+                  aria-label="Anterior"
+                >
+                  <ChevronLeft className="size-6 text-teal-800" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    bumpInteractionPause();
+                    void scrollToIndex(currentIndex + 1);
+                  }}
+                  className="absolute right-2 top-1/2 z-20 -translate-y-1/2 inline-flex items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg size-11 hover:bg-teal-50"
+                  aria-label="Siguiente"
+                >
+                  <ChevronRight className="size-6 text-teal-800" aria-hidden />
+                </button>
+              </>
+            ) : null}
+            <div
+              ref={scrollerRef}
+              className="home-carousel-scroll flex flex-nowrap gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-3 pl-0.5 pr-6 pt-1 [-webkit-overflow-scrolling:touch] md:gap-5 lg:gap-6 lg:pr-0 focus:outline-none"
+              role="list"
+              aria-label="Emprendimientos publicados recientemente"
+              tabIndex={0}
+              onPointerDownCapture={bumpInteractionPause}
+              onWheelCapture={bumpInteractionPause}
+              onTouchStartCapture={bumpInteractionPause}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowRight") {
+                  e.preventDefault();
                   bumpInteractionPause();
                   void scrollToIndex(currentIndex + 1);
-                }}
-                className="absolute right-2 top-1/2 z-20 -translate-y-1/2 inline-flex items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg size-11 hover:bg-teal-50"
-                aria-label="Siguiente"
-              >
-                <ChevronRight className="size-6 text-teal-800" aria-hidden />
-              </button>
-            </>
-          ) : null}
-          <div
-            ref={scrollerRef}
-            className="home-carousel-scroll flex flex-nowrap gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-3 pl-0.5 pr-6 pt-1 [-webkit-overflow-scrolling:touch] md:gap-5 lg:gap-6 lg:pr-0 focus:outline-none"
-            role="list"
-            aria-label="Emprendimientos publicados recientemente"
-            tabIndex={0}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onPointerDownCapture={bumpInteractionPause}
-            onWheelCapture={bumpInteractionPause}
-            onTouchStartCapture={bumpInteractionPause}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowRight") {
-                e.preventDefault();
-                bumpInteractionPause();
-                void scrollToIndex(currentIndex + 1);
-              }
-              if (e.key === "ArrowLeft") {
-                e.preventDefault();
-                bumpInteractionPause();
-                void scrollToIndex(currentIndex - 1);
-              }
-            }}
-          >
-            {previewCards.map((props) => (
-              <div
-                key={props.slug}
-                data-carousel-card
-                role="listitem"
-                className="group shrink-0 snap-start transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px] w-[min(92vw,22rem)] md:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-3rem)/3)]"
-              >
-                <div className="home-carousel-card-shell flex h-full min-h-[520px] flex-col rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
-                  <div className="relative">
-                    <div className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-900">
-                      Disponible ahora
+                }
+                if (e.key === "ArrowLeft") {
+                  e.preventDefault();
+                  bumpInteractionPause();
+                  void scrollToIndex(currentIndex - 1);
+                }
+              }}
+            >
+              {previewCards.map((props) => (
+                <div
+                  key={props.slug}
+                  data-carousel-card
+                  role="listitem"
+                  className="group shrink-0 snap-start transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px] w-[min(92vw,22rem)] md:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-3rem)/3)]"
+                >
+                  <div className="home-carousel-card-shell flex h-full min-h-[520px] flex-col rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
+                    <div className="relative">
+                      <div className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-900">
+                        Disponible ahora
+                      </div>
+                      <EmprendedorSearchCard {...props} homeCarousel />
                     </div>
-                    <EmprendedorSearchCard {...props} homeCarousel />
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Indicación sutil de que hay más contenido a la derecha */}
-          <div
-            className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-white via-white/70 to-transparent"
-            aria-hidden
-          />
-        </div>
-
-        {previewCards.length > 1 ? (
-          <div className="mt-5 flex items-center justify-center gap-2" role="tablist" aria-label="Posición del carrusel">
-            {previewCards.map((_, i) => (
-              <button
-                key={`dot-${i}`}
-                type="button"
-                onClick={() => {
-                  bumpInteractionPause();
-                  void scrollToIndex(i);
-                }}
-                className={[
-                  "h-2 w-2 rounded-full transition-colors",
-                  i === currentIndex ? "bg-teal-700" : "bg-slate-300 hover:bg-slate-400",
-                ].join(" ")}
-                aria-label={`Ir al elemento ${i + 1} de ${previewCards.length}`}
-                aria-current={i === currentIndex ? "true" : undefined}
+              ))}
+            </div>
+            {multiSlide ? (
+              <div
+                className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-white via-white/70 to-transparent"
+                aria-hidden
               />
-            ))}
+            ) : null}
           </div>
-        ) : null}
+
+          {multiSlide ? (
+            <div
+              className="mt-5 flex items-center justify-center gap-2"
+              role="tablist"
+              aria-label="Posición del carrusel"
+            >
+              {previewCards.map((_, i) => (
+                <button
+                  key={`dot-${i}`}
+                  type="button"
+                  onClick={() => {
+                    bumpInteractionPause();
+                    void scrollToIndex(i);
+                  }}
+                  className={[
+                    "h-2 w-2 rounded-full transition-colors",
+                    i === currentIndex ? "bg-teal-700" : "bg-slate-300 hover:bg-slate-400",
+                  ].join(" ")}
+                  aria-label={`Ir al elemento ${i + 1} de ${previewCards.length}`}
+                  aria-current={i === currentIndex ? "true" : undefined}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         <div className="mt-8 flex justify-center">
           <Link

@@ -161,41 +161,26 @@ body {
     border-radius: 1.25rem !important; /* alinea con el “shell” rounded-3xl + padding */
   }
 
-  /* Home hero: ticker de rubros (2 mitades = -50% en ticker-scroll). */
-  .ticker-wrap {
-    overflow: hidden;
+  /* Home hero: ticker de rubros (2 mitades = -50% en @keyframes ticker). */
+  .rubros-ticker-clip {
     width: 100%;
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent 0%,
-      black 5%,
-      black 95%,
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      transparent 0%,
-      black 5%,
-      black 95%,
-      transparent 100%
-    );
   }
 
-  .ticker-track {
+  .rubros-ticker-track {
     display: flex;
+    width: max-content;
     flex-flow: row nowrap;
     align-items: center;
-    width: max-content;
-    animation: ticker-scroll 25s linear infinite;
+    animation: ticker 30s linear infinite;
     will-change: transform;
   }
 
-  .ticker-track:hover {
+  .rubros-ticker-wrapper:hover .rubros-ticker-track {
     animation-play-state: paused;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .ticker-track {
+    .rubros-ticker-track {
       animation: none !important;
       transform: none !important;
     }
@@ -208,8 +193,8 @@ body {
   }
 }
 
-/* Home rubros: track = copia A + copia A (mitad = -50%). */
-@keyframes ticker-scroll {
+/* Home rubros: track = mitad A + mitad A (translate -50% = bucle). */
+@keyframes ticker {
   from {
     transform: translateX(0);
   }
