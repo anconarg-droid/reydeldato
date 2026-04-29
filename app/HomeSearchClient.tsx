@@ -286,12 +286,14 @@ export default function HomeSearchClient({
   return (
     <section className="w-full mx-auto">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
-        <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_auto] md:items-end md:gap-2">
-          <label className="block text-xs font-semibold text-slate-600 md:col-start-1">
-            Qué buscas
-            <div ref={queryBoxRef} className="relative mt-1 w-full min-w-0">
+        <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:gap-2">
+          <div ref={queryBoxRef} className="relative w-full min-w-0 md:flex-[2.2]">
+            <label htmlFor="home-q" className="sr-only">
+              Qué buscas
+            </label>
             <input
             ref={queryInputRef}
+            id="home-q"
             value={q}
             onChange={(e) => {
               setQ(e.target.value);
@@ -344,13 +346,14 @@ export default function HomeSearchClient({
             onHighlightChange={setHighlightIndex}
             containerRef={queryBoxRef}
           />
-            </div>
-          </label>
+          </div>
 
-        <label className="block text-xs font-semibold text-slate-600 md:col-start-2">
-          Tu comuna
-          <div ref={comunaBoxRef} className="relative mt-1 w-full min-w-0">
+          <div ref={comunaBoxRef} className="relative w-full min-w-0 md:w-[220px] md:flex-none">
+            <label htmlFor="home-comuna" className="sr-only">
+              Tu comuna
+            </label>
             <input
+            id="home-comuna"
             value={comunaInput}
             onChange={(e) => {
               setComunaInput(e.target.value);
@@ -426,14 +429,13 @@ export default function HomeSearchClient({
             </div>
           )}
           </div>
-        </label>
 
         <button
           type="button"
           onClick={irABuscar}
           disabled={searchSubmitting}
           aria-busy={searchSubmitting}
-          className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-6 text-[15px] font-bold text-white shadow-lg shadow-teal-900/15 transition-all duration-200 active:scale-95 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 md:w-auto md:self-end"
+          className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-6 text-[15px] font-bold text-white shadow-lg shadow-teal-900/15 transition-all duration-200 active:scale-95 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
           style={{ background: "#0f766e" }}
         >
           {searchSubmitting ? (
