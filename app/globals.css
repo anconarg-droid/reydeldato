@@ -203,6 +203,33 @@ body {
   }
 }
 
+/* /[comuna]: invitar a escribir en “Qué buscas” cuando está vacío */
+@keyframes resultados-comuna-pulse-border {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0px rgba(13, 122, 95, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(13, 122, 95, 0.1);
+  }
+}
+
+.resultados-q-input-invite {
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: #0d7a5f;
+  animation: resultados-comuna-pulse-border 2s ease-in-out infinite;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resultados-q-input-invite {
+    animation: none;
+  }
+}
+
 /*
   Fallback de estilos:
   En algunos entornos, Tailwind v4 + Turbopack no está generando utilidades,

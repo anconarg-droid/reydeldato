@@ -25,6 +25,39 @@ function prettySubcategoriaSlugForDisplay(slug: string): string {
     .join(" ");
 }
 
+function ComunaDirectorioHeader({
+  tituloComunaDisplay,
+  tieneBusquedaActiva,
+  terminoBusquedaDisplay,
+}: {
+  tituloComunaDisplay: string;
+  tieneBusquedaActiva: boolean;
+  terminoBusquedaDisplay: string;
+}) {
+  const termino =
+    terminoBusquedaDisplay.trim() || (tieneBusquedaActiva ? "esta búsqueda" : "");
+
+  return (
+    <header className="mt-3">
+      <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+        Encuentra servicios en <span className="text-sky-700">{tituloComunaDisplay}</span>
+      </h1>
+      {tieneBusquedaActiva ? (
+        <p className="mt-2 text-sm text-slate-600">
+          Mostrando resultados para{" "}
+          <span className="font-medium text-slate-900">&ldquo;{termino}&rdquo;</span> en{" "}
+          {tituloComunaDisplay}.
+        </p>
+      ) : (
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          Estás viendo todos los servicios de {tituloComunaDisplay}.{" "}
+          <span className="text-[#0d7a5f]">Escribe qué necesitas arriba para filtrar.</span>
+        </p>
+      )}
+    </header>
+  );
+}
+
 function detectarSubcategoria(query: string): string | null {
   const q = normalizeText(query);
   const map: Record<string, string> = {
@@ -209,6 +242,10 @@ type Props = {
   regionFocoNombre?: string | null;
   /** Solo búsqueda global sin comuna: resaltar input de comuna en la barra. */
   resaltarCampoComunaEnBusquedaGlobal?: boolean;
+  /**
+   * Solo en ruta `/[comuna]`: invitación visual cuando no hay término en URL (borde pulsante + copy).
+   */
+  invitacionBuscaEnPaginaComuna?: boolean;
 };
 
 export default function ResultadosClient({
@@ -225,6 +262,7 @@ export default function ResultadosClient({
   regionFocoSlug = null,
   regionFocoNombre = null,
   resaltarCampoComunaEnBusquedaGlobal = false,
+  invitacionBuscaEnPaginaComuna = false,
 }: Props) {
   const comuna = (initialComuna ?? "").trim();
   const comunaNombre = (initialComunaNombre ?? "").trim();
@@ -232,6 +270,24 @@ export default function ResultadosClient({
   const categoriaSlug = (initialCategoriaSlug ?? "").trim();
   const subcategoriaSlug = (initialSubcategoriaSlug ?? "").trim();
   const subcategoriaId = (initialSubcategoriaId ?? "").trim();
+
+  const tituloComunaDisplay = comunaNombre || comuna.replace(/-/g, " ");
+  const tieneBusquedaActiva =
+    Boolean(normalizeText(q)) ||
+    Boolean(subcategoriaSlug) ||
+    Boolean(subcategoriaId) ||
+    Boolean(categoriaSlug);
+  const terminoBusquedaDisplay = normalizeText((initialQDisplay ?? "").trim())
+    ? (initialQDisplay ?? "").trim()
+    : subcategoriaSlug
+      ? prettySubcategoriaSlugForDisplay(subcategoriaSlug)
+      : categoriaSlug
+        ? prettySubcategoriaSlugForDisplay(categoriaSlug)
+        : subcategoriaId
+          ? "este rubro"
+          : "";
+  const comunaInvitacionActiva =
+    Boolean(invitacionBuscaEnPaginaComuna) && directorioComunaAbierto && !tieneBusquedaActiva;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -256,21 +312,17 @@ export default function ResultadosClient({
         initialComunaSlug={initialComuna}
         fixedComunaNombre={comunaNombre || null}
         resaltarCampoComuna={resaltarCampoComunaEnBusquedaGlobal}
+        comunaInvitacionActiva={comunaInvitacionActiva}
       />
     </div>
   );
 
-  const tituloComunaDisplay = comunaNombre || comuna.replace(/-/g, " ");
-
   const headerDirectorioNormal = (
-    <header className="mt-3">
-      <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-        Encuentra servicios en <span className="text-sky-700">{tituloComunaDisplay}</span>
-      </h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Emprendimientos locales y servicios que atienden tu comuna.
-      </p>
-    </header>
+    <ComunaDirectorioHeader
+      tituloComunaDisplay={tituloComunaDisplay}
+      tieneBusquedaActiva={tieneBusquedaActiva}
+      terminoBusquedaDisplay={terminoBusquedaDisplay}
+    />
   );
 
   if (comuna && !directorioComunaAbierto) {

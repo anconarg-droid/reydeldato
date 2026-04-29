@@ -145,6 +145,7 @@ export default async function ComunaPage({ params, searchParams }: PageProps) {
           directorioComunaAbierto={directorioDisponible}
           regionFocoSlug={regionFocoSlug}
           regionFocoNombre={regionFocoNombre}
+          invitacionBuscaEnPaginaComuna
         />
       </div>
     </main>

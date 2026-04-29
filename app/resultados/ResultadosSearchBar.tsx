@@ -37,6 +37,10 @@ type Props = {
   fixedComunaNombre?: string | null;
   /** Sin comuna seleccionada: borde/ring teal para invitar a filtrar por comuna. */
   resaltarCampoComuna?: boolean;
+  /**
+   * Solo `/[comuna]` sin búsqueda en URL: borde pulsante en “Qué buscas” vacío + texto de ayuda.
+   */
+  comunaInvitacionActiva?: boolean;
 };
 
 function comunaInputLabelFromProps(
@@ -58,6 +62,7 @@ export default function ResultadosSearchBar({
   hideComunaInput = false,
   fixedComunaNombre = null,
   resaltarCampoComuna = false,
+  comunaInvitacionActiva = false,
 }: Props) {
   const router = useRouter();
   const [q, setQ] = useState(initialQDisplay);
@@ -201,6 +206,13 @@ export default function ResultadosSearchBar({
   }, [selectedComunaSlug, router]);
 
   const hasQToClear = normalizeText(q).length > 0;
+  const qEmpty = normalizeText(q).length === 0;
+  const invitarAlInputQ =
+    Boolean(comunaInvitacionActiva) && qEmpty && !hideComunaInput;
+
+  const qInputClassName = invitarAlInputQ
+    ? "order-2 h-11 w-full min-w-0 rounded-lg bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d7a5f]/40 sm:order-none sm:col-start-1 sm:row-start-2 resultados-q-input-invite"
+    : "order-2 h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 transition-[border-color,box-shadow] duration-300 focus:outline-none focus:ring-2 focus:ring-slate-400 sm:order-none sm:col-start-1 sm:row-start-2";
 
   const qPlaceholder = selectedComunaSlug
     ? `¿Qué buscas en ${
@@ -267,7 +279,7 @@ export default function ResultadosSearchBar({
           placeholder={hideComunaInput && fixedComunaNombre
             ? `¿Qué buscas en ${fixedComunaNombre}?`
             : qPlaceholder}
-          className="order-2 h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 sm:order-none sm:col-start-1 sm:row-start-2"
+          className={qInputClassName}
         />
 
         {!hideComunaInput ? (
@@ -386,6 +398,19 @@ export default function ResultadosSearchBar({
           aria-hidden="true"
         />
       </div>
+
+      {comunaInvitacionActiva ? (
+        <p
+          role="note"
+          className={`mt-3 overflow-hidden text-center text-[13px] text-[#0d7a5f] transition-[opacity,margin-bottom,max-height] duration-300 ease-out ${
+            qEmpty
+              ? "mb-5 max-h-16 opacity-100"
+              : "pointer-events-none mb-0 max-h-0 opacity-0"
+          }`}
+        >
+          Escribe qué necesitas para encontrar algo específico
+        </p>
+      ) : null}
     </div>
   );
 }
