@@ -186,7 +186,7 @@ export default function ResultadosSearchBar({
     setComunaSuggestions([]);
 
     if (!qNorm) {
-      router.push("/resultados");
+      router.push("/");
       return;
     }
     router.push(`/resultados?q=${encodeURIComponent(qNorm)}`);
