@@ -580,10 +580,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
         <div
           className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 ${
-            homeCarousel ? "h-44" : "h-[140px] md:h-44"
-          } ${
-            mostrarFoto ? "bg-slate-100" : "bg-gradient-to-br from-gray-50 to-gray-100"
-          }`}
+            homeCarousel ? "h-44" : "h-[160px] md:h-[180px]"
+          } ${mostrarFoto ? "bg-slate-100" : "bg-slate-100"}`}
           style={mostrarFoto ? undefined : undefined}
         >
           {mostrarFoto ? (
@@ -591,9 +589,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={fotoUrl}
-                alt=""
-                className="h-full w-full object-cover"
+                alt={nombreDisplay}
+                className="h-full w-full object-cover object-center"
                 loading="lazy"
+                decoding="async"
                 onError={() => setImgBroken(true)}
               />
               {listadoUiPerfilCompleto || !vistaBasicaPanel ? (
