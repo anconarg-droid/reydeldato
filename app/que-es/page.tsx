@@ -6,7 +6,7 @@ export default function QueEsPage() {
     <LegalLayout title="Qué es Rey del Dato" lastUpdated="Abril 2026">
       <div className="max-w-[640px] text-sm text-slate-700 sm:text-[0.95rem] leading-7">
         <p className="mb-5 leading-relaxed">
-          Rey del Dato es un directorio local donde puedes encontrar servicios reales en tu comuna y
+          Rey del Dato es un directorio local donde puedes encontrar servicios y comercios reales en tu comuna y
           contactarlos directamente por WhatsApp.
         </p>
         <p className="mb-5 leading-relaxed">
@@ -14,7 +14,7 @@ export default function QueEsPage() {
           en tu búsqueda y tu comuna.
         </p>
         <p className="mb-0 leading-relaxed">
-          Hoy encontrar servicios suele ser desordenado: grupos de WhatsApp, publicaciones que se pierden,
+          Hoy encontrar negocios locales suele ser desordenado: grupos de WhatsApp, publicaciones que se pierden,
           datos viejos o resultados dominados por publicidad. Rey del Dato busca ordenar esa información y
           hacerla útil.
         </p>
@@ -52,7 +52,7 @@ export default function QueEsPage() {
           Por qué existe Rey del Dato
         </h2>
         <p className="mt-4 leading-relaxed">
-          Encontrar servicios locales suele ser desordenado: grupos de WhatsApp donde nadie responde,
+          Encontrar negocios locales suele ser desordenado: grupos de WhatsApp donde nadie responde,
           búsquedas en Google que muestran negocios de otra ciudad o resultados pagados que no son los más
           cercanos.
         </p>
@@ -67,7 +67,7 @@ export default function QueEsPage() {
         aria-label="Acciones"
       >
         <Link href="/" className="underline decoration-[#0d7a5f] underline-offset-2 hover:text-[#0a5c48]">
-          Buscar servicios en mi comuna
+          Buscar en mi comuna
         </Link>
         <span className="select-none text-slate-400" aria-hidden>
           {" "}
