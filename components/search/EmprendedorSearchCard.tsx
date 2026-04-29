@@ -567,7 +567,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       ) : null}
 
       <div
-        className={`flex min-h-0 min-w-0 flex-1 flex-col p-3.5 ${
+        className={`flex min-h-0 min-w-0 flex-1 flex-col ${
           listadoUiPerfilCompleto
             ? "bg-white"
             : vistaBasicaPanel
@@ -580,7 +580,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
         <div
           className={`relative w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 ${
-            homeCarousel ? "h-44" : "h-[150px] sm:h-[160px] md:h-[150px] lg:h-[145px]"
+            homeCarousel ? "h-44" : "aspect-square"
           }`}
           style={mostrarFoto ? undefined : undefined}
         >
@@ -636,8 +636,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           ) : null}
         </div>
 
-        {/* Cuerpo: crece; reserva footer abajo */}
-        <div className="mt-3 flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col px-4 py-[0.85rem]">
+          {/* Cuerpo: crece; reserva footer abajo */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
           <h3
             className={`m-0 line-clamp-2 min-h-[2.5rem] w-full shrink-0 text-[16px] leading-snug ${titleFontClassResponsive} ${titleColor}`}
           >
@@ -798,7 +799,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           >
             {coberturaDisplay}
           </p>
-        </div>
+          </div>
 
         {tieneWhatsappValido || puedeVerFichaPublica ? (
         <div
@@ -922,6 +923,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           ) : null}
         </div>
         ) : null}
+        </div>
       </div>
     </article>
   );
