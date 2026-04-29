@@ -160,6 +160,32 @@ body {
     transform: none !important;
     border-radius: 1.25rem !important; /* alinea con el “shell” rounded-3xl + padding */
   }
+
+  /* Home hero: ticker de rubros (marquee; capa components para ganar a utilidades). */
+  .home-rubros-ticker {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .home-rubros-ticker-track {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    width: max-content;
+    animation: ticker 30s linear infinite;
+    will-change: transform;
+  }
+
+  .home-rubros-ticker-track:hover {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-rubros-ticker-track {
+      animation: none !important;
+      transform: none !important;
+    }
+  }
 }
 
 @keyframes rey-keywords-spin {
@@ -168,35 +194,13 @@ body {
   }
 }
 
-/* Home hero: ticker de rubros (subcategorías con publicados). */
-@keyframes home-rubros-ticker-marquee {
+/* Debe coincidir con TICKER_COPIES en HomeRubrosTicker (4 segmentos = -25%). */
+@keyframes ticker {
   from {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-50%);
-  }
-}
-
-.home-rubros-ticker {
-  overflow: hidden;
-  width: 100%;
-}
-
-.home-rubros-ticker__track {
-  display: flex;
-  width: max-content;
-  animation: home-rubros-ticker-marquee 30s linear infinite;
-}
-
-.home-rubros-ticker:hover .home-rubros-ticker__track {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .home-rubros-ticker__track {
-    animation: none;
-    transform: none;
+    transform: translateX(-25%);
   }
 }
 
