@@ -286,8 +286,8 @@ export default function HomeSearchClient({
   return (
     <section className="w-full mx-auto">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
-        <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:gap-2">
-          <div ref={queryBoxRef} className="relative w-full min-w-0 md:flex-[2.2]">
+        <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto] md:items-center md:gap-2">
+          <div ref={queryBoxRef} className="relative w-full min-w-0 md:col-start-1">
             <label htmlFor="home-q" className="sr-only">
               Qué buscas
             </label>
@@ -348,7 +348,10 @@ export default function HomeSearchClient({
           />
           </div>
 
-          <div ref={comunaBoxRef} className="relative w-full min-w-0 md:w-[220px] md:flex-none">
+          <div
+            ref={comunaBoxRef}
+            className="relative w-full min-w-0 md:col-start-2 md:w-[220px]"
+          >
             <label htmlFor="home-comuna" className="sr-only">
               Tu comuna
             </label>
@@ -435,7 +438,7 @@ export default function HomeSearchClient({
           onClick={irABuscar}
           disabled={searchSubmitting}
           aria-busy={searchSubmitting}
-          className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-6 text-[15px] font-bold text-white shadow-lg shadow-teal-900/15 transition-all duration-200 active:scale-95 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
+          className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-6 text-[15px] font-bold text-white shadow-lg shadow-teal-900/15 transition-all duration-200 active:scale-95 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 md:col-start-3 md:w-auto"
           style={{ background: "#0f766e" }}
         >
           {searchSubmitting ? (

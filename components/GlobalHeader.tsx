@@ -86,7 +86,8 @@ export default function GlobalHeader() {
                 alignItems: "center",
               }}
             >
-              Publica tu emprendimiento
+              <span className="sm:hidden">Publicar gratis</span>
+              <span className="hidden sm:inline">Publica tu emprendimiento</span>
             </Link>
           </nav>
         </div>

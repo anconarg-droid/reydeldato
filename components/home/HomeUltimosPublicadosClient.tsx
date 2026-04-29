@@ -121,6 +121,20 @@ export default function HomeUltimosPublicadosClient({
 
   const slideCount = Math.min(10, cards.length);
 
+  const goPrev = useCallback(() => {
+    if (slideCount <= 1) return;
+    bumpInteractionPause();
+    const next = (currentIndex - 1 + slideCount) % slideCount;
+    void scrollToIndex(next);
+  }, [bumpInteractionPause, currentIndex, scrollToIndex, slideCount]);
+
+  const goNext = useCallback(() => {
+    if (slideCount <= 1) return;
+    bumpInteractionPause();
+    const next = (currentIndex + 1) % slideCount;
+    void scrollToIndex(next);
+  }, [bumpInteractionPause, currentIndex, scrollToIndex, slideCount]);
+
   useEffect(() => {
     if (respectReducedMotion) return;
     if (pageHidden) return;
@@ -204,22 +218,26 @@ export default function HomeUltimosPublicadosClient({
               <>
                 <button
                   type="button"
-                  onClick={() => {
-                    bumpInteractionPause();
-                    void scrollToIndex(currentIndex - 1);
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    goPrev();
                   }}
-                  className="absolute left-2 top-1/2 z-20 -translate-y-1/2 inline-flex items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg size-11 hover:bg-teal-50"
+                  onClick={goPrev}
+                  className="absolute left-2 top-1/2 z-20 -translate-y-1/2 inline-flex size-11 items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg hover:bg-teal-50 pointer-events-auto touch-manipulation"
                   aria-label="Anterior"
                 >
                   <ChevronLeft className="size-6 text-teal-800" aria-hidden />
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    bumpInteractionPause();
-                    void scrollToIndex(currentIndex + 1);
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    goNext();
                   }}
-                  className="absolute right-2 top-1/2 z-20 -translate-y-1/2 inline-flex items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg size-11 hover:bg-teal-50"
+                  onClick={goNext}
+                  className="absolute right-2 top-1/2 z-20 -translate-y-1/2 inline-flex size-11 items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg hover:bg-teal-50 pointer-events-auto touch-manipulation"
                   aria-label="Siguiente"
                 >
                   <ChevronRight className="size-6 text-teal-800" aria-hidden />
