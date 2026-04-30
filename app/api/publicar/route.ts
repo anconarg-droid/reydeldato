@@ -10,6 +10,7 @@ import {
 import { POSTULACIONES_MODERACION_SELECT } from "@/lib/loadPostulacionesModeracion";
 import { validateRequiredPublicEmail } from "@/lib/validateEmail";
 import { sendEmail } from "@/lib/email";
+import { recibimosTuSolicitudEmailHtml } from "@/lib/emailTemplates/recibimosTuSolicitudEmailHtml";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -279,10 +280,7 @@ export async function POST(req: NextRequest) {
       await sendEmail({
         to: emailNorm,
         subject: "Recibimos tu solicitud — Rey del Dato",
-        html: `<p>Hola,</p>
-<p>Recibimos tu solicitud para publicar tu negocio en Rey del Dato.</p>
-<p>La revisaremos y te avisaremos por email cuando tu negocio esté publicado.</p>
-<p>Gracias por confiar en Rey del Dato.</p>`,
+        html: recibimosTuSolicitudEmailHtml(),
       });
     } catch {
       // Errores ya se registran dentro de sendEmail; nunca romper flujo.
