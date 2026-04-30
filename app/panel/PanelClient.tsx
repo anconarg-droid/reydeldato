@@ -1163,11 +1163,11 @@ export default function PanelClient({
           {tieneNegocio ? (
             fichaLoading ? (
               <div
-                className="mx-auto w-full max-w-[390px] rounded-xl border border-gray-200 bg-gray-100 min-h-[240px] animate-pulse"
+                className="mx-auto w-full max-w-[360px] rounded-xl border border-gray-200 bg-gray-100 min-h-[240px] animate-pulse"
                 aria-hidden
               />
             ) : previewCardProps ? (
-              <div className="mx-auto w-full max-w-[390px] space-y-2">
+              <div className="mx-auto w-full max-w-[360px] space-y-2">
                 {previewInformativa && negocioItem ? (
                   <div
                     role="status"
@@ -1189,7 +1189,7 @@ export default function PanelClient({
               </div>
             ) : (
               <div
-                className="mx-auto w-full max-w-[390px] rounded-xl border border-gray-200 bg-gray-50 min-h-[180px] animate-pulse"
+                className="mx-auto w-full max-w-[360px] rounded-xl border border-gray-200 bg-gray-50 min-h-[180px] animate-pulse"
                 aria-hidden
               />
             )
