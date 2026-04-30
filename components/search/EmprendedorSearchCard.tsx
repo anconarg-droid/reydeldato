@@ -74,8 +74,6 @@ export type EmprendedorSearchCardProps = {
   destacarMejoresOpciones?: boolean;
   modoVista?: ModoVistaPanel;
   bloquearAccesoFichaPublica?: boolean;
-  /** Texto del CTA secundario (listado: por defecto "Ver detalles"). */
-  etiquetaVerFicha?: string;
   /** Si viene, el CTA "Ver detalles" usa esta URL (p. ej. demos en home). */
   fichaPublicaHrefOverride?: string | null;
   /** Id en DB cuando viene del API (tracking `/api/event`). */
@@ -284,7 +282,6 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       );
 
   const vistaBasicaPanel = (p.modoVista ?? "completa") === "basica";
-  const etiquetaVerFicha = String(p.etiquetaVerFicha ?? "").trim() || "Ver detalles";
   /** Badge, borde teal, sombra y CTA “Ver detalles” activo: trial/plan + publicado + sin bloqueo. */
   const listadoUiPerfilCompleto = listadoPerfilCompletoUi(p);
   /** WhatsApp + columna Ver detalles (enlace o deshabilitada): trial/plan + publicado. */
@@ -644,8 +641,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             homeCarousel ? "px-3.5 py-3 md:px-4 md:py-[0.85rem]" : "px-4 py-[0.85rem]"
           }`}
         >
-          {/* Cuerpo: crece; reserva footer abajo. En vista básica del panel, overlay sobre contenido propio de ficha completa. */}
-          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+          {/* Cuerpo: crece; reserva footer abajo */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
           <h3
             className={`m-0 line-clamp-2 min-h-[2.5rem] w-full shrink-0 text-base font-semibold leading-snug ${titleColor}`}
           >
@@ -806,17 +803,6 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           >
             {coberturaDisplay}
           </p>
-          {vistaBasicaPanel ? (
-            <>
-              <div
-                className="pointer-events-none absolute inset-0 z-[5] rounded-lg bg-white/70 backdrop-blur-[2px]"
-                aria-hidden
-              />
-              <p className="pointer-events-none absolute left-1/2 top-2 z-[6] max-w-[12rem] -translate-x-1/2 text-center text-[10px] font-bold uppercase leading-tight tracking-wide text-slate-600">
-                Disponible en ficha completa
-              </p>
-            </>
-          ) : null}
           </div>
 
         {tieneWhatsappValido || puedeVerFichaPublica ? (
@@ -848,7 +834,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                   role="status"
                   aria-disabled
                 >
-                  {etiquetaVerFicha}
+                  Ver detalles
                 </span>
               ) : null}
             </div>
@@ -878,9 +864,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 trackingEmprendedorId={p.emprendedorId ?? null}
                 className="flex min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
                 style={{ minHeight: 44, height: ACTIONS_H }}
-                aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
+                aria-label={`Ver detalles: ${nombreDisplay}`}
               >
-                {etiquetaVerFicha}
+                Ver detalles
               </TrackedCardLink>
             </div>
           ) : listadoUiPerfilCompleto && puedeVerFichaPublica && !tieneWhatsappValido ? (
@@ -894,9 +880,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 trackingEmprendedorId={p.emprendedorId ?? null}
                 className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
                 style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
-                aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
+                aria-label={`Ver detalles: ${nombreDisplay}`}
               >
-                {etiquetaVerFicha}
+                Ver detalles
               </TrackedCardLink>
             </div>
           ) : !listadoUiPerfilCompleto && tieneWhatsappValido ? (
@@ -933,9 +919,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 trackingEmprendedorId={p.emprendedorId ?? null}
                 className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
                 style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
-                aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
+                aria-label={`Ver detalles: ${nombreDisplay}`}
               >
-                {etiquetaVerFicha}
+                Ver detalles
               </TrackedCardLink>
             </div>
           ) : null}
