@@ -947,7 +947,7 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 min-[520px]:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] min-[520px]:items-start">
+      <div className="grid grid-cols-1 gap-6 min-[520px]:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] min-[520px]:items-start">
         <div className="min-w-0 w-full max-w-[640px] space-y-4 sm:justify-self-start">
           <div
             className="max-w-3xl rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
