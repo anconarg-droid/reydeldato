@@ -257,11 +257,14 @@ function MetricsResumenPanel({
   data,
   rangeLabel,
   loading = false,
+  omitInsight = false,
 }: {
   data: Metrics;
   rangeLabel: string;
   /** Mientras carga el rango, se muestran placeholders sin cambiar la fuente de datos. */
   loading?: boolean;
+  /** Si true, no renderiza la caja de insight (se muestra fuera del card, p. ej. bajo la vista previa). */
+  omitInsight?: boolean;
 }) {
   const v = (n: number) => (Number.isFinite(n) ? n : 0);
   const comoLlegar = v(data.click_waze) + v(data.click_maps);
@@ -271,8 +274,6 @@ function MetricsResumenPanel({
   const clicsInstagramWeb = v(data.click_ficha);
 
   const ariaResumen = `${rangeLabel}. Te encontraron ${apariciones}, vieron tu ficha ${vistas}, te contactaron ${clicsWhatsApp}. Mostraron interés: WhatsApp ${clicsWhatsApp}, Instagram o web ${clicsInstagramWeb}, cómo llegar ${comoLlegar}.`;
-
-  const insight = panelInsightMessage(apariciones, vistas, clicsWhatsApp);
 
   const interesRows = [
     { label: "WhatsApp", value: clicsWhatsApp },
@@ -388,19 +389,21 @@ function MetricsResumenPanel({
           )}
         </section>
 
-        {!loading ? (
-          <div
-            className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
-            role="status"
-          >
-            {insight}
-          </div>
-        ) : (
-          <div
-            className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
-            aria-hidden
-          />
-        )}
+        {!omitInsight ? (
+          !loading ? (
+            <div
+              className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
+              role="status"
+            >
+              {panelInsightMessage(apariciones, vistas, clicsWhatsApp)}
+            </div>
+          ) : (
+            <div
+              className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
+              aria-hidden
+            />
+          )
+        ) : null}
       </div>
     </div>
   );
@@ -921,7 +924,7 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_360px] lg:gap-6">
+      <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-[minmax(0,1fr)_320px] md:items-start md:gap-5">
         <div className="min-w-0 space-y-3">
           <div
             className="max-w-3xl rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
@@ -1000,60 +1003,6 @@ export default function PanelClient({
               )
             ) : null}
           </div>
-
-          {estadisticasOcultasEnPanel ? (
-            <div
-              className="max-w-3xl rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
-              role="status"
-            >
-              <p className="font-semibold text-gray-900">
-                Estadísticas no visibles con tu plan o perfil actual
-              </p>
-              <p className="mt-1.5 text-gray-700">
-                Visitas, impresiones y contactos{" "}
-                <span className="font-semibold">siguen registrándose</span> en
-                segundo plano. Al reactivar perfil completo verás aquí el total
-                real, incluido lo que ocurra mientras tanto.
-              </p>
-            </div>
-          ) : null}
-          {qs && !estadisticasOcultasEnPanel ? (
-            <div className="max-w-3xl">
-              <div className="flex flex-col gap-2.5">
-                <div className="flex w-full justify-start">
-                  <div
-                    className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
-                    role="group"
-                    aria-label="Periodo de estadísticas"
-                  >
-                    {(["7d", "30d", "all"] as const).map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => setRange(r)}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                          range === r
-                            ? "bg-gray-900 text-white"
-                            : "text-gray-600 hover:bg-gray-100"
-                        }`}
-                      >
-                        {r === "7d"
-                          ? "7 días"
-                          : r === "30d"
-                            ? "30 días"
-                            : "Desde activación"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <MetricsResumenPanel
-                  data={metricsMostrados}
-                  rangeLabel={textoRangoMetricas(rangoMostrado)}
-                  loading={loading}
-                />
-              </div>
-            </div>
-          ) : null}
 
           {tieneNegocio ? (
             <BloqueEstadoPlan
@@ -1135,7 +1084,62 @@ export default function PanelClient({
           ) : null}
         </div>
 
-        <aside className="min-w-0 space-y-2 overflow-x-hidden lg:sticky lg:top-6 lg:self-start">
+        <aside className="min-w-0 space-y-3 overflow-x-hidden md:sticky md:top-6 md:self-start">
+          {estadisticasOcultasEnPanel ? (
+            <div
+              className="w-full rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
+              role="status"
+            >
+              <p className="font-semibold text-gray-900">
+                Estadísticas no visibles con tu plan o perfil actual
+              </p>
+              <p className="mt-1.5 text-gray-700">
+                Visitas, impresiones y contactos{" "}
+                <span className="font-semibold">siguen registrándose</span> en
+                segundo plano. Al reactivar perfil completo verás aquí el total
+                real, incluido lo que ocurra mientras tanto.
+              </p>
+            </div>
+          ) : null}
+          {qs && !estadisticasOcultasEnPanel ? (
+            <div className="w-full">
+              <div className="flex flex-col gap-2.5">
+                <div className="flex w-full justify-start">
+                  <div
+                    className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
+                    role="group"
+                    aria-label="Periodo de estadísticas"
+                  >
+                    {(["7d", "30d", "all"] as const).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setRange(r)}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                          range === r
+                            ? "bg-gray-900 text-white"
+                            : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        {r === "7d"
+                          ? "7 días"
+                          : r === "30d"
+                            ? "30 días"
+                            : "Desde activación"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <MetricsResumenPanel
+                  data={metricsMostrados}
+                  rangeLabel={textoRangoMetricas(rangoMostrado)}
+                  loading={loading}
+                  omitInsight
+                />
+              </div>
+            </div>
+          ) : null}
+
           <h2 className="text-sm font-extrabold tracking-tight text-gray-900">
             Así te ven en resultados
           </h2>
@@ -1178,6 +1182,32 @@ export default function PanelClient({
               Enlaza tu ficha para ver la vista previa aquí.
             </p>
           )}
+
+          {qs && !estadisticasOcultasEnPanel ? (
+            !loading ? (
+              <div
+                className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
+                role="status"
+              >
+                {panelInsightMessage(
+                  Number.isFinite(metricsMostrados.impresiones)
+                    ? metricsMostrados.impresiones
+                    : 0,
+                  Number.isFinite(metricsMostrados.visitas)
+                    ? metricsMostrados.visitas
+                    : 0,
+                  Number.isFinite(metricsMostrados.click_whatsapp)
+                    ? metricsMostrados.click_whatsapp
+                    : 0
+                )}
+              </div>
+            ) : (
+              <div
+                className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
+                aria-hidden
+              />
+            )
+          ) : null}
         </aside>
       </div>
 
