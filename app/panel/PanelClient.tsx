@@ -233,135 +233,174 @@ function textoRangoMetricas(range: "7d" | "30d" | "all"): string {
   return "Estás viendo estadísticas desde la activación de tu ficha";
 }
 
+function panelInsightMessage(
+  apariciones: number,
+  vistas: number,
+  clicsWhatsApp: number
+): string {
+  if (apariciones < 20) {
+    return "Tu negocio aún aparece poco en búsquedas.";
+  }
+  if (apariciones >= 20 && vistas === 0) {
+    return "Tu tarjeta aparece, pero todavía no han entrado a ver tu ficha.";
+  }
+  if (vistas > 0 && clicsWhatsApp === 0) {
+    return "Están viendo tu ficha, pero todavía no te han contactado por WhatsApp.";
+  }
+  if (clicsWhatsApp > 0) {
+    return "Tu ficha ya está generando contactos.";
+  }
+  return "Tu negocio aún aparece poco en búsquedas.";
+}
+
 function MetricsResumenPanel({
   data,
   rangeLabel,
+  loading = false,
 }: {
   data: Metrics;
   rangeLabel: string;
+  /** Mientras carga el rango, se muestran placeholders sin cambiar la fuente de datos. */
+  loading?: boolean;
 }) {
   const v = (n: number) => (Number.isFinite(n) ? n : 0);
   const comoLlegar = v(data.click_waze) + v(data.click_maps);
+  const apariciones = v(data.impresiones);
+  const vistas = v(data.visitas);
+  const clicsWhatsApp = v(data.click_whatsapp);
+  const clicsInstagramWeb = v(data.click_ficha);
 
-  const primarias = [
-    {
-      icon: "📇",
-      label: "Veces que apareció tu tarjeta en resultados",
-      value: v(data.impresiones),
-      hint: "Impresiones de tu tarjeta en listados de búsqueda.",
-    },
-    {
-      icon: "👀",
-      label: "Veces que vieron tu ficha",
-      value: v(data.visitas),
-      hint: "Aperturas de tu ficha pública.",
-    },
-    {
-      icon: "💬",
-      label: "Clics en WhatsApp",
-      value: v(data.click_whatsapp),
-      hint: "Veces que tocaron el botón de WhatsApp.",
-    },
+  const ariaResumen = `${rangeLabel}. Te encontraron ${apariciones}, vieron tu ficha ${vistas}, te contactaron ${clicsWhatsApp}. Mostraron interés: WhatsApp ${clicsWhatsApp}, Instagram o web ${clicsInstagramWeb}, cómo llegar ${comoLlegar}.`;
+
+  const insight = panelInsightMessage(apariciones, vistas, clicsWhatsApp);
+
+  const interesRows = [
+    { label: "WhatsApp", value: clicsWhatsApp },
+    { label: "Instagram / Web", value: clicsInstagramWeb },
+    { label: "Cómo llegar", value: comoLlegar },
   ] as const;
-
-  const secundarias = [
-    {
-      icon: "🧭",
-      label: "Clics en “Cómo llegar”",
-      value: comoLlegar,
-      hint: "Suma de “Abrir en Waze” y “Ver en Maps”.",
-    },
-    {
-      icon: "📸",
-      label: "Clics en Instagram, web y similares",
-      value: v(data.click_ficha),
-      hint: "Acciones en tu ficha (Instagram, web, compartir, etc.). Puede solaparse con “Cómo llegar” según cómo se registró el evento.",
-    },
-  ] as const;
-
-  const ariaResumen = `${rangeLabel}. Impresiones ${primarias[0].value}, visitas a ficha ${primarias[1].value}, WhatsApp ${primarias[2].value}. Secundarias: cómo llegar ${secundarias[0].value}, otras acciones ${secundarias[1].value}.`;
 
   return (
     <div
-      className="w-full max-w-3xl rounded-xl border border-gray-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm"
+      className="w-full max-w-3xl rounded-xl border border-gray-200 bg-white px-3 py-4 shadow-sm sm:px-5 sm:py-5"
       title={rangeLabel}
       aria-label={ariaResumen}
     >
-      <div className="space-y-3">
-        <div className="space-y-1">
+      <div className="space-y-5">
+        <div className="space-y-1.5">
           <h3
             id="panel-metricas-rendimiento-titulo"
-            className="text-xs font-semibold uppercase tracking-wide text-gray-500"
+            className="text-base font-semibold tracking-tight text-gray-900"
           >
-            Rendimiento de tu ficha
+            Rendimiento de tu negocio
           </h3>
-          <p id="panel-metricas-rendimiento-desc" className="text-[11px] leading-snug text-gray-500">
-            Estas métricas muestran cuántas veces apareciste y cuántas personas
-            intentaron contactarte.
+          <p
+            id="panel-metricas-rendimiento-desc"
+            className="text-sm leading-relaxed text-gray-500"
+          >
+            Estas métricas muestran cuántas veces apareciste, cuántas personas vieron
+            tu ficha y cuántas intentaron contactarte.
           </p>
         </div>
 
-        <section
-          className="space-y-2"
-          aria-describedby="panel-metricas-rendimiento-desc"
-        >
-          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-            Principales
-          </p>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-2">
-            {primarias.map((it) => (
-              <div
-                key={it.label}
-                className="min-w-0 rounded-lg border border-gray-100 bg-gray-50/80 px-2.5 py-2 text-center md:text-left"
-                title={it.hint}
-              >
-                <div className="flex flex-wrap items-center justify-center gap-1.5 text-gray-700 md:justify-start">
-                  <span className="text-base leading-none shrink-0" aria-hidden>
-                    {it.icon}
-                  </span>
-                  <span className="text-[10px] font-semibold leading-snug text-gray-600">
-                    {it.label}
-                  </span>
+        <section aria-describedby="panel-metricas-rendimiento-desc">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {loading ? (
+              <>
+                {[0, 1, 2].map((k) => (
+                  <div
+                    key={k}
+                    className="rounded-xl border border-gray-100 bg-white p-4"
+                    aria-hidden
+                  >
+                    <div className="h-4 w-28 rounded bg-gray-200/90 animate-pulse" />
+                    <div className="mt-3 h-9 w-16 rounded bg-gray-200/90 animate-pulse" />
+                    <div className="mt-2 h-3 w-full max-w-[12rem] rounded bg-gray-100 animate-pulse" />
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <p className="text-sm font-medium text-gray-500">Te encontraron</p>
+                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
+                    {apariciones}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Veces que apareciste en búsquedas
+                  </p>
                 </div>
-                <p className="mt-1 text-center text-xl font-black tabular-nums text-gray-900 tracking-tight md:text-left">
-                  {it.value}
-                </p>
-              </div>
-            ))}
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <p className="text-sm font-medium text-gray-500">Vieron tu ficha</p>
+                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
+                    {vistas}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Personas que entraron a ver tu perfil
+                  </p>
+                </div>
+                <div className="rounded-xl border border-emerald-200/80 bg-white p-4 shadow-sm ring-1 ring-emerald-100/60">
+                  <p className="text-sm font-medium text-gray-500">Te contactaron</p>
+                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
+                    {clicsWhatsApp}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Personas que hicieron clic en WhatsApp
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </section>
 
         <section
-          className="space-y-2 border-t border-gray-100 pt-3"
-          aria-label="Métricas secundarias"
+          className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+          aria-label="Acciones de interés"
         >
-          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-            Más detalle
+          <h4 className="text-sm font-semibold text-gray-900">Mostraron interés</h4>
+          <p className="mt-1 text-xs leading-relaxed text-gray-500">
+            Además de WhatsApp, estas acciones indican que alguien quiso saber más de tu
+            negocio.
           </p>
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            {secundarias.map((it) => (
-              <div
-                key={it.label}
-                className="min-w-0 rounded-lg border border-gray-100/90 bg-white px-2.5 py-2"
-                title={it.hint}
-              >
-                <div className="flex items-start gap-1.5 text-gray-700">
-                  <span className="text-sm leading-none shrink-0 pt-0.5" aria-hidden>
-                    {it.icon}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-semibold leading-snug text-gray-600">
-                      {it.label}
-                    </p>
-                    <p className="mt-0.5 text-lg font-black tabular-nums text-gray-900">
-                      {it.value}
-                    </p>
-                  </div>
+          {loading ? (
+            <div className="mt-4 space-y-3" aria-hidden>
+              {[0, 1, 2].map((k) => (
+                <div key={k} className="flex justify-between gap-4">
+                  <div className="h-4 flex-1 max-w-[10rem] rounded bg-gray-100 animate-pulse" />
+                  <div className="h-4 w-10 rounded bg-gray-100 animate-pulse" />
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <ul className="mt-4 list-none space-y-0 divide-y divide-gray-100 p-0">
+              {interesRows.map((row) => (
+                <li
+                  key={row.label}
+                  className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                >
+                  <span className="text-sm text-gray-600">{row.label}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">
+                    {row.value}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
+
+        {!loading ? (
+          <div
+            className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
+            role="status"
+          >
+            {insight}
+          </div>
+        ) : (
+          <div
+            className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
+            aria-hidden
+          />
+        )}
       </div>
     </div>
   );
@@ -1010,6 +1049,7 @@ export default function PanelClient({
                 <MetricsResumenPanel
                   data={metricsMostrados}
                   rangeLabel={textoRangoMetricas(rangoMostrado)}
+                  loading={loading}
                 />
               </div>
             </div>
