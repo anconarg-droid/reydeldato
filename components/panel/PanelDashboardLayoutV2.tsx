@@ -30,7 +30,7 @@ export default function PanelDashboardLayoutV2({
     <main className="mx-auto w-full max-w-[1180px] px-4 py-6">
       {backButton}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_380px] md:items-start">
         <section className="min-w-0 space-y-4">
           {DEBUG_GRID ? <div className="bg-red-200 p-2">LEFT</div> : null}
           {tuNegocio}
