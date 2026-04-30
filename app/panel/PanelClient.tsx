@@ -283,7 +283,7 @@ function MetricsResumenPanel({
 
   return (
     <div
-      className="w-full max-w-3xl rounded-xl border border-gray-200 bg-white px-3 py-4 shadow-sm sm:px-5 sm:py-5"
+      className="w-full min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-4 shadow-sm sm:px-5 sm:py-5"
       title={rangeLabel}
       aria-label={ariaResumen}
     >
@@ -891,15 +891,18 @@ export default function PanelClient({
 
   if (loading || data === null) {
     return (
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
-        <PanelBrandHomeBar />
-        Cargando…
+      <div className="w-full">
+        <div className="mx-auto w-full max-w-[1120px] px-4 py-8 space-y-5">
+          <PanelBrandHomeBar />
+          Cargando…
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-8 space-y-4">
+    <div className="w-full">
+      <div className="mx-auto w-full max-w-[1120px] px-4 py-5 lg:py-8 space-y-4">
       <PanelBrandHomeBar />
       {planesUiVisible && pagoResult === "exito" ? (
         <p
@@ -924,8 +927,8 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-[minmax(0,1fr)_320px] md:items-start md:gap-5">
-        <div className="min-w-0 space-y-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        <div className="min-w-0 space-y-4">
           <div
             className="max-w-3xl rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
             aria-label={`Tu negocio: ${tituloHeaderPanel}`}
@@ -1084,7 +1087,7 @@ export default function PanelClient({
           ) : null}
         </div>
 
-        <aside className="min-w-0 space-y-3 overflow-x-hidden md:sticky md:top-6 md:self-start">
+        <div className="min-w-0 space-y-4 overflow-x-hidden lg:sticky lg:top-6 lg:self-start">
           {estadisticasOcultasEnPanel ? (
             <div
               className="w-full rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
@@ -1146,11 +1149,11 @@ export default function PanelClient({
           {tieneNegocio ? (
             fichaLoading ? (
               <div
-                className="w-full max-w-[360px] rounded-xl border border-gray-200 bg-gray-100 min-h-[240px] animate-pulse lg:max-w-none"
+                className="w-full min-w-0 rounded-xl border border-gray-200 bg-gray-100 min-h-[240px] animate-pulse"
                 aria-hidden
               />
             ) : previewCardProps ? (
-              <div className="w-full max-w-[360px] space-y-2 lg:max-w-none">
+              <div className="w-full min-w-0 space-y-2">
                 {previewInformativa && negocioItem ? (
                   <div
                     role="status"
@@ -1173,7 +1176,7 @@ export default function PanelClient({
               </div>
             ) : (
               <div
-                className="w-full max-w-[360px] rounded-xl border border-gray-200 bg-gray-50 min-h-[180px] animate-pulse lg:max-w-none"
+                className="w-full min-w-0 rounded-xl border border-gray-200 bg-gray-50 min-h-[180px] animate-pulse"
                 aria-hidden
               />
             )
@@ -1208,7 +1211,7 @@ export default function PanelClient({
               />
             )
           ) : null}
-        </aside>
+        </div>
       </div>
 
       {tieneNegocio && !fichaLoading && negocioItem ? (
@@ -1264,6 +1267,7 @@ export default function PanelClient({
           />
         </section>
       ) : null}
+      </div>
     </div>
   );
 }
