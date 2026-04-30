@@ -283,21 +283,21 @@ function MetricsResumenPanel({
 
   return (
     <div
-      className="w-full min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-3 shadow-sm sm:px-4 sm:py-3.5"
+      className="w-full min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-3.5 shadow-sm sm:px-5 sm:py-4"
       title={rangeLabel}
       aria-label={ariaResumen}
     >
-      <div className="space-y-3">
-        <div className="space-y-1">
+      <div className="space-y-4">
+        <div className="space-y-1.5">
           <h3
             id="panel-metricas-rendimiento-titulo"
-            className="text-[15px] font-semibold leading-tight tracking-tight text-gray-900 sm:text-base"
+            className="text-base font-semibold tracking-tight text-gray-900"
           >
             Rendimiento de tu negocio
           </h3>
           <p
             id="panel-metricas-rendimiento-desc"
-            className="text-xs leading-snug text-gray-500 sm:text-sm sm:leading-relaxed"
+            className="text-sm leading-snug text-gray-500 sm:leading-relaxed"
           >
             Estas métricas muestran cuántas veces apareciste, cuántas personas vieron
             tu ficha y cuántas intentaron contactarte.
@@ -305,53 +305,47 @@ function MetricsResumenPanel({
         </div>
 
         <section aria-describedby="panel-metricas-rendimiento-desc">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-2.5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-3">
             {loading ? (
               <>
                 {[0, 1, 2].map((k) => (
                   <div
                     key={k}
-                    className="rounded-lg border border-gray-100 bg-white p-3"
+                    className="rounded-xl border border-gray-100 bg-white p-3.5"
                     aria-hidden
                   >
-                    <div className="h-3.5 w-24 rounded bg-gray-200/90 animate-pulse" />
-                    <div className="mt-2 h-8 w-14 rounded bg-gray-200/90 animate-pulse" />
-                    <div className="mt-1.5 h-2.5 w-full max-w-[10rem] rounded bg-gray-100 animate-pulse" />
+                    <div className="h-4 w-28 rounded bg-gray-200/90 animate-pulse" />
+                    <div className="mt-2.5 h-9 w-16 rounded bg-gray-200/90 animate-pulse" />
+                    <div className="mt-2 h-3 w-full max-w-[11rem] rounded bg-gray-100 animate-pulse" />
                   </div>
                 ))}
               </>
             ) : (
               <>
-                <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-                  <p className="text-xs font-medium text-gray-500 sm:text-sm">
-                    Te encontraron
-                  </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900 sm:text-[26px]">
+                <div className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
+                  <p className="text-sm font-medium text-gray-500">Te encontraron</p>
+                  <p className="mt-1.5 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
                     {apariciones}
                   </p>
-                  <p className="mt-0.5 text-[11px] leading-snug text-gray-500 sm:text-xs">
+                  <p className="mt-1 text-xs text-gray-500">
                     Veces que apareciste en búsquedas
                   </p>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-                  <p className="text-xs font-medium text-gray-500 sm:text-sm">
-                    Vieron tu ficha
-                  </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900 sm:text-[26px]">
+                <div className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
+                  <p className="text-sm font-medium text-gray-500">Vieron tu ficha</p>
+                  <p className="mt-1.5 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
                     {vistas}
                   </p>
-                  <p className="mt-0.5 text-[11px] leading-snug text-gray-500 sm:text-xs">
+                  <p className="mt-1 text-xs text-gray-500">
                     Personas que entraron a ver tu perfil
                   </p>
                 </div>
-                <div className="rounded-lg border border-emerald-200/80 bg-white p-3 shadow-sm ring-1 ring-emerald-100/60">
-                  <p className="text-xs font-medium text-gray-500 sm:text-sm">
-                    Te contactaron
-                  </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900 sm:text-[26px]">
+                <div className="rounded-xl border border-emerald-200/80 bg-white p-3.5 shadow-sm ring-1 ring-emerald-100/60">
+                  <p className="text-sm font-medium text-gray-500">Te contactaron</p>
+                  <p className="mt-1.5 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
                     {clicsWhatsApp}
                   </p>
-                  <p className="mt-0.5 text-[11px] leading-snug text-gray-500 sm:text-xs">
+                  <p className="mt-1 text-xs text-gray-500">
                     Personas que hicieron clic en WhatsApp
                   </p>
                 </div>
@@ -361,32 +355,32 @@ function MetricsResumenPanel({
         </section>
 
         <section
-          className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm sm:p-3.5"
+          className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm sm:p-4"
           aria-label="Acciones de interés"
         >
           <h4 className="text-sm font-semibold text-gray-900">Mostraron interés</h4>
-          <p className="mt-0.5 text-[11px] leading-snug text-gray-500 sm:text-xs sm:leading-relaxed">
+          <p className="mt-1 text-xs leading-relaxed text-gray-500">
             Además de WhatsApp, estas acciones indican que alguien quiso saber más de tu
             negocio.
           </p>
           {loading ? (
-            <div className="mt-2.5 space-y-2" aria-hidden>
+            <div className="mt-3 space-y-2.5" aria-hidden>
               {[0, 1, 2].map((k) => (
                 <div key={k} className="flex justify-between gap-4">
-                  <div className="h-3.5 flex-1 max-w-[10rem] rounded bg-gray-100 animate-pulse" />
-                  <div className="h-3.5 w-8 rounded bg-gray-100 animate-pulse" />
+                  <div className="h-4 flex-1 max-w-[10rem] rounded bg-gray-100 animate-pulse" />
+                  <div className="h-4 w-10 rounded bg-gray-100 animate-pulse" />
                 </div>
               ))}
             </div>
           ) : (
-            <ul className="mt-2.5 list-none space-y-0 divide-y divide-gray-100 p-0">
+            <ul className="mt-3 list-none space-y-0 divide-y divide-gray-100 p-0">
               {interesRows.map((row) => (
                 <li
                   key={row.label}
-                  className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
+                  className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
                 >
-                  <span className="text-xs text-gray-600 sm:text-sm">{row.label}</span>
-                  <span className="shrink-0 text-xs font-semibold tabular-nums text-gray-900 sm:text-sm">
+                  <span className="text-sm text-gray-600">{row.label}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">
                     {row.value}
                   </span>
                 </li>
@@ -398,14 +392,14 @@ function MetricsResumenPanel({
         {!omitInsight ? (
           !loading ? (
             <div
-              className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm leading-snug text-emerald-950"
+              className="rounded-xl border border-green-200 bg-green-50 p-3.5 text-sm leading-relaxed text-emerald-950"
               role="status"
             >
               {panelInsightMessage(apariciones, vistas, clicsWhatsApp)}
             </div>
           ) : (
             <div
-              className="h-11 rounded-lg border border-green-100 bg-green-50/80 animate-pulse"
+              className="h-12 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
               aria-hidden
             />
           )
@@ -933,8 +927,8 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
-        <div className="min-w-0 space-y-6 lg:space-y-7">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.35fr_1fr] lg:items-start">
+        <div className="min-w-0 space-y-5 lg:space-y-6">
           <div
             className="max-w-3xl rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
             aria-label={`Tu negocio: ${tituloHeaderPanel}`}
@@ -1022,13 +1016,22 @@ export default function PanelClient({
             />
           ) : null}
 
+          {tieneNegocio ? (
+            <BloqueFichaPctYMejorar
+              fichaLoading={fichaLoading}
+              fichaInfo={fichaInfo}
+              editarMiFichaHref={editarMiFichaHref}
+            />
+          ) : null}
+
           {tieneNegocio &&
           !fichaLoading &&
           mostrarBloqueCuandoTerminePlan(comercial) ? (
             <div className="max-w-3xl space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
-              <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 lg:gap-5">
+              {/* Una sola columna: evita que el bloque "Compara" se desborde al gutter con el grid de 2 cols del panel */}
+              <div className="grid grid-cols-1 items-stretch gap-4">
                 <BloqueCuandoTerminePlan sinCaja />
-                <div className="flex w-full max-w-sm flex-col items-center justify-center gap-2.5 rounded-lg border border-amber-300/50 bg-white/90 p-3 text-center shadow-inner mx-auto lg:mx-0">
+                <div className="flex w-full max-w-md flex-col items-center justify-center gap-2.5 rounded-lg border border-amber-300/50 bg-white/90 p-3 text-center shadow-inner mx-auto sm:max-w-lg">
                   <p className="w-full px-1 text-center text-base font-black leading-tight text-gray-900">
                     Compara cómo te ven
                   </p>
@@ -1053,7 +1056,7 @@ export default function PanelClient({
               ) : null}
             </div>
           ) : tieneNegocio && !fichaLoading ? (
-            <div className="flex max-w-sm flex-col items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/90 px-3 py-3 text-center mx-auto lg:mx-0 lg:max-w-3xl lg:flex-row lg:justify-center lg:gap-6">
+            <div className="mx-auto flex w-full max-w-md flex-col items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/90 px-3 py-3 text-center sm:max-w-lg">
               <p className="text-sm font-black text-gray-900">
                 Compara cómo te ven
               </p>
@@ -1066,14 +1069,6 @@ export default function PanelClient({
                 size="prominent"
               />
             </div>
-          ) : null}
-
-          {tieneNegocio ? (
-            <BloqueFichaPctYMejorar
-              fichaLoading={fichaLoading}
-              fichaInfo={fichaInfo}
-              editarMiFichaHref={editarMiFichaHref}
-            />
           ) : null}
 
           {!id?.trim() && !esPremium ? (
