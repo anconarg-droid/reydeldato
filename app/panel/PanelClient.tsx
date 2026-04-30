@@ -947,7 +947,7 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:items-start">
         <div className="min-w-0 space-y-4">
           <div
             className="max-w-3xl rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
@@ -1183,7 +1183,7 @@ export default function PanelClient({
                     </p>
                   </div>
                 ) : null}
-                <div className="origin-top scale-[0.97] lg:scale-95">
+                <div className="w-full">
                   <EmprendedorSearchCard
                     {...previewCardProps}
                     modoVista={modoVista}
