@@ -947,7 +947,7 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.75fr)] xl:items-start">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
         <div className="min-w-0 space-y-4">
           <div
             className="max-w-3xl rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
@@ -1107,7 +1107,7 @@ export default function PanelClient({
           ) : null}
         </div>
 
-        <div className="min-w-0 space-y-4 overflow-x-hidden xl:sticky xl:top-6 xl:self-start">
+        <aside className="min-w-0 space-y-4 overflow-x-hidden lg:sticky lg:top-24">
           {estadisticasOcultasEnPanel ? (
             <div
               className="w-full rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
@@ -1125,7 +1125,7 @@ export default function PanelClient({
             </div>
           ) : null}
           {qs && !estadisticasOcultasEnPanel ? (
-            <div className="w-full max-w-[460px]">
+            <div className="w-full">
               <MetricsResumenPanel
                 data={metricsMostrados}
                 rangeLabel={textoRangoMetricas(rangoMostrado)}
@@ -1224,7 +1224,7 @@ export default function PanelClient({
               />
             )
           ) : null}
-        </div>
+        </aside>
       </div>
 
       {tieneNegocio && !fichaLoading && negocioItem ? (
