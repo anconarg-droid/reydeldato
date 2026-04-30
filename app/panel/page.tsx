@@ -46,7 +46,7 @@ export default async function Page({
 
     if (!empRow && !postRow) {
       return (
-        <main className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-10 space-y-4">
+        <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-4">
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <h1 className="text-xl font-extrabold text-gray-900">
               Tu enlace venció

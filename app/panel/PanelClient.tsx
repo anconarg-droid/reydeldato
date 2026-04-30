@@ -891,7 +891,7 @@ export default function PanelClient({
 
   if (loading || data === null) {
     return (
-      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
         <PanelBrandHomeBar />
         Cargando…
       </div>
@@ -899,7 +899,7 @@ export default function PanelClient({
   }
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-8 space-y-4">
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-8 space-y-4">
       <PanelBrandHomeBar />
       {planesUiVisible && pagoResult === "exito" ? (
         <p
