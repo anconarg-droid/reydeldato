@@ -912,7 +912,7 @@ export default function PanelClient({
   if (loading || data === null) {
     return (
       <div className="w-full">
-        <div className="mx-auto w-full max-w-[1120px] px-4 py-8 space-y-5">
+        <div className="mx-auto w-full max-w-[1180px] px-4 py-8 space-y-5">
           <PanelBrandHomeBar />
           Cargando…
         </div>
@@ -922,7 +922,7 @@ export default function PanelClient({
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-[1120px] px-4 py-5 lg:py-8 space-y-4">
+      <div className="mx-auto w-full max-w-[1180px] px-4 py-5 lg:py-8 space-y-4">
       <PanelBrandHomeBar />
       {planesUiVisible && pagoResult === "exito" ? (
         <p
@@ -947,8 +947,8 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 min-[520px]:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] min-[520px]:items-start">
-        <div className="min-w-0 w-full max-w-[640px] space-y-4 sm:justify-self-start">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.75fr)] xl:items-start">
+        <div className="min-w-0 space-y-4">
           <div
             className="max-w-3xl rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
             aria-label={`Tu negocio: ${tituloHeaderPanel}`}
@@ -1036,6 +1036,14 @@ export default function PanelClient({
             />
           ) : null}
 
+          {tieneNegocio ? (
+            <BloqueFichaPctYMejorar
+              fichaLoading={fichaLoading}
+              fichaInfo={fichaInfo}
+              editarMiFichaHref={editarMiFichaHref}
+            />
+          ) : null}
+
           {tieneNegocio &&
           !fichaLoading &&
           mostrarBloqueCuandoTerminePlan(comercial) ? (
@@ -1082,14 +1090,6 @@ export default function PanelClient({
             </div>
           ) : null}
 
-          {tieneNegocio ? (
-            <BloqueFichaPctYMejorar
-              fichaLoading={fichaLoading}
-              fichaInfo={fichaInfo}
-              editarMiFichaHref={editarMiFichaHref}
-            />
-          ) : null}
-
           {!id?.trim() && !esPremium ? (
             (() => {
               const wa = buildActivarFichaWhatsAppHref(slug);
@@ -1107,7 +1107,7 @@ export default function PanelClient({
           ) : null}
         </div>
 
-        <div className="min-w-0 space-y-4 overflow-x-hidden min-[520px]:justify-self-end lg:sticky lg:top-6 lg:self-start">
+        <div className="min-w-0 space-y-4 overflow-x-hidden xl:sticky xl:top-6 xl:self-start">
           {estadisticasOcultasEnPanel ? (
             <div
               className="w-full rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
@@ -1125,37 +1125,35 @@ export default function PanelClient({
             </div>
           ) : null}
           {qs && !estadisticasOcultasEnPanel ? (
-            <div className="w-full">
-              <div className="flex flex-col gap-2.5">
-                <MetricsResumenPanel
-                  data={metricsMostrados}
-                  rangeLabel={textoRangoMetricas(rangoMostrado)}
-                  loading={loading}
-                  omitInsight
-                  headerRight={
-                    <div
-                      className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
-                      role="group"
-                      aria-label="Periodo de estadísticas"
-                    >
-                      {(["7d", "30d", "all"] as const).map((r) => (
-                        <button
-                          key={r}
-                          type="button"
-                          onClick={() => setRange(r)}
-                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                            range === r
-                              ? "bg-gray-900 text-white"
-                              : "text-gray-600 hover:bg-gray-100"
-                          }`}
-                        >
-                          {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
-                        </button>
-                      ))}
-                    </div>
-                  }
-                />
-              </div>
+            <div className="w-full max-w-[460px]">
+              <MetricsResumenPanel
+                data={metricsMostrados}
+                rangeLabel={textoRangoMetricas(rangoMostrado)}
+                loading={loading}
+                omitInsight
+                headerRight={
+                  <div
+                    className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
+                    role="group"
+                    aria-label="Periodo de estadísticas"
+                  >
+                    {(["7d", "30d", "all"] as const).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setRange(r)}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                          range === r
+                            ? "bg-gray-900 text-white"
+                            : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
+                      </button>
+                    ))}
+                  </div>
+                }
+              />
             </div>
           ) : null}
 
@@ -1165,11 +1163,11 @@ export default function PanelClient({
           {tieneNegocio ? (
             fichaLoading ? (
               <div
-                className="w-full min-w-0 rounded-xl border border-gray-200 bg-gray-100 min-h-[240px] animate-pulse"
+                className="mx-auto w-full max-w-[390px] rounded-xl border border-gray-200 bg-gray-100 min-h-[240px] animate-pulse"
                 aria-hidden
               />
             ) : previewCardProps ? (
-              <div className="w-full min-w-0 space-y-2">
+              <div className="mx-auto w-full max-w-[390px] space-y-2">
                 {previewInformativa && negocioItem ? (
                   <div
                     role="status"
@@ -1183,17 +1181,15 @@ export default function PanelClient({
                     </p>
                   </div>
                 ) : null}
-                <div className="w-full">
-                  <EmprendedorSearchCard
-                    {...previewCardProps}
-                    modoVista={modoVista}
-                    etiquetaVerFicha="Ver ficha completa"
-                  />
-                </div>
+                <EmprendedorSearchCard
+                  {...previewCardProps}
+                  modoVista={modoVista}
+                  etiquetaVerFicha="Ver ficha completa"
+                />
               </div>
             ) : (
               <div
-                className="w-full min-w-0 rounded-xl border border-gray-200 bg-gray-50 min-h-[180px] animate-pulse"
+                className="mx-auto w-full max-w-[390px] rounded-xl border border-gray-200 bg-gray-50 min-h-[180px] animate-pulse"
                 aria-hidden
               />
             )
