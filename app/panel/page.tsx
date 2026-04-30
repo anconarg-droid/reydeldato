@@ -98,17 +98,15 @@ export default async function Page({
   }
 
   return (
-    <main className="w-full">
-      <PanelClient
-        id={emprendedorId}
-        slug={slug}
-        accessToken={accessTokenForClient}
-        mejorarFichaFocus={focus || null}
-        esPremium={false}
-        pagoResult={
-          pago === "exito" ? "exito" : pago === "fallo" ? "fallo" : null
-        }
-      />
-    </main>
+    <PanelClient
+      id={emprendedorId}
+      slug={slug}
+      accessToken={accessTokenForClient}
+      mejorarFichaFocus={focus || null}
+      esPremium={false}
+      pagoResult={
+        pago === "exito" ? "exito" : pago === "fallo" ? "fallo" : null
+      }
+    />
   );
 }
