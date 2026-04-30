@@ -518,11 +518,13 @@ function BloqueCuandoTerminePlan({ sinCaja }: { sinCaja?: boolean }) {
         Cuando termine tu plan:
       </h2>
       <ul className="list-disc pl-4 space-y-1 text-sm text-gray-800 leading-snug">
-        <li>Sigue visible en el directorio (ficha básica y WhatsApp)</li>
-        <li>Pasarás a ficha básica: menos fotos, texto y enlaces que la completa</li>
-        <li>En zonas con directorio en crecimiento, la ficha completa suele resaltarse más</li>
-        <li>Vecinos pueden recomendar negocios; publicar sigue siendo gratuito</li>
+        <li>Tu negocio seguirá visible en tu comuna</li>
+        <li>Pasarás a ficha básica: solo WhatsApp y datos esenciales</li>
+        <li>No podrás mostrar fotos, redes ni descripción completa</li>
       </ul>
+      <p className="mt-3 text-sm text-gray-800 leading-snug">
+        Puedes activar la ficha completa cuando quieras para mostrar mejor tu negocio.
+      </p>
     </>
   );
 
