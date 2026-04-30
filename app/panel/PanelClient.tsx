@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import PanelBrandHomeBar from "@/components/panel/PanelBrandHomeBar";
 import PanelFichaPublicaEmbed from "@/components/panel/PanelFichaPublicaEmbed";
@@ -258,6 +258,7 @@ function MetricsResumenPanel({
   rangeLabel,
   loading = false,
   omitInsight = false,
+  headerRight,
 }: {
   data: Metrics;
   rangeLabel: string;
@@ -265,6 +266,7 @@ function MetricsResumenPanel({
   loading?: boolean;
   /** Si true, no renderiza la caja de insight (se muestra fuera del card, p. ej. bajo la vista previa). */
   omitInsight?: boolean;
+  headerRight?: ReactNode;
 }) {
   const v = (n: number) => (Number.isFinite(n) ? n : 0);
   const comoLlegar = v(data.click_waze) + v(data.click_maps);
@@ -273,13 +275,7 @@ function MetricsResumenPanel({
   const clicsWhatsApp = v(data.click_whatsapp);
   const clicsInstagramWeb = v(data.click_ficha);
 
-  const ariaResumen = `${rangeLabel}. Te encontraron ${apariciones}, vieron tu ficha ${vistas}, te contactaron ${clicsWhatsApp}. Mostraron interés: WhatsApp ${clicsWhatsApp}, Instagram o web ${clicsInstagramWeb}, cómo llegar ${comoLlegar}.`;
-
-  const interesRows = [
-    { label: "WhatsApp", value: clicsWhatsApp },
-    { label: "Instagram / Web", value: clicsInstagramWeb },
-    { label: "Cómo llegar", value: comoLlegar },
-  ] as const;
+  const ariaResumen = `${rangeLabel}. Te encontraron ${apariciones}, vieron tu ficha ${vistas}, te contactaron ${clicsWhatsApp}. Mostraron interés: Instagram o web ${clicsInstagramWeb}, cómo llegar ${comoLlegar}.`;
 
   return (
     <div
@@ -288,20 +284,22 @@ function MetricsResumenPanel({
       aria-label={ariaResumen}
     >
       <div className="space-y-5">
-        <div className="space-y-1.5">
-          <h3
-            id="panel-metricas-rendimiento-titulo"
-            className="text-base font-semibold tracking-tight text-gray-900"
-          >
-            Rendimiento de tu negocio
-          </h3>
-          <p
-            id="panel-metricas-rendimiento-desc"
-            className="text-sm leading-relaxed text-gray-500"
-          >
-            Estas métricas muestran cuántas veces apareciste, cuántas personas vieron
-            tu ficha y cuántas intentaron contactarte.
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1.5">
+            <h3
+              id="panel-metricas-rendimiento-titulo"
+              className="text-base font-semibold tracking-tight text-gray-900"
+            >
+              Rendimiento de tu negocio
+            </h3>
+            <p
+              id="panel-metricas-rendimiento-desc"
+              className="text-sm leading-relaxed text-gray-500"
+            >
+              Cuántas veces apareciste y qué hicieron las personas.
+            </p>
+          </div>
+          {headerRight ? <div className="shrink-0">{headerRight}</div> : null}
         </div>
 
         <section aria-describedby="panel-metricas-rendimiento-desc">
@@ -311,7 +309,7 @@ function MetricsResumenPanel({
                 {[0, 1, 2].map((k) => (
                   <div
                     key={k}
-                    className="rounded-xl border border-gray-100 bg-white p-4"
+                    className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-center"
                     aria-hidden
                   >
                     <div className="h-4 w-28 rounded bg-gray-200/90 animate-pulse" />
@@ -322,31 +320,37 @@ function MetricsResumenPanel({
               </>
             ) : (
               <>
-                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                  <p className="text-sm font-medium text-gray-500">Te encontraron</p>
-                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                  <p className="text-lg" aria-hidden>
+                    🔍
+                  </p>
+                  <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
                     {apariciones}
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Veces que apareciste en búsquedas
+                  <p className="mt-1 text-sm font-semibold text-gray-700">
+                    Te encontraron
                   </p>
                 </div>
-                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                  <p className="text-sm font-medium text-gray-500">Vieron tu ficha</p>
-                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                  <p className="text-lg" aria-hidden>
+                    👁
+                  </p>
+                  <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
                     {vistas}
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Personas que entraron a ver tu perfil
+                  <p className="mt-1 text-sm font-semibold text-gray-700">
+                    Vieron tu ficha
                   </p>
                 </div>
-                <div className="rounded-xl border border-emerald-200/80 bg-white p-4 shadow-sm ring-1 ring-emerald-100/60">
-                  <p className="text-sm font-medium text-gray-500">Te contactaron</p>
-                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
+                <div className="rounded-xl border border-emerald-200/80 bg-gray-50 p-4 text-center ring-1 ring-emerald-100/60">
+                  <p className="text-lg" aria-hidden>
+                    💬
+                  </p>
+                  <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
                     {clicsWhatsApp}
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Personas que hicieron clic en WhatsApp
+                  <p className="mt-1 text-sm font-semibold text-gray-700">
+                    Te contactaron
                   </p>
                 </div>
               </>
@@ -354,18 +358,21 @@ function MetricsResumenPanel({
           </div>
         </section>
 
+        <hr className="border-gray-200" aria-hidden />
+
         <section
-          className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-          aria-label="Acciones de interés"
+          className="space-y-2"
+          aria-label="Mostraron interés"
         >
-          <h4 className="text-sm font-semibold text-gray-900">Mostraron interés</h4>
-          <p className="mt-1 text-xs leading-relaxed text-gray-500">
-            Además de WhatsApp, estas acciones indican que alguien quiso saber más de tu
-            negocio.
-          </p>
+          <div className="space-y-0.5">
+            <h4 className="text-sm font-semibold text-gray-900">Mostraron interés</h4>
+            <p className="text-xs leading-relaxed text-gray-500">
+              Otras acciones que indican interés
+            </p>
+          </div>
           {loading ? (
             <div className="mt-4 space-y-3" aria-hidden>
-              {[0, 1, 2].map((k) => (
+              {[0, 1].map((k) => (
                 <div key={k} className="flex justify-between gap-4">
                   <div className="h-4 flex-1 max-w-[10rem] rounded bg-gray-100 animate-pulse" />
                   <div className="h-4 w-10 rounded bg-gray-100 animate-pulse" />
@@ -373,19 +380,30 @@ function MetricsResumenPanel({
               ))}
             </div>
           ) : (
-            <ul className="mt-4 list-none space-y-0 divide-y divide-gray-100 p-0">
-              {interesRows.map((row) => (
-                <li
-                  key={row.label}
-                  className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-                >
-                  <span className="text-sm text-gray-600">{row.label}</span>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">
-                    {row.value}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                <p className="text-lg" aria-hidden>
+                  🌐
+                </p>
+                <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+                  {clicsInstagramWeb}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-gray-700">
+                  Instagram / Web
+                </p>
+              </div>
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                <p className="text-lg" aria-hidden>
+                  🗺
+                </p>
+                <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+                  {comoLlegar}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-gray-700">
+                  Cómo llegar
+                </p>
+              </div>
+            </div>
           )}
         </section>
 
@@ -1107,37 +1125,33 @@ export default function PanelClient({
           {qs && !estadisticasOcultasEnPanel ? (
             <div className="w-full">
               <div className="flex flex-col gap-2.5">
-                <div className="flex w-full justify-start">
-                  <div
-                    className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
-                    role="group"
-                    aria-label="Periodo de estadísticas"
-                  >
-                    {(["7d", "30d", "all"] as const).map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => setRange(r)}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                          range === r
-                            ? "bg-gray-900 text-white"
-                            : "text-gray-600 hover:bg-gray-100"
-                        }`}
-                      >
-                        {r === "7d"
-                          ? "7 días"
-                          : r === "30d"
-                            ? "30 días"
-                            : "Desde activación"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
                 <MetricsResumenPanel
                   data={metricsMostrados}
                   rangeLabel={textoRangoMetricas(rangoMostrado)}
                   loading={loading}
                   omitInsight
+                  headerRight={
+                    <div
+                      className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
+                      role="group"
+                      aria-label="Periodo de estadísticas"
+                    >
+                      {(["7d", "30d", "all"] as const).map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setRange(r)}
+                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                            range === r
+                              ? "bg-gray-900 text-white"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
+                        </button>
+                      ))}
+                    </div>
+                  }
                 />
               </div>
             </div>
@@ -1171,6 +1185,7 @@ export default function PanelClient({
                   <EmprendedorSearchCard
                     {...previewCardProps}
                     modoVista={modoVista}
+                    etiquetaVerFicha="Ver ficha completa"
                   />
                 </div>
               </div>
