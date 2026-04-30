@@ -1040,9 +1040,9 @@ export default function PanelClient({
           !fichaLoading &&
           mostrarBloqueCuandoTerminePlan(comercial) ? (
             <div className="max-w-3xl space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
-              <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 lg:gap-5">
+              <div className="space-y-4">
                 <BloqueCuandoTerminePlan sinCaja />
-                <div className="flex w-full max-w-sm flex-col items-center justify-center gap-2.5 rounded-lg border border-amber-300/50 bg-white/90 p-3 text-center shadow-inner mx-auto lg:mx-0">
+                <div className="flex w-full max-w-md flex-col items-center justify-center gap-2.5 rounded-lg border border-amber-300/50 bg-white/90 p-3 text-center shadow-inner mx-auto">
                   <p className="w-full px-1 text-center text-base font-black leading-tight text-gray-900">
                     Compara cómo te ven
                   </p>
