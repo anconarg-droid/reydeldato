@@ -62,7 +62,7 @@ export type TerritorialAccordionBlockProps = {
 };
 
 /**
- * Barra acordeón full width: título + subtítulo a la izquierda, pill “Ver resultados” a la derecha.
+ * Barra acordeón full width: en móvil título/subtítulo y pill apilados; desde `sm` fila con pill a la derecha.
  */
 export default function TerritorialAccordionBlock({
   variant,
@@ -107,9 +107,6 @@ export default function TerritorialAccordionBlock({
   const sectionClass = isLocal
     ? "w-full min-w-0 overflow-hidden rounded-2xl border border-emerald-800/35 bg-[#0d7a5f] shadow-lg"
     : "w-full min-w-0 overflow-hidden rounded-2xl border border-teal-200 bg-emerald-50 shadow-md";
-  const buttonClass = isLocal
-    ? "group flex w-full min-h-[4.5rem] cursor-pointer items-center justify-between gap-3 px-4 py-[0.85rem] text-left transition-colors hover:bg-[#0b6b54] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d7a5f] sm:min-h-0 sm:px-4 sm:py-[0.85rem]"
-    : "group flex w-full min-h-[4.5rem] cursor-pointer items-center justify-between gap-3 border-b border-teal-200/90 bg-emerald-50/90 px-4 py-[0.85rem] text-left transition-colors hover:bg-emerald-100/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:min-h-0 sm:px-4 sm:py-[0.85rem]";
   const titleClass = isLocal
     ? "block text-base font-black leading-snug tracking-tight text-white sm:text-lg"
     : "block text-base font-black leading-snug tracking-tight text-teal-900 sm:text-lg";
@@ -123,6 +120,14 @@ export default function TerritorialAccordionBlock({
     ? "border-t border-emerald-900/25 bg-white px-4 py-5 sm:px-5 sm:py-6"
     : "border-t border-teal-200/90 bg-white px-4 py-5 sm:px-5 sm:py-6";
 
+  /** Móvil: título arriba y pill ancho completo debajo; desktop: fila con botón a la derecha (sin superposición). */
+  const headerButtonClass = isLocal
+    ? "group flex w-full cursor-pointer flex-col gap-3 px-4 py-[0.85rem] text-left transition-colors hover:bg-[#0b6b54] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d7a5f] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+    : "group flex w-full cursor-pointer flex-col gap-3 border-b border-teal-200/90 bg-emerald-50/90 px-4 py-[0.85rem] text-left transition-colors hover:bg-emerald-100/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:flex-row sm:items-center sm:justify-between sm:gap-4";
+
+  const pillLayoutClass =
+    "inline-flex w-full shrink-0 items-center justify-center gap-1.5 sm:w-auto sm:justify-start";
+
   const btnId = `${instanceId}-titulo`;
   const panelId = `${instanceId}-panel`;
   const expanded = !collapsed;
@@ -134,15 +139,15 @@ export default function TerritorialAccordionBlock({
         type="button"
         id={btnId}
         onClick={toggle}
-        className={buttonClass}
+        className={headerButtonClass}
         aria-expanded={expanded}
         aria-controls={panelId}
       >
-        <span className="min-w-0 flex-1 pr-2 text-left">
+        <div className="min-w-0 flex-1 text-left">
           <span className={titleClass}>{title}</span>
           <span className={subtitleClass}>{subtitle}</span>
-        </span>
-        <span className={pillClass}>
+        </div>
+        <span className={`${pillClass} ${pillLayoutClass}`}>
           {pillLabel}
           <AccordionChevronDown
             expanded={expanded}

@@ -34,8 +34,8 @@ function tituloYaHayNegociosEnComuna(n: number): string {
   return `De tu comuna (${n.toLocaleString("es-CL")})`;
 }
 
-function tituloYaHayNegociosQueAtienden(n: number): string {
-  return `Atienden tu comuna (${n.toLocaleString("es-CL")})`;
+function tituloYaHayNegociosQueAtienden(comunaNombre: string, n: number): string {
+  return `Atienden ${comunaNombre} desde otras comunas (${n.toLocaleString("es-CL")})`;
 }
 
 function formatPorcentajeHumano(p: number): string {
@@ -318,8 +318,8 @@ export default function AbrirComunaClient({
                       persistPrefix={territorialPersistPrefix}
                       which="atienden"
                       instanceId="abrir-comuna-bloque-atienden"
-                      title={tituloYaHayNegociosQueAtienden(cardsAtiendenDesdeFuera.length)}
-                      subtitle="Emprendimientos que atienden esta comuna desde otros lugares"
+                      title={tituloYaHayNegociosQueAtienden(safeData.comuna_nombre, cardsAtiendenDesdeFuera.length)}
+                      subtitle="Negocios con base en otra comuna que atienden esta zona"
                       defaultCollapsed
                     >
                       <EmprendedorSearchCardsGrid

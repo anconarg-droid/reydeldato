@@ -31,6 +31,7 @@ import {
   tieneModalidadLocalFisicoEnChips,
 } from "@/lib/search/emprendedorSearchCardHelpers";
 import { buildListadoPinUbicacionComuna } from "@/lib/search/listadoPinUbicacionComuna";
+import { humanizeCoverageSlug } from "@/lib/search/atiendeResumenLabel";
 import { slugify } from "@/lib/slugify";
 import {
   displayCapitalizeSentenceStarts,
@@ -328,6 +329,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         : comunaNomRaw || reg
       : "Sin información de comuna base";
 
+  const comunaBuscadaTrim = String(p.comunaBuscadaNombre || "").trim();
+  const buscadaSlugCtx = slugify(String(p.fichaContextComunaSlug ?? "").trim());
+
   const pinUbicacion = buildListadoPinUbicacionComuna({
     fichaContextComunaSlug: p.fichaContextComunaSlug,
     fichaContextComunaNombre: p.fichaContextComunaNombre,
@@ -339,6 +343,15 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     bloqueTerritorial: p.bloqueTerritorial,
   });
 
+  const nombreBuscadaTerritorial =
+    String(p.fichaContextComunaNombre ?? "").trim() ||
+    comunaBuscadaTrim ||
+    (buscadaSlugCtx ? humanizeCoverageSlug(buscadaSlugCtx) : "");
+  const ubicacionPorBloqueTerritorialExplicito =
+    Boolean(nombreBuscadaTerritorial) &&
+    (p.bloqueTerritorial === "de_tu_comuna" ||
+      p.bloqueTerritorial === "atienden_tu_comuna");
+
   const nombreRaw = String(p.nombre || "").trim();
   const nombreDisplay = nombreRaw
     ? displayTitleCaseWords(nombreRaw)
@@ -347,8 +360,6 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   const [imgBroken, setImgBroken] = useState(false);
   const mostrarFoto = urlTieneFotoListado(fotoUrl) && !imgBroken;
 
-  const comunaBuscadaTrim = String(p.comunaBuscadaNombre || "").trim();
-  const buscadaSlugCtx = slugify(String(p.fichaContextComunaSlug ?? "").trim());
   const tieneContextoComunaBuscada = Boolean(
     buscadaSlugCtx && (String(p.fichaContextComunaNombre ?? "").trim() || comunaBuscadaTrim)
   );
@@ -669,19 +680,50 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             {confianzaTexto || " "}
           </p>
 
-          {/* Ubicación: primero el contexto (comuna), luego direcciones reales (hasta 2). */}
-          <p className="m-0 min-h-[1.375rem] w-full shrink-0 truncate text-[13px] font-medium leading-tight text-slate-800">
-            <span aria-hidden>📍 </span>
-            {pinUbicacion.primary}
+          {/* Ubicación por comuna buscada: bloque territorial explícito; si no aplica, pin genérico. */}
+          {ubicacionPorBloqueTerritorialExplicito ? (
+            p.bloqueTerritorial === "de_tu_comuna" ? (
+              <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
+                <span aria-hidden>📍 </span>
+                En {nombreBuscadaTerritorial}
+              </p>
+            ) : (
+              <>
+                <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
+                  <span aria-hidden>📍 </span>
+                  Base en {comunaBaseLabel}
+                </p>
+                <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
+                  <span aria-hidden>📍 </span>
+                  Atiende {nombreBuscadaTerritorial}
+                </p>
+              </>
+            )
+          ) : (
+            <>
+              <p className="m-0 min-h-[1.375rem] w-full shrink-0 truncate text-[13px] font-medium leading-tight text-slate-800">
+                <span aria-hidden>📍 </span>
+                {pinUbicacion.primary}
+              </p>
+              {pinUbicacion.secondary ? (
+                <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 truncate text-[11px] leading-tight text-slate-500">
+                  {pinUbicacion.secondary}
+                </p>
+              ) : null}
+            </>
+          )}
+
+          <p
+            className={`m-0 w-full shrink-0 text-xs leading-snug text-slate-500 ${
+              coberturaTxt.trim() ? (homeCarousel ? "line-clamp-1" : "line-clamp-2 md:line-clamp-1") : "line-clamp-1"
+            } min-h-[1rem]`}
+            title={coberturaTxt.trim() || undefined}
+          >
+            {coberturaDisplay}
           </p>
-          {pinUbicacion.secondary ? (
-            <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 truncate text-[11px] leading-tight text-slate-500">
-              {pinUbicacion.secondary}
-            </p>
-          ) : null}
 
           <div
-            className="hidden md:flex min-h-[32px] w-full shrink-0 flex-nowrap items-center gap-1.5 overflow-hidden"
+            className="flex min-h-[32px] w-full shrink-0 flex-wrap content-center items-center gap-1.5"
             aria-hidden={!showCoberturaStatusRow}
           >
             {showCoberturaStatusRow ? (
@@ -800,12 +842,6 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             </div>
           ) : null}
 
-          <p
-            className="m-0 line-clamp-1 min-h-[1rem] w-full shrink-0 text-xs leading-snug text-slate-500"
-            title={coberturaTxt.trim() || undefined}
-          >
-            {coberturaDisplay}
-          </p>
           </div>
 
         {tieneWhatsappValido || puedeVerFichaPublica ? (

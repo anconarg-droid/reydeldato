@@ -197,10 +197,11 @@ export default function ComunaTerritorialBloquesConFiltro({
           }
           title={
             <>
-              Atienden {nombreComunaDisplay} ({aplicarSoloCompletos ? fAt.length : atiendenRaw.length})
+              Atienden {nombreComunaDisplay} desde otras comunas (
+              {aplicarSoloCompletos ? fAt.length : atiendenRaw.length})
             </>
           }
-          subtitle="Desde otras comunas"
+          subtitle="Negocios con base en otra comuna que atienden esta zona"
         >
           <CategoriaEmprendedoresGrid
             items={fAt}
