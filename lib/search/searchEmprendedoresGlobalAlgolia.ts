@@ -45,45 +45,33 @@ const INDEX_NAME =
   process.env.NEXT_PUBLIC_ALGOLIA_INDEX_EMPRENDEDORES ||
   "emprendedores";
 
-/** Término suelto normalizado → slug de subcategoría canónico (alineado a `lib/categoriasCatalogo` / seeds). */
-const INTENT_TOKEN_MAP: Record<string, string> = {
+/** Palabras normalizadas → slug subcategoría canónico (no `gasfiteria`; en BD es `gasfiter`). */
+const INTENCIONES: Record<string, string> = {
+  tortas: "pasteleria",
+  pastel: "pasteleria",
+  pasteles: "pasteleria",
   cecinas: "carniceria",
   carne: "carniceria",
   fugas: "gasfiter",
   fuga: "gasfiter",
   agua: "gasfiter",
-  destape: "gasfiter",
   destapes: "gasfiter",
-  pastel: "pasteleria",
-  pasteles: "pasteleria",
+  destape: "gasfiter",
 };
 
-const INTENT_TARGET_SLUGS = new Set(Object.values(INTENT_TOKEN_MAP));
-
-function mapQueryTokensByIntent(raw: string): string {
-  const parts = raw.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "";
-  return parts
-    .map((t) => {
-      const key = normalizeText(t);
-      return INTENT_TOKEN_MAP[key] ?? t;
-    })
-    .join(" ");
-}
-
-function detectIntentSubcategoriaSlug(queryFinal: string): string | null {
-  const tokens = normalizeText(queryFinal).split(/\s+/).filter(Boolean);
-  for (const tok of tokens) {
-    if (INTENT_TARGET_SLUGS.has(tok)) return tok;
+function detectSubcategoria(tokens: string[]): string | null {
+  for (const t of tokens) {
+    const m = INTENCIONES[t];
+    if (m) return m;
   }
   return null;
 }
 
-function rowMatchesIntentSubcategoria(
+function rowMatchesDetectedSubcategoria(
   row: Record<string, unknown>,
-  slug: string
+  detectedSub: string
 ): boolean {
-  const target = normalizeText(slug);
+  const target = normalizeText(detectedSub);
   const principal = normalizeText(
     row.subcategoria_slug_final ?? row.subcategoria_slug
   );
@@ -137,16 +125,17 @@ async function searchEmprendedoresGlobalAlgoliaInner(
   const resolvedFromSynonyms =
     (await resolveQueryFromBusquedaSinonimos(supabase, inputTerm)) || inputTerm;
 
-  const term = resolvedFromSynonyms
+  const rawTerm = resolvedFromSynonyms
     .trim()
     .replace(/,/g, " ")
     .slice(0, 120);
-  const normTerm = normalizeText(term);
-  if (!normTerm) {
+
+  const tokens = normalizeText(rawTerm).split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) {
     return { items: [], error: null };
   }
 
-  const queryForAlgolia = mapQueryTokensByIntent(term);
+  const queryForAlgolia = tokens.join(" ");
 
   const index = getAlgoliaAdminIndex(INDEX_NAME);
 
@@ -160,7 +149,10 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     page: 0,
     facetFilters: [["estado_publicacion:publicado"]],
     attributesToRetrieve: ["slug", "objectID"],
-    advancedSyntax: true,
+    optionalWords: tokens,
+    removeWordsIfNoResults: "allOptional",
+    ignorePlurals: true,
+    typoTolerance: "min",
   });
 
   const rawHits = (result.hits || []) as Record<string, unknown>[];
@@ -205,12 +197,12 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     ? orderedRows.filter((r) => rowMatchesRegionSlug(r, regionSlug))
     : orderedRows;
 
-  const detectedSlug = detectIntentSubcategoriaSlug(queryForAlgolia);
-  if (detectedSlug) {
+  const detectedSub = detectSubcategoria(tokens);
+  if (detectedSub) {
     const exact: Record<string, unknown>[] = [];
     const related: Record<string, unknown>[] = [];
     for (const r of rowsFiltered) {
-      if (rowMatchesIntentSubcategoria(r, detectedSlug)) exact.push(r);
+      if (rowMatchesDetectedSubcategoria(r, detectedSub)) exact.push(r);
       else related.push(r);
     }
     rowsFiltered = [...exact, ...related];
