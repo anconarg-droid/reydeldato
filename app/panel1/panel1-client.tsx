@@ -35,6 +35,10 @@ import {
   panelPreviewSubtituloInformativo,
 } from "@/lib/panelPreviewPublica";
 import { panelPlanesVisibleEnCliente } from "@/lib/panelPlanesVisibility";
+import {
+  panelInteresMetricasFlagsDesdeNegocioItem,
+  type PanelInteresMetricasFlags,
+} from "@/lib/panelMetricasInteresUi";
 
 type Metrics = {
   impresiones: number;
@@ -118,11 +122,13 @@ function panelInsightMessage(
 function MetricsResumenPanel({
   data,
   rangeLabel,
+  interes,
   loading = false,
   headerRight,
 }: {
   data: Metrics;
   rangeLabel: string;
+  interes: PanelInteresMetricasFlags;
   loading?: boolean;
   headerRight?: ReactNode;
 }) {
@@ -133,7 +139,26 @@ function MetricsResumenPanel({
   const clicsWhatsApp = v(data.click_whatsapp);
   const clicsInstagramWeb = v(data.click_ficha);
 
-  const ariaResumen = `${rangeLabel}. Te encontraron ${apariciones}, vieron tu ficha ${vistas}, te contactaron ${clicsWhatsApp}. Mostraron interés: Instagram o web ${clicsInstagramWeb}, cómo llegar ${comoLlegar}.`;
+  const partesInteresAria: string[] = [];
+  if (interes.mostrarInstagramWeb) {
+    partesInteresAria.push(`${interes.etiquetaInstagramWeb} ${clicsInstagramWeb}`);
+  }
+  if (interes.mostrarComoLlegar) {
+    partesInteresAria.push(`Cómo llegar ${comoLlegar}`);
+  }
+  const interesAria =
+    partesInteresAria.length > 0
+      ? ` Mostraron interés: ${partesInteresAria.join(", ")}.`
+      : "";
+
+  const ariaResumen = `${rangeLabel}. Te encontraron ${apariciones}, vieron tu ficha ${vistas}, te contactaron ${clicsWhatsApp}.${interesAria}`;
+
+  const mostrarSeccionInteres =
+    loading ||
+    interes.mostrarInstagramWeb ||
+    interes.mostrarComoLlegar;
+  const nCardsInteres =
+    (interes.mostrarInstagramWeb ? 1 : 0) + (interes.mostrarComoLlegar ? 1 : 0);
 
   return (
     <div
@@ -210,51 +235,61 @@ function MetricsResumenPanel({
           </div>
         </section>
 
-        <hr className="border-gray-200" aria-hidden />
+        {mostrarSeccionInteres ? (
+          <>
+            <hr className="border-gray-200" aria-hidden />
 
-        <section className="space-y-2" aria-label="Mostraron interés">
-          <div className="space-y-0.5">
-            <h4 className="text-sm font-semibold text-gray-900">Mostraron interés</h4>
-            <p className="text-xs leading-relaxed text-gray-500">
-              Otras acciones que indican interés
-            </p>
-          </div>
-          {loading ? (
-            <div className="mt-4 space-y-3" aria-hidden>
-              {[0, 1].map((k) => (
-                <div key={k} className="flex justify-between gap-4">
-                  <div className="h-4 flex-1 max-w-[10rem] rounded bg-gray-100 animate-pulse" />
-                  <div className="h-4 w-10 rounded bg-gray-100 animate-pulse" />
+            <section className="space-y-2" aria-label="Mostraron interés">
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-semibold text-gray-900">Mostraron interés</h4>
+                <p className="text-xs leading-relaxed text-gray-500">
+                  Otras acciones que indican interés
+                </p>
+              </div>
+              {loading ? (
+                <div className="mt-4 space-y-3" aria-hidden>
+                  {[0, 1].map((k) => (
+                    <div key={k} className="flex justify-between gap-4">
+                      <div className="h-4 flex-1 max-w-[10rem] rounded bg-gray-100 animate-pulse" />
+                      <div className="h-4 w-10 rounded bg-gray-100 animate-pulse" />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
-                <p className="text-lg" aria-hidden>
-                  🌐
-                </p>
-                <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
-                  {clicsInstagramWeb}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-gray-700">
-                  Instagram / Web
-                </p>
-              </div>
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
-                <p className="text-lg" aria-hidden>
-                  🗺
-                </p>
-                <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
-                  {comoLlegar}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-gray-700">
-                  Cómo llegar
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
+              ) : (
+                <div
+                  className={`grid grid-cols-1 gap-3 ${
+                    nCardsInteres >= 2 ? "sm:grid-cols-2" : "sm:max-w-xs sm:mx-auto sm:grid-cols-1"
+                  }`}
+                >
+                  {interes.mostrarInstagramWeb ? (
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                      <p className="text-lg" aria-hidden>
+                        🌐
+                      </p>
+                      <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+                        {clicsInstagramWeb}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-gray-700">
+                        {interes.etiquetaInstagramWeb}
+                      </p>
+                    </div>
+                  ) : null}
+                  {interes.mostrarComoLlegar ? (
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                      <p className="text-lg" aria-hidden>
+                        🗺
+                      </p>
+                      <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+                        {comoLlegar}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-gray-700">Cómo llegar</p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </section>
+          </>
+        ) : null}
 
         {!loading ? (
           (() => {
@@ -449,6 +484,11 @@ export default function Panel1Client({
     return negocioItem ? panelSlugFichaPublicaDesdeItem(negocioItem) : "";
   }, [negocioItem]);
 
+  const interesMetricasFlags = useMemo(
+    () => panelInteresMetricasFlagsDesdeNegocioItem(negocioItem),
+    [negocioItem]
+  );
+
   const editarMiFichaHref = useMemo(() => {
     const params = new URLSearchParams();
     const tok = accessToken?.trim();
@@ -640,6 +680,7 @@ export default function Panel1Client({
       <MetricsResumenPanel
         data={metricsMostrados}
         rangeLabel={textoRangoMetricas(rangoMostrado)}
+        interes={interesMetricasFlags}
         loading={loading}
         headerRight={
           <div
