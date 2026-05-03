@@ -48,7 +48,7 @@ export default function HomeComunasPreparacion({
         Mientras más negocios reales se suman, mejores resultados muestra cada comuna.
       </p>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-stretch sm:gap-4 md:gap-5">
         {items.map((c) => {
           const meta = c.total_requerido;
           let cumplido =
@@ -83,7 +83,7 @@ export default function HomeComunasPreparacion({
             <Link
               key={c.slug}
               href={`/abrir-comuna/${encodeURIComponent(c.slug)}`}
-              className="group block rounded-2xl border border-slate-200/90 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 sm:p-6"
+              className="group flex h-full min-h-0 flex-col rounded-2xl border border-slate-200/90 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 sm:p-6"
             >
               <div className="flex items-start justify-between gap-3">
                 <h3 className="text-lg font-semibold leading-tight text-slate-900">
@@ -108,7 +108,7 @@ export default function HomeComunasPreparacion({
               ) : null}
 
               <p className="mt-4 text-sm font-semibold text-slate-900">{faltanLine}</p>
-              <p className="mt-2 text-sm leading-snug text-slate-600">
+              <p className="mt-2 flex-1 text-sm leading-snug text-slate-600">
                 Sé uno de los primeros en sumar tu negocio
               </p>
 
