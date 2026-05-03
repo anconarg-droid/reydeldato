@@ -3424,12 +3424,13 @@ const MEJORAR_FICHA_PASO_ORDEN: MejorarFichaPasoGuiadoId[] = [
   "descripcionBasica",
 ];
 
-const MEJORAR_FICHA_PASO_MENSAJE_FALTA: Record<MejorarFichaPasoGuiadoId, string> = {
-  fotos: "Agregar foto principal o logo",
+/** Textos opcionales y neutros para la lista guiada /mejorar-ficha (sin “falta” / incompleto). */
+const MEJORAR_FICHA_PASO_SUGERENCIA_MEJORA: Record<MejorarFichaPasoGuiadoId, string> = {
+  fotos: "Agregar foto principal",
   contacto: "Agregar tu WhatsApp",
-  trabajas: "Elegir al menos una modalidad de atención",
+  trabajas: "Elegir cómo atiendes",
   descripcionBasica:
-    "Completar la descripción corta (desde «Gestiona tu ficha» o el bloque de descripción)",
+    "Mejorar tu descripción corta (Gestiona tu ficha o el bloque de descripción más abajo)",
 };
 
 function descripcionCortaBasicaOk(descripcionCorta: string): boolean {
@@ -3443,9 +3444,8 @@ function descripcionCortaBasicaOk(descripcionCorta: string): boolean {
  */
 function resumenProgresoMejorarFicha(form: FormState): {
   completo: Record<MejorarFichaPasoGuiadoId, boolean>;
-  mensajeBanner: string;
-  /** Segunda línea (solo cuando ya cumplís lo obligatorio): refuerzo fotos sin sensación de “100 %”. */
-  mensajeBannerExtra: string | null;
+  /** Líneas de sugerencias según pasos pendientes (misma lógica que antes; solo tono diferente). */
+  sugerenciasMejora: string[];
   obligatoriosCompletos: boolean;
 } {
   const completo: Record<MejorarFichaPasoGuiadoId, boolean> = {
@@ -3455,22 +3455,13 @@ function resumenProgresoMejorarFicha(form: FormState): {
     descripcionBasica: descripcionCortaBasicaOk(form.descripcionCorta),
   };
   const faltan = MEJORAR_FICHA_PASO_ORDEN.filter((id) => !completo[id]);
-  let mensajeBanner: string;
-  let mensajeBannerExtra: string | null = null;
-  if (faltan.length === 0) {
-    /** Sin texto extra bajo el título: ya hay subtítulos arriba; evita duplicar el mensaje. */
-    mensajeBanner = "";
-    mensajeBannerExtra = null;
-  } else if (faltan.length === 1) {
-    mensajeBanner = `Te falta 1 cosa para completar tu ficha: ${MEJORAR_FICHA_PASO_MENSAJE_FALTA[faltan[0]]}.`;
-  } else {
-    const lista = faltan.map((id) => MEJORAR_FICHA_PASO_MENSAJE_FALTA[id]).join("; ");
-    mensajeBanner = `Te faltan ${faltan.length} cosas para completar tu ficha: ${lista}.`;
-  }
+  const sugerenciasMejora =
+    faltan.length === 0
+      ? []
+      : faltan.map((id) => MEJORAR_FICHA_PASO_SUGERENCIA_MEJORA[id]);
   return {
     completo,
-    mensajeBanner,
-    mensajeBannerExtra,
+    sugerenciasMejora,
     obligatoriosCompletos: faltan.length === 0,
   };
 }
@@ -6472,7 +6463,7 @@ export default function NegocioForm({
                 maxWidth: 640,
               }}
             >
-              Completa tu ficha para recibir más mensajes
+              Pequeños ajustes pueden ayudarte a recibir más mensajes
             </p>
             <p
               style={{
@@ -6484,22 +6475,44 @@ export default function NegocioForm({
                 maxWidth: 640,
               }}
             >
-              Haz que más personas te escriban. Sube fotos de tu trabajo y revisa tu contacto: es
-              lo que más influye en que te contacten.
+              Fotos de tu trabajo y datos de contacto claros ayudan a que te escriban. Todo lo de
+              esta página es opcional y puedes hacerlo cuando quieras.
             </p>
-            {mejorarFichaGuiado.mensajeBanner.trim() ? (
+            {mejorarFichaGuiado.sugerenciasMejora.length > 0 ? (
               <div className="nf-upgrade-checklist-inline nf-upgrade-checklist-inline--guiado">
-                <p className="nf-upgrade-progreso-guiado-text">
-                  {mejorarFichaGuiado.mensajeBanner}
+                <p className="nf-upgrade-progreso-guiado-text" style={{ marginBottom: 6 }}>
+                  Puedes mejorar tu ficha con:
                 </p>
-                {mejorarFichaGuiado.mensajeBannerExtra ? (
-                  <p
-                    className="nf-upgrade-progreso-opcional-hint"
-                    style={{ marginTop: 6 }}
-                  >
-                    {mejorarFichaGuiado.mensajeBannerExtra}
-                  </p>
-                ) : null}
+                <ul
+                  style={{
+                    margin: "4px 0 0",
+                    paddingLeft: 20,
+                    color: "#334155",
+                    fontSize: 15,
+                    lineHeight: 1.55,
+                    fontWeight: 600,
+                    maxWidth: 640,
+                  }}
+                >
+                  {mejorarFichaGuiado.sugerenciasMejora.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+                <p className="nf-upgrade-progreso-guiado-text" style={{ marginTop: 12 }}>
+                  Desliza hacia abajo para hacerlo 👇
+                </p>
+                <p
+                  className="nf-upgrade-progreso-opcional-hint"
+                  style={{
+                    marginTop: 8,
+                    marginBottom: 0,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#64748b",
+                  }}
+                >
+                  ↓ Mejora tu perfil más abajo
+                </p>
               </div>
             ) : null}
           </header>
