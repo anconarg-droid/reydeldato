@@ -11,6 +11,7 @@ import {
   buscarApiItemToEmprendedorCardProps,
   type BuscarApiItem,
 } from "@/lib/mapBuscarItemToEmprendedorCard";
+import type { GlobalAlgoliaSearchMeta } from "@/lib/search/searchEmprendedoresGlobalAlgolia";
 import ResultadosSearchBar from "./ResultadosSearchBar";
 
 /** Texto legible para el input cuando solo viene `subcategoria=` en la URL (sin `q=`). */
@@ -228,7 +229,11 @@ type Props = {
   initialSubcategoriaSlug?: string | null;
   initialSubcategoriaId?: string | null;
   /** Solo búsqueda global (sin comuna): resultados desde Supabase en el servidor. */
-  globalDb?: { items: BuscarApiItem[]; error: string | null } | null;
+  globalDb?: {
+    items: BuscarApiItem[];
+    error: string | null;
+    meta?: GlobalAlgoliaSearchMeta | null;
+  } | null;
   /** Si la query se expandió vía `busqueda_sinonimos`, texto original vs canónico. */
   synonymNotice?: { qOriginal: string; qResolved: string } | null;
   /**

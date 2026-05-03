@@ -241,6 +241,18 @@ function algoliaEnvReady(): boolean {
   return !!(process.env.ALGOLIA_APP_ID && process.env.ALGOLIA_ADMIN_KEY);
 }
 
+/** Metadatos cuando hubo foco regional (p. ej. IP / `?region=`). */
+export type GlobalAlgoliaSearchMeta = {
+  regionalFallback: boolean;
+  regionOriginal: string;
+};
+
+export type GlobalAlgoliaSearchResult = {
+  items: BuscarApiItem[];
+  error: string | null;
+  meta?: GlobalAlgoliaSearchMeta;
+};
+
 /**
  * Búsqueda global (sin comuna) vía Algolia (typo tolerance + sinónimos en índice),
  * hidratando fichas desde `vw_emprendedores_publico` para el mismo `BuscarApiItem` que Supabase-only.
@@ -251,9 +263,10 @@ export async function searchEmprendedoresGlobalAlgolia(
   q: string,
   limit = 24,
   opts?: { regionSlug?: string | null; comunaSlug?: string | null }
-): Promise<{ items: BuscarApiItem[]; error: string | null }> {
+): Promise<GlobalAlgoliaSearchResult> {
   if (!algoliaEnvReady()) {
-    return searchEmprendedoresGlobalText(q, limit, opts);
+    const r = await searchEmprendedoresGlobalText(q, limit, opts);
+    return { items: r.items, error: r.error };
   }
 
   try {
@@ -261,7 +274,8 @@ export async function searchEmprendedoresGlobalAlgolia(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[global-search] Algolia falló; usando Supabase.", msg);
-    return searchEmprendedoresGlobalText(q, limit, opts);
+    const r = await searchEmprendedoresGlobalText(q, limit, opts);
+    return { items: r.items, error: r.error };
   }
 }
 
@@ -269,8 +283,9 @@ async function searchEmprendedoresGlobalAlgoliaInner(
   q: string,
   limit: number,
   opts?: { regionSlug?: string | null; comunaSlug?: string | null }
-): Promise<{ items: BuscarApiItem[]; error: string | null }> {
+): Promise<GlobalAlgoliaSearchResult> {
   const regionSlug = String(opts?.regionSlug ?? "").trim() || null;
+  const explicitComunaSlug = String(opts?.comunaSlug ?? "").trim();
   const supabase = createSupabaseServerPublicClient();
 
   const inputTerm = String(q ?? "").trim();
@@ -352,13 +367,20 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     if (row) orderedRows.push(row);
   }
 
-  let rowsFiltered = regionSlug
-    ? orderedRows.filter((r) => rowMatchesRegionSlug(r, regionSlug))
-    : orderedRows;
+  let rowsFiltered: Record<string, unknown>[];
+  let regionalFallback = false;
 
-  /* Si el foco regional (p. ej. RM por IP) vacía el set pero Algolia sí encontró coincidencias
-   * en otra región —p. ej. "reiki" en Maule—, mostrar esos hits en lugar de cero resultados. */
-  if (regionSlug && rowsFiltered.length === 0 && orderedRows.length > 0) {
+  if (regionSlug) {
+    const regionalOnly = orderedRows.filter((r) => rowMatchesRegionSlug(r, regionSlug));
+    if (explicitComunaSlug) {
+      rowsFiltered = regionalOnly;
+    } else if (regionalOnly.length > 0) {
+      rowsFiltered = regionalOnly;
+    } else {
+      rowsFiltered = orderedRows;
+      regionalFallback = orderedRows.length > 0;
+    }
+  } else {
     rowsFiltered = orderedRows;
   }
 
@@ -384,5 +406,9 @@ async function searchEmprendedoresGlobalAlgoliaInner(
   const orderedPacked = orderPackedGlobalAlgolia(packed, scoreCtx, seed);
   const items = orderedPacked.slice(0, limit).map((p) => p.item);
 
+  if (regionSlug) {
+    const meta: GlobalAlgoliaSearchMeta = { regionalFallback, regionOriginal: regionSlug };
+    return { items, error: null, meta };
+  }
   return { items, error: null };
 }
