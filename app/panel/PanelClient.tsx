@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import PanelBrandHomeBar from "@/components/panel/PanelBrandHomeBar";
 import PanelFichaPublicaEmbed from "@/components/panel/PanelFichaPublicaEmbed";
+import { PanelRendimientoModoBasicaPreview } from "@/components/panel/PanelRendimientoModoBasicaPreview";
 import { SwitchModoVista } from "@/components/panel/SwitchModoVista";
 import type { PerfilCompleto } from "@/lib/calcularCompletitudEmprendedor";
 import type { TipoFicha } from "@/lib/calcularTipoFicha";
@@ -818,6 +819,10 @@ export default function PanelClient({
   /** Solo oculta el cuadro de estadísticas en el panel; el fetch sigue activo. */
   const estadisticasOcultasEnPanel = comercialSinPerfilCompleto;
 
+  /** Vista previa «Básica» en «Compara cómo te ven»: no mostrar números reales de rendimiento. */
+  const metricasOcultasPorVistaBasica =
+    !estadisticasOcultasEnPanel && modoVista === "basica";
+
   const metricsMostrados = data ?? EMPTY_METRICS;
   const rangoMostrado = range;
 
@@ -1126,34 +1131,38 @@ export default function PanelClient({
           ) : null}
           {qs && !estadisticasOcultasEnPanel ? (
             <div className="w-full">
-              <MetricsResumenPanel
-                data={metricsMostrados}
-                rangeLabel={textoRangoMetricas(rangoMostrado)}
-                loading={loading}
-                omitInsight
-                headerRight={
-                  <div
-                    className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
-                    role="group"
-                    aria-label="Periodo de estadísticas"
-                  >
-                    {(["7d", "30d", "all"] as const).map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => setRange(r)}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                          range === r
-                            ? "bg-gray-900 text-white"
-                            : "text-gray-600 hover:bg-gray-100"
-                        }`}
-                      >
-                        {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
-                      </button>
-                    ))}
-                  </div>
-                }
-              />
+              {metricasOcultasPorVistaBasica ? (
+                <PanelRendimientoModoBasicaPreview />
+              ) : (
+                <MetricsResumenPanel
+                  data={metricsMostrados}
+                  rangeLabel={textoRangoMetricas(rangoMostrado)}
+                  loading={loading}
+                  omitInsight
+                  headerRight={
+                    <div
+                      className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
+                      role="group"
+                      aria-label="Periodo de estadísticas"
+                    >
+                      {(["7d", "30d", "all"] as const).map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setRange(r)}
+                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                            range === r
+                              ? "bg-gray-900 text-white"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
+                        </button>
+                      ))}
+                    </div>
+                  }
+                />
+              )}
             </div>
           ) : null}
 
@@ -1199,7 +1208,9 @@ export default function PanelClient({
             </p>
           )}
 
-          {qs && !estadisticasOcultasEnPanel ? (
+          {qs &&
+          !estadisticasOcultasEnPanel &&
+          !metricasOcultasPorVistaBasica ? (
             !loading ? (
               <div
                 className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"

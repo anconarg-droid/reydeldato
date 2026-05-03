@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import PanelBrandHomeBar from "@/components/panel/PanelBrandHomeBar";
 import PanelFichaPublicaEmbed from "@/components/panel/PanelFichaPublicaEmbed";
+import { PanelRendimientoModoBasicaPreview } from "@/components/panel/PanelRendimientoModoBasicaPreview";
 import { SwitchModoVista } from "@/components/panel/SwitchModoVista";
 import PanelDashboardLayoutV2 from "@/components/panel/PanelDashboardLayoutV2";
 import type { PerfilCompleto } from "@/lib/calcularCompletitudEmprendedor";
@@ -465,6 +466,13 @@ export default function Panel1Client({
 
   const estadisticasOcultasEnPanel = comercial?.esPerfilCompletoComercial !== true;
 
+  const metricasOcultasPorVistaBasica =
+    !estadisticasOcultasEnPanel && modoVista === "basica";
+
+  useEffect(() => {
+    setModoVista("completa");
+  }, [qs]);
+
   const backButton = <PanelBrandHomeBar />;
 
   const tuNegocio = (
@@ -616,31 +624,35 @@ export default function Panel1Client({
     ) : null;
 
   const rendimiento = qs && !estadisticasOcultasEnPanel ? (
-    <MetricsResumenPanel
-      data={metricsMostrados}
-      rangeLabel={textoRangoMetricas(rangoMostrado)}
-      loading={loading}
-      headerRight={
-        <div
-          className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
-          role="group"
-          aria-label="Periodo de estadísticas"
-        >
-          {(["7d", "30d", "all"] as const).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setRange(r)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                range === r ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
-            </button>
-          ))}
-        </div>
-      }
-    />
+    metricasOcultasPorVistaBasica ? (
+      <PanelRendimientoModoBasicaPreview />
+    ) : (
+      <MetricsResumenPanel
+        data={metricsMostrados}
+        rangeLabel={textoRangoMetricas(rangoMostrado)}
+        loading={loading}
+        headerRight={
+          <div
+            className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
+            role="group"
+            aria-label="Periodo de estadísticas"
+          >
+            {(["7d", "30d", "all"] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRange(r)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  range === r ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
+              </button>
+            ))}
+          </div>
+        }
+      />
+    )
   ) : (
     <div
       className="w-full rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
