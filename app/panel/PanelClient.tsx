@@ -238,10 +238,8 @@ function panelInsightMessage(
   apariciones: number,
   vistas: number,
   clicsWhatsApp: number
-): string {
-  if (apariciones < 20) {
-    return "Tu negocio aún aparece poco en búsquedas.";
-  }
+): string | null {
+  if (apariciones < 20) return null;
   if (apariciones >= 20 && vistas === 0) {
     return "Tu tarjeta aparece, pero todavía no han entrado a ver tu ficha.";
   }
@@ -251,7 +249,7 @@ function panelInsightMessage(
   if (clicsWhatsApp > 0) {
     return "Tu ficha ya está generando contactos.";
   }
-  return "Tu negocio aún aparece poco en búsquedas.";
+  return null;
 }
 
 function MetricsResumenPanel({
@@ -410,12 +408,22 @@ function MetricsResumenPanel({
 
         {!omitInsight ? (
           !loading ? (
-            <div
-              className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
-              role="status"
-            >
-              {panelInsightMessage(apariciones, vistas, clicsWhatsApp)}
-            </div>
+            (() => {
+              const insight = panelInsightMessage(
+                apariciones,
+                vistas,
+                clicsWhatsApp
+              );
+              if (!insight) return null;
+              return (
+                <div
+                  className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
+                  role="status"
+                >
+                  {insight}
+                </div>
+              );
+            })()
           ) : (
             <div
               className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
@@ -1212,11 +1220,8 @@ export default function PanelClient({
           !estadisticasOcultasEnPanel &&
           !metricasOcultasPorVistaBasica ? (
             !loading ? (
-              <div
-                className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
-                role="status"
-              >
-                {panelInsightMessage(
+              (() => {
+                const insight = panelInsightMessage(
                   Number.isFinite(metricsMostrados.impresiones)
                     ? metricsMostrados.impresiones
                     : 0,
@@ -1226,8 +1231,17 @@ export default function PanelClient({
                   Number.isFinite(metricsMostrados.click_whatsapp)
                     ? metricsMostrados.click_whatsapp
                     : 0
-                )}
-              </div>
+                );
+                if (!insight) return null;
+                return (
+                  <div
+                    className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
+                    role="status"
+                  >
+                    {insight}
+                  </div>
+                );
+              })()
             ) : (
               <div
                 className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
