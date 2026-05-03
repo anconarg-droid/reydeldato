@@ -137,6 +137,8 @@ async function searchEmprendedoresGlobalAlgoliaInner(
 
   const queryForAlgolia = tokens.join(" ");
 
+  const detectedSub = detectSubcategoria(tokens);
+
   const index = getAlgoliaAdminIndex(INDEX_NAME);
 
   /** Pedir más hits si hay filtro regional (mismo criterio que antes: filtrar en memoria). */
@@ -149,10 +151,11 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     page: 0,
     facetFilters: [["estado_publicacion:publicado"]],
     attributesToRetrieve: ["slug", "objectID"],
-    optionalWords: tokens,
+    optionalWords: tokens.length > 1 ? tokens : undefined,
     removeWordsIfNoResults: "allOptional",
     ignorePlurals: true,
     typoTolerance: "min",
+    ...(detectedSub ? { filters: `subcategoria_slug:"${detectedSub}"` } : {}),
   });
 
   const rawHits = (result.hits || []) as Record<string, unknown>[];
@@ -197,7 +200,6 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     ? orderedRows.filter((r) => rowMatchesRegionSlug(r, regionSlug))
     : orderedRows;
 
-  const detectedSub = detectSubcategoria(tokens);
   if (detectedSub) {
     const exact: Record<string, unknown>[] = [];
     const related: Record<string, unknown>[] = [];
