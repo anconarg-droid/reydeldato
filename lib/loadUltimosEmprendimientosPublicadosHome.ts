@@ -4,10 +4,11 @@ import { vwPublicRowToBuscarApiItem } from "@/lib/mapVwEmprendedorPublicoToBusca
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 const MAX_ITEMS = 10;
-const FETCH_LIMIT = 28;
+const FETCH_LIMIT = 40;
 
 /**
- * Emprendimientos `publicado` más recientes (`created_at` desc) para la home.
+ * Emprendimientos `publicado` más recientes para la home.
+ * Orden: `updated_at` (cubre recién aprobados / cambios en ficha) y desempate `created_at`.
  * Hasta {@link MAX_ITEMS} tarjetas para {@link EmprendedorSearchCard}; si no hay filas, `[]` (mock en el caller).
  */
 export async function loadUltimosEmprendimientosPublicadosHome(): Promise<EmprendedorSearchCardProps[]> {
@@ -17,6 +18,7 @@ export async function loadUltimosEmprendimientosPublicadosHome(): Promise<Empren
       .from("vw_emprendedores_publico")
       .select("*")
       .eq("estado_publicacion", "publicado")
+      .order("updated_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(FETCH_LIMIT);
 

@@ -4,6 +4,9 @@ import HomeLandingBody from "@/components/home/HomeLandingBody";
 import { loadRubrosTickerHome } from "@/lib/loadRubrosTickerHome";
 import { loadUltimosEmprendimientosPublicadosHome } from "@/lib/loadUltimosEmprendimientosPublicadosHome";
 
+/** Carrusel “últimos publicados”: datos frescos sin depender solo del último deploy. */
+export const revalidate = 120;
+
 export default async function HomePage() {
   const [fromDb, rubrosTicker] = await Promise.all([
     loadUltimosEmprendimientosPublicadosHome(),

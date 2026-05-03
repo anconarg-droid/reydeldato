@@ -205,7 +205,7 @@ export default function HomeUltimosPublicadosClient({
           Más de {negociosLabel.toLocaleString("es-CL")} negocios ya están publicados
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-center text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">
-          Estos son algunos servicios disponibles en distintas comunas.
+          Algunos de los últimos en publicarse o actualizarse; deslizá o usá los botones para ver más.
         </p>
 
         <div
@@ -294,8 +294,41 @@ export default function HomeUltimosPublicadosClient({
           </div>
 
           {multiSlide ? (
+            <div className="mt-4 flex items-center justify-center gap-3 md:hidden">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  goPrev();
+                }}
+                onClick={goPrev}
+                className="inline-flex h-11 min-w-[7.5rem] touch-manipulation items-center justify-center gap-1 rounded-full border-2 border-teal-600 bg-white px-4 text-sm font-semibold text-teal-900 shadow-md active:bg-teal-50"
+                aria-label="Anterior"
+              >
+                <ChevronLeft className="size-5 shrink-0" aria-hidden />
+                Anterior
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  goNext();
+                }}
+                onClick={goNext}
+                className="inline-flex h-11 min-w-[7.5rem] touch-manipulation items-center justify-center gap-1 rounded-full border-2 border-teal-600 bg-white px-4 text-sm font-semibold text-teal-900 shadow-md active:bg-teal-50"
+                aria-label="Siguiente"
+              >
+                Siguiente
+                <ChevronRight className="size-5 shrink-0" aria-hidden />
+              </button>
+            </div>
+          ) : null}
+
+          {multiSlide ? (
             <div
-              className="mt-5 flex items-center justify-center gap-2"
+              className="mt-4 flex items-center justify-center gap-2 md:mt-5"
               role="tablist"
               aria-label="Posición del carrusel"
             >
