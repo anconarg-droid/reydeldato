@@ -8,11 +8,79 @@ import type { BuscarApiItem } from "@/lib/mapBuscarItemToEmprendedorCard";
 import { normalizeText } from "@/lib/search/normalizeText";
 import {
   rotateDeterministicPhotoBuckets,
+  rotationSeed,
   SEARCH_ROTATION_WINDOW_MS,
 } from "@/lib/search/deterministicRotation";
 import { urlTieneFotoListado } from "@/lib/search/sortItemsConFotoPrimero";
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import { searchEmprendedoresGlobalText } from "@/lib/resultadosGlobalSupabase";
+
+export type EmprendedorGlobalAlgoliaScoreCtx = {
+  comunaSlug?: string | null;
+  detectedSub?: string | null;
+};
+
+function hash(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (h << 5) - h + str.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+/** Foto principal o flag auxiliar desde fila vista (camelCase/snake opcional). */
+export function hasFotos(item: BuscarApiItem): boolean {
+  const ext = item as BuscarApiItem & { tiene_fotos?: unknown; tieneFotos?: unknown };
+  return Boolean(item.fotoPrincipalUrl || ext.tiene_fotos || ext.tieneFotos);
+}
+
+/** Puntuación heurística (rubro / comuna / calidad superficial); sin usar clics. */
+export function computeScore(
+  item: BuscarApiItem,
+  ctx: EmprendedorGlobalAlgoliaScoreCtx
+): number {
+  let score = 0;
+
+  const detected = normalizeText(ctx.detectedSub ?? "");
+  if (detected && item.subcategoriasSlugs?.some((x) => normalizeText(x) === detected)) {
+    score += 50;
+  }
+
+  const comunaWanted = String(ctx.comunaSlug ?? "").trim();
+  const baseSlug = normalizeText(item.comunaBaseSlug ?? "");
+  if (comunaWanted && baseSlug === normalizeText(comunaWanted)) {
+    score += 40;
+  }
+
+  if (comunaWanted) {
+    const cov = item.comunasCobertura ?? [];
+    const n = normalizeText(comunaWanted);
+    if (cov.some((c) => normalizeText(c) === n)) {
+      score += 25;
+    }
+  }
+
+  if (hasFotos(item)) score += 15;
+  const desc = String(item.descripcion ?? "").trim();
+  if (desc.length > 0) score += 5;
+
+  return score;
+}
+
+/** Misma ventana que la rotación de listados (5 min). */
+export function getRotationSeed(): number {
+  return rotationSeed(SEARCH_ROTATION_WINDOW_MS);
+}
+
+export function stableShuffle<T>(arr: T[], seed: number): T[] {
+  const s = String(seed);
+  return [...arr].sort((a, b) => {
+    const ha = hash(JSON.stringify(a) + s);
+    const hb = hash(JSON.stringify(b) + s);
+    return ha - hb;
+  });
+}
 
 function s(v: unknown): string {
   if (v == null) return "";
