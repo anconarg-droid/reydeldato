@@ -142,6 +142,7 @@ export default function ResultadosSearchBar({
     const canonicalComuna = comSlugRaw ? slugify(comSlugRaw) : "";
 
     if (!qNorm && !canonicalComuna) {
+      router.push("/");
       return;
     }
 
