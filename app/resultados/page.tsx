@@ -131,6 +131,18 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
       redirect(`/${encodeURIComponent(comuna)}${qs ? `?${qs}` : ""}`);
     }
   }
+
+  /** Sin comuna ni término/rubros en URL: evita página vacía en `/resultados` (solo `region`/`country` no cuentan). */
+  const hasBusquedaRelevantParams =
+    Boolean(comunaRaw) ||
+    Boolean(qRaw) ||
+    Boolean(subcategoriaRaw) ||
+    Boolean(subcategoriaIdRaw) ||
+    Boolean(categoriaRaw);
+  if (!hasBusquedaRelevantParams) {
+    redirect("/");
+  }
+
   const subcategoria = subcategoriaRaw ? slugify(subcategoriaRaw) : "";
   const subcategoriaId = subcategoriaIdRaw ? subcategoriaIdRaw : "";
   const categoria = categoriaRaw ? slugify(categoriaRaw) : "";

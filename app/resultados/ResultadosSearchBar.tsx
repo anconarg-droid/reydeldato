@@ -202,7 +202,7 @@ export default function ResultadosSearchBar({
       router.push(`/${encodeURIComponent(canonicalComuna)}`);
       return;
     }
-    router.push("/resultados");
+    router.push("/");
   }, [selectedComunaSlug, router]);
 
   const hasQToClear = normalizeText(q).length > 0;
