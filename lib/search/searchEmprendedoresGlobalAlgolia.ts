@@ -45,6 +45,54 @@ const INDEX_NAME =
   process.env.NEXT_PUBLIC_ALGOLIA_INDEX_EMPRENDEDORES ||
   "emprendedores";
 
+/** Término suelto normalizado → slug de subcategoría canónico (alineado a `lib/categoriasCatalogo` / seeds). */
+const INTENT_TOKEN_MAP: Record<string, string> = {
+  cecinas: "carniceria",
+  carne: "carniceria",
+  fugas: "gasfiter",
+  fuga: "gasfiter",
+  agua: "gasfiter",
+  destape: "gasfiter",
+  destapes: "gasfiter",
+  pastel: "pasteleria",
+  pasteles: "pasteleria",
+};
+
+const INTENT_TARGET_SLUGS = new Set(Object.values(INTENT_TOKEN_MAP));
+
+function mapQueryTokensByIntent(raw: string): string {
+  const parts = raw.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  return parts
+    .map((t) => {
+      const key = normalizeText(t);
+      return INTENT_TOKEN_MAP[key] ?? t;
+    })
+    .join(" ");
+}
+
+function detectIntentSubcategoriaSlug(queryFinal: string): string | null {
+  const tokens = normalizeText(queryFinal).split(/\s+/).filter(Boolean);
+  for (const tok of tokens) {
+    if (INTENT_TARGET_SLUGS.has(tok)) return tok;
+  }
+  return null;
+}
+
+function rowMatchesIntentSubcategoria(
+  row: Record<string, unknown>,
+  slug: string
+): boolean {
+  const target = normalizeText(slug);
+  const principal = normalizeText(
+    row.subcategoria_slug_final ?? row.subcategoria_slug
+  );
+  if (principal && principal === target) return true;
+  return parseStrArr(row.subcategorias_slugs).some(
+    (x) => normalizeText(x) === target
+  );
+}
+
 function algoliaEnvReady(): boolean {
   return !!(process.env.ALGOLIA_APP_ID && process.env.ALGOLIA_ADMIN_KEY);
 }
@@ -98,7 +146,7 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     return { items: [], error: null };
   }
 
-  const queryForAlgolia = term;
+  const queryForAlgolia = mapQueryTokensByIntent(term);
 
   const index = getAlgoliaAdminIndex(INDEX_NAME);
 
@@ -153,9 +201,20 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     if (row) orderedRows.push(row);
   }
 
-  const rowsFiltered = regionSlug
+  let rowsFiltered = regionSlug
     ? orderedRows.filter((r) => rowMatchesRegionSlug(r, regionSlug))
     : orderedRows;
+
+  const detectedSlug = detectIntentSubcategoriaSlug(queryForAlgolia);
+  if (detectedSlug) {
+    const exact: Record<string, unknown>[] = [];
+    const related: Record<string, unknown>[] = [];
+    for (const r of rowsFiltered) {
+      if (rowMatchesIntentSubcategoria(r, detectedSlug)) exact.push(r);
+      else related.push(r);
+    }
+    rowsFiltered = [...exact, ...related];
+  }
 
   const sliced = rowsFiltered.slice(0, limit);
 
