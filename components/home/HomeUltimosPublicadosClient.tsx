@@ -205,7 +205,7 @@ export default function HomeUltimosPublicadosClient({
           Más de {negociosLabel.toLocaleString("es-CL")} negocios ya están publicados
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-center text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">
-          Algunos de los últimos en publicarse o actualizarse; deslizá o usá los botones para ver más.
+          Últimos en publicarse o actualizarse: deslizá la ficha o tocá las flechas a los lados.
         </p>
 
         <div
@@ -227,10 +227,10 @@ export default function HomeUltimosPublicadosClient({
                     goPrev();
                   }}
                   onClick={goPrev}
-                  className="pointer-events-auto absolute left-2 top-1/2 z-20 hidden size-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg hover:bg-teal-50 md:inline-flex"
+                  className="pointer-events-auto absolute left-1 top-1/2 z-30 inline-flex size-10 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full border border-teal-700/30 bg-white/95 shadow-[0_4px_16px_rgba(15,23,42,0.18)] backdrop-blur-[2px] active:bg-teal-50 md:left-2 md:size-11 md:border-2 md:border-teal-600 md:shadow-lg"
                   aria-label="Anterior"
                 >
-                  <ChevronLeft className="size-6 text-teal-800" aria-hidden />
+                  <ChevronLeft className="size-5 text-teal-900 md:size-6 md:text-teal-800" aria-hidden />
                 </button>
                 <button
                   type="button"
@@ -240,10 +240,10 @@ export default function HomeUltimosPublicadosClient({
                     goNext();
                   }}
                   onClick={goNext}
-                  className="pointer-events-auto absolute right-2 top-1/2 z-20 hidden size-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg hover:bg-teal-50 md:inline-flex"
+                  className="pointer-events-auto absolute right-1 top-1/2 z-30 inline-flex size-10 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full border border-teal-700/30 bg-white/95 shadow-[0_4px_16px_rgba(15,23,42,0.18)] backdrop-blur-[2px] active:bg-teal-50 md:right-2 md:size-11 md:border-2 md:border-teal-600 md:shadow-lg"
                   aria-label="Siguiente"
                 >
-                  <ChevronRight className="size-6 text-teal-800" aria-hidden />
+                  <ChevronRight className="size-5 text-teal-900 md:size-6 md:text-teal-800" aria-hidden />
                 </button>
               </>
             ) : null}
@@ -274,7 +274,7 @@ export default function HomeUltimosPublicadosClient({
                   role="listitem"
                   className="group shrink-0 snap-start transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px] w-[min(92vw,22rem)] md:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-3rem)/3)]"
                 >
-                  <div className="home-carousel-card-shell flex h-full min-h-[520px] flex-col rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
+                  <div className="home-carousel-card-shell flex h-full min-h-[min(520px,calc(100dvh-11rem))] flex-col rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)] md:min-h-[520px]">
                     <div className="relative">
                       <div className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-900">
                         Disponible ahora
@@ -294,41 +294,8 @@ export default function HomeUltimosPublicadosClient({
           </div>
 
           {multiSlide ? (
-            <div className="mt-4 flex items-center justify-center gap-3 md:hidden">
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  goPrev();
-                }}
-                onClick={goPrev}
-                className="inline-flex h-11 min-w-[7.5rem] touch-manipulation items-center justify-center gap-1 rounded-full border-2 border-teal-600 bg-white px-4 text-sm font-semibold text-teal-900 shadow-md active:bg-teal-50"
-                aria-label="Anterior"
-              >
-                <ChevronLeft className="size-5 shrink-0" aria-hidden />
-                Anterior
-              </button>
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  goNext();
-                }}
-                onClick={goNext}
-                className="inline-flex h-11 min-w-[7.5rem] touch-manipulation items-center justify-center gap-1 rounded-full border-2 border-teal-600 bg-white px-4 text-sm font-semibold text-teal-900 shadow-md active:bg-teal-50"
-                aria-label="Siguiente"
-              >
-                Siguiente
-                <ChevronRight className="size-5 shrink-0" aria-hidden />
-              </button>
-            </div>
-          ) : null}
-
-          {multiSlide ? (
             <div
-              className="mt-4 flex items-center justify-center gap-2 md:mt-5"
+              className="mt-3 flex items-center justify-center gap-2 md:mt-5"
               role="tablist"
               aria-label="Posición del carrusel"
             >
