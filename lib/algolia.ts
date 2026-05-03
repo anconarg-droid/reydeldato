@@ -47,6 +47,8 @@ function toAlgoliaRecord(emprendedor: EmprendedorIndexable) {
     ),
     sector_slug: s(emprendedor.sector_slug),
     tipo_actividad: s(emprendedor.tipo_actividad),
+    /** Clasificación / etiquetas desde `vw_emprendedores_publico`; misma vista que el reindex canónico. */
+    tags_slugs: arr(emprendedor.tags_slugs),
     keywords: Array.isArray(emprendedor.keywords_finales)
       ? emprendedor.keywords_finales
       : [],

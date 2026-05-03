@@ -15,11 +15,17 @@ export function getEmprendedoresAlgoliaIndexSettings(): Record<string, unknown> 
       "filterOnly(sector_slug)",
       "filterOnly(tipo_actividad)",
     ],
+    /** Rubro/subcategoría/slugs alto en la lista para búsquedas tipo «carniceria» sin depender solo del nombre. */
     searchableAttributes: [
       "unordered(nombre)",
+      "unordered(subcategoria_slug)",
+      "unordered(categoria_slug)",
+      "unordered(sector_slug)",
+      "unordered(tipo_actividad)",
+      "unordered(tags_slugs)",
+      "unordered(keywords)",
       "unordered(descripcion_corta)",
       "unordered(descripcion_larga)",
-      "unordered(keywords)",
       "unordered(comuna)",
       "unordered(cobertura)",
       "unordered(comunas)",
