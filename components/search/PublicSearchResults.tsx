@@ -84,6 +84,8 @@ export default function PublicSearchResults({
   activacionServicioLabel = "",
   activacionCtaPublicarHref = "",
   activacionCtaRecomendarHref = "",
+  /** Título con región (p. ej. “Teno — Maule”) para acordeones y cards; si no, usa la comuna del API. */
+  comunaTituloConRegion = null,
 }: {
   comuna: string;
   q?: string;
@@ -101,6 +103,7 @@ export default function PublicSearchResults({
   activacionServicioLabel?: string;
   activacionCtaPublicarHref?: string;
   activacionCtaRecomendarHref?: string;
+  comunaTituloConRegion?: string | null;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -229,35 +232,16 @@ export default function PublicSearchResults({
   }
 
   const nombreComunaLinea = meta?.comunaNombre || comuna;
+  const nombreComunaParaTitulos =
+    String(comunaTituloConRegion ?? "").trim() || nombreComunaLinea;
 
   if (items.length === 0) {
+    /**
+     * Comuna sin directorio abierto: el bloque ámbar en `ResultadosClient` ya trae CTAs y enlaces.
+     * No duplicar “Publicar / Recomendar” aquí cuando no hay resultados en la vista previa.
+     */
     if (modoActivacionPreview) {
-      const label = (activacionServicioLabel || "").trim() || "servicios";
-      const hp = (activacionCtaPublicarHref || "").trim();
-      const hr = (activacionCtaRecomendarHref || "").trim();
-      return (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 sm:px-6">
-          <p className="m-0 text-sm font-semibold text-slate-900">
-            Aún no encontramos {label} en esta comuna
-          </p>
-          {hp && hr ? (
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href={hp}
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
-              >
-                Publicar mi emprendimiento
-              </Link>
-              <Link
-                href={hr}
-                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-              >
-                Recomendar emprendedor
-              </Link>
-            </div>
-          ) : null}
-        </div>
-      );
+      return null;
     }
     const qNorm = normalizeText(q);
     const comunaSlugOk = comuna.trim();
@@ -392,7 +376,7 @@ export default function PublicSearchResults({
       atiendenTuComuna={atiendenTuComuna as BuscarApiItem[]}
       comunaSlug={meta?.comunaSlug || comuna}
       comunaNombre={nombreComunaLinea}
-      nombreComunaDisplay={nombreComunaLinea}
+      nombreComunaDisplay={nombreComunaParaTitulos}
       gridEmptyMessage="No encontramos resultados."
       ocultarFiltroSoloCompletos={modoActivacionPreview}
       usarCardSimple={false}

@@ -44,9 +44,19 @@ export type BuscarApiItem = {
   estadoPublicacion?: string;
 };
 
+export type BuscarComunaContextMeta = {
+  comunaSlug: string;
+  /** Nombre canónico de la comuna (p. ej. query `comunaNombre` en ficha). */
+  comunaNombre: string;
+  /**
+   * Texto en card (“En … / Atiende …”); si no viene, se usa `comunaNombre` (p. ej. “Teno — Maule”).
+   */
+  comunaNombreEnCard?: string;
+};
+
 export function buscarApiItemToEmprendedorCardProps(
   item: BuscarApiItem,
-  meta: { comunaSlug: string; comunaNombre: string } | null,
+  meta: BuscarComunaContextMeta | null,
   analyticsSource: EmprendedorSearchCardProps["analyticsSource"]
 ): EmprendedorSearchCardProps {
   const baseNombreRaw = String(item.comunaBaseNombre ?? "").trim();
@@ -57,7 +67,9 @@ export function buscarApiItemToEmprendedorCardProps(
       ? ""
       : String(item.comunaNombre ?? "").trim());
   const slugCtx = String(meta?.comunaSlug || item.comunaSlug || "").trim();
-  const nombreCtx = String(meta?.comunaNombre || item.comunaNombre || "").trim();
+  const nombreParaCard = String(
+    meta?.comunaNombreEnCard ?? meta?.comunaNombre ?? item.comunaNombre ?? ""
+  ).trim();
   const atiendeLine = buildAtiendeLine({
     coberturaTipo: item.coberturaTipo || "",
     regionesCobertura: item.regionesCobertura,
@@ -65,7 +77,7 @@ export function buscarApiItemToEmprendedorCardProps(
   const esFichaCompleta = buscarApiItemEsFichaCompleta(item);
 
   const comunaBuscadaNombre =
-    slugCtx.length > 0 ? nombreCtx || humanizeCoverageSlug(slugCtx) : undefined;
+    slugCtx.length > 0 ? nombreParaCard || humanizeCoverageSlug(slugCtx) : undefined;
 
   const createdAt = String(item.createdAt ?? "").trim();
   const estadoPub = String(item.estadoPublicacion ?? "").trim();
@@ -123,8 +135,7 @@ export function buscarApiItemToEmprendedorCardProps(
     analyticsSource,
     fichaContextComunaSlug: comunaCtxSlug || undefined,
     fichaContextComunaNombre: comunaCtxSlug
-      ? String(meta?.comunaNombre ?? item.comunaNombre ?? "").trim() ||
-        humanizeCoverageSlug(comunaCtxSlug)
+      ? nombreParaCard || humanizeCoverageSlug(comunaCtxSlug)
       : undefined,
   };
 }

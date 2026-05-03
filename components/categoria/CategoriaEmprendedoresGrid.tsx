@@ -6,6 +6,7 @@ import EmprendedorSearchCardsGrid from "@/components/search/EmprendedorSearchCar
 import {
   buscarApiItemToEmprendedorCardProps,
   type BuscarApiItem,
+  type BuscarComunaContextMeta,
 } from "@/lib/mapBuscarItemToEmprendedorCard";
 import { sortItemsConFotoPrimeroStable } from "@/lib/search/sortItemsConFotoPrimero";
 
@@ -13,6 +14,8 @@ type Props = {
   items: BuscarApiItem[];
   comunaSlug: string;
   comunaNombre: string;
+  /** Si difiere de `comunaNombre`, se muestra en la card (“En … — región”). */
+  comunaNombreEnCard?: string | null;
   emptyMessage?: string;
   /** Filtro “Ver mejores opciones” activo: resalta cards en listado territorial. */
   destacarMejoresOpciones?: boolean;
@@ -24,13 +27,21 @@ export default function CategoriaEmprendedoresGrid({
   items,
   comunaSlug,
   comunaNombre,
+  comunaNombreEnCard = null,
   emptyMessage = "No hay resultados con estos filtros.",
   destacarMejoresOpciones = false,
   usarCardSimple = false,
 }: Props) {
-  const meta =
-    comunaSlug.trim() && comunaNombre.trim()
-      ? { comunaSlug: comunaSlug.trim(), comunaNombre: comunaNombre.trim() }
+  const slugT = comunaSlug.trim();
+  const nombreT = comunaNombre.trim();
+  const largoT = String(comunaNombreEnCard ?? "").trim();
+  const meta: BuscarComunaContextMeta | null =
+    slugT && nombreT
+      ? {
+          comunaSlug: slugT,
+          comunaNombre: nombreT,
+          ...(largoT && largoT !== nombreT ? { comunaNombreEnCard: largoT } : {}),
+        }
       : null;
 
   const ordenados = useMemo(

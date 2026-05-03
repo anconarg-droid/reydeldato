@@ -13,6 +13,7 @@ import {
 } from "@/lib/mapBuscarItemToEmprendedorCard";
 import type { GlobalAlgoliaSearchMeta } from "@/lib/search/searchEmprendedoresGlobalAlgolia";
 import ResultadosSearchBar from "./ResultadosSearchBar";
+import { getRegionShort } from "@/utils/regionShort";
 
 /** Texto legible para el input cuando solo viene `subcategoria=` en la URL (sin `q=`). */
 function prettySubcategoriaSlugForDisplay(slug: string): string {
@@ -28,10 +29,13 @@ function prettySubcategoriaSlugForDisplay(slug: string): string {
 
 function ComunaDirectorioHeader({
   tituloComunaDisplay,
+  regionNombreCompleto,
   tieneBusquedaActiva,
   terminoBusquedaDisplay,
 }: {
   tituloComunaDisplay: string;
+  /** Nombre oficial de la región (p. ej. “Región del Maule”), como en /abrir-comuna. */
+  regionNombreCompleto?: string | null;
   tieneBusquedaActiva: boolean;
   terminoBusquedaDisplay: string;
 }) {
@@ -43,6 +47,9 @@ function ComunaDirectorioHeader({
       <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
         Encuentra servicios y comercios en <span className="text-sky-700">{tituloComunaDisplay}</span>
       </h1>
+      {regionNombreCompleto ? (
+        <p className="mt-1 text-sm font-medium text-slate-600">{regionNombreCompleto}</p>
+      ) : null}
       {tieneBusquedaActiva ? (
         <p className="mt-2 text-sm text-slate-600">
           Mostrando resultados para{" "}
@@ -276,6 +283,10 @@ export default function ResultadosClient({
   const subcategoriaId = (initialSubcategoriaId ?? "").trim();
 
   const tituloComunaDisplay = comunaNombre || comuna.replace(/-/g, " ");
+  const regionNombreFoco = (regionFocoNombre ?? "").trim();
+  const comunaTituloConRegion = regionNombreFoco
+    ? `${tituloComunaDisplay} — ${getRegionShort(regionNombreFoco) || regionNombreFoco}`
+    : tituloComunaDisplay;
   const tieneBusquedaActiva =
     Boolean(normalizeText(q)) ||
     Boolean(subcategoriaSlug) ||
@@ -314,7 +325,9 @@ export default function ResultadosClient({
       <ResultadosSearchBar
         initialQDisplay={qDisplayForBar}
         initialComunaSlug={initialComuna}
-        fixedComunaNombre={comunaNombre || null}
+        fixedComunaNombre={
+          initialComuna ? comunaTituloConRegion : comunaNombre ? comunaNombre : null
+        }
         resaltarCampoComuna={resaltarCampoComunaEnBusquedaGlobal}
         comunaInvitacionActiva={comunaInvitacionActiva}
       />
@@ -324,6 +337,7 @@ export default function ResultadosClient({
   const headerDirectorioNormal = (
     <ComunaDirectorioHeader
       tituloComunaDisplay={tituloComunaDisplay}
+      regionNombreCompleto={initialComuna && regionNombreFoco ? regionNombreFoco : null}
       tieneBusquedaActiva={tieneBusquedaActiva}
       terminoBusquedaDisplay={terminoBusquedaDisplay}
     />
@@ -376,6 +390,9 @@ export default function ResultadosClient({
           >
             {tituloComunaDisplay} aún está creciendo en Rey del Dato
           </h1>
+          {regionNombreActivacion ? (
+            <p className="mt-1 text-sm font-medium text-slate-600">{regionNombreActivacion}</p>
+          ) : null}
           <p className="mt-2 text-sm text-slate-700 leading-relaxed">
             Ya hay algunos servicios disponibles. Mientras más negocios se suman, más completo se
             vuelve el directorio.
@@ -399,7 +416,7 @@ export default function ResultadosClient({
               href={`/abrir-comuna/${encodeURIComponent(comuna)}`}
               className="text-sm font-semibold text-sky-800 underline underline-offset-2 hover:text-sky-950"
             >
-              Cómo abrir el directorio en {tituloComunaDisplay}
+              Cómo abrir el directorio en {comunaTituloConRegion}
             </Link>
             {qNormTodoChile && regionSlugActivacion ? (
               <Link
@@ -421,6 +438,7 @@ export default function ResultadosClient({
           categoriaSlug={categoriaSlug || undefined}
           subcategoriaSlug={subcategoriaSlug || undefined}
           subcategoriaId={subcategoriaId || undefined}
+          comunaTituloConRegion={comunaTituloConRegion}
           modoActivacionPreview
           activacionServicioLabel={servicioEtiqueta}
           activacionCtaPublicarHref={`/publicar?${paramsPublicar.toString()}`}
@@ -459,6 +477,7 @@ export default function ResultadosClient({
           categoriaSlug={categoriaSlug || undefined}
           subcategoriaSlug={subcategoriaSlug || undefined}
           subcategoriaId={subcategoriaId || undefined}
+          comunaTituloConRegion={comunaTituloConRegion}
         />
       </div>
     );
@@ -475,6 +494,7 @@ export default function ResultadosClient({
           categoriaSlug={categoriaSlug || undefined}
           subcategoriaSlug={subcategoriaSlug || undefined}
           subcategoriaId={subcategoriaId || undefined}
+          comunaTituloConRegion={comunaTituloConRegion}
         />
       </div>
     );

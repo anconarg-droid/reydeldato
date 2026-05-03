@@ -24,6 +24,7 @@ type Props = {
   atiendenTuComuna: BuscarApiItem[];
   comunaSlug: string;
   comunaNombre: string;
+  /** Títulos de acordeón (puede incluir región). */
   nombreComunaDisplay: string;
   /** Mensaje vacío de la grilla cuando no aplica el caso “solo completos en bloque vacío”. */
   gridEmptyMessage?: string;
@@ -175,6 +176,11 @@ export default function ComunaTerritorialBloquesConFiltro({
               items={fEn}
               comunaSlug={comunaSlug}
               comunaNombre={comunaNombre}
+              comunaNombreEnCard={
+                nombreComunaDisplay.trim() !== comunaNombre.trim()
+                  ? nombreComunaDisplay
+                  : null
+              }
               usarCardSimple={usarCardSimple}
               emptyMessage={
                 aplicarSoloCompletos && enRaw.length > 0 && fEn.length === 0
@@ -207,6 +213,11 @@ export default function ComunaTerritorialBloquesConFiltro({
             items={fAt}
             comunaSlug={comunaSlug}
             comunaNombre={comunaNombre}
+            comunaNombreEnCard={
+              nombreComunaDisplay.trim() !== comunaNombre.trim()
+                ? nombreComunaDisplay
+                : null
+            }
             usarCardSimple={usarCardSimple}
             destacarMejoresOpciones={aplicarSoloCompletos}
             emptyMessage={

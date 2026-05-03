@@ -221,6 +221,14 @@ function tituloDesdeSlugComuna(slug: string): string {
     .join(" ");
 }
 
+function normNombreComunaCard(s: string): string {
+  return String(s ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function buildFichaHref(
   slug: string,
   ctx?: { comunaSlug: string; comunaNombre: string } | null,
@@ -347,6 +355,26 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     String(p.fichaContextComunaNombre ?? "").trim() ||
     comunaBuscadaTrim ||
     (buscadaSlugCtx ? humanizeCoverageSlug(buscadaSlugCtx) : "");
+  const comunaBuscadaDisplay =
+    nombreBuscadaTerritorial.trim() ||
+    (buscadaSlugCtx ? tituloDesdeSlugComuna(buscadaSlugCtx) : "") ||
+    comunaBuscadaTrim;
+  const slugBaseNorm = slugify(String(p.comunaBaseSlug ?? "").trim());
+  const isComunaContext =
+    Boolean(String(p.fichaContextComunaSlug ?? "").trim()) || comunaBuscadaTrim.length > 0;
+  const mostrarUbicacionModoComuna =
+    isComunaContext && Boolean(String(comunaBuscadaDisplay ?? "").trim());
+  const slugCoinciden =
+    Boolean(buscadaSlugCtx) && Boolean(slugBaseNorm) && buscadaSlugCtx === slugBaseNorm;
+  const nombreCoincideConBuscada =
+    Boolean(comunaNomRaw) &&
+    Boolean(comunaBuscadaDisplay.trim()) &&
+    normNombreComunaCard(comunaNomRaw) === normNombreComunaCard(comunaBuscadaDisplay);
+  const esBaseEnComuna =
+    p.bloqueTerritorial === "de_tu_comuna" ||
+    (mostrarUbicacionModoComuna &&
+      p.bloqueTerritorial !== "atienden_tu_comuna" &&
+      (slugCoinciden || nombreCoincideConBuscada));
   const ubicacionPorBloqueTerritorialExplicito =
     Boolean(nombreBuscadaTerritorial) &&
     (p.bloqueTerritorial === "de_tu_comuna" ||
@@ -680,8 +708,29 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             {confianzaTexto || " "}
           </p>
 
-          {/* Ubicación por comuna buscada: bloque territorial explícito; si no aplica, pin genérico. */}
-          {ubicacionPorBloqueTerritorialExplicito ? (
+          {/* Ubicación: en contexto de comuna (directorio / búsqueda) mensaje corto; fuera de eso, pin o bloque territorial legacy. */}
+          {mostrarUbicacionModoComuna ? (
+            <>
+              {esBaseEnComuna ? (
+                <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
+                  <span aria-hidden>📍 </span>
+                  En {comunaBuscadaDisplay}
+                </p>
+              ) : (
+                <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
+                  <span aria-hidden>📍 </span>
+                  Atiende {comunaBuscadaDisplay}
+                </p>
+              )}
+              {!esBaseEnComuna &&
+              comunaBaseLabel &&
+              comunaBaseLabel !== "Sin información de comuna base" ? (
+                <p className="m-0 min-h-[1rem] w-full shrink-0 text-xs leading-snug text-slate-500">
+                  Desde {comunaBaseLabel}
+                </p>
+              ) : null}
+            </>
+          ) : ubicacionPorBloqueTerritorialExplicito ? (
             p.bloqueTerritorial === "de_tu_comuna" ? (
               <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
                 <span aria-hidden>📍 </span>
@@ -713,14 +762,16 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             </>
           )}
 
-          <p
-            className={`m-0 w-full shrink-0 text-xs leading-snug text-slate-500 ${
-              coberturaTxt.trim() ? (homeCarousel ? "line-clamp-1" : "line-clamp-2 md:line-clamp-1") : "line-clamp-1"
-            } min-h-[1rem]`}
-            title={coberturaTxt.trim() || undefined}
-          >
-            {coberturaDisplay}
-          </p>
+          {!mostrarUbicacionModoComuna ? (
+            <p
+              className={`m-0 w-full shrink-0 text-xs leading-snug text-slate-500 ${
+                coberturaTxt.trim() ? (homeCarousel ? "line-clamp-1" : "line-clamp-2 md:line-clamp-1") : "line-clamp-1"
+              } min-h-[1rem]`}
+              title={coberturaTxt.trim() || undefined}
+            >
+              {coberturaDisplay}
+            </p>
+          ) : null}
 
           <div
             className="flex min-h-[32px] w-full shrink-0 flex-wrap content-center items-center gap-1.5"
