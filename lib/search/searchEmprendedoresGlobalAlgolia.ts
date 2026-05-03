@@ -81,6 +81,48 @@ function rowMatchesDetectedSubcategoria(
   );
 }
 
+/** Rubros que Algolia suele confundir por similitud tipográfica con costura (p. ej. costurera vs costanera). */
+const PRINCIPAL_SLUG_PASTRY_OR_BREAD = new Set(["pasteleria", "panaderia"]);
+
+function tokensExplicitPastryOrBread(tokens: string[]): boolean {
+  const want = new Set([
+    "pasteleria",
+    "pastel",
+    "pasteles",
+    "tortas",
+    "torta",
+    "milhojas",
+    "berlines",
+    "panaderia",
+    "pan",
+    "panes",
+    "facturas",
+  ]);
+  return tokens.some((t) => want.has(t));
+}
+
+function tokensSuggestCosturaTailoring(tokens: string[]): boolean {
+  for (const t of tokens) {
+    if (t === "modista" || t === "modistas" || t === "sastre" || t === "sastres")
+      return true;
+    if (
+      t === "costura" ||
+      t === "costuras" ||
+      t === "costurera" ||
+      t === "costureras"
+    )
+      return true;
+    // costur*, longitud suficiente para no confundir con "costo", "costillas", etc.
+    if (t.startsWith("costur") && t.length >= 7) return true;
+  }
+  return false;
+}
+
+function rowPrincipalPasteleriaOrPanaderia(row: Record<string, unknown>): boolean {
+  const sub = normalizeText(row.subcategoria_slug_final ?? row.subcategoria_slug);
+  return PRINCIPAL_SLUG_PASTRY_OR_BREAD.has(sub);
+}
+
 function algoliaEnvReady(): boolean {
   return !!(process.env.ALGOLIA_APP_ID && process.env.ALGOLIA_ADMIN_KEY);
 }
@@ -199,6 +241,13 @@ async function searchEmprendedoresGlobalAlgoliaInner(
   let rowsFiltered = regionSlug
     ? orderedRows.filter((r) => rowMatchesRegionSlug(r, regionSlug))
     : orderedRows;
+
+  if (
+    tokensSuggestCosturaTailoring(tokens) &&
+    !tokensExplicitPastryOrBread(tokens)
+  ) {
+    rowsFiltered = rowsFiltered.filter((r) => !rowPrincipalPasteleriaOrPanaderia(r));
+  }
 
   if (detectedSub) {
     const exact: Record<string, unknown>[] = [];
