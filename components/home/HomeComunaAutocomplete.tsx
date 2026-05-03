@@ -10,6 +10,15 @@ type ComunaSuggestion = {
   region_nombre?: string;
 };
 
+/** Texto del input tras elegir una fila (misma lógica que el listado). */
+function formatComunaPickLabel(c: ComunaSuggestion): string {
+  const short = getRegionShort(c.region_nombre);
+  if (short) return `${c.nombre} — ${short}`;
+  const reg = c.region_nombre?.trim();
+  if (reg) return `${c.nombre} — ${reg}`;
+  return c.nombre;
+}
+
 function normalizeComunaTerm(s: string): string {
   return s
     .trim()
@@ -113,17 +122,13 @@ export default function HomeComunaAutocomplete({
     setPendingSlug(c.slug);
     setItems([]);
     setOpen(false);
-    if (target === "abrir-comuna") {
-      const short = getRegionShort(c.region_nombre);
-      setValue(short ? `${c.nombre} — ${short}` : c.nombre);
-    } else {
-      setValue(c.nombre);
-    }
-  }, [target]);
+    setValue(formatComunaPickLabel(c));
+  }, []);
 
   const resolveSlugForNavigate = useCallback((): string | null => {
     if (pendingSlug) return pendingSlug;
-    const term = normalizeComunaTerm(value);
+    const soloNombre = value.split(/\s*[—\-]\s*/)[0] ?? value;
+    const term = normalizeComunaTerm(soloNombre);
     if (!term) return null;
     for (const c of items) {
       if (normalizeComunaTerm(c.nombre) === term) return c.slug;
