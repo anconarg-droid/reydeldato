@@ -108,11 +108,11 @@ export default function TerritorialAccordionBlock({
     ? "w-full min-w-0 overflow-hidden rounded-2xl border border-emerald-800/35 bg-[#0d7a5f] shadow-lg"
     : "w-full min-w-0 overflow-hidden rounded-2xl border border-teal-200 bg-emerald-50 shadow-md";
   const titleClass = isLocal
-    ? "block text-base font-black leading-snug tracking-tight text-white sm:text-lg"
-    : "block text-base font-black leading-snug tracking-tight text-teal-900 sm:text-lg";
+    ? "block break-words text-base font-black leading-snug tracking-tight text-white sm:text-lg"
+    : "block break-words text-base font-black leading-snug tracking-tight text-teal-900 sm:text-lg";
   const subtitleClass = isLocal
-    ? "mt-1.5 block text-sm font-medium leading-relaxed text-emerald-50"
-    : "mt-1.5 block text-sm font-medium leading-relaxed text-teal-800/75";
+    ? "mt-1.5 block break-words text-sm font-medium leading-relaxed text-emerald-50 sm:pr-2"
+    : "mt-1.5 block break-words text-sm font-medium leading-relaxed text-teal-800/75 sm:pr-2";
   const pillClass = isLocal
     ? "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/20 bg-white/12 px-3 py-1.5 text-[13px] font-medium text-white transition-colors group-hover:bg-white/20"
     : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#99f6e4] bg-white px-3 py-1.5 text-[13px] font-medium text-[#0d7a5f] transition-colors group-hover:bg-teal-50";
@@ -120,13 +120,14 @@ export default function TerritorialAccordionBlock({
     ? "border-t border-emerald-900/25 bg-white px-4 py-5 sm:px-5 sm:py-6"
     : "border-t border-teal-200/90 bg-white px-4 py-5 sm:px-5 sm:py-6";
 
-  /** Móvil: título arriba y pill ancho completo debajo; desktop: fila con botón a la derecha (sin superposición). */
+  /** Móvil: columna; desktop: fila. Sin min-w-0 en el texto (aplana el bloque); break-words en subtítulo si hace falta. */
   const headerButtonClass = isLocal
-    ? "group flex w-full cursor-pointer flex-col gap-3 px-4 py-[0.85rem] text-left transition-colors hover:bg-[#0b6b54] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d7a5f] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
-    : "group flex w-full cursor-pointer flex-col gap-3 border-b border-teal-200/90 bg-emerald-50/90 px-4 py-[0.85rem] text-left transition-colors hover:bg-emerald-100/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:flex-row sm:items-center sm:justify-between sm:gap-4";
+    ? "group flex w-full cursor-pointer flex-col gap-3 px-4 py-[0.85rem] text-left transition-colors hover:bg-[#0b6b54] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d7a5f] sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+    : "group flex w-full cursor-pointer flex-col gap-3 border-b border-teal-200/90 bg-emerald-50/90 px-4 py-[0.85rem] text-left transition-colors hover:bg-emerald-100/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:flex-row sm:items-start sm:justify-between sm:gap-4";
 
+  /** Pill: ancho completo solo en vista estrecha; desde sm tamaño contenido junto al título. */
   const pillLayoutClass =
-    "inline-flex w-full shrink-0 items-center justify-center gap-1.5 sm:w-auto sm:justify-start";
+    "inline-flex w-full shrink-0 items-center justify-center gap-1.5 sm:w-auto sm:max-w-fit sm:flex-none sm:self-center sm:justify-center";
 
   const btnId = `${instanceId}-titulo`;
   const panelId = `${instanceId}-panel`;
@@ -143,7 +144,7 @@ export default function TerritorialAccordionBlock({
         aria-expanded={expanded}
         aria-controls={panelId}
       >
-        <div className="min-w-0 flex-1 text-left">
+        <div className="w-full flex-none text-left sm:min-h-0 sm:flex-1 sm:pr-1">
           <span className={titleClass}>{title}</span>
           <span className={subtitleClass}>{subtitle}</span>
         </div>
