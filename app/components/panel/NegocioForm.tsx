@@ -40,6 +40,7 @@ import {
   normalizeDescripcionCorta,
   normalizeDescripcionLarga,
   primeraValidacionDescripcion,
+  validateDescripcionCortaBorradorSiPresente,
   validateDescripcionCortaPublicacion,
   validateDescripcionLarga,
 } from "@/lib/descripcionProductoForm";
@@ -3405,9 +3406,14 @@ function buildBorradorFullPatchFromForm(
     comunas_cobertura,
     regiones_cobertura,
     locales: localesPayload,
-    ...(localesPayload.length === 0
+    ...(    localesPayload.length === 0
       ? { direccion: null, direccion_referencia: null }
       : {}),
+    /**
+     * Backend: usar reglas suaves para descripción corta (no público “ficha incompleta”)
+     * y no rechazar PATCH por campos opcionales de mejora. Flujo inicial /publicar no envía esta clave.
+     */
+    modo_guardado: "mejorar",
   };
 }
 
@@ -5621,6 +5627,8 @@ export default function NegocioForm({
 
   function validateForm(): FormErrors {
     const nextErrors: FormErrors = {};
+    /** /mejorar-ficha: permite guardar cambios incrementales sin exigir ficha completa. */
+    const relaxMejorarFichaUpgrade = isUpgradeMode;
 
     if (form.nombre.trim().length < 3) {
       nextErrors.nombre = "Ingresa un nombre de negocio válido.";
@@ -5642,13 +5650,15 @@ export default function NegocioForm({
         "Agregá al menos una comuna adicional o cambiá la cobertura a «Solo mi comuna».";
     }
 
-    if (form.modalidadesAtencion.length < 1) {
+    if (!relaxMejorarFichaUpgrade && form.modalidadesAtencion.length < 1) {
       nextErrors.modalidadesAtencion =
         "Selecciona al menos una modalidad de atención.";
     }
 
     const cortaNorm = normalizeDescripcionCorta(form.descripcionCorta);
-    const cortaErrs = validateDescripcionCortaPublicacion(cortaNorm);
+    const cortaErrs = relaxMejorarFichaUpgrade
+      ? validateDescripcionCortaBorradorSiPresente(cortaNorm)
+      : validateDescripcionCortaPublicacion(cortaNorm);
     if (cortaErrs.length) {
       nextErrors.descripcionCorta =
         primeraValidacionDescripcion(cortaErrs) ??
@@ -5700,7 +5710,7 @@ export default function NegocioForm({
       nextErrors.email = emailValForm.message;
     }
 
-    if (!form.fotoPrincipalUrl.trim()) {
+    if (!relaxMejorarFichaUpgrade && !form.fotoPrincipalUrl.trim()) {
       nextErrors.fotoPrincipalUrl = "La foto principal o logo es obligatoria.";
     }
 

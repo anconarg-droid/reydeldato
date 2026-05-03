@@ -53,6 +53,28 @@ function normalizePostulacionEstado(v: unknown): string {
   return String(v ?? "").trim().toLowerCase();
 }
 
+/** Cliente opcional (`modo_guardado` | `modo`): relaja validación solo en flujo mejorar—no persistente en BD. */
+function parseModoGuardadoServidor(body: Record<string, unknown>): "publicar" | "mejorar" | null {
+  const raw = body.modo_guardado ?? body.modo;
+  const s = String(raw ?? "").trim().toLowerCase();
+  if (
+    s === "mejorar" ||
+    s === "mejorar_ficha" ||
+    s === "mejorar-ficha" ||
+    s === "upgrade"
+  ) {
+    return "mejorar";
+  }
+  if (
+    s === "publicar" ||
+    s === "publicar_borrador" ||
+    s === "borrador"
+  ) {
+    return "publicar";
+  }
+  return null;
+}
+
 /** Campos que “Mejorar ficha” puede tocar cuando la postulación ya está aprobada. */
 const MEJORAR_FICHA_POSTULACION_KEYS = new Set([
   "mostrar_responsable_publico",
@@ -692,6 +714,7 @@ export async function PATCH(
     const puedeEditarBorrador =
       estadoN === "borrador" || estadoN === "pendiente_revision";
     const puedeMejorarAprobada = estadoN === "aprobada";
+    const modoGuardadoCliente = parseModoGuardadoServidor(body);
 
     if (!puedeEditarBorrador && !puedeMejorarAprobada) {
       return json(
@@ -1104,11 +1127,14 @@ export async function PATCH(
       Object.prototype.hasOwnProperty.call(patch, "estado") &&
       normalizePostulacionEstado(patch.estado) === "pendiente_revision";
 
-    if (puedeMejorarAprobada) {
+    const descrSuavePorMejorarFicha =
+      puedeMejorarAprobada || modoGuardadoCliente === "mejorar";
+
+    if (descrSuavePorMejorarFicha) {
       if (Object.prototype.hasOwnProperty.call(patch, "frase_negocio")) {
         const n = normalizeDescripcionCorta(String(patch.frase_negocio ?? ""));
         patch.frase_negocio = n;
-        erroresDesc.push(...validateDescripcionCortaPublicacion(n));
+        erroresDesc.push(...validateDescripcionCortaBorradorSiPresente(n));
       }
     } else if (enviaRevision) {
       const rawFrase = Object.prototype.hasOwnProperty.call(patch, "frase_negocio")
