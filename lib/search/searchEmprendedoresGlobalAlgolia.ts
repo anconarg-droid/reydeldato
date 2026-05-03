@@ -6,12 +6,7 @@ import {
 import { vwPublicRowToBuscarApiItem } from "@/lib/mapVwEmprendedorPublicoToBuscarApiItem";
 import type { BuscarApiItem } from "@/lib/mapBuscarItemToEmprendedorCard";
 import { normalizeText } from "@/lib/search/normalizeText";
-import {
-  rotateDeterministicPhotoBuckets,
-  rotationSeed,
-  SEARCH_ROTATION_WINDOW_MS,
-} from "@/lib/search/deterministicRotation";
-import { urlTieneFotoListado } from "@/lib/search/sortItemsConFotoPrimero";
+import { rotationSeed, SEARCH_ROTATION_WINDOW_MS } from "@/lib/search/deterministicRotation";
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import { searchEmprendedoresGlobalText } from "@/lib/resultadosGlobalSupabase";
 
@@ -82,6 +77,71 @@ export function stableShuffle<T>(arr: T[], seed: number): T[] {
   });
 }
 
+function stableShuffleKeyed<T>(items: T[], seed: number, keyFn: (item: T) => string): T[] {
+  const suf = String(seed);
+  return [...items].sort(
+    (a, b) => hash(String(keyFn(a)) + suf) - hash(String(keyFn(b)) + suf),
+  );
+}
+
+/** Fila vista + ítem público ya mapeado (evita doble trabajo en score vs fotos). */
+type VwRowPacked = { row: Record<string, unknown>; item: BuscarApiItem };
+
+/** Orden: score descendente → bloques comuna → con foto primero dentro de cada bloque → shuffle estable. */
+function orderPackedGlobalAlgolia(
+  packed: VwRowPacked[],
+  ctx: EmprendedorGlobalAlgoliaScoreCtx,
+  seed: number
+): VwRowPacked[] {
+  const sorted = [...packed].sort(
+    (a, b) => computeScore(b.item, ctx) - computeScore(a.item, ctx),
+  );
+
+  const splitByFoto = (ps: VwRowPacked[]) => {
+    const con: VwRowPacked[] = [];
+    const sin: VwRowPacked[] = [];
+    for (const p of ps) {
+      (hasFotos(p.item) ? con : sin).push(p);
+    }
+    return {
+      shuffleCon: stableShuffleKeyed(con, seed, (p) => p.item.slug ?? p.item.id ?? ""),
+      shuffleSin: stableShuffleKeyed(sin, seed, (p) => p.item.slug ?? p.item.id ?? ""),
+    };
+  };
+
+  const bucketMerged = (ps: VwRowPacked[]) => {
+    const { shuffleCon, shuffleSin } = splitByFoto(ps);
+    return [...shuffleCon, ...shuffleSin];
+  };
+
+  const comunaRaw = String(ctx.comunaSlug ?? "").trim();
+  if (!comunaRaw) {
+    return bucketMerged(sorted);
+  }
+
+  const w = normalizeText(comunaRaw);
+  const baseP: VwRowPacked[] = [];
+  const atiendenP: VwRowPacked[] = [];
+  const restP: VwRowPacked[] = [];
+
+  for (const p of sorted) {
+    const bSlug = normalizeText(p.item.comunaBaseSlug ?? "");
+    if (bSlug === w) {
+      baseP.push(p);
+    } else if ((p.item.comunasCobertura ?? []).some((c) => normalizeText(c) === w)) {
+      atiendenP.push(p);
+    } else {
+      restP.push(p);
+    }
+  }
+
+  return [
+    ...bucketMerged(baseP),
+    ...bucketMerged(atiendenP),
+    ...bucketMerged(restP),
+  ];
+}
+
 function s(v: unknown): string {
   if (v == null) return "";
   return String(v).trim();
@@ -133,20 +193,6 @@ function detectSubcategoria(tokens: string[]): string | null {
     if (m) return m;
   }
   return null;
-}
-
-function rowMatchesDetectedSubcategoria(
-  row: Record<string, unknown>,
-  detectedSub: string
-): boolean {
-  const target = normalizeText(detectedSub);
-  const principal = normalizeText(
-    row.subcategoria_slug_final ?? row.subcategoria_slug
-  );
-  if (principal && principal === target) return true;
-  return parseStrArr(row.subcategorias_slugs).some(
-    (x) => normalizeText(x) === target
-  );
 }
 
 /** Rubros que Algolia suele confundir por similitud tipográfica con costura (p. ej. costurera vs costanera). */
@@ -204,7 +250,7 @@ function algoliaEnvReady(): boolean {
 export async function searchEmprendedoresGlobalAlgolia(
   q: string,
   limit = 24,
-  opts?: { regionSlug?: string | null }
+  opts?: { regionSlug?: string | null; comunaSlug?: string | null }
 ): Promise<{ items: BuscarApiItem[]; error: string | null }> {
   if (!algoliaEnvReady()) {
     return searchEmprendedoresGlobalText(q, limit, opts);
@@ -222,7 +268,7 @@ export async function searchEmprendedoresGlobalAlgolia(
 async function searchEmprendedoresGlobalAlgoliaInner(
   q: string,
   limit: number,
-  opts?: { regionSlug?: string | null }
+  opts?: { regionSlug?: string | null; comunaSlug?: string | null }
 ): Promise<{ items: BuscarApiItem[]; error: string | null }> {
   const regionSlug = String(opts?.regionSlug ?? "").trim() || null;
   const supabase = createSupabaseServerPublicClient();
@@ -317,31 +363,20 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     rowsFiltered = rowsFiltered.filter((r) => !rowPrincipalPasteleriaOrPanaderia(r));
   }
 
-  if (detectedSub) {
-    const exact: Record<string, unknown>[] = [];
-    const related: Record<string, unknown>[] = [];
-    for (const r of rowsFiltered) {
-      if (rowMatchesDetectedSubcategoria(r, detectedSub)) exact.push(r);
-      else related.push(r);
-    }
-    rowsFiltered = [...exact, ...related];
-  }
+  const scoreCtx: EmprendedorGlobalAlgoliaScoreCtx = {
+    comunaSlug: String(opts?.comunaSlug ?? "").trim() || null,
+    detectedSub,
+  };
 
-  const sliced = rowsFiltered.slice(0, limit);
-
-  const items: BuscarApiItem[] = [];
-  for (const r of sliced) {
+  const packed: VwRowPacked[] = [];
+  for (const r of rowsFiltered) {
     const item = vwPublicRowToBuscarApiItem(r);
-    if (item) items.push(item);
+    if (item) packed.push({ row: r, item });
   }
 
-  const ordered = rotateDeterministicPhotoBuckets(
-    items,
-    (it) => String(it.slug ?? it.id ?? ""),
-    (it) => urlTieneFotoListado(it.fotoPrincipalUrl),
-    SEARCH_ROTATION_WINDOW_MS,
-    "resultados:global_algolia",
-  );
+  const seed = getRotationSeed();
+  const orderedPacked = orderPackedGlobalAlgolia(packed, scoreCtx, seed);
+  const items = orderedPacked.slice(0, limit).map((p) => p.item);
 
-  return { items: ordered, error: null };
+  return { items, error: null };
 }
