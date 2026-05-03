@@ -112,6 +112,7 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     page: 0,
     facetFilters: [["estado_publicacion:publicado"]],
     attributesToRetrieve: ["slug", "objectID"],
+    advancedSyntax: true,
   });
 
   const rawHits = (result.hits || []) as Record<string, unknown>[];
