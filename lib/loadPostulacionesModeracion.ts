@@ -2,6 +2,7 @@ import {
   attachPosiblesDuplicadosModeracion,
   type PosibleDuplicadoEmprendedorModeracion,
 } from "@/app/api/_lib/moderacionDuplicadosEmprendedor";
+import { parseKeywordsFinalesEmprendedorDbValue } from "@/lib/keywordsPreservarEdicionEmprendedor";
 import type {
   ClasificacionPublicadaModeracion,
 } from "@/lib/clasificacionPublicadaEmprendedor";
@@ -166,6 +167,11 @@ export type PostulacionModeracionItem = {
    * antes de aplicar esta postulación (referencia para moderación).
    */
   clasificacion_publicada?: ClasificacionPublicadaModeracion | null;
+  /**
+   * `edicion_publicado`: `keywords_finales` vigentes en ficha publicada (preview moderación
+   * cuando el borrador no trae `keywords_usuario`).
+   */
+  keywords_finales_publicados?: string[] | null;
 };
 
 /**
@@ -299,6 +305,24 @@ export async function loadPostulacionesPorEstado(
       ? await loadClasificacionPublicadaBatchModeracion(supabase, edicionEmprendedorIds)
       : new Map<string, ClasificacionPublicadaModeracion>();
 
+  const keywordsFinalesPublicadosMap = new Map<string, string[]>();
+  if (edicionEmprendedorIds.length > 0) {
+    const { data: kwRows } = await supabase
+      .from("emprendedores")
+      .select("id, keywords_finales")
+      .in("id", edicionEmprendedorIds);
+    for (const r of kwRows ?? []) {
+      const id = s((r as { id?: unknown }).id);
+      if (!id) continue;
+      keywordsFinalesPublicadosMap.set(
+        id,
+        parseKeywordsFinalesEmprendedorDbValue(
+          (r as { keywords_finales?: unknown }).keywords_finales
+        )
+      );
+    }
+  }
+
   const items: PostulacionModeracionItem[] = list.map((row) => {
     const r = row as Record<string, unknown>;
     const comunaBaseId = s(r.comuna_base_id);
@@ -325,6 +349,11 @@ export async function loadPostulacionesPorEstado(
     const clasificacion_publicada: ClasificacionPublicadaModeracion | null =
       tipoP === "edicion_publicado" && empId
         ? clasificacionPubMap.get(empId) ?? null
+        : null;
+
+    const keywords_finales_publicados: string[] | null =
+      tipoP === "edicion_publicado" && empId
+        ? keywordsFinalesPublicadosMap.get(empId) ?? null
         : null;
 
     return {
@@ -378,6 +407,7 @@ export async function loadPostulacionesPorEstado(
       categoria: catId ? categoriaMap.get(catId) ?? null : null,
       subcategorias_nombres: subIds.map((sid) => subMap.get(sid) || sid),
       clasificacion_publicada,
+      keywords_finales_publicados,
     };
   });
 

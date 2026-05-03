@@ -19,6 +19,7 @@ function s(v: unknown) {
 
 /**
  * Si no hay keywords en postulación (`keywords_usuario` text[]), sugerencia débil por `descripcion_libre`.
+ * (Solo si tampoco hay lista publicada en ediciones de ficha ya online.)
  */
 function keywordsFallbackDesdeDescripcionLibre(raw: string): string[] {
   const t = s(raw);
@@ -34,6 +35,17 @@ function mergeKeywordsPreviewModeracion(item: PostulacionModeracionItem): string
   const fromRow = readKeywordsUsuarioFromPostulacionRow(item as unknown as Record<string, unknown>);
   if (fromRow.length) {
     return [...new Set(fromRow)].slice(0, MAX_KEYWORDS_MODERACION);
+  }
+  const pub = item.keywords_finales_publicados;
+  if (
+    s(item.tipo_postulacion) === "edicion_publicado" &&
+    Array.isArray(pub) &&
+    pub.length > 0
+  ) {
+    return [...new Set(pub.map((x) => s(x)).filter(Boolean))].slice(
+      0,
+      MAX_KEYWORDS_MODERACION
+    );
   }
   return keywordsFallbackDesdeDescripcionLibre(s(item.descripcion_libre));
 }
@@ -486,6 +498,8 @@ export default function PendientesClient({
   >(null);
   const [keywordDraft, setKeywordDraft] = useState<Record<string, string>>({});
   const skipFirstFetch = useRef(true);
+  /** Si cambia `updated_at` del borrador, se recalcula el preview de keywords (nueva edición del emprendedor). */
+  const keywordPreviewStampRef = useRef<Record<string, string>>({});
 
   const toggleDupPanel = useCallback((postId: string) => {
     setDupPanelOpen((prev) => ({ ...prev, [postId]: !prev[postId] }));
@@ -576,14 +590,20 @@ export default function PendientesClient({
   useEffect(() => {
     setKeywordsEdit((prev) => {
       const next = { ...prev };
+      const stamps = keywordPreviewStampRef.current;
       for (const it of items) {
-        if (next[it.id] === undefined) {
+        const stamp = s(it.updated_at);
+        const prevStamp = stamps[it.id];
+        const borradorNuevo = prevStamp !== stamp;
+        if (next[it.id] === undefined || borradorNuevo) {
           next[it.id] = mergeKeywordsPreviewModeracion(it);
+          stamps[it.id] = stamp;
         }
       }
       for (const k of Object.keys(next)) {
         if (!items.some((i) => i.id === k)) {
           delete next[k];
+          delete stamps[k];
         }
       }
       return next;

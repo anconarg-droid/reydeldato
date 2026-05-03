@@ -37,6 +37,7 @@ import {
 import { comunaIdsFromSlugs } from "@/lib/comunasCoberturaIds";
 import { filtrarKeywordsPorSubcategoria } from "@/lib/keywordsValidation";
 import { readKeywordsUsuarioFromPostulacionRow } from "@/lib/keywordsUsuarioPostulacion";
+import { loadKeywordsPublicadosEmprendedorParaPreservarEdicion } from "@/lib/keywordsPreservarEdicionEmprendedor";
 import {
   ensureEmprendedorPanelAccessUrl,
   issueRevisarMagicLinkAfterPublish,
@@ -825,14 +826,36 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const finalEtiquetasRaw = etiquetas_finales ?? [];
-    const keywordsFinalesFromModeracion = Array.isArray(finalEtiquetasRaw)
+    let keywordsFinalesFromModeracion = Array.isArray(finalEtiquetasRaw)
       ? finalEtiquetasRaw.map((x) => s(x)).filter(Boolean)
       : [];
 
-    const keywordsUsuario = readKeywordsUsuarioFromPostulacionRow(p as Record<string, unknown>);
+    let keywordsUsuario = readKeywordsUsuarioFromPostulacionRow(p as Record<string, unknown>);
     const keywordsDetectadas = dedupeStrings(arr(p.etiquetas_ia));
 
     const etiquetasSolo = body.etiquetas_finales_solo === true;
+
+    /**
+     * Edición de ficha publicada: si el borrador no trae palabras clave de moderación / usuario,
+     * conservar las que ya están en `emprendedores` para que `etiquetas_ia` del borrador no las reemplace solas.
+     */
+    if (esEdicionPublicado && eidEdicionEarly) {
+      const needUsuario = keywordsUsuario.length === 0;
+      const needFinales = !etiquetasSolo && keywordsFinalesFromModeracion.length === 0;
+      if (needUsuario || needFinales) {
+        const pub = await loadKeywordsPublicadosEmprendedorParaPreservarEdicion(
+          supabase,
+          eidEdicionEarly
+        );
+        if (needUsuario && pub.usuario.length) {
+          keywordsUsuario = pub.usuario;
+        }
+        if (needFinales && pub.finales.length) {
+          keywordsFinalesFromModeracion = pub.finales;
+        }
+      }
+    }
+
     let keywordsFinales = etiquetasSolo
       ? dedupeStrings(keywordsFinalesFromModeracion).slice(0, 40)
       : mergeKeywordsFinales({
