@@ -7,15 +7,6 @@
  */
 export function getEmprendedoresAlgoliaIndexSettings(): Record<string, unknown> {
   return {
-    attributesForFaceting: [
-      "filterOnly(estado_publicacion)",
-      "filterOnly(publicado)",
-      "filterOnly(categoria_slug)",
-      "filterOnly(subcategoria_slug)",
-      "filterOnly(sector_slug)",
-      "filterOnly(tipo_actividad)",
-    ],
-    /** Solo rubro/descripciones/tags; sin comunas/cobertura/modalidades para evitar matches basura. */
     searchableAttributes: [
       "unordered(nombre)",
       "unordered(subcategoria_slug)",
@@ -25,10 +16,27 @@ export function getEmprendedoresAlgoliaIndexSettings(): Record<string, unknown> 
       "unordered(descripcion_corta)",
       "unordered(descripcion_larga)",
     ],
+    /** Incluye facetas nuevas más las que usa `/api/search` y filtros por categoría (`categoria_slug`). */
+    attributesForFaceting: [
+      "filterOnly(estado_publicacion)",
+      "filterOnly(publicado)",
+      "filterOnly(categoria_slug)",
+      "filterOnly(subcategoria_slug)",
+      "filterOnly(sector_slug)",
+      "filterOnly(tipo_actividad)",
+      "filterOnly(comuna_base_slug)",
+      "filterOnly(nivel_cobertura)",
+      "filterOnly(coverage_keys)",
+    ],
     customRanking: ["desc(publicado)"],
     typoTolerance: "min",
     removeWordsIfNoResults: "lastWords",
+    advancedSyntax: true,
+    distinct: true,
+    attributeForDistinct: "slug",
     ignorePlurals: true,
+    minWordSizefor1Typo: 5,
+    minWordSizefor2Typos: 8,
     attributesToSnippet: ["descripcion_corta:20", "descripcion_larga:30"],
     attributesToHighlight: ["nombre", "descripcion_corta", "descripcion_larga"],
   };

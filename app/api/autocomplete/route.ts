@@ -225,6 +225,7 @@ export async function GET(req: NextRequest) {
           hitsPerPage: 20,
           attributesToRetrieve: ["tags_slugs", "sector_slug"],
           typoTolerance: true,
+          advancedSyntax: false,
         });
         const hits = (res.hits || []) as any[];
         const tagsSeen = new Set<string>();
