@@ -22,16 +22,15 @@ export default function HomeUltimosPublicadosClient({
   totalNegociosActivos = null,
 }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const previewCardsRef = useRef<EmprendedorSearchCardProps[]>([]);
   const [isHovered, setIsHovered] = useState(false);
   const [interactPaused, setInteractPaused] = useState(false);
   const [pageHidden, setPageHidden] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const currentIndexRef = useRef(0);
   const interactTimerRef = useRef<number | null>(null);
   const hoverPausedRef = useRef(false);
   const interactPausedRef = useRef(false);
   const pageHiddenRef = useRef(false);
-  const rafRef = useRef<number | null>(null);
 
   const [respectReducedMotion, setRespectReducedMotion] = useState(false);
 
@@ -65,6 +64,10 @@ export default function HomeUltimosPublicadosClient({
     pageHiddenRef.current = pageHidden;
   }, [pageHidden]);
 
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
   const clearInteractTimer = useCallback(() => {
     if (interactTimerRef.current) {
       window.clearTimeout(interactTimerRef.current);
@@ -81,42 +84,33 @@ export default function HomeUltimosPublicadosClient({
     }, RESUME_AFTER_INTERACTION_MS);
   }, [clearInteractTimer]);
 
-  const cancelScrollAnimation = useCallback(() => {
-    if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-  }, []);
-
-  const getStride = useCallback(() => {
-    const el = scrollerRef.current;
-    if (!el) return { stride: 0, maxScroll: 0 };
-    const first = el.querySelector<HTMLElement>("[data-carousel-card]");
-    if (!first) return { stride: 0, maxScroll: 0 };
-    const styles = window.getComputedStyle(el);
-    const gapRaw = styles.columnGap || styles.gap || "16px";
-    const gap = Number.parseFloat(gapRaw) || 16;
-    const stride = first.getBoundingClientRect().width + gap;
-    const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
-    return { stride, maxScroll };
+  /** Scroll horizontal para alinear el borde izquierdo de la tarjeta con la vista (evita errores por % del ancho y gap). */
+  const scrollLeftToAlignCardStart = useCallback((scrollEl: HTMLElement, cardEl: HTMLElement): number => {
+    return (
+      scrollEl.scrollLeft +
+      (cardEl.getBoundingClientRect().left - scrollEl.getBoundingClientRect().left)
+    );
   }, []);
 
   const scrollToIndex = useCallback(
     async (idx: number) => {
       const el = scrollerRef.current;
       if (!el) return;
-      const { stride } = getStride();
-      if (!stride) return;
-      const count = Math.max(1, previewCardsRef.current.length);
+      const nodes = [...el.querySelectorAll<HTMLElement>("[data-carousel-card]")];
+      const count = Math.max(1, nodes.length);
       const clamped = ((idx % count) + count) % count;
-      const target = Math.max(0, Math.min(el.scrollWidth - el.clientWidth, clamped * stride));
+      const chosen = nodes[clamped];
+      if (!chosen) return;
+      const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+      const rawTarget = scrollLeftToAlignCardStart(el, chosen);
+      const target = Math.max(0, Math.min(maxScroll, rawTarget));
       el.scrollTo({
         left: target,
         behavior: respectReducedMotion ? "auto" : "smooth",
       });
       setCurrentIndex(clamped);
     },
-    [getStride, respectReducedMotion]
+    [respectReducedMotion, scrollLeftToAlignCardStart],
   );
 
   const slideCount = Math.min(10, cards.length);
@@ -143,7 +137,8 @@ export default function HomeUltimosPublicadosClient({
     if (slideCount <= 1) return;
 
     const interval = window.setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % slideCount);
+      const next = (currentIndexRef.current + 1) % slideCount;
+      void scrollToIndex(next);
     }, AUTO_ADVANCE_MS);
 
     return () => window.clearInterval(interval);
@@ -153,12 +148,8 @@ export default function HomeUltimosPublicadosClient({
     interactPaused,
     pageHidden,
     respectReducedMotion,
+    scrollToIndex,
   ]);
-
-  useEffect(() => {
-    if (slideCount <= 1) return;
-    void scrollToIndex(currentIndex);
-  }, [currentIndex, scrollToIndex, slideCount]);
 
   const minNegocios = 31;
   const negociosLabel = Math.max(
@@ -166,23 +157,35 @@ export default function HomeUltimosPublicadosClient({
     totalNegociosActivos != null && totalNegociosActivos > 0 ? totalNegociosActivos : 0
   );
   const previewCards = cards.slice(0, 10);
-  previewCardsRef.current = previewCards;
   const multiSlide = previewCards.length > 1;
 
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
     let raf = 0;
+    const syncFromScrollLeft = () => {
+      const cards = [...el.querySelectorAll<HTMLElement>("[data-carousel-card]")];
+      const n = cards.length;
+      if (n <= 1) return;
+      const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+      let best = 0;
+      let bestDist = Infinity;
+      for (let i = 0; i < n; i++) {
+        const idealLeft = scrollLeftToAlignCardStart(el, cards[i]);
+        const clampedIdeal = Math.max(0, Math.min(maxScroll, idealLeft));
+        const dist = Math.abs(el.scrollLeft - clampedIdeal);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = i;
+        }
+      }
+      setCurrentIndex(best);
+    };
     const onScroll = () => {
       if (raf) return;
       raf = window.requestAnimationFrame(() => {
         raf = 0;
-        const { stride } = getStride();
-        if (!stride) return;
-        const idx = Math.round(el.scrollLeft / stride);
-        const count = previewCardsRef.current.length || 1;
-        const safe = Math.max(0, Math.min(count - 1, idx));
-        setCurrentIndex(safe);
+        syncFromScrollLeft();
       });
     };
     el.addEventListener("scroll", onScroll, { passive: true });
@@ -190,7 +193,7 @@ export default function HomeUltimosPublicadosClient({
       if (raf) window.cancelAnimationFrame(raf);
       el.removeEventListener("scroll", onScroll);
     };
-  }, [getStride]);
+  }, [scrollLeftToAlignCardStart]);
 
   return (
     <div className="w-full py-0" aria-labelledby="home-ultimos-publicados-heading">
@@ -224,7 +227,7 @@ export default function HomeUltimosPublicadosClient({
                     goPrev();
                   }}
                   onClick={goPrev}
-                  className="absolute left-2 top-1/2 z-20 -translate-y-1/2 inline-flex size-11 items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg hover:bg-teal-50 pointer-events-auto touch-manipulation"
+                  className="pointer-events-auto absolute left-2 top-1/2 z-20 hidden size-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg hover:bg-teal-50 md:inline-flex"
                   aria-label="Anterior"
                 >
                   <ChevronLeft className="size-6 text-teal-800" aria-hidden />
@@ -237,7 +240,7 @@ export default function HomeUltimosPublicadosClient({
                     goNext();
                   }}
                   onClick={goNext}
-                  className="absolute right-2 top-1/2 z-20 -translate-y-1/2 inline-flex size-11 items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg hover:bg-teal-50 pointer-events-auto touch-manipulation"
+                  className="pointer-events-auto absolute right-2 top-1/2 z-20 hidden size-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full border-2 border-teal-600 bg-white shadow-lg hover:bg-teal-50 md:inline-flex"
                   aria-label="Siguiente"
                 >
                   <ChevronRight className="size-6 text-teal-800" aria-hidden />
@@ -256,13 +259,11 @@ export default function HomeUltimosPublicadosClient({
               onKeyDown={(e) => {
                 if (e.key === "ArrowRight") {
                   e.preventDefault();
-                  bumpInteractionPause();
-                  void scrollToIndex(currentIndex + 1);
+                  goNext();
                 }
                 if (e.key === "ArrowLeft") {
                   e.preventDefault();
-                  bumpInteractionPause();
-                  void scrollToIndex(currentIndex - 1);
+                  goPrev();
                 }
               }}
             >

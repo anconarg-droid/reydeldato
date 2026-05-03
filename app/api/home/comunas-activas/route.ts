@@ -125,7 +125,6 @@ export async function GET() {
 
     // 2) Conteo fuente de verdad: mismo RPC que usa /resultados (via /api/buscar).
     //    Nos quedamos SOLO con comunas con count > 0.
-    const MAX_ITEMS = 12;
     const counted = await mapWithConcurrency(
       candidates,
       4,
@@ -164,8 +163,9 @@ export async function GET() {
       }
     );
 
-    // Bloque “Comunas con resultados”: públicas abiertas y con oferta visible (> 0)
-    const items = counted.filter((x) => (x.count || 0) > 0).slice(0, MAX_ITEMS);
+    // Todas las comunas con resultados (el trabajo RPC ya está hecho sobre `candidates`).
+    // La home pagina visualmente (“Ver más”) para no abrumar la UI.
+    const items = counted.filter((x) => (x.count || 0) > 0);
     return NextResponse.json({ ok: true, items });
   } catch (e: any) {
     return NextResponse.json(

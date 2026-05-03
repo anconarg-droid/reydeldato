@@ -16,8 +16,6 @@ import type { EmprendedorSearchCardProps } from "@/components/search/Emprendedor
 
 type Comuna = { id: number; nombre: string; slug: string; total?: number };
 
-const COMUNAS_PREVIEW = 6;
-
 type Props = {
   ultimosPublicadosCards: EmprendedorSearchCardProps[];
 };
@@ -145,14 +143,14 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
     return () => window.removeEventListener("hashchange", scrollToHash);
   }, []);
 
-  const comunasCards: ComunaAbiertaItem[] = comunas
-    .filter((c) => (Number(c.total || 0) || 0) > 0)
-    .slice(0, COMUNAS_PREVIEW)
-    .map((c) => ({
-      slug: c.slug,
-      nombre: c.nombre,
-      count: Number(c.total || 0),
-    }));
+  const comunasConResultados = comunas.filter(
+    (c) => (Number(c.total || 0) || 0) > 0
+  );
+  const comunasCards: ComunaAbiertaItem[] = comunasConResultados.map((c) => ({
+    slug: c.slug,
+    nombre: c.nombre,
+    count: Number(c.total || 0),
+  }));
 
   const totalNegociosActivos = comunas.reduce((s, c) => s + (Number(c.total) || 0), 0);
 
@@ -258,13 +256,21 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
             Algunas comunas ya tienen resultados. Otras están completando su catálogo.
           </p>
+          {!loadingComunas && comunasCards.length > 0 ? (
+            <p className="mt-3 text-sm font-semibold tabular-nums text-teal-900 sm:text-[15px]">
+              {comunasCards.length}{" "}
+              {comunasCards.length === 1
+                ? "comuna abierta con resultados visibles"
+                : "comunas abiertas con resultados visibles"}
+            </p>
+          ) : null}
 
           <div className="mt-10">
             <h3 className="text-sm font-semibold text-slate-900">Con resultados</h3>
             {loadingComunas ? (
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-[180px] animate-pulse rounded-2xl bg-slate-100" />
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="h-[148px] animate-pulse rounded-xl bg-slate-100" />
                 ))}
               </div>
             ) : comunasCards.length === 0 ? (
