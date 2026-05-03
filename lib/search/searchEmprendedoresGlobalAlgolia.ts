@@ -356,6 +356,12 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     ? orderedRows.filter((r) => rowMatchesRegionSlug(r, regionSlug))
     : orderedRows;
 
+  /* Si el foco regional (p. ej. RM por IP) vacía el set pero Algolia sí encontró coincidencias
+   * en otra región —p. ej. "reiki" en Maule—, mostrar esos hits en lugar de cero resultados. */
+  if (regionSlug && rowsFiltered.length === 0 && orderedRows.length > 0) {
+    rowsFiltered = orderedRows;
+  }
+
   if (
     tokensSuggestCosturaTailoring(tokens) &&
     !tokensExplicitPastryOrBread(tokens)

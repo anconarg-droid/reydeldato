@@ -187,9 +187,13 @@ export async function searchEmprendedoresGlobalText(
     }
   }
 
-  const rowsFiltered = regionSlug
+  let rowsFiltered = regionSlug
     ? rows.filter((r) => rowMatchesRegionSlug(r, regionSlug))
     : rows;
+
+  if (regionSlug && rowsFiltered.length === 0 && rows.length > 0) {
+    rowsFiltered = rows;
+  }
 
   const sliced = rowsFiltered.slice(0, limit);
 
