@@ -220,6 +220,23 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
         })
       : null;
 
+  /** Si el foco regional no devuelve nada, hidratar un segundo listado nacional (solo para UX en cliente). */
+  let globalDbOtrasRegiones: Awaited<
+    ReturnType<typeof searchEmprendedoresGlobalAlgolia>
+  > | null = null;
+  if (
+    q &&
+    !comuna &&
+    regionSlugParaBusquedaGlobal &&
+    globalDb &&
+    !globalDb.error &&
+    globalDb.items.length === 0
+  ) {
+    globalDbOtrasRegiones = await searchEmprendedoresGlobalAlgolia(q, 24, {
+      regionSlug: null,
+    });
+  }
+
   return (
     <main id="resultados" className="min-h-screen bg-white text-slate-900">
       <div className="max-w-5xl mx-auto px-4 py-6">
@@ -238,6 +255,7 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
           initialSubcategoriaSlug={subcategoria || null}
           initialSubcategoriaId={subcategoriaId || null}
           globalDb={globalDb}
+          globalDbOtrasRegiones={globalDbOtrasRegiones}
           synonymNotice={synonymNotice}
           regionFocoSlug={regionFocoSlug}
           regionFocoNombre={regionFocoNombre}

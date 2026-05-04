@@ -243,6 +243,15 @@ type Props = {
     error: string | null;
     meta?: GlobalAlgoliaSearchMeta | null;
   } | null;
+  /**
+   * Solo servidor: cuando hubo foco regional y cero resultados, búsqueda nacional para el bloque
+   * “Resultados en otras regiones” (no se mezcla con el listado regional).
+   */
+  globalDbOtrasRegiones?: {
+    items: BuscarApiItem[];
+    error: string | null;
+    meta?: GlobalAlgoliaSearchMeta | null;
+  } | null;
   /** Si la query se expandió vía `busqueda_sinonimos`, texto original vs canónico. */
   synonymNotice?: { qOriginal: string; qResolved: string } | null;
   /**
@@ -272,6 +281,7 @@ export default function ResultadosClient({
   initialSubcategoriaSlug,
   initialSubcategoriaId,
   globalDb,
+  globalDbOtrasRegiones = null,
   synonymNotice = null,
   directorioComunaAbierto = true,
   regionFocoSlug = null,
@@ -453,6 +463,17 @@ export default function ResultadosClient({
   }
 
   const db = globalDb ?? { items: [], error: "No se cargaron datos de búsqueda." };
+  const otras = globalDbOtrasRegiones;
+  const hayFocoRegionalActivo =
+    !scopeNacional &&
+    (Boolean(String(regionFocoSlug ?? "").trim()) || Boolean(regionNombreFoco));
+  const terminoParaCopy = (initialQDisplay ?? "").trim() || q;
+  const hrefBusquedaNacional = `/resultados?q=${encodeURIComponent(terminoParaCopy)}&scope=nacional`;
+  const regionalSinResultados =
+    Boolean(q) &&
+    hayFocoRegionalActivo &&
+    !db.error &&
+    db.items.length === 0;
 
   return (
     <div className="mt-2 space-y-4">
@@ -480,7 +501,43 @@ export default function ResultadosClient({
           </p>
         </div>
       ) : null}
-      <GlobalDbResults q={q} items={db.items} error={db.error} />
+      {db.error ? (
+        <GlobalDbResults q={q} items={db.items} error={db.error} />
+      ) : regionalSinResultados ? (
+        <div className="space-y-8">
+          <div
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-5 sm:px-5"
+            style={{ boxShadow: "0 1px 3px rgba(15,23,42,0.06)" }}
+          >
+            <p className="m-0 text-sm font-medium leading-relaxed text-slate-800">
+              No encontramos &ldquo;{terminoParaCopy}&rdquo; en{" "}
+              {(regionFocoNombre ?? "").trim() || "tu región"}
+            </p>
+            <div className="mt-4">
+              <Link
+                href={hrefBusquedaNacional}
+                className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-3.5 py-2.5 text-sm font-extrabold text-sky-950 no-underline shadow-sm hover:bg-sky-50"
+              >
+                Ver {terminoParaCopy} en otras regiones
+              </Link>
+            </div>
+          </div>
+          {otras?.error ? (
+            <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              Error cargando resultados en otras regiones: {otras.error}
+            </p>
+          ) : otras && otras.items.length > 0 ? (
+            <div className="space-y-3">
+              <h2 className="text-base font-extrabold text-slate-900">
+                Resultados en otras regiones
+              </h2>
+              <GlobalDbResults q={q} items={otras.items} error={null} />
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <GlobalDbResults q={q} items={db.items} error={db.error} />
+      )}
     </div>
   );
 }
