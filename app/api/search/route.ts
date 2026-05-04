@@ -1,7 +1,7 @@
 /**
  * Búsqueda vía Algolia (solo lectura).
  * Fuente de verdad: Supabase. Algolia se usa solo para búsqueda rápida.
- * Ranking cuando hay comuna: 1) base 2) cobertura 3) regional 4) nacional.
+ * Ranking cuando hay comuna: 1) base 2) cobertura 3) regional 4) nacional (3–4 solo con `ver_otras_regiones=1` o `scope=nacional`).
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getAlgoliaAdminIndex } from "@/lib/algoliaServer";
@@ -123,6 +123,10 @@ type ParsedInput = {
   regionRaw: string;
   /** Slug canónico en `regiones` cuando aplica filtro; lo setea GET antes de Algolia. */
   regionSlugFiltroResolved?: string | null;
+  /** Incluir resultados fuera del foco regional/comuna (solo con opt-in explícito). */
+  verOtrasRegiones: boolean;
+  /** `scope=nacional`: listado a nivel Chile (sin amarrar a región). */
+  scopeEsNacional: boolean;
 };
 
 type TerritorialContext =
@@ -156,6 +160,11 @@ function parseInput(req: NextRequest): ParsedInput {
   const sectorSlugFilter = s(searchParams.get("sector"));
   const tipoActividadFilter = s(searchParams.get("tipo_actividad"));
   const regionRaw = s(searchParams.get("region"));
+  const verOtrasRaw = s(searchParams.get("ver_otras_regiones"));
+  const verOtrasRegiones =
+    slugify(verOtrasRaw.trim().toLowerCase()) === "1" || verOtrasRaw === "1";
+  const scopeRaw = s(searchParams.get("scope")).toLowerCase();
+  const scopeEsNacional = scopeRaw === "nacional";
 
   const page = Math.max(0, Number(searchParams.get("page")) || 0);
   const limit = Math.min(50, Math.max(6, Number(searchParams.get("limit")) || 24));
@@ -169,6 +178,8 @@ function parseInput(req: NextRequest): ParsedInput {
     page,
     limit,
     regionRaw,
+    verOtrasRegiones,
+    scopeEsNacional,
   };
 }
 
@@ -242,6 +253,10 @@ async function resolveTerritorialContext(
   };
 }
 
+function expandFueraFocoComuna(input: ParsedInput): boolean {
+  return input.verOtrasRegiones === true || input.scopeEsNacional === true;
+}
+
 async function searchAlgolia(
   input: ParsedInput
 ): Promise<AlgoliaSearchResult> {
@@ -260,9 +275,10 @@ async function searchAlgolia(
 
   const hasComuna = !!input.comunaSlug;
   const regionF = s(input.regionSlugFiltroResolved ?? "");
+  const regionFocoEstrecho = Boolean(regionF) && !expandFueraFocoComuna(input);
   const hitsPerPage = hasComuna
     ? Math.min(120, input.limit * 4)
-    : regionF
+    : regionFocoEstrecho
       ? Math.min(500, Math.max(input.limit * 50, 200))
       : input.limit;
 
@@ -315,7 +331,7 @@ async function searchAlgolia(
 
   const searchParams = {
     hitsPerPage,
-    page: hasComuna || regionF ? 0 : input.page,
+    page: hasComuna || regionFocoEstrecho ? 0 : input.page,
     facetFilters: facetFilters.length > 0 ? facetFilters : undefined,
     attributesToRetrieve,
   };
@@ -374,6 +390,7 @@ function sortWithTerritorialAndQuality(
   ctx: Extract<TerritorialContext, { mode: "comuna_activa" }>
 ): Record<string, unknown>[] {
   const comunaSlug = ctx.comunaSlug;
+  const permitirNivelesAmplios = expandFueraFocoComuna(input);
 
   // Guardar índice original para respetar la relevancia textual de Algolia
   hits.forEach((hit, idx) => {
@@ -390,7 +407,12 @@ function sortWithTerritorialAndQuality(
     const nivel = s(hit.nivel_cobertura).toLowerCase();
     if (base === comunaSlug) return true;
     if (cobertura.includes(comunaSlug)) return true;
-    if (nivel === "regional" || nivel === "varias_regiones" || nivel === "nacional") return true;
+    if (
+      permitirNivelesAmplios &&
+      (nivel === "regional" || nivel === "varias_regiones" || nivel === "nacional")
+    ) {
+      return true;
+    }
     return false;
   });
 
@@ -443,7 +465,8 @@ function buildResponse(
   let totalHits = searchResult.totalHits;
 
   const regionFiltro = s(input.regionSlugFiltroResolved ?? "");
-  if (ctx.mode === "no_comuna" && regionFiltro) {
+  const ampliarRegion = expandFueraFocoComuna(input);
+  if (ctx.mode === "no_comuna" && regionFiltro && !ampliarRegion) {
     const filtered = hits.filter((h) =>
       recordMatchesRegionSlug(
         {
@@ -457,6 +480,7 @@ function buildResponse(
     const start = input.page * input.limit;
     hits = filtered.slice(start, start + input.limit);
   }
+  /* Con `ver_otras_regiones` / `scope=nacional` + `region=`: no se filtra por región; hits y paginación vienen de Algolia. */
 
   if (ctx.mode === "comuna_activa") {
     const sorted = sortWithTerritorialAndQuality(hits, input, ctx);

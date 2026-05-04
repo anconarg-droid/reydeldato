@@ -712,83 +712,96 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             {confianzaTexto || " "}
           </p>
 
-          {/* Ubicación: en contexto de comuna (directorio / búsqueda) mensaje corto; fuera de eso, pin o bloque territorial legacy. */}
-          {mostrarUbicacionModoComuna ? (
-            <>
-              {(() => {
-                const regComunaBuscada = String(p.fichaContextComunaRegionAbrev ?? "").trim();
-                const regBase = String(p.comunaBaseRegionAbrev ?? "").trim();
-                /** Primera línea “En …”: región de la comuna de listado; si falta, la de la base. */
-                const regionLineaEnBase = regComunaBuscada || regBase;
-                /** “Atiende …”: región de la comuna buscada. */
-                const regionLineaAtiende = regComunaBuscada;
-                const baseLineaSecundaria = comunaNomRaw
-                  ? `Base en ${comunaNomRaw}${regBase ? ` — ${regBase}` : ""}`.trim()
-                  : "";
-                return (
-                  <>
-                    {esBaseEnComuna ? (
-                      <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
-                        <span aria-hidden>📍 </span>
-                        En {comunaBuscadaDisplay}
-                        {regionLineaEnBase ? ` — ${regionLineaEnBase}` : ""}
-                      </p>
-                    ) : (
-                      <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
-                        <span aria-hidden>📍 </span>
-                        Atiende {comunaBuscadaDisplay}
-                        {regionLineaAtiende ? ` — ${regionLineaAtiende}` : ""}
-                      </p>
-                    )}
-                    {!esBaseEnComuna && baseLineaSecundaria ? (
-                      <p className="m-0 min-h-[1rem] w-full shrink-0 text-xs leading-snug text-slate-500">
-                        {baseLineaSecundaria}
-                      </p>
-                    ) : null}
-                  </>
-                );
-              })()}
-            </>
-          ) : ubicacionPorBloqueTerritorialExplicito ? (
-            p.bloqueTerritorial === "de_tu_comuna" ? (
-              <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
-                <span aria-hidden>📍 </span>
-                En {nombreBuscadaTerritorial}
-              </p>
-            ) : (
+          {/* Ubicación: siempre 📍 En {comuna base} — {región}; en listado por comuna, “Atiende …” si el negocio no tiene base en la comuna buscada. */}
+          {(() => {
+            const regComunaBuscada = String(p.fichaContextComunaRegionAbrev ?? "").trim();
+            const regBase = String(p.comunaBaseRegionAbrev ?? "").trim();
+            const nombreBaseLinea =
+              comunaNomRaw.trim() ||
+              (String(p.comunaBaseSlug ?? "").trim()
+                ? tituloDesdeSlugComuna(String(p.comunaBaseSlug).trim())
+                : "");
+            const textoEnBaseRegion =
+              nombreBaseLinea && regBase
+                ? `En ${nombreBaseLinea} — ${regBase}`
+                : nombreBaseLinea
+                  ? `En ${nombreBaseLinea}`
+                  : regBase
+                    ? `En ${regBase}`
+                    : "";
+            const lineaClass =
+              "m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800";
+            const lineaBaseP =
+              textoEnBaseRegion ? (
+                <p className={lineaClass}>
+                  <span aria-hidden>📍 </span>
+                  {textoEnBaseRegion}
+                </p>
+              ) : null;
+
+            if (mostrarUbicacionModoComuna) {
+              const mostrarSegundaAtiende =
+                Boolean(String(comunaBuscadaDisplay ?? "").trim()) && !esBaseEnComuna;
+              return (
+                <>
+                  {lineaBaseP ? (
+                    lineaBaseP
+                  ) : (
+                    <p className={lineaClass}>
+                      <span aria-hidden>📍 </span>
+                      En {comunaBuscadaDisplay}
+                      {regComunaBuscada || regBase ? ` — ${regComunaBuscada || regBase}` : ""}
+                    </p>
+                  )}
+                  {mostrarSegundaAtiende ? (
+                    <p className="m-0 min-h-[1.1rem] w-full shrink-0 text-[13px] font-medium leading-snug text-slate-700">
+                      Atiende {comunaBuscadaDisplay}
+                      {regComunaBuscada ? ` — ${regComunaBuscada}` : ""}
+                    </p>
+                  ) : null}
+                </>
+              );
+            }
+
+            if (ubicacionPorBloqueTerritorialExplicito) {
+              return p.bloqueTerritorial === "de_tu_comuna" ? (
+                lineaBaseP ?? (
+                  <p className={lineaClass}>
+                    <span aria-hidden>📍 </span>
+                    En {nombreBuscadaTerritorial}
+                  </p>
+                )
+              ) : (
+                <>
+                  {lineaBaseP ?? (
+                    <p className={lineaClass}>
+                      <span aria-hidden>📍 </span>
+                      Base en {comunaBaseLabel}
+                    </p>
+                  )}
+                  <p className="m-0 min-h-[1.1rem] w-full shrink-0 text-[13px] font-medium leading-snug text-slate-700">
+                    Atiende {nombreBuscadaTerritorial}
+                  </p>
+                </>
+              );
+            }
+
+            if (lineaBaseP) return lineaBaseP;
+
+            return (
               <>
-                <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
+                <p className="m-0 min-h-[1.375rem] w-full shrink-0 truncate text-[13px] font-medium leading-tight text-slate-800">
                   <span aria-hidden>📍 </span>
-                  Base en {comunaBaseLabel}
+                  {pinUbicacion.primary}
                 </p>
-                <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
-                  <span aria-hidden>📍 </span>
-                  Atiende {nombreBuscadaTerritorial}
-                </p>
+                {pinUbicacion.secondary ? (
+                  <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 truncate text-[11px] leading-tight text-slate-500">
+                    {pinUbicacion.secondary}
+                  </p>
+                ) : null}
               </>
-            )
-          ) : comunaNomRaw || reg ? (
-            <p className="m-0 min-h-[1.375rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
-              <span aria-hidden>📍 </span>
-              {comunaNomRaw && reg
-                ? `En ${comunaNomRaw} — ${reg}`
-                : comunaNomRaw
-                  ? `En ${comunaNomRaw}`
-                  : `En ${reg}`}
-            </p>
-          ) : (
-            <>
-              <p className="m-0 min-h-[1.375rem] w-full shrink-0 truncate text-[13px] font-medium leading-tight text-slate-800">
-                <span aria-hidden>📍 </span>
-                {pinUbicacion.primary}
-              </p>
-              {pinUbicacion.secondary ? (
-                <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 truncate text-[11px] leading-tight text-slate-500">
-                  {pinUbicacion.secondary}
-                </p>
-              ) : null}
-            </>
-          )}
+            );
+          })()}
 
           {String(p.listadoNotaDebajoUbicacion ?? "").trim() ? (
             <p className="m-0 min-h-[1rem] w-full shrink-0 text-xs font-medium leading-snug text-amber-900/85">

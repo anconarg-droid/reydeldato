@@ -651,20 +651,11 @@ export default function PublicSearchResults({
             ) : null}
           </div>
 
-          <div className="mb-6 rounded-2xl border border-sky-200/90 bg-sky-50/90 px-4 py-5 sm:px-5">
-            <h4 className="m-0 text-base font-black text-slate-900">¿Buscas {qLegibleTitulo}?</h4>
-            <p className="mt-2 m-0 text-sm leading-relaxed text-slate-700">
-              Por ahora no hay en esta comuna, pero puedes ver opciones en otras zonas cercanas.
-            </p>
-            <div className="mt-4">
-              <Link
-                href={hrefOtrasComunas}
-                className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-3.5 py-2.5 text-sm font-extrabold text-sky-950 no-underline shadow-sm hover:bg-sky-50"
-              >
-                Ver {qLegibleTitulo} en {regionFocoNombre || "tu región"}
-              </Link>
-            </div>
-          </div>
+          <p className="mb-5 m-0 text-sm leading-relaxed text-slate-700">
+            No hay resultados en esta comuna. Puedes ver servicios que atienden tu comuna o explorar
+            otras zonas.
+          </p>
+
           <div className="space-y-6 sm:space-y-7">
             <TerritorialAccordionBlock
               variant="local"
@@ -722,13 +713,27 @@ export default function PublicSearchResults({
             {!modoActivacionPreview ? (
               <div className="mt-6 sm:mt-7 space-y-3">
                 {!fueraZonaIntentada && fallbackGlobalNacional.length === 0 && !loadingFueraZona ? (
-                  <button
-                    type="button"
-                    onClick={() => void cargarOpcionesFueraZona()}
-                    className="inline-flex w-full max-w-md items-center justify-center rounded-xl border border-teal-300 bg-emerald-50/90 px-3.5 py-2.5 text-sm font-extrabold text-teal-950 shadow-sm hover:bg-emerald-100/90 sm:w-auto"
-                  >
-                    Mostrar opciones fuera de tu zona
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => void cargarOpcionesFueraZona()}
+                      className="inline-flex w-full max-w-md items-center justify-center rounded-xl border border-teal-300 bg-emerald-50/90 px-3.5 py-2.5 text-sm font-extrabold text-teal-950 shadow-sm hover:bg-emerald-100/90 sm:w-auto"
+                    >
+                      Mostrar opciones fuera de tu zona
+                    </button>
+                    {regionParam ? (
+                      <p className="m-0 text-sm text-slate-600">
+                        También puedes{" "}
+                        <Link
+                          href={hrefOtrasComunas}
+                          className="font-bold text-sky-900 underline decoration-sky-300 underline-offset-2 hover:text-sky-950"
+                        >
+                          ver {qLegibleTitulo} en {regionFocoNombre || "tu región"}
+                        </Link>
+                        .
+                      </p>
+                    ) : null}
+                  </>
                 ) : null}
                 {loadingFueraZona ? (
                   <p className="m-0 text-sm text-slate-600" aria-live="polite">
