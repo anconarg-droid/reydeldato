@@ -90,6 +90,8 @@ export type EmprendedorSearchCardProps = {
   usarCardSimple?: boolean;
   /** Ajustes de layout para vitrina Home (altura uniforme). */
   homeCarousel?: boolean;
+  /** Nota opcional bajo la línea de ubicación (p. ej. listados nacionales en página de comuna). */
+  listadoNotaDebajoUbicacion?: string | null;
 };
 
 const ACTIONS_H = 48;
@@ -787,6 +789,12 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               ) : null}
             </>
           )}
+
+          {String(p.listadoNotaDebajoUbicacion ?? "").trim() ? (
+            <p className="m-0 min-h-[1rem] w-full shrink-0 text-xs font-medium leading-snug text-amber-900/85">
+              {String(p.listadoNotaDebajoUbicacion).trim()}
+            </p>
+          ) : null}
 
           {!mostrarUbicacionModoComuna ? (
             <p

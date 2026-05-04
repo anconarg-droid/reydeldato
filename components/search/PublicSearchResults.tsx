@@ -76,6 +76,23 @@ type SearchResponse = {
   meta: SearchMeta;
 };
 
+/** Misma idea que `atiendenParaBloque` en render: hay ítems que atienden la comuna por bloque o cobertura. */
+function hayAtiendeEnComunaDesdeItems(items: SearchItem[], comunaSlugCtx: string): boolean {
+  const w = comunaSlugCtx.trim();
+  if (!w) return false;
+  for (const i of items) {
+    if (i.bloque === "atienden_tu_comuna") return true;
+  }
+  for (const i of items) {
+    if (i.bloque === "de_tu_comuna") continue;
+    const baseSlug = String(i.comunaBaseSlug || "").trim();
+    if (!baseSlug || baseSlug === w) continue;
+    const comunas = Array.isArray(i.comunasCobertura) ? i.comunasCobertura : [];
+    if (comunas.map((x) => String(x ?? "").trim()).includes(w)) return true;
+  }
+  return false;
+}
+
 export default function PublicSearchResults({
   comuna,
   q = "",
@@ -117,6 +134,8 @@ export default function PublicSearchResults({
   const [error, setError] = useState("");
   /** Populares sin `q` (respuesta completa: base + atienden) para fallback cuando la búsqueda no matchea en la comuna. */
   const [fallbackPopularesItems, setFallbackPopularesItems] = useState<SearchItem[]>([]);
+  /** Búsqueda global `scope=nacional` cuando no hay match territorial para la intención. */
+  const [fallbackGlobalNacional, setFallbackGlobalNacional] = useState<BuscarApiItem[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -126,6 +145,7 @@ export default function PublicSearchResults({
         setLoading(true);
         setError("");
         setFallbackPopularesItems([]);
+        setFallbackGlobalNacional([]);
 
         const params = new URLSearchParams();
         params.set("comuna", comuna);
@@ -185,9 +205,36 @@ export default function PublicSearchResults({
           }
         }
 
+        let globalNacional: BuscarApiItem[] = [];
+        const comSlugMeta = String(json.meta?.comunaSlug || comuna).trim();
+        const terminoParaGlobalRaw =
+          String(json.meta?.q ?? "").trim() ||
+          (slug ? prettySubcategoriaSlugForDisplay(slug) : "") ||
+          (cat ? prettySubcategoriaSlugForDisplay(cat) : "") ||
+          qSend;
+        if (
+          !modoActivacionPreview &&
+          hayFiltroBusqueda &&
+          deTuCount === 0 &&
+          !hayAtiendeEnComunaDesdeItems(nextItems, comSlugMeta) &&
+          normalizeText(terminoParaGlobalRaw)
+        ) {
+          const gp = new URLSearchParams();
+          gp.set("q", terminoParaGlobalRaw);
+          gp.set("scope", "nacional");
+          const resG = await fetch(`/api/buscar/global?${gp.toString()}`, {
+            cache: "no-store",
+          });
+          const jsonG: { ok?: boolean; items?: BuscarApiItem[]; error?: string } = await resG.json();
+          if (resG.ok && jsonG?.ok && Array.isArray(jsonG.items) && !jsonG.error) {
+            globalNacional = jsonG.items;
+          }
+        }
+
         if (!mounted) return;
         setItems(nextItems);
         setFallbackPopularesItems(otros);
+        setFallbackGlobalNacional(globalNacional);
       } catch (err) {
         if (!mounted) return;
         setError(err instanceof Error ? err.message : "Error inesperado.");
@@ -201,7 +248,7 @@ export default function PublicSearchResults({
     return () => {
       mounted = false;
     };
-  }, [comuna, q, subcategoriaSlug, subcategoriaId, categoriaSlug]);
+  }, [comuna, q, subcategoriaSlug, subcategoriaId, categoriaSlug, modoActivacionPreview]);
 
   const fallbackBaseOrdenados = useMemo(
     () =>
@@ -543,7 +590,11 @@ export default function PublicSearchResults({
       ) : sinResultadosParaQ ? (
         <>
           <TrackImpressions
-            slugs={[...fallbackBaseOrdenados, ...fallbackAtiendenOrdenados]
+            slugs={[
+              ...fallbackBaseOrdenados,
+              ...fallbackAtiendenOrdenados,
+              ...fallbackGlobalNacional,
+            ]
               .map((i) => String(i.slug || i.id || ""))
               .filter(Boolean)}
             comuna_slug={comunaSlugCtx}
@@ -645,6 +696,28 @@ export default function PublicSearchResults({
                 emptyMessage="Aún no hay negocios que declaren cobertura hacia esta comuna."
               />
             </TerritorialAccordionBlock>
+            {fallbackGlobalNacional.length > 0 ? (
+              <TerritorialAccordionBlock
+                variant="cobertura"
+                persistPrefix={`resultados:${comunaSlugCtx}`}
+                which="fuera_zona"
+                instanceId={`resultados-${comunaSlugCtx}-fallback-fuera-zona`}
+                className="mt-6 sm:mt-7"
+                title={<>Opciones fuera de tu zona ({fallbackGlobalNacional.length})</>}
+                subtitle="Negocios en otras regiones que podrían servirte"
+              >
+                <CategoriaEmprendedoresGrid
+                  items={fallbackGlobalNacional}
+                  comunaSlug={comunaSlugCtx}
+                  comunaNombre={nombreComunaLinea}
+                  omitirContextoComuna
+                  preservarOrdenItems
+                  listadoNotaDebajoUbicacion="No disponible en tu región"
+                  usarCardSimple={modoActivacionPreview}
+                  emptyMessage="No encontramos opciones en otras regiones."
+                />
+              </TerritorialAccordionBlock>
+            ) : null}
           </div>
         </>
       ) : (

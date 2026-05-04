@@ -10,9 +10,10 @@ import { useCallback, useEffect, useState } from "react";
  */
 export function accordionCollapsedStorageKey(
   persistPrefix: string,
-  which: "base" | "atienden"
+  which: "base" | "atienden" | "fuera_zona"
 ): string {
-  const mid = which === "base" ? "base" : "atienden";
+  const mid =
+    which === "base" ? "base" : which === "atienden" ? "atienden" : "fuera-zona";
   return `${persistPrefix}:bloque-${mid}-colapsado`;
 }
 
@@ -47,7 +48,7 @@ export type TerritorialAccordionBlockProps = {
   variant: "local" | "cobertura";
   /** Prefijo estable, p. ej. `abrir-comuna:slug` o `resultados:slug`. */
   persistPrefix: string;
-  which: "base" | "atienden";
+  which: "base" | "atienden" | "fuera_zona";
   /** Base para `id` de título y panel (único en la página). */
   instanceId: string;
   title: ReactNode;

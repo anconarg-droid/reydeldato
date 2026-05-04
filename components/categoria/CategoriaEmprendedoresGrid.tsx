@@ -23,6 +23,12 @@ type Props = {
   usarCardSimple?: boolean;
   /** Región de la comuna de listado (p. ej. RM / Maule) para línea de ubicación en cards. */
   comunaContextoRegionAbrev?: string | null;
+  /** Listado global dentro de página de comuna: sin meta de comuna (📍 base + región en card). */
+  omitirContextoComuna?: boolean;
+  /** Conserva el orden del servidor (p. ej. rotación/ranking de búsqueda global). */
+  preservarOrdenItems?: boolean;
+  /** Nota bajo la línea de ubicación (p. ej. aviso de disponibilidad territorial). */
+  listadoNotaDebajoUbicacion?: string | null;
 };
 
 export default function CategoriaEmprendedoresGrid({
@@ -34,24 +40,30 @@ export default function CategoriaEmprendedoresGrid({
   destacarMejoresOpciones = false,
   usarCardSimple = false,
   comunaContextoRegionAbrev = null,
+  omitirContextoComuna = false,
+  preservarOrdenItems = false,
+  listadoNotaDebajoUbicacion = null,
 }: Props) {
   const slugT = comunaSlug.trim();
   const nombreT = comunaNombre.trim();
   const largoT = String(comunaNombreEnCard ?? "").trim();
   const regCtx = String(comunaContextoRegionAbrev ?? "").trim();
   const meta: BuscarComunaContextMeta | null =
-    slugT && nombreT
-      ? {
+    omitirContextoComuna || !slugT || !nombreT
+      ? null
+      : {
           comunaSlug: slugT,
           comunaNombre: nombreT,
           ...(largoT && largoT !== nombreT ? { comunaNombreEnCard: largoT } : {}),
           ...(regCtx ? { comunaRegionAbrev: regCtx } : {}),
-        }
-      : null;
+        };
 
   const ordenados = useMemo(
-    () => sortItemsConFotoPrimeroStable(items, (i) => i.fotoPrincipalUrl),
-    [items],
+    () =>
+      preservarOrdenItems
+        ? [...items]
+        : sortItemsConFotoPrimeroStable(items, (i) => i.fotoPrincipalUrl),
+    [items, preservarOrdenItems],
   );
 
   return (
@@ -63,9 +75,14 @@ export default function CategoriaEmprendedoresGrid({
       {ordenados.map((item) => (
         <EmprendedorSearchCard
           key={item.slug || item.id}
-          {...buscarApiItemToEmprendedorCardProps(item, meta, "comuna")}
+          {...buscarApiItemToEmprendedorCardProps(
+            item,
+            meta,
+            omitirContextoComuna ? "search" : "comuna",
+          )}
           destacarMejoresOpciones={destacarMejoresOpciones}
           usarCardSimple={usarCardSimple}
+          listadoNotaDebajoUbicacion={listadoNotaDebajoUbicacion ?? undefined}
         />
       ))}
     </EmprendedorSearchCardsGrid>
