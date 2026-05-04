@@ -6,8 +6,12 @@ import { useRouter } from "next/navigation";
 import { normalizeText } from "@/lib/search/normalizeText";
 import TrackImpressions from "@/components/TrackImpressions";
 import ComunaTerritorialBloquesConFiltro from "@/components/search/ComunaTerritorialBloquesConFiltro";
+import TerritorialAccordionBlock from "@/components/search/TerritorialAccordionBlock";
+import CategoriaEmprendedoresGrid from "@/components/categoria/CategoriaEmprendedoresGrid";
+import SoloCompletosFiltroControl from "@/components/search/SoloCompletosFiltroControl";
 import type { BuscarApiItem } from "@/lib/mapBuscarItemToEmprendedorCard";
 import { sortItemsConFotoPrimeroStable } from "@/lib/search/sortItemsConFotoPrimero";
+import { filtrarItemsPorMejoresOpciones } from "@/lib/buscarApiItemPasaFiltroVerMejoresOpciones";
 
 /** Texto legible cuando solo viene `subcategoria=` en la URL (sin `q=`). */
 function prettySubcategoriaSlugForDisplay(slug: string): string {
@@ -163,10 +167,10 @@ export default function PublicSearchResults({
         const nextItems = Array.isArray(json.items) ? json.items : [];
         setMeta(json.meta || null);
 
-        const textualQ = Boolean(qSend) && !slug && !sidTrim && !cat;
         const deTuCount = nextItems.filter((i) => i.bloque === "de_tu_comuna").length;
         let otros: SearchItem[] = [];
-        if (textualQ && deTuCount === 0) {
+        const hayFiltroBusqueda = Boolean(q.trim()) || Boolean(slug) || Boolean(sidTrim) || Boolean(cat);
+        if (hayFiltroBusqueda && deTuCount === 0) {
           const popParams = new URLSearchParams();
           popParams.set("comuna", comuna);
           popParams.set("populares", "1");
@@ -230,6 +234,35 @@ export default function PublicSearchResults({
       ),
     [items]
   );
+
+  const comunaSlugCtx = String(meta?.comunaSlug || comuna).trim() || comuna.trim();
+
+  const atiendenPorCoberturaQuery = useMemo(() => {
+    if (!comunaSlugCtx) return [];
+    return items.filter((i) => {
+      if (i.bloque === "de_tu_comuna") return false;
+      const baseSlug = String(i.comunaBaseSlug || "").trim();
+      if (!baseSlug) return false;
+      if (baseSlug === comunaSlugCtx) return false;
+      const comunas = Array.isArray(i.comunasCobertura) ? i.comunasCobertura : [];
+      return comunas.map((x) => String(x ?? "").trim()).includes(comunaSlugCtx);
+    });
+  }, [items, comunaSlugCtx]);
+
+  const atiendenParaBloque = useMemo(() => {
+    const seen = new Set<string>();
+    const out: SearchItem[] = [];
+    for (const it of [...atiendenTuComuna, ...atiendenPorCoberturaQuery]) {
+      const key = String(it.slug || it.id || "").trim();
+      if (!key) continue;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(it);
+    }
+    return out;
+  }, [atiendenTuComuna, atiendenPorCoberturaQuery]);
+
+  const hasResultadosAtienden = atiendenParaBloque.length > 0;
 
   if (loading) {
     return (
@@ -403,8 +436,8 @@ export default function PublicSearchResults({
   const bloques = (
     <ComunaTerritorialBloquesConFiltro
       enTuComuna={enTuComunaParaBloques as BuscarApiItem[]}
-      atiendenTuComuna={atiendenTuComuna as BuscarApiItem[]}
-      comunaSlug={meta?.comunaSlug || comuna}
+      atiendenTuComuna={atiendenParaBloque as BuscarApiItem[]}
+      comunaSlug={comunaSlugCtx}
       comunaNombre={nombreComunaLinea}
       nombreComunaDisplay={nombreComunaParaTitulos}
       gridEmptyMessage="No encontramos resultados."
@@ -422,19 +455,125 @@ export default function PublicSearchResults({
     />
   );
 
+  const [soloCompletos, setSoloCompletos] = useState(false);
+  const aplicarSoloCompletos = modoActivacionPreview ? false : soloCompletos;
+
+  const otrosEnComunaFiltrados = useMemo(
+    () => filtrarItemsPorMejoresOpciones(otrosEnComunaOrdenados as BuscarApiItem[], aplicarSoloCompletos),
+    [otrosEnComunaOrdenados, aplicarSoloCompletos],
+  );
+  const atiendenFiltrados = useMemo(
+    () => filtrarItemsPorMejoresOpciones(atiendenParaBloque as BuscarApiItem[], aplicarSoloCompletos),
+    [atiendenParaBloque, aplicarSoloCompletos],
+  );
+  const ningunoFiltradoPeroHayRaw =
+    aplicarSoloCompletos &&
+    (otrosEnComunaOrdenados.length + atiendenParaBloque.length) > 0 &&
+    (otrosEnComunaFiltrados.length + atiendenFiltrados.length) === 0;
+
   return (
     <div className="space-y-0">
       {hasQuery && !hasResultadosBase ? (
-        <div className="mb-4 text-sm">
-          <p className="font-semibold text-slate-900">
-            No encontramos {qLegibleTitulo} en {nombreComunaLinea}
-          </p>
-          <p className="text-slate-600">
-            Pero ya hay otros servicios disponibles que pueden servirte
-          </p>
-        </div>
-      ) : null}
-      {bloques}
+        <>
+          <TrackImpressions
+            slugs={[...otrosEnComunaOrdenados, ...atiendenParaBloque]
+              .map((i) => String(i.slug || i.id || ""))
+              .filter(Boolean)}
+            comuna_slug={comunaSlugCtx}
+            q={meta?.q || q}
+          />
+
+          {!modoActivacionPreview ? (
+            <div className="w-full mb-4">
+              <SoloCompletosFiltroControl checked={soloCompletos} onCheckedChange={setSoloCompletos} />
+            </div>
+          ) : null}
+
+          {!modoActivacionPreview && soloCompletos && ningunoFiltradoPeroHayRaw ? (
+            <div className="mb-4 space-y-1.5 rounded-lg border border-sky-200/80 bg-sky-50/90 px-3 py-2.5 text-sm text-slate-800">
+              <p className="m-0 text-slate-700">
+                En esta zona casi nadie tiene aún el perfil tan completo. Desactiva el filtro para ver
+                todas las opciones o anima a completar el perfil.
+              </p>
+            </div>
+          ) : null}
+
+          <div className="mb-4 text-sm">
+            <p className="font-semibold text-slate-900">
+              No encontramos {qLegibleTitulo} en {nombreComunaLinea}
+            </p>
+          </div>
+
+          <div className="space-y-6 sm:space-y-7">
+            <TerritorialAccordionBlock
+              variant="local"
+              persistPrefix={`resultados:${comunaSlugCtx}`}
+              which="base"
+              instanceId={`resultados-${comunaSlugCtx}-otros-base`}
+              title={
+                <>
+                  Otros emprendimientos en tu comuna (
+                  {aplicarSoloCompletos ? otrosEnComunaFiltrados.length : otrosEnComunaOrdenados.length})
+                </>
+              }
+              subtitle="Con base en esta comuna"
+            >
+              <CategoriaEmprendedoresGrid
+                items={otrosEnComunaFiltrados}
+                comunaSlug={comunaSlugCtx}
+                comunaNombre={nombreComunaLinea}
+                comunaNombreEnCard={
+                  nombreComunaParaTitulos.trim() !== nombreComunaLinea.trim()
+                    ? nombreComunaParaTitulos
+                    : null
+                }
+                emptyMessage={
+                  aplicarSoloCompletos && otrosEnComunaOrdenados.length > 0 && otrosEnComunaFiltrados.length === 0
+                    ? "Sin resultados con perfil activo. Desactiva el filtro."
+                    : "Aún no hay negocios con base en esta comuna."
+                }
+              />
+            </TerritorialAccordionBlock>
+
+            <TerritorialAccordionBlock
+              variant="cobertura"
+              persistPrefix={`resultados:${comunaSlugCtx}`}
+              which="atienden"
+              instanceId={`resultados-${comunaSlugCtx}-atienden-query`}
+              title={
+                <>
+                  Resultados para {qLegibleTitulo} que atienden tu comuna (
+                  {aplicarSoloCompletos ? atiendenFiltrados.length : atiendenParaBloque.length})
+                </>
+              }
+              subtitle="Negocios con base en otra comuna que atienden esta zona"
+            >
+              <CategoriaEmprendedoresGrid
+                items={atiendenFiltrados}
+                comunaSlug={comunaSlugCtx}
+                comunaNombre={nombreComunaLinea}
+                comunaNombreEnCard={
+                  nombreComunaParaTitulos.trim() !== nombreComunaLinea.trim()
+                    ? nombreComunaParaTitulos
+                    : null
+                }
+                destacarMejoresOpciones={aplicarSoloCompletos}
+                emptyMessage={
+                  aplicarSoloCompletos && atiendenParaBloque.length > 0 && atiendenFiltrados.length === 0
+                    ? "Sin resultados con perfil activo. Desactiva el filtro."
+                    : !hasResultadosAtienden
+                      ? "No encontramos resultados de cobertura para esta búsqueda."
+                      : "No encontramos resultados de cobertura para esta búsqueda."
+                }
+              />
+            </TerritorialAccordionBlock>
+          </div>
+        </>
+      ) : (
+        <>
+          {bloques}
+        </>
+      )}
     </div>
   );
 }
