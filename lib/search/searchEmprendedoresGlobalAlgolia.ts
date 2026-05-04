@@ -285,7 +285,6 @@ async function searchEmprendedoresGlobalAlgoliaInner(
   opts?: { regionSlug?: string | null; comunaSlug?: string | null }
 ): Promise<GlobalAlgoliaSearchResult> {
   const regionSlug = String(opts?.regionSlug ?? "").trim() || null;
-  const explicitComunaSlug = String(opts?.comunaSlug ?? "").trim();
   const supabase = createSupabaseServerPublicClient();
 
   const inputTerm = String(q ?? "").trim();
@@ -368,18 +367,11 @@ async function searchEmprendedoresGlobalAlgoliaInner(
   }
 
   let rowsFiltered: Record<string, unknown>[];
-  let regionalFallback = false;
+  const regionalFallback = false;
 
   if (regionSlug) {
-    const regionalOnly = orderedRows.filter((r) => rowMatchesRegionSlug(r, regionSlug));
-    if (explicitComunaSlug) {
-      rowsFiltered = regionalOnly;
-    } else if (regionalOnly.length > 0) {
-      rowsFiltered = regionalOnly;
-    } else {
-      rowsFiltered = orderedRows;
-      regionalFallback = orderedRows.length > 0;
-    }
+    /** Filtro estricto: sin fallback a resultados de otras regiones. */
+    rowsFiltered = orderedRows.filter((r) => rowMatchesRegionSlug(r, regionSlug));
   } else {
     rowsFiltered = orderedRows;
   }

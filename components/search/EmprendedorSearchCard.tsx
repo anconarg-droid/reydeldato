@@ -72,6 +72,8 @@ export type EmprendedorSearchCardProps = {
   analyticsSource?: CardViewListingSource;
   fichaContextComunaSlug?: string | null;
   fichaContextComunaNombre?: string | null;
+  /** Región (abrev.) de la comuna de búsqueda/listado para “Atiende X — RM”. */
+  fichaContextComunaRegionAbrev?: string | null;
   destacarMejoresOpciones?: boolean;
   modoVista?: ModoVistaPanel;
   bloquearAccesoFichaPublica?: boolean;
@@ -88,11 +90,6 @@ export type EmprendedorSearchCardProps = {
   usarCardSimple?: boolean;
   /** Ajustes de layout para vitrina Home (altura uniforme). */
   homeCarousel?: boolean;
-  /**
-   * Listado sin comuna de contexto (p. ej. `/resultados`): muestra 📍 `En {comuna base} — {región}`.
-   * No aplica en directorio por comuna (`mostrarUbicacionModoComuna`).
-   */
-  ubicacionEnComunaConRegion?: boolean;
 };
 
 const ACTIONS_H = 48;
@@ -270,7 +267,6 @@ function slotOrSpace(text: string): string {
 
 export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   const homeCarousel = p.homeCarousel === true;
-  const ubicacionEnComunaConRegion = p.ubicacionEnComunaConRegion === true;
   const whatsappHref = buildWhatsappHref(p.whatsappPrincipal);
   /** Dígitos presentes → enlace wa.me válido; no acoplado a tipo de perfil. */
   const tieneWhatsappValido = Boolean(whatsappHref);
@@ -717,24 +713,39 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           {/* Ubicación: en contexto de comuna (directorio / búsqueda) mensaje corto; fuera de eso, pin o bloque territorial legacy. */}
           {mostrarUbicacionModoComuna ? (
             <>
-              {esBaseEnComuna ? (
-                <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
-                  <span aria-hidden>📍 </span>
-                  En {comunaBuscadaDisplay}
-                </p>
-              ) : (
-                <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
-                  <span aria-hidden>📍 </span>
-                  Atiende {comunaBuscadaDisplay}
-                </p>
-              )}
-              {!esBaseEnComuna &&
-              comunaBaseLabel &&
-              comunaBaseLabel !== "Sin información de comuna base" ? (
-                <p className="m-0 min-h-[1rem] w-full shrink-0 text-xs leading-snug text-slate-500">
-                  Desde {comunaBaseLabel}
-                </p>
-              ) : null}
+              {(() => {
+                const regComunaBuscada = String(p.fichaContextComunaRegionAbrev ?? "").trim();
+                const regBase = String(p.comunaBaseRegionAbrev ?? "").trim();
+                /** Primera línea “En …”: región de la comuna de listado; si falta, la de la base. */
+                const regionLineaEnBase = regComunaBuscada || regBase;
+                /** “Atiende …”: región de la comuna buscada. */
+                const regionLineaAtiende = regComunaBuscada;
+                const baseLineaSecundaria = comunaNomRaw
+                  ? `Base en ${comunaNomRaw}${regBase ? ` — ${regBase}` : ""}`.trim()
+                  : "";
+                return (
+                  <>
+                    {esBaseEnComuna ? (
+                      <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
+                        <span aria-hidden>📍 </span>
+                        En {comunaBuscadaDisplay}
+                        {regionLineaEnBase ? ` — ${regionLineaEnBase}` : ""}
+                      </p>
+                    ) : (
+                      <p className="m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
+                        <span aria-hidden>📍 </span>
+                        Atiende {comunaBuscadaDisplay}
+                        {regionLineaAtiende ? ` — ${regionLineaAtiende}` : ""}
+                      </p>
+                    )}
+                    {!esBaseEnComuna && baseLineaSecundaria ? (
+                      <p className="m-0 min-h-[1rem] w-full shrink-0 text-xs leading-snug text-slate-500">
+                        {baseLineaSecundaria}
+                      </p>
+                    ) : null}
+                  </>
+                );
+              })()}
             </>
           ) : ubicacionPorBloqueTerritorialExplicito ? (
             p.bloqueTerritorial === "de_tu_comuna" ? (
@@ -754,11 +765,14 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 </p>
               </>
             )
-          ) : ubicacionEnComunaConRegion && (comunaNomRaw || reg) ? (
+          ) : comunaNomRaw || reg ? (
             <p className="m-0 min-h-[1.375rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
               <span aria-hidden>📍 </span>
-              En {comunaNomRaw}
-              {reg ? ` — ${reg}` : ""}
+              {comunaNomRaw && reg
+                ? `En ${comunaNomRaw} — ${reg}`
+                : comunaNomRaw
+                  ? `En ${comunaNomRaw}`
+                  : `En ${reg}`}
             </p>
           ) : (
             <>

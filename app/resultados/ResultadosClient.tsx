@@ -93,13 +93,10 @@ function GlobalDbResults({
   q,
   items,
   error,
-  ubicacionEnComunaConRegion = false,
 }: {
   q: string;
   items: BuscarApiItem[];
   error: string | null;
-  /** Listado global sin comuna: línea 📍 “En {comuna} — {región}”. */
-  ubicacionEnComunaConRegion?: boolean;
 }) {
   const [soloCompletos, setSoloCompletos] = useState(false);
   const itemsFiltrados = useMemo(
@@ -189,7 +186,6 @@ function GlobalDbResults({
                         key={item.slug || item.id}
                         {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
                         destacarMejoresOpciones={soloCompletos}
-                        ubicacionEnComunaConRegion={ubicacionEnComunaConRegion}
                       />
                     ))}
                   </div>
@@ -207,7 +203,6 @@ function GlobalDbResults({
                         key={item.slug || item.id}
                         {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
                         destacarMejoresOpciones={soloCompletos}
-                        ubicacionEnComunaConRegion={ubicacionEnComunaConRegion}
                       />
                     ))}
                   </div>
@@ -221,7 +216,6 @@ function GlobalDbResults({
                   key={item.slug || item.id}
                   {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
                   destacarMejoresOpciones={soloCompletos}
-                  ubicacionEnComunaConRegion={ubicacionEnComunaConRegion}
                 />
               ))}
             </div>
@@ -486,12 +480,7 @@ export default function ResultadosClient({
           </p>
         </div>
       ) : null}
-      <GlobalDbResults
-        q={q}
-        items={db.items}
-        error={db.error}
-        ubicacionEnComunaConRegion
-      />
+      <GlobalDbResults q={q} items={db.items} error={db.error} />
     </div>
   );
 }

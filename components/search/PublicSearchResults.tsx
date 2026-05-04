@@ -483,9 +483,17 @@ export default function PublicSearchResults({
 
   const qParaResultadosGlobal =
     String(meta?.q ?? q ?? "").trim() || qLegibleTitulo;
+  const regionFocoSlug = String(_regionFocoSlug ?? "").trim();
+  const regionFocoNombre = String(_regionFocoNombre ?? "").trim();
+  const regionParam =
+    regionFocoSlug && regionFocoSlug.startsWith("region-")
+      ? regionFocoSlug
+      : regionFocoSlug
+        ? `region-${regionFocoSlug}`
+        : "";
   const paramsOtrasComunas = new URLSearchParams();
   if (qParaResultadosGlobal) paramsOtrasComunas.set("q", qParaResultadosGlobal);
-  paramsOtrasComunas.set("scope", "nacional");
+  if (regionParam) paramsOtrasComunas.set("region", regionParam);
   const hrefOtrasComunas = `/resultados?${paramsOtrasComunas.toString()}`;
 
   return (
@@ -579,7 +587,7 @@ export default function PublicSearchResults({
                 href={hrefOtrasComunas}
                 className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-3.5 py-2.5 text-sm font-extrabold text-sky-950 no-underline shadow-sm hover:bg-sky-50"
               >
-                Ver {qLegibleTitulo} en todo Chile
+                Ver {qLegibleTitulo} en {regionFocoNombre || "tu región"}
               </Link>
             </div>
           </div>

@@ -21,6 +21,8 @@ type Props = {
   destacarMejoresOpciones?: boolean;
   /** Comuna sin directorio activo: solo foto + nombre en cada card. */
   usarCardSimple?: boolean;
+  /** Región de la comuna de listado (p. ej. RM / Maule) para línea de ubicación en cards. */
+  comunaContextoRegionAbrev?: string | null;
 };
 
 export default function CategoriaEmprendedoresGrid({
@@ -31,16 +33,19 @@ export default function CategoriaEmprendedoresGrid({
   emptyMessage = "No hay resultados con estos filtros.",
   destacarMejoresOpciones = false,
   usarCardSimple = false,
+  comunaContextoRegionAbrev = null,
 }: Props) {
   const slugT = comunaSlug.trim();
   const nombreT = comunaNombre.trim();
   const largoT = String(comunaNombreEnCard ?? "").trim();
+  const regCtx = String(comunaContextoRegionAbrev ?? "").trim();
   const meta: BuscarComunaContextMeta | null =
     slugT && nombreT
       ? {
           comunaSlug: slugT,
           comunaNombre: nombreT,
           ...(largoT && largoT !== nombreT ? { comunaNombreEnCard: largoT } : {}),
+          ...(regCtx ? { comunaRegionAbrev: regCtx } : {}),
         }
       : null;
 

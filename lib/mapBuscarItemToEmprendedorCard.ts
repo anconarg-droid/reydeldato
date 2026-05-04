@@ -52,6 +52,8 @@ export type BuscarComunaContextMeta = {
    * Texto en card (“En … / Atiende …”); si no viene, se usa `comunaNombre` (p. ej. “Teno — Maule”).
    */
   comunaNombreEnCard?: string;
+  /** Región de la comuna de contexto (abrev. o corta) para “Atiende X — RM”. */
+  comunaRegionAbrev?: string;
 };
 
 export function buscarApiItemToEmprendedorCardProps(
@@ -136,6 +138,9 @@ export function buscarApiItemToEmprendedorCardProps(
     fichaContextComunaSlug: comunaCtxSlug || undefined,
     fichaContextComunaNombre: comunaCtxSlug
       ? nombreParaCard || humanizeCoverageSlug(comunaCtxSlug)
+      : undefined,
+    fichaContextComunaRegionAbrev: meta?.comunaRegionAbrev?.trim()
+      ? meta.comunaRegionAbrev.trim()
       : undefined,
   };
 }
