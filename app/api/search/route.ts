@@ -11,6 +11,7 @@ import {
   isResolvedQueryExactGas,
 } from "@/lib/gasQueryExcludeGasfiteria";
 import { slugify } from "@/lib/slugify";
+import { recordMatchesRegionSlug } from "@/lib/search/regionTerritoryMatch";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -118,6 +119,10 @@ type ParsedInput = {
   tipoActividadFilter: string;
   page: number;
   limit: number;
+  /** Valor crudo de `?region=` (búsqueda global con filtro regional). */
+  regionRaw: string;
+  /** Slug canónico en `regiones` cuando aplica filtro; lo setea GET antes de Algolia. */
+  regionSlugFiltroResolved?: string | null;
 };
 
 type TerritorialContext =
@@ -150,6 +155,7 @@ function parseInput(req: NextRequest): ParsedInput {
   const comunaSlug = normSlug(comunaRaw);
   const sectorSlugFilter = s(searchParams.get("sector"));
   const tipoActividadFilter = s(searchParams.get("tipo_actividad"));
+  const regionRaw = s(searchParams.get("region"));
 
   const page = Math.max(0, Number(searchParams.get("page")) || 0);
   const limit = Math.min(50, Math.max(6, Number(searchParams.get("limit")) || 24));
@@ -162,7 +168,25 @@ function parseInput(req: NextRequest): ParsedInput {
     tipoActividadFilter,
     page,
     limit,
+    regionRaw,
   };
+}
+
+async function resolveRegionSlugForFilter(regionRaw: string): Promise<string | null> {
+  const raw = s(regionRaw);
+  if (!raw) return null;
+  const slug = slugify(raw);
+  if (!slug) return null;
+  const alt = slug.startsWith("region-") ? slug.slice("region-".length) : `region-${slug}`;
+  const candidates = alt !== slug ? [slug, alt] : [slug];
+  const { data } = await supabase
+    .from("regiones")
+    .select("slug")
+    .in("slug", candidates)
+    .limit(1)
+    .maybeSingle();
+  const row = data as { slug?: string } | null;
+  return row?.slug ? String(row.slug) : null;
 }
 
 async function resolveTerritorialContext(
@@ -235,7 +259,12 @@ async function searchAlgolia(
   }
 
   const hasComuna = !!input.comunaSlug;
-  const hitsPerPage = hasComuna ? Math.min(120, input.limit * 4) : input.limit;
+  const regionF = s(input.regionSlugFiltroResolved ?? "");
+  const hitsPerPage = hasComuna
+    ? Math.min(120, input.limit * 4)
+    : regionF
+      ? Math.min(500, Math.max(input.limit * 50, 200))
+      : input.limit;
 
   const attributesToRetrieve = [
     "objectID",
@@ -249,6 +278,7 @@ async function searchAlgolia(
     "subcategorias_slugs_arr",
     "comuna_base_nombre",
     "comuna_base_slug",
+    "region_slug",
     "nivel_cobertura",
     "comunas_cobertura_slugs_arr",
     "regiones_cobertura_slugs_arr",
@@ -285,7 +315,7 @@ async function searchAlgolia(
 
   const searchParams = {
     hitsPerPage,
-    page: hasComuna ? 0 : input.page,
+    page: hasComuna || regionF ? 0 : input.page,
     facetFilters: facetFilters.length > 0 ? facetFilters : undefined,
     attributesToRetrieve,
   };
@@ -412,6 +442,22 @@ function buildResponse(
   let hits = searchResult.hits;
   let totalHits = searchResult.totalHits;
 
+  const regionFiltro = s(input.regionSlugFiltroResolved ?? "");
+  if (ctx.mode === "no_comuna" && regionFiltro) {
+    const filtered = hits.filter((h) =>
+      recordMatchesRegionSlug(
+        {
+          region_slug: h.region_slug,
+          regiones_cobertura_slugs_arr: h.regiones_cobertura_slugs_arr,
+        },
+        regionFiltro,
+      ),
+    );
+    totalHits = filtered.length;
+    const start = input.page * input.limit;
+    hits = filtered.slice(start, start + input.limit);
+  }
+
   if (ctx.mode === "comuna_activa") {
     const sorted = sortWithTerritorialAndQuality(hits, input, ctx);
     totalHits = sorted.length;
@@ -448,6 +494,15 @@ export async function GET(req: NextRequest) {
 
     const territorialCtx = await resolveTerritorialContext(input);
 
+    let regionSlugFiltroResolved: string | null = null;
+    if (territorialCtx.mode === "no_comuna" && input.regionRaw) {
+      regionSlugFiltroResolved = await resolveRegionSlugForFilter(input.regionRaw);
+    }
+    const inputResolved: ParsedInput = {
+      ...input,
+      regionSlugFiltroResolved,
+    };
+
     if (territorialCtx.mode === "comuna_en_preparacion") {
       return NextResponse.json({
         modo: "comuna_en_preparacion",
@@ -456,8 +511,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const searchResult = await searchAlgolia(input);
-    return buildResponse(input, territorialCtx, searchResult);
+    const searchResult = await searchAlgolia(inputResolved);
+    return buildResponse(inputResolved, territorialCtx, searchResult);
   } catch (err) {
     console.error("[search]", err);
     return NextResponse.json(

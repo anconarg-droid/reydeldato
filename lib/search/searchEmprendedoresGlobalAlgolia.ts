@@ -9,6 +9,7 @@ import { normalizeText } from "@/lib/search/normalizeText";
 import { rotationSeed, SEARCH_ROTATION_WINDOW_MS } from "@/lib/search/deterministicRotation";
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import { searchEmprendedoresGlobalText } from "@/lib/resultadosGlobalSupabase";
+import { recordMatchesRegionSlug } from "@/lib/search/regionTerritoryMatch";
 
 export type EmprendedorGlobalAlgoliaScoreCtx = {
   comunaSlug?: string | null;
@@ -145,27 +146,6 @@ function orderPackedGlobalAlgolia(
 function s(v: unknown): string {
   if (v == null) return "";
   return String(v).trim();
-}
-
-function parseStrArr(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v.map((x) => String(x ?? "").trim()).filter(Boolean);
-}
-
-/** Alinea `region-metropolitana` (cobertura) con `metropolitana` (`regiones.slug`). */
-function normRegionSlugForMatch(raw: string): string {
-  const t = String(raw ?? "").trim().toLowerCase();
-  if (!t) return "";
-  return t.replace(/^region-/, "");
-}
-
-function rowMatchesRegionSlug(row: Record<string, unknown>, regionSlug: string): boolean {
-  const target = normRegionSlugForMatch(regionSlug);
-  if (!target) return false;
-  const base = normRegionSlugForMatch(String(row.region_slug ?? ""));
-  if (base && base === target) return true;
-  const cov = parseStrArr(row.regiones_cobertura_slugs_arr).map(normRegionSlugForMatch);
-  return cov.some((x) => x === target);
 }
 
 const INDEX_NAME =
@@ -371,7 +351,7 @@ async function searchEmprendedoresGlobalAlgoliaInner(
 
   if (regionSlug) {
     /** Filtro estricto: sin fallback a resultados de otras regiones. */
-    rowsFiltered = orderedRows.filter((r) => rowMatchesRegionSlug(r, regionSlug));
+    rowsFiltered = orderedRows.filter((r) => recordMatchesRegionSlug(r, regionSlug));
   } else {
     rowsFiltered = orderedRows;
   }

@@ -266,6 +266,10 @@ type Props = {
   resaltarCampoComunaEnBusquedaGlobal?: boolean;
   /** `?scope=nacional`: búsqueda en todo Chile (sin foco regional por IP). */
   scopeNacional?: boolean;
+  /** Valor original de `?region=` en la URL (para armar enlaces que preservan el query). */
+  regionQueryOriginal?: string | null;
+  /** `?ver_otras_regiones=1`: el usuario pidió ver el bloque nacional separado. */
+  verOtrasRegionesActivo?: boolean;
   /**
    * Solo en ruta `/[comuna]`: invitación visual cuando no hay término en URL (borde pulsante + copy).
    */
@@ -286,6 +290,8 @@ export default function ResultadosClient({
   directorioComunaAbierto = true,
   regionFocoSlug = null,
   regionFocoNombre = null,
+  regionQueryOriginal = null,
+  verOtrasRegionesActivo = false,
   resaltarCampoComunaEnBusquedaGlobal = false,
   scopeNacional = false,
   invitacionBuscaEnPaginaComuna = false,
@@ -469,11 +475,19 @@ export default function ResultadosClient({
     (Boolean(String(regionFocoSlug ?? "").trim()) || Boolean(regionNombreFoco));
   const terminoParaCopy = (initialQDisplay ?? "").trim() || q;
   const hrefBusquedaNacional = `/resultados?q=${encodeURIComponent(terminoParaCopy)}&scope=nacional`;
-  const regionalSinResultados =
-    Boolean(q) &&
-    hayFocoRegionalActivo &&
-    !db.error &&
-    db.items.length === 0;
+  const slugRegionFoco = String(regionFocoSlug ?? "").trim().replace(/^region-/, "");
+  const regionParamParaLinks =
+    (regionQueryOriginal ?? "").trim() ||
+    (slugRegionFoco ? `region-${slugRegionFoco}` : "");
+  const paramsVerOtras = new URLSearchParams();
+  paramsVerOtras.set("q", terminoParaCopy);
+  if (regionParamParaLinks) paramsVerOtras.set("region", regionParamParaLinks);
+  paramsVerOtras.set("ver_otras_regiones", "1");
+  const hrefVerOtrasRegiones = `/resultados?${paramsVerOtras.toString()}`;
+  const regionalVacio =
+    Boolean(q) && hayFocoRegionalActivo && !db.error && db.items.length === 0;
+  const mostrarBloqueNacionalSeparado =
+    Boolean(verOtrasRegionesActivo && otras && !otras.error && otras.items.length > 0);
 
   return (
     <div className="mt-2 space-y-4">
@@ -503,40 +517,67 @@ export default function ResultadosClient({
       ) : null}
       {db.error ? (
         <GlobalDbResults q={q} items={db.items} error={db.error} />
-      ) : regionalSinResultados ? (
+      ) : !hayFocoRegionalActivo || scopeNacional ? (
+        <GlobalDbResults q={q} items={db.items} error={db.error} />
+      ) : (
         <div className="space-y-8">
-          <div
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-5 sm:px-5"
-            style={{ boxShadow: "0 1px 3px rgba(15,23,42,0.06)" }}
-          >
-            <p className="m-0 text-sm font-medium leading-relaxed text-slate-800">
-              No encontramos &ldquo;{terminoParaCopy}&rdquo; en{" "}
-              {(regionFocoNombre ?? "").trim() || "tu región"}
-            </p>
-            <div className="mt-4">
-              <Link
-                href={hrefBusquedaNacional}
-                className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-3.5 py-2.5 text-sm font-extrabold text-sky-950 no-underline shadow-sm hover:bg-sky-50"
-              >
-                Ver {terminoParaCopy} en otras regiones
-              </Link>
+          {regionalVacio && !verOtrasRegionesActivo ? (
+            <div
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-5 sm:px-5"
+              style={{ boxShadow: "0 1px 3px rgba(15,23,42,0.06)" }}
+            >
+              <p className="m-0 text-sm font-medium leading-relaxed text-slate-800">
+                No encontramos &ldquo;{terminoParaCopy}&rdquo; en{" "}
+                {(regionFocoNombre ?? "").trim() || "tu región"}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                {regionParamParaLinks ? (
+                  <Link
+                    href={hrefVerOtrasRegiones}
+                    className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-3.5 py-2.5 text-sm font-extrabold text-sky-950 no-underline shadow-sm hover:bg-sky-50"
+                  >
+                    Ver {terminoParaCopy} en otras regiones
+                  </Link>
+                ) : null}
+                <Link
+                  href={hrefBusquedaNacional}
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm font-extrabold text-slate-900 no-underline shadow-sm hover:bg-slate-100"
+                >
+                  Ver {terminoParaCopy} en todo Chile
+                </Link>
+              </div>
             </div>
-          </div>
+          ) : null}
+
+          {regionalVacio && verOtrasRegionesActivo ? (
+            <p className="m-0 text-sm font-medium text-slate-700">
+              No encontramos &ldquo;{terminoParaCopy}&rdquo; en{" "}
+              {(regionFocoNombre ?? "").trim() || "tu región"}.
+            </p>
+          ) : null}
+
+          {db.items.length > 0 ? (
+            <div className="space-y-2">
+              {verOtrasRegionesActivo ? (
+                <h2 className="m-0 text-base font-extrabold text-slate-900">
+                  En {(regionFocoNombre ?? "").trim() || "tu región"}
+                </h2>
+              ) : null}
+              <GlobalDbResults q={q} items={db.items} error={null} />
+            </div>
+          ) : null}
+
           {otras?.error ? (
             <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
               Error cargando resultados en otras regiones: {otras.error}
             </p>
-          ) : otras && otras.items.length > 0 ? (
-            <div className="space-y-3">
-              <h2 className="text-base font-extrabold text-slate-900">
-                Resultados en otras regiones
-              </h2>
-              <GlobalDbResults q={q} items={otras.items} error={null} />
+          ) : mostrarBloqueNacionalSeparado ? (
+            <div className="space-y-3 border-t border-slate-200 pt-8">
+              <h2 className="text-base font-extrabold text-slate-900">Resultados en otras regiones</h2>
+              <GlobalDbResults q={q} items={otras!.items} error={null} />
             </div>
           ) : null}
         </div>
-      ) : (
-        <GlobalDbResults q={q} items={db.items} error={db.error} />
       )}
     </div>
   );

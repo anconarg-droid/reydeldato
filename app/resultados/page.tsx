@@ -22,6 +22,8 @@ type PageProps = {
     scope?: string;
     /** Slug de región: búsqueda global acotada territorialmente (p. ej. desde comuna en activación). */
     region?: string;
+    /** Si es `1`, además se cargan resultados nacionales en un bloque separado (no mezclados). */
+    ver_otras_regiones?: string;
     /**
      * TEMP solo pruebas (quitar después): `?country=CL` fuerza país Chile para la detección automática
      * cuando no hay `?region=`; no reemplaza a `?region=` (override principal).
@@ -213,6 +215,9 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
 
   const regionSlugParaBusquedaGlobal = scopeNacional ? null : regionFocoSlug;
 
+  const verOtrasRegionesActivo =
+    slugify((params.ver_otras_regiones ?? "").trim().toLowerCase()) === "1";
+
   const globalDb =
     q && !comuna
       ? await searchEmprendedoresGlobalAlgolia(q, 24, {
@@ -220,17 +225,21 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
         })
       : null;
 
-  /** Si el foco regional no devuelve nada, hidratar un segundo listado nacional (solo para UX en cliente). */
+  /**
+   * Listado nacional (otras regiones): solo con `?ver_otras_regiones=1` explícito
+   * o el usuario ya eligió búsqueda nacional (`scope=nacional` no usa este bloque).
+   */
   let globalDbOtrasRegiones: Awaited<
     ReturnType<typeof searchEmprendedoresGlobalAlgolia>
   > | null = null;
   if (
     q &&
     !comuna &&
+    !scopeNacional &&
     regionSlugParaBusquedaGlobal &&
+    verOtrasRegionesActivo &&
     globalDb &&
-    !globalDb.error &&
-    globalDb.items.length === 0
+    !globalDb.error
   ) {
     globalDbOtrasRegiones = await searchEmprendedoresGlobalAlgolia(q, 24, {
       regionSlug: null,
@@ -259,6 +268,8 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
           synonymNotice={synonymNotice}
           regionFocoSlug={regionFocoSlug}
           regionFocoNombre={regionFocoNombre}
+          regionQueryOriginal={(params.region ?? "").trim() || null}
+          verOtrasRegionesActivo={verOtrasRegionesActivo}
           scopeNacional={scopeNacional}
           resaltarCampoComunaEnBusquedaGlobal={Boolean(q && !comuna)}
         />

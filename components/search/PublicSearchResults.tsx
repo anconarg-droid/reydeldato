@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { normalizeText } from "@/lib/search/normalizeText";
 import TrackImpressions from "@/components/TrackImpressions";
@@ -134,8 +134,11 @@ export default function PublicSearchResults({
   const [error, setError] = useState("");
   /** Populares sin `q` (respuesta completa: base + atienden) para fallback cuando la búsqueda no matchea en la comuna. */
   const [fallbackPopularesItems, setFallbackPopularesItems] = useState<SearchItem[]>([]);
-  /** Búsqueda global `scope=nacional` cuando no hay match territorial para la intención. */
+  /** Búsqueda global `scope=nacional` solo tras clic explícito (no mezclar con listados de comuna). */
   const [fallbackGlobalNacional, setFallbackGlobalNacional] = useState<BuscarApiItem[]>([]);
+  const [loadingFueraZona, setLoadingFueraZona] = useState(false);
+  const [errorFueraZona, setErrorFueraZona] = useState("");
+  const [fueraZonaIntentada, setFueraZonaIntentada] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -146,6 +149,8 @@ export default function PublicSearchResults({
         setError("");
         setFallbackPopularesItems([]);
         setFallbackGlobalNacional([]);
+        setErrorFueraZona("");
+        setFueraZonaIntentada(false);
 
         const params = new URLSearchParams();
         params.set("comuna", comuna);
@@ -205,36 +210,10 @@ export default function PublicSearchResults({
           }
         }
 
-        let globalNacional: BuscarApiItem[] = [];
-        const comSlugMeta = String(json.meta?.comunaSlug || comuna).trim();
-        const terminoParaGlobalRaw =
-          String(json.meta?.q ?? "").trim() ||
-          (slug ? prettySubcategoriaSlugForDisplay(slug) : "") ||
-          (cat ? prettySubcategoriaSlugForDisplay(cat) : "") ||
-          qSend;
-        if (
-          !modoActivacionPreview &&
-          hayFiltroBusqueda &&
-          deTuCount === 0 &&
-          !hayAtiendeEnComunaDesdeItems(nextItems, comSlugMeta) &&
-          normalizeText(terminoParaGlobalRaw)
-        ) {
-          const gp = new URLSearchParams();
-          gp.set("q", terminoParaGlobalRaw);
-          gp.set("scope", "nacional");
-          const resG = await fetch(`/api/buscar/global?${gp.toString()}`, {
-            cache: "no-store",
-          });
-          const jsonG: { ok?: boolean; items?: BuscarApiItem[]; error?: string } = await resG.json();
-          if (resG.ok && jsonG?.ok && Array.isArray(jsonG.items) && !jsonG.error) {
-            globalNacional = jsonG.items;
-          }
-        }
-
         if (!mounted) return;
         setItems(nextItems);
         setFallbackPopularesItems(otros);
-        setFallbackGlobalNacional(globalNacional);
+        setFallbackGlobalNacional([]);
       } catch (err) {
         if (!mounted) return;
         setError(err instanceof Error ? err.message : "Error inesperado.");
@@ -320,6 +299,50 @@ export default function PublicSearchResults({
     }
     return out;
   }, [atiendenTuComuna, atiendenPorCoberturaQuery]);
+
+  const cargarOpcionesFueraZona = useCallback(async () => {
+    if (modoActivacionPreview) return;
+    const slug = subcategoriaSlug?.trim();
+    const cat = categoriaSlug?.trim();
+    const sidTrim = subcategoriaId?.trim();
+    let qSend = q.trim();
+    if (slug && qSend && normalizeText(qSend) === normalizeText(slug)) {
+      qSend = "";
+    }
+    if (slug || cat || sidTrim) {
+      qSend = "";
+    }
+    const terminoParaGlobalRaw =
+      String(meta?.q ?? "").trim() ||
+      (slug ? prettySubcategoriaSlugForDisplay(slug) : "") ||
+      (cat ? prettySubcategoriaSlugForDisplay(cat) : "") ||
+      qSend;
+    if (!normalizeText(terminoParaGlobalRaw)) return;
+    setLoadingFueraZona(true);
+    setErrorFueraZona("");
+    try {
+      const gp = new URLSearchParams();
+      gp.set("q", terminoParaGlobalRaw);
+      gp.set("scope", "nacional");
+      const resG = await fetch(`/api/buscar/global?${gp.toString()}`, { cache: "no-store" });
+      const jsonG: { ok?: boolean; items?: BuscarApiItem[]; error?: string } = await resG.json();
+      if (!resG.ok || !jsonG?.ok) {
+        throw new Error(
+          jsonG && typeof jsonG.error === "string" && jsonG.error.trim()
+            ? jsonG.error.trim()
+            : "No se pudo cargar la búsqueda nacional.",
+        );
+      }
+      if (jsonG.error) throw new Error(String(jsonG.error));
+      setFallbackGlobalNacional(Array.isArray(jsonG.items) ? jsonG.items : []);
+    } catch (e) {
+      setErrorFueraZona(e instanceof Error ? e.message : "Error inesperado.");
+      setFallbackGlobalNacional([]);
+    } finally {
+      setLoadingFueraZona(false);
+      setFueraZonaIntentada(true);
+    }
+  }, [modoActivacionPreview, meta, q, subcategoriaSlug, categoriaSlug, subcategoriaId]);
 
   if (loading) {
     return (
@@ -696,27 +719,58 @@ export default function PublicSearchResults({
                 emptyMessage="Aún no hay negocios que declaren cobertura hacia esta comuna."
               />
             </TerritorialAccordionBlock>
-            {fallbackGlobalNacional.length > 0 ? (
-              <TerritorialAccordionBlock
-                variant="cobertura"
-                persistPrefix={`resultados:${comunaSlugCtx}`}
-                which="fuera_zona"
-                instanceId={`resultados-${comunaSlugCtx}-fallback-fuera-zona`}
-                className="mt-6 sm:mt-7"
-                title={<>Opciones fuera de tu zona ({fallbackGlobalNacional.length})</>}
-                subtitle="Negocios en otras regiones que podrían servirte"
-              >
-                <CategoriaEmprendedoresGrid
-                  items={fallbackGlobalNacional}
-                  comunaSlug={comunaSlugCtx}
-                  comunaNombre={nombreComunaLinea}
-                  omitirContextoComuna
-                  preservarOrdenItems
-                  listadoNotaDebajoUbicacion="No disponible en tu región"
-                  usarCardSimple={modoActivacionPreview}
-                  emptyMessage="No encontramos opciones en otras regiones."
-                />
-              </TerritorialAccordionBlock>
+            {!modoActivacionPreview ? (
+              <div className="mt-6 sm:mt-7 space-y-3">
+                {!fueraZonaIntentada && fallbackGlobalNacional.length === 0 && !loadingFueraZona ? (
+                  <button
+                    type="button"
+                    onClick={() => void cargarOpcionesFueraZona()}
+                    className="inline-flex w-full max-w-md items-center justify-center rounded-xl border border-teal-300 bg-emerald-50/90 px-3.5 py-2.5 text-sm font-extrabold text-teal-950 shadow-sm hover:bg-emerald-100/90 sm:w-auto"
+                  >
+                    Mostrar opciones fuera de tu zona
+                  </button>
+                ) : null}
+                {loadingFueraZona ? (
+                  <p className="m-0 text-sm text-slate-600" aria-live="polite">
+                    Buscando opciones en otras regiones…
+                  </p>
+                ) : null}
+                {errorFueraZona ? (
+                  <p className="m-0 text-sm text-red-700" role="alert">
+                    {errorFueraZona}
+                  </p>
+                ) : null}
+                {fueraZonaIntentada &&
+                !loadingFueraZona &&
+                fallbackGlobalNacional.length === 0 &&
+                !errorFueraZona ? (
+                  <p className="m-0 text-sm text-slate-600">
+                    No encontramos opciones fuera de tu región para esta búsqueda.
+                  </p>
+                ) : null}
+                {fallbackGlobalNacional.length > 0 ? (
+                  <TerritorialAccordionBlock
+                    variant="cobertura"
+                    persistPrefix={`resultados:${comunaSlugCtx}`}
+                    which="fuera_zona"
+                    instanceId={`resultados-${comunaSlugCtx}-fallback-fuera-zona`}
+                    className="mt-2"
+                    title={<>Opciones fuera de tu zona ({fallbackGlobalNacional.length})</>}
+                    subtitle="Negocios en otras regiones que podrían servirte"
+                  >
+                    <CategoriaEmprendedoresGrid
+                      items={fallbackGlobalNacional}
+                      comunaSlug={comunaSlugCtx}
+                      comunaNombre={nombreComunaLinea}
+                      omitirContextoComuna
+                      preservarOrdenItems
+                      listadoNotaDebajoUbicacion="No disponible en tu región"
+                      usarCardSimple={modoActivacionPreview}
+                      emptyMessage="No encontramos opciones en otras regiones."
+                    />
+                  </TerritorialAccordionBlock>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </>
