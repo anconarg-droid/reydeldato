@@ -427,10 +427,10 @@ export default function PublicSearchResults({
       {hasQuery && !hasResultadosBase ? (
         <div className="mb-4 text-sm">
           <p className="font-semibold text-slate-900">
-            Aún no tenemos &ldquo;{qLegibleTitulo}&rdquo; en {nombreComunaLinea}
+            No encontramos {qLegibleTitulo} en {nombreComunaLinea}
           </p>
           <p className="text-slate-600">
-            Pero sí hay otros servicios disponibles en esta comuna
+            Pero ya hay otros servicios disponibles que pueden servirte
           </p>
         </div>
       ) : null}
