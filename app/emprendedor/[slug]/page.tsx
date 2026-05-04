@@ -66,6 +66,7 @@ import {
   getLineaTaxonomiaCard,
 } from "@/lib/search/emprendedorSearchCardHelpers";
 import { getLabelInteligenteSimilares } from "@/lib/getLabelInteligenteSimilares";
+import { getPublicSiteUrl } from "@/lib/getPublicSiteUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -205,13 +206,6 @@ function numCoord(v: unknown): number | undefined {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   const n = parseFloat(String(v).trim().replace(",", "."));
   return Number.isFinite(n) ? n : undefined;
-}
-
-function normalizeSiteUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
-    "http://localhost:3000"
-  );
 }
 
 async function getEmprendedor(slug: string): Promise<Emprendedor | null> {
@@ -707,12 +701,18 @@ export async function generateMetadata({
           fallbackLine: fallbackMeta,
         }) || fallbackMeta;
 
+  const base = getPublicSiteUrl();
+  const path = `/emprendedor/${encodeURIComponent(slug)}`;
+
   return {
+    metadataBase: new URL(`${base}/`),
     title,
     description,
+    alternates: { canonical: path },
     openGraph: {
       title,
       description,
+      url: `${base}${path}`,
       images: item.foto_principal_url ? [item.foto_principal_url] : [],
     },
   };
@@ -831,7 +831,7 @@ export default async function Page({
     ["local_fisico", "local", "fisico"].includes(x.toLowerCase()),
   );
 
-  const siteUrl = normalizeSiteUrl();
+  const siteUrl = getPublicSiteUrl();
   const shareUrl = `${siteUrl}/emprendedor/${item.slug}`;
 
   const subcategorias = arr(item.subcategorias_nombres_arr);

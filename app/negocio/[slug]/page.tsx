@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getPublicSiteUrl } from "@/lib/getPublicSiteUrl";
 
 type Params = {
   slug: string;
@@ -26,18 +27,8 @@ function s(v: unknown): string {
   return String(v).trim();
 }
 
-function getBaseUrl() {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/, "");
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`.replace(/\/+$/, "");
-  }
-  return "http://localhost:3000";
-}
-
 async function fetchEmprendedor(slug: string): Promise<Emprendedor | null> {
-  const baseUrl = getBaseUrl();
+  const baseUrl = getPublicSiteUrl();
   const res = await fetch(
     `${baseUrl}/api/emprendedor/${encodeURIComponent(slug)}`,
     { cache: "no-store" }

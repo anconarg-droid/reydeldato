@@ -23,6 +23,7 @@ import { formatComunaRegion } from "@/lib/productRules";
 import { normalizeDescripcionCorta } from "@/lib/descripcionProductoForm";
 import { buildAtiendeLine, humanizeCoverageSlug } from "@/lib/search/atiendeResumenLabel";
 import { panelSlugFichaPublicaDesdeItem } from "@/lib/panelItemToSearchCardProps";
+import { getPublicSiteUrl } from "@/lib/getPublicSiteUrl";
 
 function s(v: unknown) {
   return String(v ?? "").trim();
@@ -35,13 +36,6 @@ function arr(v: unknown): string[] {
 
 function uniqStrings(list: string[]): string[] {
   return [...new Set(list.map((x) => String(x || "").trim()).filter(Boolean))];
-}
-
-function normalizeSiteUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
-    "http://localhost:3000"
-  );
 }
 
 function buildMailUrl(email: string) {
@@ -208,7 +202,7 @@ export default function PanelFichaPreviewDosColumnas({
     return base;
   })();
 
-  const shareUrl = `${normalizeSiteUrl()}/emprendedor/${encodeURIComponent(slugReal)}`;
+  const shareUrl = `${getPublicSiteUrl()}/emprendedor/${encodeURIComponent(slugReal)}`;
   const emailUrl = buildMailUrl(s(item.email));
 
   const localesFicha = (() => {

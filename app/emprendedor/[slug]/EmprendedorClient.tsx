@@ -11,6 +11,7 @@ import {
   emprendedorTieneModalidadLocalFisico,
 } from "@/lib/maps";
 import { displayTitleCaseWords } from "@/lib/displayTextFormat";
+import { getPublicSiteUrl } from "@/lib/getPublicSiteUrl";
 
 type LocalFicha = {
   nombre_local: string | null;
@@ -276,7 +277,7 @@ export default function EmprendedorClient({ slug }: { slug: string }) {
   };
 
   const compartir = async () => {
-    const url = `${window.location.origin}/emprendedor/${item.slug}`;
+    const url = `${getPublicSiteUrl()}/emprendedor/${item.slug}`;
 
     try {
       if (navigator.share) {
