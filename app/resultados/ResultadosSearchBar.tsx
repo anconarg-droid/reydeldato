@@ -211,9 +211,10 @@ export default function ResultadosSearchBar({
   const invitarAlInputQ =
     Boolean(comunaInvitacionActiva) && qEmpty && !hideComunaInput;
 
+  /** Misma caja visual que comuna + Buscar (border + h fija; invitación mantiene borde para no “encoger” la fila). */
   const qInputClassName = invitarAlInputQ
-    ? "order-2 h-11 w-full min-w-0 rounded-lg bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d7a5f]/40 sm:order-none sm:col-start-1 sm:row-start-2 resultados-q-input-invite"
-    : "order-2 h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 transition-[border-color,box-shadow] duration-300 focus:outline-none focus:ring-2 focus:ring-slate-400 sm:order-none sm:col-start-1 sm:row-start-2";
+    ? "order-2 box-border h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm leading-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d7a5f]/40 sm:order-none sm:col-start-1 sm:row-start-2 resultados-q-input-invite"
+    : "order-2 box-border h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm leading-normal text-slate-900 placeholder:text-slate-400 transition-[border-color,box-shadow] duration-300 focus:outline-none focus:ring-2 focus:ring-slate-400 sm:order-none sm:col-start-1 sm:row-start-2";
 
   const qPlaceholder = selectedComunaSlug
     ? `¿Qué buscas en ${
@@ -232,8 +233,8 @@ export default function ResultadosSearchBar({
       <div
         className={
           hideComunaInput
-            ? "grid w-full grid-cols-1 gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:grid-rows-[auto_auto_auto]"
-            : "grid w-full grid-cols-1 gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,7fr)_minmax(0,3fr)_auto] sm:grid-rows-[auto_auto_auto]"
+            ? "grid w-full grid-cols-1 gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:grid-rows-[auto_auto_auto] sm:items-stretch"
+            : "grid w-full grid-cols-1 gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,7fr)_minmax(0,3fr)_auto] sm:grid-rows-[auto_auto_auto] sm:items-stretch"
         }
       >
         <label
@@ -286,7 +287,7 @@ export default function ResultadosSearchBar({
         {!hideComunaInput ? (
           <div
             ref={comunaBoxRef}
-            className="relative order-4 min-w-0 sm:order-none sm:col-start-2 sm:row-start-2"
+            className="relative order-4 min-h-[2.75rem] min-w-0 sm:order-none sm:col-start-2 sm:row-start-2 sm:h-11"
           >
             <input
               id="resultados-comuna"
@@ -307,8 +308,8 @@ export default function ResultadosSearchBar({
               autoComplete="off"
               className={
                 resaltarCampoComuna && !selectedComunaSlug
-                  ? "h-11 w-full rounded-lg border border-teal-600/50 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 ring-2 ring-teal-600/35 focus:outline-none focus:ring-2 focus:ring-teal-600/45"
-                  : "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                  ? "box-border h-11 w-full rounded-lg border border-teal-600/50 bg-white px-3 text-sm leading-normal text-slate-900 placeholder:text-slate-400 ring-2 ring-teal-600/35 focus:outline-none focus:ring-2 focus:ring-teal-600/45"
+                  : "box-border h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm leading-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400"
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -359,8 +360,8 @@ export default function ResultadosSearchBar({
           onClick={buscar}
           className={
             hideComunaInput
-              ? "order-6 h-11 w-full shrink-0 whitespace-nowrap rounded-lg bg-slate-900 px-5 text-sm font-semibold text-white hover:bg-slate-800 sm:order-none sm:col-start-2 sm:row-start-2 sm:w-auto sm:self-stretch"
-              : "order-6 h-11 w-full shrink-0 whitespace-nowrap rounded-lg bg-slate-900 px-5 text-sm font-semibold text-white hover:bg-slate-800 sm:order-none sm:col-start-3 sm:row-start-2 sm:w-auto sm:self-stretch"
+              ? "order-6 box-border flex h-11 w-full shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-slate-900 bg-slate-900 px-5 text-sm font-semibold leading-normal text-white hover:bg-slate-800 sm:order-none sm:col-start-2 sm:row-start-2 sm:w-auto sm:self-stretch"
+              : "order-6 box-border flex h-11 w-full shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-slate-900 bg-slate-900 px-5 text-sm font-semibold leading-normal text-white hover:bg-slate-800 sm:order-none sm:col-start-3 sm:row-start-2 sm:w-auto sm:self-stretch"
           }
         >
           Buscar

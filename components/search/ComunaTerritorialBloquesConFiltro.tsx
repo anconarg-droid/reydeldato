@@ -42,6 +42,10 @@ type Props = {
    * Etiqueta de servicio (p. ej. “gasfiter”): si hay pocos resultados totales, muestra una línea opcional arriba de los bloques.
    */
   pocosResultadosServicioLabel?: string | null;
+  /**
+   * Oculta el acordeón “En {comuna}” (p. ej. mensaje contextual ya explicó que no hay coincidencia local para `q`).
+   */
+  omitirBloqueLocal?: boolean;
 };
 
 export default function ComunaTerritorialBloquesConFiltro({
@@ -56,6 +60,7 @@ export default function ComunaTerritorialBloquesConFiltro({
   ocultarFiltroSoloCompletos = false,
   usarCardSimple = false,
   pocosResultadosServicioLabel = null,
+  omitirBloqueLocal = false,
 }: Props) {
   const [soloCompletos, setSoloCompletos] = useState(false);
 
@@ -141,7 +146,8 @@ export default function ComunaTerritorialBloquesConFiltro({
         </div>
       ) : null}
 
-      {pocosResultadosServicioLabel &&
+      {!omitirBloqueLocal &&
+      pocosResultadosServicioLabel &&
       totalFiltrado > 0 &&
       totalFiltrado <= 4 ? (
         <p className="mb-3 text-sm text-slate-600">
@@ -149,7 +155,7 @@ export default function ComunaTerritorialBloquesConFiltro({
         </p>
       ) : null}
 
-      {(enRaw.length > 0 || sinBasePeroConCobertura) ? (
+      {!omitirBloqueLocal && (enRaw.length > 0 || sinBasePeroConCobertura) ? (
         <TerritorialAccordionBlock
           variant="local"
           persistPrefix={persistPrefix}

@@ -14,6 +14,8 @@ import {
 import type { GlobalAlgoliaSearchMeta } from "@/lib/search/searchEmprendedoresGlobalAlgolia";
 import ResultadosSearchBar from "./ResultadosSearchBar";
 import { getRegionShort } from "@/utils/regionShort";
+import { buildActivacionDirectorioCtas } from "@/lib/buildActivacionDirectorioCtas";
+import DirectorioEnCrecimientoActivacionBanner from "@/components/search/DirectorioEnCrecimientoActivacionBanner";
 
 /** Texto legible para el input cuando solo viene `subcategoria=` en la URL (sin `q=`). */
 function prettySubcategoriaSlugForDisplay(slug: string): string {
@@ -344,94 +346,42 @@ export default function ResultadosClient({
   );
 
   if (comuna && !directorioComunaAbierto) {
-    const qParaTodoChile = (initialQDisplay ?? "").trim();
-    const qNormTodoChile = qParaTodoChile ? normalizeText(qParaTodoChile) : "";
-    const servicioHintParaCta =
-      qParaTodoChile ||
-      (subcategoriaSlug ? prettySubcategoriaSlugForDisplay(subcategoriaSlug) : "") ||
-      (categoriaSlug ? prettySubcategoriaSlugForDisplay(categoriaSlug) : "") ||
-      "";
+    const busquedaSoloTextoQ =
+      Boolean(normalizeText(q)) &&
+      !subcategoriaSlug &&
+      !subcategoriaId &&
+      !categoriaSlug;
 
-    let servicioEtiqueta =
-      (initialQDisplay ?? "").trim() ||
-      (subcategoriaSlug ? prettySubcategoriaSlugForDisplay(subcategoriaSlug) : "") ||
-      (categoriaSlug ? prettySubcategoriaSlugForDisplay(categoriaSlug) : "");
-    if (!servicioEtiqueta && subcategoriaId) servicioEtiqueta = "este rubro";
-    if (!servicioEtiqueta) servicioEtiqueta = "servicios";
-
-    const paramsPublicar = new URLSearchParams();
-    paramsPublicar.set("comuna", comuna);
-    if (servicioHintParaCta) paramsPublicar.set("servicio", servicioHintParaCta);
-
-    const paramsRecomendar = new URLSearchParams();
-    paramsRecomendar.set("comuna", comuna);
-    if (tituloComunaDisplay) paramsRecomendar.set("comuna_nombre", tituloComunaDisplay);
-    if (servicioHintParaCta) paramsRecomendar.set("servicio", servicioHintParaCta);
-
-    const qSnippetActivacion =
-      qParaTodoChile.length > 48 ? `${qParaTodoChile.slice(0, 48)}…` : qParaTodoChile;
+    const ctaA = buildActivacionDirectorioCtas({
+      comunaSlug: comuna,
+      comunaNombreTitulo: tituloComunaDisplay,
+      qDisplayRaw: (initialQDisplay ?? "").trim(),
+      subcategoriaSlug: subcategoriaSlug ?? "",
+      subcategoriaId: subcategoriaId ?? "",
+      categoriaSlug: categoriaSlug ?? "",
+    });
+    const servicioEtiqueta = ctaA.servicioEtiqueta;
     const regionSlugActivacion = (regionFocoSlug ?? "").trim();
     const regionNombreActivacion = (regionFocoNombre ?? "").trim();
 
     return (
       <div className="mt-2 space-y-5">
         {bar}
-        <div
-          role="region"
-          aria-labelledby="resultados-comuna-cerrada-titulo"
-          className="rounded-2xl border border-amber-200/90 bg-amber-50/90 px-4 py-5 sm:px-6"
-        >
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-900/80">
-            Directorio en crecimiento
-          </p>
-          <h1
-            id="resultados-comuna-cerrada-titulo"
-            className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900"
-          >
-            {tituloComunaDisplay} aún está creciendo en Rey del Dato
-          </h1>
-          {regionNombreActivacion ? (
-            <p className="mt-1 text-sm font-medium text-slate-600">{regionNombreActivacion}</p>
-          ) : null}
-          <p className="mt-2 text-sm text-slate-700 leading-relaxed">
-            Ya hay algunos servicios disponibles. Mientras más negocios se suman, más completo se
-            vuelve el directorio.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              href={`/publicar?${paramsPublicar.toString()}`}
-              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
-            >
-              Publicar mi emprendimiento
-            </Link>
-            <Link
-              href={`/recomendar?${paramsRecomendar.toString()}`}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-            >
-              Recomendar emprendedor
-            </Link>
-          </div>
-          <div className="mt-4 flex flex-wrap gap-3 border-t border-amber-200/80 pt-4">
-            <Link
-              href={`/abrir-comuna/${encodeURIComponent(comuna)}`}
-              className="text-sm font-semibold text-sky-800 underline underline-offset-2 hover:text-sky-950"
-            >
-              Cómo abrir el directorio en {comunaTituloConRegion}
-            </Link>
-            {qNormTodoChile && regionSlugActivacion ? (
-              <Link
-                href={`/resultados?q=${encodeURIComponent(qParaTodoChile)}&region=${encodeURIComponent(
-                  regionSlugActivacion
-                )}`}
-                className="text-sm font-semibold text-slate-700 underline underline-offset-2 hover:text-slate-900"
-              >
-                {regionNombreActivacion
-                  ? `Ver «${qSnippetActivacion}» en ${regionNombreActivacion}`
-                  : `Ver «${qSnippetActivacion}» en tu región`}
-              </Link>
-            ) : null}
-          </div>
-        </div>
+        {!busquedaSoloTextoQ ? (
+          <DirectorioEnCrecimientoActivacionBanner
+            tituloComunaDisplay={tituloComunaDisplay}
+            comunaTituloConRegion={comunaTituloConRegion}
+            regionNombreActivacion={regionNombreActivacion || null}
+            paramsPublicar={ctaA.paramsPublicar}
+            paramsRecomendar={ctaA.paramsRecomendar}
+            comunaSlug={comuna}
+            qParaTodoChile={ctaA.qParaTodoChile}
+            qNormTodoChile={ctaA.qNormTodoChile}
+            qSnippetActivacion={ctaA.qSnippetActivacion}
+            regionSlugActivacion={regionSlugActivacion}
+            regionNombreActivacionParaLink={regionNombreActivacion}
+          />
+        ) : null}
         <PublicSearchResults
           comuna={comuna}
           q={q}
@@ -441,8 +391,11 @@ export default function ResultadosClient({
           comunaTituloConRegion={comunaTituloConRegion}
           modoActivacionPreview
           activacionServicioLabel={servicioEtiqueta}
-          activacionCtaPublicarHref={`/publicar?${paramsPublicar.toString()}`}
-          activacionCtaRecomendarHref={`/recomendar?${paramsRecomendar.toString()}`}
+          activacionCtaPublicarHref={`/publicar?${ctaA.paramsPublicar.toString()}`}
+          activacionCtaRecomendarHref={`/recomendar?${ctaA.paramsRecomendar.toString()}`}
+          qDisplayLabel={initialQDisplay ?? ""}
+          regionFocoSlug={regionFocoSlug}
+          regionFocoNombre={regionFocoNombre}
         />
       </div>
     );
@@ -478,6 +431,9 @@ export default function ResultadosClient({
           subcategoriaSlug={subcategoriaSlug || undefined}
           subcategoriaId={subcategoriaId || undefined}
           comunaTituloConRegion={comunaTituloConRegion}
+          qDisplayLabel={initialQDisplay ?? ""}
+          regionFocoSlug={regionFocoSlug}
+          regionFocoNombre={regionFocoNombre}
         />
       </div>
     );
@@ -495,6 +451,9 @@ export default function ResultadosClient({
           subcategoriaSlug={subcategoriaSlug || undefined}
           subcategoriaId={subcategoriaId || undefined}
           comunaTituloConRegion={comunaTituloConRegion}
+          qDisplayLabel={initialQDisplay ?? ""}
+          regionFocoSlug={regionFocoSlug}
+          regionFocoNombre={regionFocoNombre}
         />
       </div>
     );
