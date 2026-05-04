@@ -105,8 +105,6 @@ export default function PublicSearchResults({
   comunaTituloConRegion = null,
   /** Texto de `q` tal como en la URL (p. ej. “gasfiter”) para mensajes. */
   qDisplayLabel = "",
-  regionFocoSlug: _regionFocoSlug = null,
-  regionFocoNombre: _regionFocoNombre = null,
 }: {
   comuna: string;
   q?: string;
@@ -124,8 +122,6 @@ export default function PublicSearchResults({
   activacionServicioLabel?: string;
   comunaTituloConRegion?: string | null;
   qDisplayLabel?: string;
-  regionFocoSlug?: string | null;
-  regionFocoNombre?: string | null;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -551,21 +547,6 @@ export default function PublicSearchResults({
   if (tituloComunaCta) paramsRecomendarVacios.set("comuna_nombre", tituloComunaCta);
   if (qLegibleTitulo) paramsRecomendarVacios.set("servicio", qLegibleTitulo);
 
-  const qParaResultadosGlobal =
-    String(meta?.q ?? q ?? "").trim() || qLegibleTitulo;
-  const regionFocoSlug = String(_regionFocoSlug ?? "").trim();
-  const regionFocoNombre = String(_regionFocoNombre ?? "").trim();
-  const regionParam =
-    regionFocoSlug && regionFocoSlug.startsWith("region-")
-      ? regionFocoSlug
-      : regionFocoSlug
-        ? `region-${regionFocoSlug}`
-        : "";
-  const paramsOtrasComunas = new URLSearchParams();
-  if (qParaResultadosGlobal) paramsOtrasComunas.set("q", qParaResultadosGlobal);
-  if (regionParam) paramsOtrasComunas.set("region", regionParam);
-  const hrefOtrasComunas = `/resultados?${paramsOtrasComunas.toString()}`;
-
   return (
     <div className="space-y-0">
       {soloAtiendenParaQ ? (
@@ -713,27 +694,13 @@ export default function PublicSearchResults({
             {!modoActivacionPreview ? (
               <div className="mt-6 sm:mt-7 space-y-3">
                 {!fueraZonaIntentada && fallbackGlobalNacional.length === 0 && !loadingFueraZona ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => void cargarOpcionesFueraZona()}
-                      className="inline-flex w-full max-w-md items-center justify-center rounded-xl border border-teal-300 bg-emerald-50/90 px-3.5 py-2.5 text-sm font-extrabold text-teal-950 shadow-sm hover:bg-emerald-100/90 sm:w-auto"
-                    >
-                      Mostrar opciones fuera de tu zona
-                    </button>
-                    {regionParam ? (
-                      <p className="m-0 text-sm text-slate-600">
-                        También puedes{" "}
-                        <Link
-                          href={hrefOtrasComunas}
-                          className="font-bold text-sky-900 underline decoration-sky-300 underline-offset-2 hover:text-sky-950"
-                        >
-                          ver {qLegibleTitulo} en {regionFocoNombre || "tu región"}
-                        </Link>
-                        .
-                      </p>
-                    ) : null}
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => void cargarOpcionesFueraZona()}
+                    className="inline-flex w-full max-w-md items-center justify-center rounded-xl border border-teal-300 bg-emerald-50/90 px-3.5 py-2.5 text-sm font-extrabold text-teal-950 shadow-sm hover:bg-emerald-100/90 sm:w-auto"
+                  >
+                    Mostrar opciones fuera de tu zona
+                  </button>
                 ) : null}
                 {loadingFueraZona ? (
                   <p className="m-0 text-sm text-slate-600" aria-live="polite">

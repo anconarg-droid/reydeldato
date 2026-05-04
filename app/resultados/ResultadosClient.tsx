@@ -403,8 +403,6 @@ export default function ResultadosClient({
           modoActivacionPreview
           activacionServicioLabel={servicioEtiqueta}
           qDisplayLabel={initialQDisplay ?? ""}
-          regionFocoSlug={regionFocoSlug}
-          regionFocoNombre={regionFocoNombre}
         />
       </div>
     );
@@ -441,8 +439,6 @@ export default function ResultadosClient({
           subcategoriaId={subcategoriaId || undefined}
           comunaTituloConRegion={comunaTituloConRegion}
           qDisplayLabel={initialQDisplay ?? ""}
-          regionFocoSlug={regionFocoSlug}
-          regionFocoNombre={regionFocoNombre}
         />
       </div>
     );
@@ -461,8 +457,6 @@ export default function ResultadosClient({
           subcategoriaId={subcategoriaId || undefined}
           comunaTituloConRegion={comunaTituloConRegion}
           qDisplayLabel={initialQDisplay ?? ""}
-          regionFocoSlug={regionFocoSlug}
-          regionFocoNombre={regionFocoNombre}
         />
       </div>
     );
