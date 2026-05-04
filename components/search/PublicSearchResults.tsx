@@ -265,6 +265,29 @@ export default function PublicSearchResults({
 
   const hasResultadosAtienden = atiendenParaBloque.length > 0;
 
+  const aplicarSoloCompletos = modoActivacionPreview ? false : soloCompletos;
+
+  const otrosEnComunaFiltrados = useMemo(
+    () =>
+      filtrarItemsPorMejoresOpciones(
+        otrosEnComunaOrdenados as BuscarApiItem[],
+        aplicarSoloCompletos
+      ),
+    [otrosEnComunaOrdenados, aplicarSoloCompletos]
+  );
+  const atiendenFiltrados = useMemo(
+    () =>
+      filtrarItemsPorMejoresOpciones(
+        atiendenParaBloque as BuscarApiItem[],
+        aplicarSoloCompletos
+      ),
+    [atiendenParaBloque, aplicarSoloCompletos]
+  );
+  const ningunoFiltradoPeroHayRaw =
+    aplicarSoloCompletos &&
+    (otrosEnComunaOrdenados.length + atiendenParaBloque.length) > 0 &&
+    (otrosEnComunaFiltrados.length + atiendenFiltrados.length) === 0;
+
   if (loading) {
     return (
       <p className="text-sm text-slate-500" aria-live="polite">
@@ -302,29 +325,6 @@ export default function PublicSearchResults({
     String(comunaTituloConRegion ?? "").trim() || nombreComunaLinea;
   const qLegibleTitulo =
     (qDisplayLabel ?? "").trim() || (meta?.q ?? "").trim() || q.trim();
-
-  const aplicarSoloCompletos = modoActivacionPreview ? false : soloCompletos;
-
-  const otrosEnComunaFiltrados = useMemo(
-    () =>
-      filtrarItemsPorMejoresOpciones(
-        otrosEnComunaOrdenados as BuscarApiItem[],
-        aplicarSoloCompletos
-      ),
-    [otrosEnComunaOrdenados, aplicarSoloCompletos]
-  );
-  const atiendenFiltrados = useMemo(
-    () =>
-      filtrarItemsPorMejoresOpciones(
-        atiendenParaBloque as BuscarApiItem[],
-        aplicarSoloCompletos
-      ),
-    [atiendenParaBloque, aplicarSoloCompletos]
-  );
-  const ningunoFiltradoPeroHayRaw =
-    aplicarSoloCompletos &&
-    (otrosEnComunaOrdenados.length + atiendenParaBloque.length) > 0 &&
-    (otrosEnComunaFiltrados.length + atiendenFiltrados.length) === 0;
 
   if (items.length === 0 && !hasQuery) {
     if (modoActivacionPreview) {
