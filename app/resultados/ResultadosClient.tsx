@@ -346,12 +346,6 @@ export default function ResultadosClient({
   );
 
   if (comuna && !directorioComunaAbierto) {
-    const busquedaSoloTextoQ =
-      Boolean(normalizeText(q)) &&
-      !subcategoriaSlug &&
-      !subcategoriaId &&
-      !categoriaSlug;
-
     const ctaA = buildActivacionDirectorioCtas({
       comunaSlug: comuna,
       comunaNombreTitulo: tituloComunaDisplay,
@@ -367,21 +361,19 @@ export default function ResultadosClient({
     return (
       <div className="mt-2 space-y-5">
         {bar}
-        {!busquedaSoloTextoQ ? (
-          <DirectorioEnCrecimientoActivacionBanner
-            tituloComunaDisplay={tituloComunaDisplay}
-            comunaTituloConRegion={comunaTituloConRegion}
-            regionNombreActivacion={regionNombreActivacion || null}
-            paramsPublicar={ctaA.paramsPublicar}
-            paramsRecomendar={ctaA.paramsRecomendar}
-            comunaSlug={comuna}
-            qParaTodoChile={ctaA.qParaTodoChile}
-            qNormTodoChile={ctaA.qNormTodoChile}
-            qSnippetActivacion={ctaA.qSnippetActivacion}
-            regionSlugActivacion={regionSlugActivacion}
-            regionNombreActivacionParaLink={regionNombreActivacion}
-          />
-        ) : null}
+        <DirectorioEnCrecimientoActivacionBanner
+          tituloComunaDisplay={tituloComunaDisplay}
+          comunaTituloConRegion={comunaTituloConRegion}
+          regionNombreActivacion={regionNombreActivacion || null}
+          paramsPublicar={ctaA.paramsPublicar}
+          paramsRecomendar={ctaA.paramsRecomendar}
+          comunaSlug={comuna}
+          qParaTodoChile={ctaA.qParaTodoChile}
+          qNormTodoChile={ctaA.qNormTodoChile}
+          qSnippetActivacion={ctaA.qSnippetActivacion}
+          regionSlugActivacion={regionSlugActivacion}
+          regionNombreActivacionParaLink={regionNombreActivacion}
+        />
         <PublicSearchResults
           comuna={comuna}
           q={q}
@@ -391,8 +383,6 @@ export default function ResultadosClient({
           comunaTituloConRegion={comunaTituloConRegion}
           modoActivacionPreview
           activacionServicioLabel={servicioEtiqueta}
-          activacionCtaPublicarHref={`/publicar?${ctaA.paramsPublicar.toString()}`}
-          activacionCtaRecomendarHref={`/recomendar?${ctaA.paramsRecomendar.toString()}`}
           qDisplayLabel={initialQDisplay ?? ""}
           regionFocoSlug={regionFocoSlug}
           regionFocoNombre={regionFocoNombre}

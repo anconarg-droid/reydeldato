@@ -8,11 +8,6 @@ import TrackImpressions from "@/components/TrackImpressions";
 import ComunaTerritorialBloquesConFiltro from "@/components/search/ComunaTerritorialBloquesConFiltro";
 import type { BuscarApiItem } from "@/lib/mapBuscarItemToEmprendedorCard";
 import { sortItemsConFotoPrimeroStable } from "@/lib/search/sortItemsConFotoPrimero";
-import { busquedaComunaOuterSectionStyle } from "@/lib/busquedaComunaLayoutStyles";
-import CategoriaEmprendedoresGrid from "@/components/categoria/CategoriaEmprendedoresGrid";
-import { buildActivacionDirectorioCtas } from "@/lib/buildActivacionDirectorioCtas";
-import BusquedaSinBaseTextualEnComunaPanel from "@/components/search/BusquedaSinBaseTextualEnComunaPanel";
-import DirectorioEnCrecimientoActivacionBanner from "@/components/search/DirectorioEnCrecimientoActivacionBanner";
 
 /** Texto legible cuando solo viene `subcategoria=` en la URL (sin `q=`). */
 function prettySubcategoriaSlugForDisplay(slug: string): string {
@@ -87,14 +82,10 @@ export default function PublicSearchResults({
   subcategoriaId,
   modoActivacionPreview = false,
   activacionServicioLabel = "",
-  activacionCtaPublicarHref = "",
-  activacionCtaRecomendarHref = "",
   /** Título con región (p. ej. “Teno — Maule”) para acordeones y cards; si no, usa la comuna del API. */
   comunaTituloConRegion = null,
-  /** Texto de `q` tal como en la URL (p. ej. “gasfiter”) para títulos y enlaces. */
+  /** Texto de `q` tal como en la URL (p. ej. “gasfiter”) para mensajes. */
   qDisplayLabel = "",
-  regionFocoSlug = null,
-  regionFocoNombre = null,
 }: {
   comuna: string;
   q?: string;
@@ -110,8 +101,6 @@ export default function PublicSearchResults({
   modoActivacionPreview?: boolean;
   /** Texto legible para copy (“gasfiter”, “este rubro”) cuando `modoActivacionPreview`. */
   activacionServicioLabel?: string;
-  activacionCtaPublicarHref?: string;
-  activacionCtaRecomendarHref?: string;
   comunaTituloConRegion?: string | null;
   qDisplayLabel?: string;
   regionFocoSlug?: string | null;
@@ -123,16 +112,6 @@ export default function PublicSearchResults({
   const [meta, setMeta] = useState<SearchMeta | null>(null);
   const [error, setError] = useState("");
   const [otrosEnComuna, setOtrosEnComuna] = useState<SearchItem[]>([]);
-
-  const textualQSoloParametro = useMemo(() => {
-    const qt = q.trim();
-    return (
-      Boolean(qt) &&
-      !subcategoriaSlug?.trim() &&
-      !subcategoriaId?.trim() &&
-      !categoriaSlug?.trim()
-    );
-  }, [q, subcategoriaSlug, subcategoriaId, categoriaSlug]);
 
   useEffect(() => {
     let mounted = true;
@@ -184,8 +163,7 @@ export default function PublicSearchResults({
         const nextItems = Array.isArray(json.items) ? json.items : [];
         setMeta(json.meta || null);
 
-        const textualQ =
-          Boolean(qSend) && !slug && !sidTrim && !cat;
+        const textualQ = Boolean(qSend) && !slug && !sidTrim && !cat;
         const deTuCount = nextItems.filter((i) => i.bloque === "de_tu_comuna").length;
         let otros: SearchItem[] = [];
         if (textualQ && deTuCount === 0) {
@@ -220,15 +198,29 @@ export default function PublicSearchResults({
     };
   }, [comuna, q, subcategoriaSlug, subcategoriaId, categoriaSlug]);
 
-  /** El API ya entrega con-foto primero y rotación por subgrupo; esto refuerza el mismo criterio de forma estable. */
-  const deTuComuna = useMemo(
+  const otrosEnComunaOrdenados = useMemo(
     () =>
-      sortItemsConFotoPrimeroStable(
-        items.filter((i) => i.bloque === "de_tu_comuna"),
-        (i) => i.fotoPrincipalUrl
-      ),
+      sortItemsConFotoPrimeroStable(otrosEnComuna, (i) => i.fotoPrincipalUrl),
+    [otrosEnComuna]
+  );
+
+  const resultadosBase = useMemo(
+    () => items.filter((i) => i.bloque === "de_tu_comuna"),
     [items]
   );
+
+  const hasQuery = Boolean(q.trim());
+  const hasResultadosBase = resultadosBase.length > 0;
+
+  const enTuComunaParaBloques = useMemo(() => {
+    if (!hasQuery || hasResultadosBase) {
+      return sortItemsConFotoPrimeroStable(resultadosBase, (i) => i.fotoPrincipalUrl);
+    }
+    if (otrosEnComunaOrdenados.length > 0) {
+      return otrosEnComunaOrdenados;
+    }
+    return sortItemsConFotoPrimeroStable(resultadosBase, (i) => i.fotoPrincipalUrl);
+  }, [hasQuery, hasResultadosBase, resultadosBase, otrosEnComunaOrdenados]);
 
   const atiendenTuComuna = useMemo(
     () =>
@@ -239,21 +231,12 @@ export default function PublicSearchResults({
     [items]
   );
 
-  const otrosEnComunaOrdenados = useMemo(
-    () =>
-      sortItemsConFotoPrimeroStable(otrosEnComuna, (i) => i.fotoPrincipalUrl),
-    [otrosEnComuna]
-  );
-
   if (loading) {
-    if (modoActivacionPreview) {
-      return (
-        <p className="text-sm text-slate-500" aria-live="polite">
-          Buscando en esta comuna según lo que escribiste…
-        </p>
-      );
-    }
-    return <div>Cargando resultados...</div>;
+    return (
+      <p className="text-sm text-slate-500" aria-live="polite">
+        Cargando resultados…
+      </p>
+    );
   }
 
   if (error) {
@@ -285,9 +268,8 @@ export default function PublicSearchResults({
     String(comunaTituloConRegion ?? "").trim() || nombreComunaLinea;
   const qLegibleTitulo =
     (qDisplayLabel ?? "").trim() || (meta?.q ?? "").trim() || q.trim();
-  const casoSinBaseTextualQ = textualQSoloParametro && deTuComuna.length === 0;
 
-  if (items.length === 0 && !(textualQSoloParametro)) {
+  if (items.length === 0 && !hasQuery) {
     if (modoActivacionPreview) {
       return null;
     }
@@ -418,90 +400,16 @@ export default function PublicSearchResults({
     );
   }
 
-  if (casoSinBaseTextualQ) {
-    const slugsTrackSinBase = [
-      ...otrosEnComunaOrdenados.map((i) => String(i.slug || i.id || "")).filter(Boolean),
-      ...atiendenTuComuna.map((i) => String(i.slug || i.id || "")).filter(Boolean),
-    ];
-    const cta = buildActivacionDirectorioCtas({
-      comunaSlug: comuna.trim(),
-      comunaNombreTitulo: nombreComunaLinea,
-      qDisplayRaw: (qDisplayLabel ?? "").trim() || q.trim(),
-      subcategoriaSlug: subcategoriaSlug ?? "",
-      subcategoriaId: subcategoriaId ?? "",
-      categoriaSlug: categoriaSlug ?? "",
-    });
-    const regionSlugActivacion = (regionFocoSlug ?? "").trim();
-    const regionNombreActivacionParaLink = (regionFocoNombre ?? "").trim();
-
-    return (
-      <div className="space-y-6">
-        <TrackImpressions
-          slugs={slugsTrackSinBase}
-          comuna_slug={meta?.comunaSlug || comuna}
-          q={meta?.q || q}
-        />
-        <BusquedaSinBaseTextualEnComunaPanel
-          qLabel={qLegibleTitulo}
-          nombreComuna={nombreComunaLinea}
-          paramsPublicar={cta.paramsPublicar}
-          paramsRecomendar={cta.paramsRecomendar}
-          qParaTodoChile={cta.qParaTodoChile}
-          qSnippetActivacion={cta.qSnippetActivacion}
-          regionSlugActivacion={regionSlugActivacion}
-          regionNombreActivacionParaLink={regionNombreActivacionParaLink}
-        />
-        {otrosEnComunaOrdenados.length > 0 ? (
-          <section style={busquedaComunaOuterSectionStyle}>
-            <h2 className="text-base font-extrabold text-slate-900">
-              Otros emprendimientos disponibles en {nombreComunaLinea}
-            </h2>
-            <div className="mt-4">
-              <CategoriaEmprendedoresGrid
-                items={otrosEnComunaOrdenados as BuscarApiItem[]}
-                comunaSlug={meta?.comunaSlug || comuna}
-                comunaNombre={nombreComunaLinea}
-                comunaNombreEnCard={
-                  nombreComunaParaTitulos.trim() !== nombreComunaLinea.trim()
-                    ? nombreComunaParaTitulos
-                    : null
-                }
-                usarCardSimple={modoActivacionPreview}
-              />
-            </div>
-          </section>
-        ) : null}
-        {atiendenTuComuna.length > 0 ? (
-          <div className="mt-2 sm:mt-3">
-            <ComunaTerritorialBloquesConFiltro
-              omitirBloqueLocal
-              enTuComuna={[]}
-              atiendenTuComuna={atiendenTuComuna as BuscarApiItem[]}
-              comunaSlug={meta?.comunaSlug || comuna}
-              comunaNombre={nombreComunaLinea}
-              nombreComunaDisplay={nombreComunaParaTitulos}
-              gridEmptyMessage="No encontramos resultados."
-              ocultarFiltroSoloCompletos={modoActivacionPreview}
-              usarCardSimple={false}
-              pocosResultadosServicioLabel={null}
-              trackImpressions={null}
-            />
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-
   const bloques = (
     <ComunaTerritorialBloquesConFiltro
-      enTuComuna={deTuComuna as BuscarApiItem[]}
+      enTuComuna={enTuComunaParaBloques as BuscarApiItem[]}
       atiendenTuComuna={atiendenTuComuna as BuscarApiItem[]}
       comunaSlug={meta?.comunaSlug || comuna}
       comunaNombre={nombreComunaLinea}
       nombreComunaDisplay={nombreComunaParaTitulos}
       gridEmptyMessage="No encontramos resultados."
       ocultarFiltroSoloCompletos={modoActivacionPreview}
-      usarCardSimple={false}
+      usarCardSimple={modoActivacionPreview}
       pocosResultadosServicioLabel={
         modoActivacionPreview && (activacionServicioLabel || "").trim()
           ? (activacionServicioLabel || "").trim()
@@ -514,54 +422,19 @@ export default function PublicSearchResults({
     />
   );
 
-  if (modoActivacionPreview) {
-    const cta = buildActivacionDirectorioCtas({
-      comunaSlug: comuna.trim(),
-      comunaNombreTitulo: nombreComunaLinea,
-      qDisplayRaw: (qDisplayLabel ?? "").trim() || q.trim(),
-      subcategoriaSlug: subcategoriaSlug ?? "",
-      subcategoriaId: subcategoriaId ?? "",
-      categoriaSlug: categoriaSlug ?? "",
-    });
-    const regionSlugActivacion = (regionFocoSlug ?? "").trim();
-    const regionNombreActivacion = (regionFocoNombre ?? "").trim();
-    const label = (activacionServicioLabel || "").trim() || "servicios";
-    /**
-     * `ResultadosClient` ya pinta el banner ámbar cuando la comuna está cerrada y no hay solo `q`
-     * textual en URL. Si lo repetimos aquí, queda duplicado (p. ej. `/teno` sin `q`).
-     */
-    const mostrarBannerCrecimientoAqui =
-      textualQSoloParametro;
-    return (
-      <div className="space-y-5">
-        {mostrarBannerCrecimientoAqui ? (
-          <DirectorioEnCrecimientoActivacionBanner
-            tituloComunaDisplay={nombreComunaLinea}
-            comunaTituloConRegion={nombreComunaParaTitulos}
-            regionNombreActivacion={regionNombreActivacion || null}
-            paramsPublicar={cta.paramsPublicar}
-            paramsRecomendar={cta.paramsRecomendar}
-            comunaSlug={comuna.trim()}
-            qParaTodoChile={cta.qParaTodoChile}
-            qNormTodoChile={cta.qNormTodoChile}
-            qSnippetActivacion={cta.qSnippetActivacion}
-            regionSlugActivacion={regionSlugActivacion}
-            regionNombreActivacionParaLink={regionNombreActivacion}
-          />
-        ) : null}
-        <div className="mt-1 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-4 sm:px-5">
-          <p className="text-sm font-semibold text-slate-900">
-            Encontramos algunos {label} que ya atienden esta comuna
+  return (
+    <div className="space-y-0">
+      {hasQuery && !hasResultadosBase ? (
+        <div className="mb-4 text-sm">
+          <p className="font-semibold text-slate-900">
+            Aún no tenemos &ldquo;{qLegibleTitulo}&rdquo; en {nombreComunaLinea}
           </p>
-          <p className="mt-1 text-xs text-slate-600">
-            Resultados acotados a tu búsqueda; no es el directorio completo hasta que la comuna esté
-            activa.
+          <p className="text-slate-600">
+            Pero sí hay otros servicios disponibles en esta comuna
           </p>
-          <div className="mt-4">{bloques}</div>
         </div>
-      </div>
-    );
-  }
-
-  return bloques;
+      ) : null}
+      {bloques}
+    </div>
+  );
 }
