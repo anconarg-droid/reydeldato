@@ -93,10 +93,13 @@ function GlobalDbResults({
   q,
   items,
   error,
+  ubicacionEnComunaConRegion = false,
 }: {
   q: string;
   items: BuscarApiItem[];
   error: string | null;
+  /** Listado global sin comuna: línea 📍 “En {comuna} — {región}”. */
+  ubicacionEnComunaConRegion?: boolean;
 }) {
   const [soloCompletos, setSoloCompletos] = useState(false);
   const itemsFiltrados = useMemo(
@@ -186,6 +189,7 @@ function GlobalDbResults({
                         key={item.slug || item.id}
                         {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
                         destacarMejoresOpciones={soloCompletos}
+                        ubicacionEnComunaConRegion={ubicacionEnComunaConRegion}
                       />
                     ))}
                   </div>
@@ -203,6 +207,7 @@ function GlobalDbResults({
                         key={item.slug || item.id}
                         {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
                         destacarMejoresOpciones={soloCompletos}
+                        ubicacionEnComunaConRegion={ubicacionEnComunaConRegion}
                       />
                     ))}
                   </div>
@@ -216,6 +221,7 @@ function GlobalDbResults({
                   key={item.slug || item.id}
                   {...buscarApiItemToEmprendedorCardProps(item, null, "search")}
                   destacarMejoresOpciones={soloCompletos}
+                  ubicacionEnComunaConRegion={ubicacionEnComunaConRegion}
                 />
               ))}
             </div>
@@ -255,6 +261,8 @@ type Props = {
   regionFocoNombre?: string | null;
   /** Solo búsqueda global sin comuna: resaltar input de comuna en la barra. */
   resaltarCampoComunaEnBusquedaGlobal?: boolean;
+  /** `?scope=nacional`: búsqueda en todo Chile (sin foco regional por IP). */
+  scopeNacional?: boolean;
   /**
    * Solo en ruta `/[comuna]`: invitación visual cuando no hay término en URL (borde pulsante + copy).
    */
@@ -275,6 +283,7 @@ export default function ResultadosClient({
   regionFocoSlug = null,
   regionFocoNombre = null,
   resaltarCampoComunaEnBusquedaGlobal = false,
+  scopeNacional = false,
   invitacionBuscaEnPaginaComuna = false,
 }: Props) {
   const comuna = (initialComuna ?? "").trim();
@@ -457,9 +466,11 @@ export default function ResultadosClient({
       <header>
         <h1 className="text-xl font-semibold text-slate-900">Resultados para &quot;{q}&quot;</h1>
         <p className="text-slate-600 text-sm mt-1">
-          {String(regionFocoSlug ?? "").trim() || String(regionFocoNombre ?? "").trim()
-            ? `Mostrando resultados en ${(regionFocoNombre ?? "").trim() || "tu región"} · Filtra por comuna para ver lo más cercano a ti`
-            : "Resultados en todo Chile. Puedes filtrar por comuna para ver opciones cercanas."}
+          {scopeNacional
+            ? "Búsqueda en todo Chile (sin acotar por región). Puedes filtrar por comuna para ver opciones cercanas."
+            : String(regionFocoSlug ?? "").trim() || String(regionFocoNombre ?? "").trim()
+              ? `Mostrando resultados en ${(regionFocoNombre ?? "").trim() || "tu región"} · Filtra por comuna para ver lo más cercano a ti`
+              : "Resultados en todo Chile. Puedes filtrar por comuna para ver opciones cercanas."}
         </p>
       </header>
       {synonymNotice ? (
@@ -475,7 +486,12 @@ export default function ResultadosClient({
           </p>
         </div>
       ) : null}
-      <GlobalDbResults q={q} items={db.items} error={db.error} />
+      <GlobalDbResults
+        q={q}
+        items={db.items}
+        error={db.error}
+        ubicacionEnComunaConRegion
+      />
     </div>
   );
 }

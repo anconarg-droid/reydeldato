@@ -88,8 +88,8 @@ export default function PublicSearchResults({
   comunaTituloConRegion = null,
   /** Texto de `q` tal como en la URL (p. ej. “gasfiter”) para mensajes. */
   qDisplayLabel = "",
-  regionFocoSlug = null,
-  regionFocoNombre = null,
+  regionFocoSlug: _regionFocoSlug = null,
+  regionFocoNombre: _regionFocoNombre = null,
 }: {
   comuna: string;
   q?: string;
@@ -115,7 +115,8 @@ export default function PublicSearchResults({
   const [items, setItems] = useState<SearchItem[]>([]);
   const [meta, setMeta] = useState<SearchMeta | null>(null);
   const [error, setError] = useState("");
-  const [otrosEnComuna, setOtrosEnComuna] = useState<SearchItem[]>([]);
+  /** Populares sin `q` (respuesta completa: base + atienden) para fallback cuando la búsqueda no matchea en la comuna. */
+  const [fallbackPopularesItems, setFallbackPopularesItems] = useState<SearchItem[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -124,7 +125,7 @@ export default function PublicSearchResults({
       try {
         setLoading(true);
         setError("");
-        setOtrosEnComuna([]);
+        setFallbackPopularesItems([]);
 
         const params = new URLSearchParams();
         params.set("comuna", comuna);
@@ -180,13 +181,13 @@ export default function PublicSearchResults({
           });
           const jsonPop: SearchResponse & { error?: string } = await resPop.json();
           if (resPop.ok && jsonPop?.ok && Array.isArray(jsonPop.items)) {
-            otros = jsonPop.items.filter((i) => i.bloque === "de_tu_comuna");
+            otros = jsonPop.items;
           }
         }
 
         if (!mounted) return;
         setItems(nextItems);
-        setOtrosEnComuna(otros);
+        setFallbackPopularesItems(otros);
       } catch (err) {
         if (!mounted) return;
         setError(err instanceof Error ? err.message : "Error inesperado.");
@@ -202,10 +203,21 @@ export default function PublicSearchResults({
     };
   }, [comuna, q, subcategoriaSlug, subcategoriaId, categoriaSlug]);
 
-  const otrosEnComunaOrdenados = useMemo(
+  const fallbackBaseOrdenados = useMemo(
     () =>
-      sortItemsConFotoPrimeroStable(otrosEnComuna, (i) => i.fotoPrincipalUrl),
-    [otrosEnComuna]
+      sortItemsConFotoPrimeroStable(
+        fallbackPopularesItems.filter((i) => i.bloque === "de_tu_comuna"),
+        (i) => i.fotoPrincipalUrl
+      ),
+    [fallbackPopularesItems]
+  );
+  const fallbackAtiendenOrdenados = useMemo(
+    () =>
+      sortItemsConFotoPrimeroStable(
+        fallbackPopularesItems.filter((i) => i.bloque === "atienden_tu_comuna"),
+        (i) => i.fotoPrincipalUrl
+      ),
+    [fallbackPopularesItems]
   );
 
   const resultadosBase = useMemo(
@@ -220,11 +232,11 @@ export default function PublicSearchResults({
     if (!hasQuery || hasResultadosBase) {
       return sortItemsConFotoPrimeroStable(resultadosBase, (i) => i.fotoPrincipalUrl);
     }
-    if (otrosEnComunaOrdenados.length > 0) {
-      return otrosEnComunaOrdenados;
+    if (fallbackBaseOrdenados.length > 0) {
+      return fallbackBaseOrdenados;
     }
     return sortItemsConFotoPrimeroStable(resultadosBase, (i) => i.fotoPrincipalUrl);
-  }, [hasQuery, hasResultadosBase, resultadosBase, otrosEnComunaOrdenados]);
+  }, [hasQuery, hasResultadosBase, resultadosBase, fallbackBaseOrdenados]);
 
   const atiendenTuComuna = useMemo(
     () =>
@@ -473,10 +485,8 @@ export default function PublicSearchResults({
     String(meta?.q ?? q ?? "").trim() || qLegibleTitulo;
   const paramsOtrasComunas = new URLSearchParams();
   if (qParaResultadosGlobal) paramsOtrasComunas.set("q", qParaResultadosGlobal);
-  const regionSlugFoco = String(regionFocoSlug ?? "").trim();
-  if (regionSlugFoco) paramsOtrasComunas.set("region", regionSlugFoco);
+  paramsOtrasComunas.set("scope", "nacional");
   const hrefOtrasComunas = `/resultados?${paramsOtrasComunas.toString()}`;
-  const regionNombreFocoLinea = String(regionFocoNombre ?? "").trim();
 
   return (
     <div className="space-y-0">
@@ -525,7 +535,9 @@ export default function PublicSearchResults({
       ) : sinResultadosParaQ ? (
         <>
           <TrackImpressions
-            slugs={otrosEnComunaOrdenados.map((i) => String(i.slug || i.id || "")).filter(Boolean)}
+            slugs={[...fallbackBaseOrdenados, ...fallbackAtiendenOrdenados]
+              .map((i) => String(i.slug || i.id || ""))
+              .filter(Boolean)}
             comuna_slug={comunaSlugCtx}
             q={meta?.q || q}
           />
@@ -567,41 +579,65 @@ export default function PublicSearchResults({
                 href={hrefOtrasComunas}
                 className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-3.5 py-2.5 text-sm font-extrabold text-sky-950 no-underline shadow-sm hover:bg-sky-50"
               >
-                Ver {qLegibleTitulo} en otras comunas
+                Ver {qLegibleTitulo} en todo Chile
               </Link>
-              {regionNombreFocoLinea ? (
-                <p className="mt-2 m-0 text-xs text-slate-600">
-                  Incluye búsqueda en {regionNombreFocoLinea}
-                </p>
-              ) : null}
             </div>
           </div>
-          <TerritorialAccordionBlock
-            variant="local"
-            persistPrefix={`resultados:${comunaSlugCtx}`}
-            which="base"
-            instanceId={`resultados-${comunaSlugCtx}-otros-disponibles`}
-            title={
-              <>
-                Otros emprendimientos disponibles en {nombreComunaParaTitulos} (
-                {otrosEnComunaOrdenados.length})
-              </>
-            }
-            subtitle="Opciones en tu comuna sin filtrar por lo que buscaste"
-          >
-            <CategoriaEmprendedoresGrid
-              items={otrosEnComunaOrdenados as BuscarApiItem[]}
-              comunaSlug={comunaSlugCtx}
-              comunaNombre={nombreComunaLinea}
-              comunaNombreEnCard={
-                nombreComunaParaTitulos.trim() !== nombreComunaLinea.trim()
-                  ? nombreComunaParaTitulos
-                  : null
+          <div className="space-y-6 sm:space-y-7">
+            <TerritorialAccordionBlock
+              variant="local"
+              persistPrefix={`resultados:${comunaSlugCtx}`}
+              which="base"
+              instanceId={`resultados-${comunaSlugCtx}-fallback-base`}
+              title={
+                <>
+                  Otros emprendimientos en {nombreComunaParaTitulos} (
+                  {fallbackBaseOrdenados.length})
+                </>
               }
-              usarCardSimple={modoActivacionPreview}
-              emptyMessage="Aún no hay otros emprendimientos con base en esta comuna."
-            />
-          </TerritorialAccordionBlock>
+              subtitle="Con base en esta comuna · sin filtrar por tu búsqueda"
+            >
+              <CategoriaEmprendedoresGrid
+                items={fallbackBaseOrdenados as BuscarApiItem[]}
+                comunaSlug={comunaSlugCtx}
+                comunaNombre={nombreComunaLinea}
+                comunaNombreEnCard={
+                  nombreComunaParaTitulos.trim() !== nombreComunaLinea.trim()
+                    ? nombreComunaParaTitulos
+                    : null
+                }
+                usarCardSimple={modoActivacionPreview}
+                emptyMessage="Aún no hay otros emprendimientos con base en esta comuna."
+              />
+            </TerritorialAccordionBlock>
+            <TerritorialAccordionBlock
+              variant="cobertura"
+              persistPrefix={`resultados:${comunaSlugCtx}`}
+              which="atienden"
+              instanceId={`resultados-${comunaSlugCtx}-fallback-atienden`}
+              className="mt-6 sm:mt-7"
+              title={
+                <>
+                  También atienden {nombreComunaParaTitulos} desde otras comunas (
+                  {fallbackAtiendenOrdenados.length})
+                </>
+              }
+              subtitle="Negocios con base fuera de esta comuna que atienden esta zona"
+            >
+              <CategoriaEmprendedoresGrid
+                items={fallbackAtiendenOrdenados as BuscarApiItem[]}
+                comunaSlug={comunaSlugCtx}
+                comunaNombre={nombreComunaLinea}
+                comunaNombreEnCard={
+                  nombreComunaParaTitulos.trim() !== nombreComunaLinea.trim()
+                    ? nombreComunaParaTitulos
+                    : null
+                }
+                usarCardSimple={modoActivacionPreview}
+                emptyMessage="Aún no hay negocios que declaren cobertura hacia esta comuna."
+              />
+            </TerritorialAccordionBlock>
+          </div>
         </>
       ) : (
         <>{bloques}</>

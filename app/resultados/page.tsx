@@ -18,6 +18,8 @@ type PageProps = {
     categoria?: string;
     subcategoria?: string;
     subcategoria_id?: string;
+    /** Búsqueda global sin acotar por región (ni detección por IP). */
+    scope?: string;
     /** Slug de región: búsqueda global acotada territorialmente (p. ej. desde comuna en activación). */
     region?: string;
     /**
@@ -101,6 +103,8 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
   const categoriaRaw = (params.categoria ?? "").trim();
   const regionRaw = (params.region ?? "").trim();
   const regionSlugFromUrl = regionRaw ? slugify(regionRaw) : "";
+  const scopeRaw = slugify((params.scope ?? "").trim());
+  const scopeNacional = scopeRaw === "nacional";
   const countryQueryDebug = (params.country ?? "").trim().toUpperCase();
   /** Slug de comuna canónico (sin acentos, guiones). */
   const comuna = comunaRaw ? slugify(comunaRaw) : "";
@@ -164,7 +168,7 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
    *   TEMP `?country=CL` solo para pruebas — quitar cuando ya no haga falta).
    * La detección por IP puede fallar dependiendo del ISP o routing del usuario.
    */
-  if (q && !comuna) {
+  if (q && !comuna && !scopeNacional) {
     if (regionSlugFromUrl) {
       const row = await resolveRegionRowBySlug(supabase, regionSlugFromUrl);
       if (row) {
@@ -207,10 +211,12 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
     }
   }
 
+  const regionSlugParaBusquedaGlobal = scopeNacional ? null : regionFocoSlug;
+
   const globalDb =
     q && !comuna
       ? await searchEmprendedoresGlobalAlgolia(q, 24, {
-          regionSlug: regionFocoSlug,
+          regionSlug: regionSlugParaBusquedaGlobal,
         })
       : null;
 
@@ -235,6 +241,7 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
           synonymNotice={synonymNotice}
           regionFocoSlug={regionFocoSlug}
           regionFocoNombre={regionFocoNombre}
+          scopeNacional={scopeNacional}
           resaltarCampoComunaEnBusquedaGlobal={Boolean(q && !comuna)}
         />
       </div>

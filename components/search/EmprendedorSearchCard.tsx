@@ -88,6 +88,11 @@ export type EmprendedorSearchCardProps = {
   usarCardSimple?: boolean;
   /** Ajustes de layout para vitrina Home (altura uniforme). */
   homeCarousel?: boolean;
+  /**
+   * Listado sin comuna de contexto (p. ej. `/resultados`): muestra 📍 `En {comuna base} — {región}`.
+   * No aplica en directorio por comuna (`mostrarUbicacionModoComuna`).
+   */
+  ubicacionEnComunaConRegion?: boolean;
 };
 
 const ACTIONS_H = 48;
@@ -265,6 +270,7 @@ function slotOrSpace(text: string): string {
 
 export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   const homeCarousel = p.homeCarousel === true;
+  const ubicacionEnComunaConRegion = p.ubicacionEnComunaConRegion === true;
   const whatsappHref = buildWhatsappHref(p.whatsappPrincipal);
   /** Dígitos presentes → enlace wa.me válido; no acoplado a tipo de perfil. */
   const tieneWhatsappValido = Boolean(whatsappHref);
@@ -748,6 +754,12 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 </p>
               </>
             )
+          ) : ubicacionEnComunaConRegion && (comunaNomRaw || reg) ? (
+            <p className="m-0 min-h-[1.375rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800">
+              <span aria-hidden>📍 </span>
+              En {comunaNomRaw}
+              {reg ? ` — ${reg}` : ""}
+            </p>
           ) : (
             <>
               <p className="m-0 min-h-[1.375rem] w-full shrink-0 truncate text-[13px] font-medium leading-tight text-slate-800">
