@@ -474,7 +474,6 @@ export default function ResultadosClient({
     !scopeNacional &&
     (Boolean(String(regionFocoSlug ?? "").trim()) || Boolean(regionNombreFoco));
   const terminoParaCopy = (initialQDisplay ?? "").trim() || q;
-  const hrefBusquedaNacional = `/resultados?q=${encodeURIComponent(terminoParaCopy)}&scope=nacional`;
   const slugRegionFoco = String(regionFocoSlug ?? "").trim().replace(/^region-/, "");
   const regionParamParaLinks =
     (regionQueryOriginal ?? "").trim() ||
@@ -531,19 +530,11 @@ export default function ResultadosClient({
                 {(regionFocoNombre ?? "").trim() || "tu región"}
               </p>
               <div className="mt-4 flex flex-wrap gap-2.5">
-                {regionParamParaLinks ? (
-                  <Link
-                    href={hrefVerOtrasRegiones}
-                    className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-3.5 py-2.5 text-sm font-extrabold text-sky-950 no-underline shadow-sm hover:bg-sky-50"
-                  >
-                    Ver {terminoParaCopy} en otras regiones
-                  </Link>
-                ) : null}
                 <Link
-                  href={hrefBusquedaNacional}
-                  className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm font-extrabold text-slate-900 no-underline shadow-sm hover:bg-slate-100"
+                  href={hrefVerOtrasRegiones}
+                  className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-3.5 py-2.5 text-sm font-extrabold text-sky-950 no-underline shadow-sm hover:bg-sky-50"
                 >
-                  Ver {terminoParaCopy} en todo Chile
+                  Ver {terminoParaCopy} en otras regiones
                 </Link>
               </div>
             </div>

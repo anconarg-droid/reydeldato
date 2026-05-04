@@ -760,6 +760,7 @@ export default function PublicSearchResults({
                     which="fuera_zona"
                     instanceId={`resultados-${comunaSlugCtx}-fallback-fuera-zona`}
                     className="mt-2"
+                    defaultCollapsed
                     title={<>Opciones fuera de tu zona ({fallbackGlobalNacional.length})</>}
                     subtitle="Negocios en otras regiones que podrían servirte"
                   >
