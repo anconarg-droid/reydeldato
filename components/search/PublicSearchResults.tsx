@@ -88,6 +88,8 @@ export default function PublicSearchResults({
   comunaTituloConRegion = null,
   /** Texto de `q` tal como en la URL (p. ej. “gasfiter”) para mensajes. */
   qDisplayLabel = "",
+  regionFocoSlug = null,
+  regionFocoNombre = null,
 }: {
   comuna: string;
   q?: string;
@@ -467,6 +469,15 @@ export default function PublicSearchResults({
   if (tituloComunaCta) paramsRecomendarVacios.set("comuna_nombre", tituloComunaCta);
   if (qLegibleTitulo) paramsRecomendarVacios.set("servicio", qLegibleTitulo);
 
+  const qParaResultadosGlobal =
+    String(meta?.q ?? q ?? "").trim() || qLegibleTitulo;
+  const paramsOtrasComunas = new URLSearchParams();
+  if (qParaResultadosGlobal) paramsOtrasComunas.set("q", qParaResultadosGlobal);
+  const regionSlugFoco = String(regionFocoSlug ?? "").trim();
+  if (regionSlugFoco) paramsOtrasComunas.set("region", regionSlugFoco);
+  const hrefOtrasComunas = `/resultados?${paramsOtrasComunas.toString()}`;
+  const regionNombreFocoLinea = String(regionFocoNombre ?? "").trim();
+
   return (
     <div className="space-y-0">
       {soloAtiendenParaQ ? (
@@ -519,15 +530,14 @@ export default function PublicSearchResults({
             q={meta?.q || q}
           />
           <div
-            className="mb-6 rounded-2xl border border-slate-200 bg-white px-4 py-5 sm:px-5"
+            className="mb-5 rounded-2xl border border-slate-200 bg-white px-4 py-5 sm:px-5"
             style={{ boxShadow: "0 1px 3px rgba(15,23,42,0.06)" }}
           >
             <h3 className="m-0 text-lg font-black text-slate-900">
               Aún no tenemos {qLegibleTitulo} en {nombreComunaLinea}
             </h3>
             <p className="mt-2 m-0 text-sm leading-relaxed text-slate-600">
-              Puedes ser el primero en aparecer o recomendarnos a alguien. Mientras tanto, puedes ver
-              otros emprendimientos disponibles en esta comuna.
+              Puedes ser el primero en aparecer o recomendarnos a alguien que ofrezca este servicio.
             </p>
             {!modoActivacionPreview && comunaSlugOk ? (
               <div className="mt-4 flex flex-wrap gap-2.5">
@@ -546,6 +556,26 @@ export default function PublicSearchResults({
               </div>
             ) : null}
           </div>
+
+          <div className="mb-6 rounded-2xl border border-sky-200/90 bg-sky-50/90 px-4 py-5 sm:px-5">
+            <h4 className="m-0 text-base font-black text-slate-900">¿Buscas {qLegibleTitulo}?</h4>
+            <p className="mt-2 m-0 text-sm leading-relaxed text-slate-700">
+              Por ahora no hay en esta comuna, pero puedes ver opciones en otras zonas cercanas.
+            </p>
+            <div className="mt-4">
+              <Link
+                href={hrefOtrasComunas}
+                className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-3.5 py-2.5 text-sm font-extrabold text-sky-950 no-underline shadow-sm hover:bg-sky-50"
+              >
+                Ver {qLegibleTitulo} en otras comunas
+              </Link>
+              {regionNombreFocoLinea ? (
+                <p className="mt-2 m-0 text-xs text-slate-600">
+                  Incluye búsqueda en {regionNombreFocoLinea}
+                </p>
+              ) : null}
+            </div>
+          </div>
           <TerritorialAccordionBlock
             variant="local"
             persistPrefix={`resultados:${comunaSlugCtx}`}
@@ -557,7 +587,7 @@ export default function PublicSearchResults({
                 {otrosEnComunaOrdenados.length})
               </>
             }
-            subtitle="Sin filtrar por tu búsqueda"
+            subtitle="Opciones en tu comuna sin filtrar por lo que buscaste"
           >
             <CategoriaEmprendedoresGrid
               items={otrosEnComunaOrdenados as BuscarApiItem[]}
