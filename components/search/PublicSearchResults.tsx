@@ -116,6 +116,7 @@ export default function PublicSearchResults({
   const [meta, setMeta] = useState<SearchMeta | null>(null);
   const [error, setError] = useState("");
   const [otrosEnComuna, setOtrosEnComuna] = useState<SearchItem[]>([]);
+  const [soloCompletos, setSoloCompletos] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -455,7 +456,6 @@ export default function PublicSearchResults({
     />
   );
 
-  const [soloCompletos, setSoloCompletos] = useState(false);
   const aplicarSoloCompletos = modoActivacionPreview ? false : soloCompletos;
 
   const otrosEnComunaFiltrados = useMemo(
