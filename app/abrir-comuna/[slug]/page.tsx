@@ -5,6 +5,7 @@ import { comunaPublicaAbierta } from "@/lib/comunaPublicaAbierta";
 import { loadAperturaComunaV2Resumen } from "@/lib/loadAperturaComunaV2Resumen";
 import { loadAbrirComunaEmprendedoresPublicados } from "@/lib/loadAbrirComunaEmprendedoresPublicados";
 import { loadComunaInteresCount } from "@/lib/loadComunaInteresCount";
+import { loadFaltantesNombresAperturaComuna } from "@/lib/loadFaltantesNombresAperturaComuna";
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 
 type PageProps = {
@@ -101,6 +102,10 @@ export default async function AbrirComunaPage({ params }: PageProps) {
     });
 
   const comunaInteresTotal = await loadComunaInteresCount(comunaSlug);
+  const faltantesServiciosNombres = await loadFaltantesNombresAperturaComuna(
+    supabase,
+    String(comunaRow.slug ?? comunaSlug)
+  );
 
   const data = {
     comuna_slug: comunaRow.slug,
@@ -112,6 +117,7 @@ export default async function AbrirComunaPage({ params }: PageProps) {
     total_requerido_apertura: totalRequeridoApertura,
     total_cumplido_apertura: totalCumplidoApertura,
     comuna_interes_total: comunaInteresTotal,
+    faltantes_servicios_nombres: faltantesServiciosNombres,
     /** Misma regla que el redirect: listado “operativo” solo cuando el directorio público está abierto. */
     directorio_publico_operativo: directorioPublicoOperativo,
   };

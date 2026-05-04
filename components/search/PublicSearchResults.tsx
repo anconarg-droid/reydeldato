@@ -409,7 +409,7 @@ export default function PublicSearchResults({
       nombreComunaDisplay={nombreComunaParaTitulos}
       gridEmptyMessage="No encontramos resultados."
       ocultarFiltroSoloCompletos={modoActivacionPreview}
-      usarCardSimple={modoActivacionPreview}
+      usarCardSimple={false}
       pocosResultadosServicioLabel={
         modoActivacionPreview && (activacionServicioLabel || "").trim()
           ? (activacionServicioLabel || "").trim()

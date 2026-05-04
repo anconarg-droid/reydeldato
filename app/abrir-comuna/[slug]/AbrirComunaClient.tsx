@@ -27,6 +27,8 @@ type AbrirComunaData = {
   total_cumplido_apertura?: number | null;
   /** Filas en `comuna_interes` para esta comuna (apoyo agregado; sin datos personales en UI). */
   comuna_interes_total?: number;
+  /** Rubros con faltantes > 0 (`vw_faltantes_comuna_v2`), para copy público. */
+  faltantes_servicios_nombres?: string[];
 };
 
 /** Títulos de acordeón alineados al lenguaje territorial del producto (solo copy; mismos grupos que antes). */
@@ -42,6 +44,14 @@ function formatPorcentajeHumano(p: number): string {
   const x = Math.max(0, Math.min(100, Number(p) || 0));
   const rounded = Math.round(x * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatearListaYSeparada(list: string[]): string {
+  const u = list.map((x) => String(x || "").trim()).filter(Boolean);
+  if (u.length === 0) return "";
+  if (u.length === 1) return u[0];
+  if (u.length === 2) return `${u[0]} y ${u[1]}`;
+  return `${u.slice(0, -1).join(", ")} y ${u[u.length - 1]}`;
 }
 
 function gridColumnsClassName(itemCount: number): string {
@@ -70,6 +80,7 @@ export default function AbrirComunaClient({
     total_requerido_apertura: null,
     total_cumplido_apertura: null,
     comuna_interes_total: 0,
+    faltantes_servicios_nombres: [],
   };
 
   const pctRaw = safeData.porcentaje_apertura;
@@ -111,6 +122,7 @@ export default function AbrirComunaClient({
 
   /** Igual que antes: solo si no aplica la meta de tipos (`!tieneMeta` en la rama original). */
   const lineaResumenPublicadosSinMeta = useMemo(() => {
+    if (publicadosTotal > 0) return null;
     if (tieneMeta && nAvance != null && meta != null) return null;
     if (!tieneMeta && cardsMostradas.length > 0) {
       const nLinea = publicadosTotal > 0 ? publicadosTotal : 0;
@@ -125,6 +137,16 @@ export default function AbrirComunaClient({
     if (!tienePorcentaje) return null;
     return `${formatPorcentajeHumano(Number(pctRaw))}% de servicios cubiertos`;
   }, [pctRaw, tienePorcentaje]);
+
+  /** Con emprendimientos ya publicados, un 0 % de rubros confunde: no mostramos esa línea ni la barra vacía. */
+  const mostrarPorcentajeYBarraTecnica =
+    tienePorcentaje && !(publicadosTotal > 0 && pctVisual <= 0);
+
+  const faltantesServicios = safeData.faltantes_servicios_nombres ?? [];
+  const lineaFaltantesServicios =
+    faltantesServicios.length === 0
+      ? null
+      : `Faltan servicios como ${formatearListaYSeparada(faltantesServicios)}.`;
 
   const hrefPublicarGlobal = `/publicar?comuna=${encodeURIComponent(safeData.comuna_slug)}`;
   const territorialPersistPrefix = `abrir-comuna:${safeData.comuna_slug}`;
@@ -231,14 +253,29 @@ export default function AbrirComunaClient({
 
               <div className="mt-6 rounded-xl border border-slate-200/60 bg-slate-50/50 px-3.5 py-3 sm:px-4 sm:py-3.5">
                 <h2 className="m-0 text-sm font-semibold text-slate-700">Avance de la comuna</h2>
-                <div className="mt-2 space-y-1">
-                  {lineaPorcentajeServiciosMinimos ? (
+                <div className="mt-2 space-y-2">
+                  {publicadosTotal > 0 ? (
+                    <>
+                      <p className="m-0 text-sm font-semibold text-slate-900 leading-snug">
+                        Ya hay {publicadosTotal.toLocaleString("es-CL")} emprendimiento
+                        {publicadosTotal === 1 ? "" : "s"} publicado
+                        {publicadosTotal === 1 ? "" : "s"} en {safeData.comuna_nombre}.
+                      </p>
+                      <p className="m-0 text-sm text-slate-700 leading-relaxed">
+                        Aún faltan servicios clave para abrir el directorio completo.
+                      </p>
+                      {lineaFaltantesServicios ? (
+                        <p className="m-0 text-sm text-slate-700 leading-relaxed">{lineaFaltantesServicios}</p>
+                      ) : null}
+                    </>
+                  ) : null}
+                  {mostrarPorcentajeYBarraTecnica && lineaPorcentajeServiciosMinimos ? (
                     <p className="m-0 text-sm font-medium text-slate-800">{lineaPorcentajeServiciosMinimos}</p>
-                  ) : (
+                  ) : publicadosTotal === 0 ? (
                     <p className="m-0 text-xs text-gray-500 leading-snug">
                       Vamos sumando servicios hasta completar los mínimos de esta comuna.
                     </p>
-                  )}
+                  ) : null}
                   {lineaTiposNecesarios ? (
                     <p className="m-0 text-sm font-medium text-slate-800">{lineaTiposNecesarios}</p>
                   ) : lineaResumenPublicadosSinMeta ? (
@@ -246,7 +283,7 @@ export default function AbrirComunaClient({
                   ) : null}
                 </div>
 
-                {tienePorcentaje ? (
+                {mostrarPorcentajeYBarraTecnica && tienePorcentaje ? (
                   <div
                     className="mt-3 h-3.5 w-full overflow-hidden rounded-full bg-slate-200/90"
                     role="progressbar"
@@ -263,7 +300,11 @@ export default function AbrirComunaClient({
                 ) : null}
 
                 <p className="m-0 mt-2.5 text-xs text-gray-500 leading-snug">
-                  El avance muestra cuántos servicios clave ya están cubiertos en esta comuna.
+                  {mostrarPorcentajeYBarraTecnica
+                    ? "El avance muestra cuántos servicios clave ya están cubiertos en esta comuna."
+                    : publicadosTotal > 0
+                      ? "El directorio completo se abre al cumplir los mínimos de servicios por rubro en esta comuna."
+                      : "El avance muestra cuántos servicios clave ya están cubiertos en esta comuna."}
                 </p>
               </div>
             </div>
