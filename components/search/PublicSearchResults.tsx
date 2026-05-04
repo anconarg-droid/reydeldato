@@ -526,21 +526,29 @@ export default function PublicSearchResults({
     const regionSlugActivacion = (regionFocoSlug ?? "").trim();
     const regionNombreActivacion = (regionFocoNombre ?? "").trim();
     const label = (activacionServicioLabel || "").trim() || "servicios";
+    /**
+     * `ResultadosClient` ya pinta el banner ámbar cuando la comuna está cerrada y no hay solo `q`
+     * textual en URL. Si lo repetimos aquí, queda duplicado (p. ej. `/teno` sin `q`).
+     */
+    const mostrarBannerCrecimientoAqui =
+      textualQSoloParametro;
     return (
       <div className="space-y-5">
-        <DirectorioEnCrecimientoActivacionBanner
-          tituloComunaDisplay={nombreComunaLinea}
-          comunaTituloConRegion={nombreComunaParaTitulos}
-          regionNombreActivacion={regionNombreActivacion || null}
-          paramsPublicar={cta.paramsPublicar}
-          paramsRecomendar={cta.paramsRecomendar}
-          comunaSlug={comuna.trim()}
-          qParaTodoChile={cta.qParaTodoChile}
-          qNormTodoChile={cta.qNormTodoChile}
-          qSnippetActivacion={cta.qSnippetActivacion}
-          regionSlugActivacion={regionSlugActivacion}
-          regionNombreActivacionParaLink={regionNombreActivacion}
-        />
+        {mostrarBannerCrecimientoAqui ? (
+          <DirectorioEnCrecimientoActivacionBanner
+            tituloComunaDisplay={nombreComunaLinea}
+            comunaTituloConRegion={nombreComunaParaTitulos}
+            regionNombreActivacion={regionNombreActivacion || null}
+            paramsPublicar={cta.paramsPublicar}
+            paramsRecomendar={cta.paramsRecomendar}
+            comunaSlug={comuna.trim()}
+            qParaTodoChile={cta.qParaTodoChile}
+            qNormTodoChile={cta.qNormTodoChile}
+            qSnippetActivacion={cta.qSnippetActivacion}
+            regionSlugActivacion={regionSlugActivacion}
+            regionNombreActivacionParaLink={regionNombreActivacion}
+          />
+        ) : null}
         <div className="mt-1 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-4 sm:px-5">
           <p className="text-sm font-semibold text-slate-900">
             Encontramos algunos {label} que ya atienden esta comuna
