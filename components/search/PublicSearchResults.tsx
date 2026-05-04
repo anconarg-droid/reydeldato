@@ -303,6 +303,29 @@ export default function PublicSearchResults({
   const qLegibleTitulo =
     (qDisplayLabel ?? "").trim() || (meta?.q ?? "").trim() || q.trim();
 
+  const aplicarSoloCompletos = modoActivacionPreview ? false : soloCompletos;
+
+  const otrosEnComunaFiltrados = useMemo(
+    () =>
+      filtrarItemsPorMejoresOpciones(
+        otrosEnComunaOrdenados as BuscarApiItem[],
+        aplicarSoloCompletos
+      ),
+    [otrosEnComunaOrdenados, aplicarSoloCompletos]
+  );
+  const atiendenFiltrados = useMemo(
+    () =>
+      filtrarItemsPorMejoresOpciones(
+        atiendenParaBloque as BuscarApiItem[],
+        aplicarSoloCompletos
+      ),
+    [atiendenParaBloque, aplicarSoloCompletos]
+  );
+  const ningunoFiltradoPeroHayRaw =
+    aplicarSoloCompletos &&
+    (otrosEnComunaOrdenados.length + atiendenParaBloque.length) > 0 &&
+    (otrosEnComunaFiltrados.length + atiendenFiltrados.length) === 0;
+
   if (items.length === 0 && !hasQuery) {
     if (modoActivacionPreview) {
       return null;
@@ -455,21 +478,6 @@ export default function PublicSearchResults({
       }}
     />
   );
-
-  const aplicarSoloCompletos = modoActivacionPreview ? false : soloCompletos;
-
-  const otrosEnComunaFiltrados = useMemo(
-    () => filtrarItemsPorMejoresOpciones(otrosEnComunaOrdenados as BuscarApiItem[], aplicarSoloCompletos),
-    [otrosEnComunaOrdenados, aplicarSoloCompletos],
-  );
-  const atiendenFiltrados = useMemo(
-    () => filtrarItemsPorMejoresOpciones(atiendenParaBloque as BuscarApiItem[], aplicarSoloCompletos),
-    [atiendenParaBloque, aplicarSoloCompletos],
-  );
-  const ningunoFiltradoPeroHayRaw =
-    aplicarSoloCompletos &&
-    (otrosEnComunaOrdenados.length + atiendenParaBloque.length) > 0 &&
-    (otrosEnComunaFiltrados.length + atiendenFiltrados.length) === 0;
 
   return (
     <div className="space-y-0">
