@@ -5,7 +5,7 @@ import { normalizeText } from "@/lib/search/normalizeText";
  * `subcategoria_slug_final` permitidos. Si no hay mapeo, devuelve `null` y
  * la búsqueda sigue el camino amplio actual.
  *
- * Slugs alineados con taxonomía en migraciones/seeds (`gasfiter`, `peluqueria`, …).
+ * Slugs alineados con `subcategoria_slug_final` en BD (p. ej. `gasfiteria`, `peluqueria`, …).
  */
 const QUERY_KEY_TO_SUBS: Record<string, string[]> = {
   peluquero: ["peluqueria", "barberia"],
@@ -15,9 +15,13 @@ const QUERY_KEY_TO_SUBS: Record<string, string[]> = {
   reiki: ["terapias_alternativas"],
   tarot: ["terapias_alternativas"],
   yoga: ["yoga"],
-  gasfiter: ["gasfiter"],
-  gasfiteria: ["gasfiter"],
-  plomero: ["gasfiter"],
+  /** Slug real en BD: `subcategoria_slug_final` = `gasfiteria` (no existe `gasfiter`). */
+  gasfiter: ["gasfiteria"],
+  gasfiteria: ["gasfiteria"],
+  gasfitería: ["gasfiteria"],
+  plomero: ["gasfiteria"],
+  plomeria: ["gasfiteria"],
+  plomería: ["gasfiteria"],
   carniceria: ["carniceria"],
   carnicero: ["carniceria"],
   cecinas: ["carniceria"],
