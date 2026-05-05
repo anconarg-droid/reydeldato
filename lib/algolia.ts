@@ -43,7 +43,7 @@ function toAlgoliaRecord(emprendedor: EmprendedorIndexable) {
       emprendedor.categoria_slug ?? emprendedor.categoria_slug_final
     ),
     subcategoria_slug: s(
-      emprendedor.subcategoria_slug ?? emprendedor.subcategoria_slug_final
+      emprendedor.subcategoria_slug_final ?? emprendedor.subcategoria_slug
     ),
     sector_slug: s(emprendedor.sector_slug),
     tipo_actividad: s(emprendedor.tipo_actividad),
