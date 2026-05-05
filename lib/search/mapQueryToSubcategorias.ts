@@ -13,8 +13,6 @@ const QUERY_KEY_TO_SUBS: Record<string, string[]> = {
   peluqueria: ["peluqueria", "barberia"],
   barbero: ["barberia"],
   barberia: ["barberia"],
-  reiki: ["terapias_alternativas"],
-  tarot: ["terapias_alternativas"],
   gasfiter: ["gasfiteria"],
   gasfiteria: ["gasfiteria"],
   gasfitería: ["gasfiteria"],
