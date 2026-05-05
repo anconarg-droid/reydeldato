@@ -215,20 +215,12 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
 
   const regionSlugParaBusquedaGlobal = scopeNacional ? null : regionFocoSlug;
 
-  const verOtrasRegionesActivo =
-    slugify((params.ver_otras_regiones ?? "").trim().toLowerCase()) === "1";
-
-  /**
-   * UI: cuando el usuario activó "ver otras regiones", el resultado principal debe ser global (nacional),
-   * sin caer en estados vacíos regionales.
-   */
-  const regionSlugParaBusquedaGlobalFinal =
-    verOtrasRegionesActivo ? null : regionSlugParaBusquedaGlobal;
+  const verOtrasRegionesActivo = (params.ver_otras_regiones ?? "").trim() === "1";
 
   const globalDb =
     q && !comuna
       ? await searchEmprendedoresGlobalAlgolia(q, 24, {
-          regionSlug: regionSlugParaBusquedaGlobalFinal,
+          regionSlug: regionSlugParaBusquedaGlobal,
         })
       : null;
 

@@ -491,6 +491,8 @@ export default function ResultadosClient({
         <p className="text-slate-600 text-sm mt-1">
           {scopeNacional
             ? "Búsqueda en todo Chile (sin acotar por región). Puedes filtrar por comuna para ver opciones cercanas."
+            : verOtrasRegionesActivo
+              ? "Búsqueda ampliada: mostrando resultados en otras regiones. Puedes filtrar por comuna para ver opciones cercanas."
             : String(regionFocoSlug ?? "").trim() || String(regionFocoNombre ?? "").trim()
               ? `Mostrando resultados en ${(regionFocoNombre ?? "").trim() || "tu región"} · Filtra por comuna para ver lo más cercano a ti`
               : "Resultados en todo Chile. Puedes filtrar por comuna para ver opciones cercanas."}
@@ -533,13 +535,6 @@ export default function ResultadosClient({
                 </Link>
               </div>
             </div>
-          ) : null}
-
-          {regionalVacio && verOtrasRegionesActivo ? (
-            <p className="m-0 text-sm font-medium text-slate-700">
-              No encontramos &ldquo;{terminoParaCopy}&rdquo; en{" "}
-              {(regionFocoNombre ?? "").trim() || "tu región"}.
-            </p>
           ) : null}
 
           {db.items.length > 0 ? (
