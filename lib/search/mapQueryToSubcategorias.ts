@@ -6,6 +6,7 @@ import { normalizeText } from "@/lib/search/normalizeText";
  * la búsqueda sigue el camino amplio actual.
  *
  * Slugs alineados con `subcategoria_slug_final` en BD (p. ej. `gasfiteria`, `peluqueria`, …).
+ * `yoga` a propósito sin entrada: suele ir en keywords/tags de holísticos con otro slug final.
  */
 const QUERY_KEY_TO_SUBS: Record<string, string[]> = {
   peluquero: ["peluqueria", "barberia"],
@@ -14,8 +15,6 @@ const QUERY_KEY_TO_SUBS: Record<string, string[]> = {
   barberia: ["barberia"],
   reiki: ["terapias_alternativas"],
   tarot: ["terapias_alternativas"],
-  yoga: ["yoga"],
-  /** Slug real en BD: `subcategoria_slug_final` = `gasfiteria` (no existe `gasfiter`). */
   gasfiter: ["gasfiteria"],
   gasfiteria: ["gasfiteria"],
   gasfitería: ["gasfiteria"],

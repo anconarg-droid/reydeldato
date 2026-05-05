@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { normalizeText } from "@/lib/search/normalizeText";
+import { slugToReadableLabel } from "@/lib/search/slugToReadableLabel";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import PublicSearchResults from "@/components/search/PublicSearchResults";
 import SoloCompletosFiltroControl from "@/components/search/SoloCompletosFiltroControl";
@@ -501,7 +502,7 @@ export default function ResultadosClient({
           className="rounded-xl border border-sky-200 bg-sky-50/90 px-4 py-3 text-sm text-slate-800"
         >
           <p className="m-0 font-semibold text-slate-900">
-            Mostrando resultados para: {synonymNotice.qResolved}
+            Mostrando resultados para: {slugToReadableLabel(synonymNotice.qResolved)}
           </p>
           <p className="mt-1 m-0 text-slate-600">
             Basado en tu búsqueda: {synonymNotice.qOriginal}
