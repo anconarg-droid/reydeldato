@@ -218,10 +218,17 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
   const verOtrasRegionesActivo =
     slugify((params.ver_otras_regiones ?? "").trim().toLowerCase()) === "1";
 
+  /**
+   * UI: cuando el usuario activó "ver otras regiones", el resultado principal debe ser global (nacional),
+   * sin caer en estados vacíos regionales.
+   */
+  const regionSlugParaBusquedaGlobalFinal =
+    verOtrasRegionesActivo ? null : regionSlugParaBusquedaGlobal;
+
   const globalDb =
     q && !comuna
       ? await searchEmprendedoresGlobalAlgolia(q, 24, {
-          regionSlug: regionSlugParaBusquedaGlobal,
+          regionSlug: regionSlugParaBusquedaGlobalFinal,
         })
       : null;
 
