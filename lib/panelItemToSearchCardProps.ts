@@ -83,6 +83,12 @@ export function panelNegocioItemToSearchCardProps(
   const subSlugs = Array.isArray(item.subcategoriasSlugs)
     ? (item.subcategoriasSlugs as unknown[]).map((x) => String(x ?? "").trim())
     : undefined;
+  const subFinal =
+    String(
+      item.subcategoriaSlugFinal ??
+        (item as { subcategoria_slug_final?: unknown }).subcategoria_slug_final ??
+        "",
+    ).trim() || undefined;
 
   const comunasCov = Array.isArray(item.comunasCoberturaSlugs)
     ? (item.comunasCoberturaSlugs as unknown[])
@@ -116,6 +122,7 @@ export function panelNegocioItemToSearchCardProps(
     frase: String(item.frase_negocio ?? item.descripcionCorta ?? ""),
     descripcionLibre: String(item.descripcionLarga ?? ""),
     subcategoriasSlugs: subSlugs?.length ? subSlugs : undefined,
+    subcategoriaSlugFinal: subFinal,
     categoriaNombre: String(item.categoriaNombre ?? "").trim() || undefined,
     coberturaTipo: String(item.coberturaTipo ?? ""),
     comunasCobertura: comunasCov.length ? comunasCov : undefined,

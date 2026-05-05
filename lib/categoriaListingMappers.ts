@@ -55,10 +55,9 @@ export function vwAlgoliaRowToBuscarApiItem(
   const subNombres = Array.isArray(r.subcategorias_nombres_arr)
     ? (r.subcategorias_nombres_arr as unknown[]).map((x) => s(x)).filter(Boolean)
     : [];
-  const principal = s(r.subcategoria_slug ?? r.subcategoria_slug_final).toLowerCase();
-  const slugSet = new Set(subSlugs);
-  if (principal) slugSet.add(principal);
-  const mergedSlugs = [...slugSet];
+  const principal = s(r.subcategoria_slug_final ?? r.subcategoria_slug).toLowerCase();
+  const rest = subSlugs.filter((x) => x && x !== principal);
+  const mergedSlugs = principal ? [principal, ...rest] : subSlugs.filter(Boolean);
   const regNombre = s(r.region_nombre);
   const baseSlug = s(r.comuna_base_slug);
   const baseNombre = s(r.comuna_base_nombre);
@@ -108,6 +107,7 @@ export function vwAlgoliaRowToBuscarApiItem(
     regionesCobertura: regionesSlugs.length ? regionesSlugs : undefined,
     bloque,
     subcategoriasSlugs: mergedSlugs.length ? mergedSlugs : principal ? [principal] : [],
+    subcategoriaSlugFinal: principal || undefined,
     subcategoriasNombres: subNombres.length ? subNombres : undefined,
     categoriaNombre: s(r.categoria_nombre) || ctx.categoriaNombreFallback,
     fichaActivaPorNegocio: trialVigenteOPlanPagoActivoDesdeBusqueda(r, null),
@@ -138,10 +138,9 @@ export function emprendedorTableRowToBuscarApiItem(
   const arrSlugs = Array.isArray(r.subcategorias_slugs)
     ? (r.subcategorias_slugs as unknown[]).map((x) => s(x).toLowerCase()).filter(Boolean)
     : [];
-  const principal = s(r.subcategoria_slug_final).toLowerCase();
-  const slugSet = new Set(arrSlugs);
-  if (principal) slugSet.add(principal);
-  const mergedSlugs = [...slugSet];
+  const principal = s(r.subcategoria_slug_final ?? r.subcategoria_slug).toLowerCase();
+  const rest = arrSlugs.filter((x) => x && x !== principal);
+  const mergedSlugs = principal ? [principal, ...rest] : arrSlugs.filter(Boolean);
 
   let bloqueTb: BuscarApiItem["bloque"];
   if (!fSlug) {
@@ -175,6 +174,7 @@ export function emprendedorTableRowToBuscarApiItem(
     comunasCobertura: comunasCov.length ? comunasCov : undefined,
     bloque: bloqueTb,
     subcategoriasSlugs: mergedSlugs,
+    subcategoriaSlugFinal: principal || undefined,
     categoriaNombre: ctx.categoriaNombreFallback,
     fichaActivaPorNegocio: trialVigenteOPlanPagoActivoDesdeBusqueda(r, null),
     esFichaCompleta: ficha.esFichaCompleta,
@@ -191,9 +191,9 @@ export function categoriaApiItemToBuscarApiItem(
   comunaNombre: string
 ): BuscarApiItem {
   const slugs = arr(hit.subcategorias_slugs).map((x) => x.toLowerCase());
-  const one = s(hit.subcategoria_slug).toLowerCase();
-  const merged = new Set(slugs);
-  if (one) merged.add(one);
+  const principal = s(hit.subcategoria_slug_final ?? hit.subcategoria_slug).toLowerCase();
+  const rest = slugs.filter((x) => x && x !== principal);
+  const mergedSlugs = principal ? [principal, ...rest] : slugs.filter(Boolean);
 
   const regionesRaw = hit.regiones_cobertura_slugs_arr ?? hit.regiones_cobertura_slugs;
   const regionesSlugs = Array.isArray(regionesRaw)
@@ -244,7 +244,8 @@ export function categoriaApiItemToBuscarApiItem(
     comunasCobertura,
     regionesCobertura: regionesSlugs.length ? regionesSlugs : undefined,
     bloque: enTu ? "de_tu_comuna" : atiende ? "atienden_tu_comuna" : "atienden_tu_comuna",
-    subcategoriasSlugs: [...merged],
+    subcategoriasSlugs: mergedSlugs.length ? mergedSlugs : principal ? [principal] : [],
+    subcategoriaSlugFinal: principal || undefined,
     subcategoriasNombres: arr(hit.subcategorias_nombres),
     categoriaNombre: s(hit.categoria_nombre),
     fichaActivaPorNegocio: trialVigenteOPlanPagoActivoDesdeBusqueda(hit, null),

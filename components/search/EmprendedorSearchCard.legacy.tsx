@@ -36,6 +36,7 @@ export type EmprendedorSearchCardProps = {
   descripcionLibre: string;
   subcategoriasNombres?: string[];
   subcategoriasSlugs?: string[];
+  subcategoriaSlugFinal?: string;
   categoriaNombre?: string;
   coberturaTipo?: string;
   comunasCobertura?: string[];

@@ -29,6 +29,8 @@ export type BuscarApiItem = {
   fichaActivaPorNegocio?: boolean;
   subcategoriasSlugs?: string[];
   subcategoriasNombres?: string[];
+  /** `subcategoria_slug_final` en API pública; prioridad visual sobre el primer slug de lista. */
+  subcategoriaSlugFinal?: string;
   categoriaNombre?: string;
   comunasCobertura?: string[];
   regionesCobertura?: string[];
@@ -109,6 +111,7 @@ export function buscarApiItemToEmprendedorCardProps(
     descripcionLibre: String(item.descripcion || ""),
     subcategoriasNombres: item.subcategoriasNombres,
     subcategoriasSlugs: item.subcategoriasSlugs,
+    subcategoriaSlugFinal: String(item.subcategoriaSlugFinal ?? "").trim() || undefined,
     categoriaNombre: item.categoriaNombre,
     coberturaTipo: String(item.coberturaTipo || ""),
     comunasCobertura: Array.isArray(item.comunasCobertura)

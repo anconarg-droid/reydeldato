@@ -331,11 +331,11 @@ export async function getSimilaresFicha({
     return qq;
   };
 
-  /** Misma categoría; si hay subcategoría principal, exige que el candidato la tenga en su array. */
+  /** Misma categoría; si hay subcategoría principal, coincide exacto con `subcategoria_slug_final`. */
   const conCategoriaYSubcategoriaOpcional = (q: any) => {
     let qq = q.eq("categoria_id", catId);
     if (principalSubSlug) {
-      qq = qq.contains("subcategorias_slugs", [principalSubSlug]);
+      qq = qq.eq("subcategoria_slug_final", principalSubSlug);
     }
     return qq;
   };

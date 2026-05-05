@@ -11,6 +11,8 @@ const DESCRIPCION_CARD_MAX_CHARS = 120;
 
 export type EmprendedorSearchCardHelperItem = {
   categoriaNombre?: string;
+  /** Slug principal (`subcategoria_slug_final`); prioridad sobre el primer elemento de listas. */
+  subcategoriaSlugFinal?: string;
   subcategoriasNombres?: string[];
   subcategoriasSlugs?: string[];
   coberturaTipo?: string;
@@ -38,12 +40,38 @@ function prettySubNameFromSlug(slug: string): string {
     .join(" ");
 }
 
+function slugKey(slug: string): string {
+  return String(slug ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+/** Nombre en paralelo a `subcategoriasSlugs`, si coincide el slug; si no, cadena vacía. */
+function nombreSubdesdeSlug(
+  slug: string,
+  item: Pick<EmprendedorSearchCardHelperItem, "subcategoriasNombres" | "subcategoriasSlugs">,
+): string {
+  const target = slugKey(slug);
+  if (!target) return "";
+  const slugs = Array.isArray(item.subcategoriasSlugs) ? item.subcategoriasSlugs : [];
+  const noms = Array.isArray(item.subcategoriasNombres) ? item.subcategoriasNombres : [];
+  const idx = slugs.findIndex((s) => slugKey(s) === target);
+  if (idx >= 0 && noms[idx]) return String(noms[idx]).trim();
+  return "";
+}
+
 function primarySubcategoriaLabel(
   item: Pick<
     EmprendedorSearchCardHelperItem,
-    "subcategoriasNombres" | "subcategoriasSlugs"
+    "subcategoriaSlugFinal" | "subcategoriasNombres" | "subcategoriasSlugs"
   >,
 ): string {
+  const fin = String(item.subcategoriaSlugFinal ?? "").trim();
+  if (fin) {
+    const fromNombre = nombreSubdesdeSlug(fin, item);
+    if (fromNombre) return fromNombre;
+    return prettySubNameFromSlug(fin);
+  }
   const noms = Array.isArray(item.subcategoriasNombres)
     ? item.subcategoriasNombres
     : [];
@@ -74,7 +102,10 @@ function primeraEtiquetaTaxonomia(raw: string): string {
 export function getCategoriaCompacta(
   item: Pick<
     EmprendedorSearchCardHelperItem,
-    "categoriaNombre" | "subcategoriasNombres" | "subcategoriasSlugs"
+    | "categoriaNombre"
+    | "subcategoriaSlugFinal"
+    | "subcategoriasNombres"
+    | "subcategoriasSlugs"
   >,
 ): string {
   const cat = String(item.categoriaNombre ?? "").trim();
@@ -92,7 +123,10 @@ export function getCategoriaCompacta(
 export function getLineaTaxonomiaCard(
   item: Pick<
     EmprendedorSearchCardHelperItem,
-    "categoriaNombre" | "subcategoriasNombres" | "subcategoriasSlugs"
+    | "categoriaNombre"
+    | "subcategoriaSlugFinal"
+    | "subcategoriasNombres"
+    | "subcategoriasSlugs"
   >,
 ): string {
   const cat = String(item.categoriaNombre ?? "").trim();
@@ -107,7 +141,10 @@ export function getLineaTaxonomiaCard(
 export function getSubcategoriaDescripcionFallback(
   item: Pick<
     EmprendedorSearchCardHelperItem,
-    "categoriaNombre" | "subcategoriasNombres" | "subcategoriasSlugs"
+    | "categoriaNombre"
+    | "subcategoriaSlugFinal"
+    | "subcategoriasNombres"
+    | "subcategoriasSlugs"
   >,
 ): string {
   if (String(item.categoriaNombre ?? "").trim()) return "";

@@ -75,9 +75,9 @@ export function vwPublicRowToBuscarApiItem(row: Record<string, unknown>): Buscar
   if (!slug) return null;
 
   const subSlugs = parseStrArr(row.subcategorias_slugs).map((x) => x.toLowerCase());
-  const principal = s(row.subcategoria_slug_final).toLowerCase();
+  const principal = s(row.subcategoria_slug_final ?? row.subcategoria_slug).toLowerCase();
   const rest = subSlugs.filter((x) => x && x !== principal);
-  const mergedSlugs = principal ? [principal, ...rest] : rest;
+  const mergedSlugs = principal ? [principal, ...rest] : subSlugs.filter(Boolean);
 
   const subNombres = parseStrArr(row.subcategorias_nombres_arr);
   const baseSlug = s(row.comuna_base_slug);
@@ -114,6 +114,7 @@ export function vwPublicRowToBuscarApiItem(row: Record<string, unknown>): Buscar
     comunasCobertura: comunasCobertura.length ? comunasCobertura : undefined,
     regionesCobertura: regionesSlugs.length ? regionesSlugs : undefined,
     subcategoriasSlugs: mergedSlugs.length ? mergedSlugs : undefined,
+    subcategoriaSlugFinal: principal || undefined,
     subcategoriasNombres: subNombres.length ? subNombres : undefined,
     categoriaNombre: s(row.categoria_nombre) || undefined,
     esFichaCompleta,

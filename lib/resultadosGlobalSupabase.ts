@@ -12,6 +12,7 @@ import {
 import { normalizeText } from "@/lib/search/normalizeText";
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import { recordMatchesRegionSlug } from "@/lib/search/regionTerritoryMatch";
+import { mapQueryToSubcategorias } from "@/lib/search/mapQueryToSubcategorias";
 
 /** @deprecated Usar {@link BuscarApiItem}; se mantiene alias por imports antiguos. */
 export type GlobalDbItem = BuscarApiItem;
@@ -36,6 +37,13 @@ const GLOBAL_TEXT_ILIKE_FIELDS = [
   "descripcion_libre",
   "categoria_nombre",
   "palabras_clave",
+  "subcategoria_slug_final",
+] as const;
+
+/** Con intención mapeada: no usar descripción, palabras clave ni categoría para “matchear” texto. */
+const STRICT_INTENT_ILIKE_FIELDS = [
+  "nombre_emprendimiento",
+  "frase_negocio",
   "subcategoria_slug_final",
 ] as const;
 
@@ -73,6 +81,12 @@ function typoRelaxationCandidates(norm: string, max = 14): string[] {
   }
   out.delete(t);
   return [...out].slice(0, max);
+}
+
+function buildStrictIntentTextOrFilter(normTerm: string): string {
+  const p = `%${escapeIlikePattern(normTerm)}%`;
+  const ilike = STRICT_INTENT_ILIKE_FIELDS.map((f) => `${f}.ilike.${p}`).join(",");
+  return `${ilike},keywords_finales.cs.{${normTerm}}`;
 }
 
 function buildGlobalTextOrFilterFromPatterns(patterns: string[]): string {
@@ -131,39 +145,107 @@ export async function searchEmprendedoresGlobalText(
     ? Math.min(GLOBAL_FETCH_CAP_WITH_REGION, Math.max(limit * 50, 200))
     : limit;
 
-  const primaryOr = buildGlobalTextOrFilter(normTerm);
+  const intentSlugs = mapQueryToSubcategorias(normTerm);
 
-  let { data, error } = await supabase
-    .from("vw_emprendedores_publico")
-    .select("*")
-    .eq("estado_publicacion", "publicado")
-    .or(primaryOr)
-    .limit(fetchCap);
+  let rows: Record<string, unknown>[] = [];
 
-  if (error) {
-    return { items: [], error: error.message };
-  }
-
-  let rows = Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
-
-  if (
-    rows.length === 0 &&
-    normTerm.length >= 4 &&
-    !isResolvedQueryExactGas(inputTerm)
-  ) {
-    const alts = typoRelaxationCandidates(normTerm, 14);
-    if (alts.length) {
-      const fallbackOr = buildGlobalTextOrFilterFromPatterns(alts);
-      const res = await supabase
+  if (intentSlugs?.length) {
+    const strictOr = buildStrictIntentTextOrFilter(normTerm);
+    let res = await supabase
+      .from("vw_emprendedores_publico")
+      .select("*")
+      .eq("estado_publicacion", "publicado")
+      .in("subcategoria_slug_final", intentSlugs)
+      .or(strictOr)
+      .limit(fetchCap);
+    if (res.error) {
+      return { items: [], error: res.error.message };
+    }
+    rows = Array.isArray(res.data) ? (res.data as Record<string, unknown>[]) : [];
+    if (rows.length === 0) {
+      res = await supabase
         .from("vw_emprendedores_publico")
         .select("*")
         .eq("estado_publicacion", "publicado")
-        .or(fallbackOr)
+        .in("subcategoria_slug_final", intentSlugs)
         .limit(fetchCap);
       if (res.error) {
         return { items: [], error: res.error.message };
       }
       rows = Array.isArray(res.data) ? (res.data as Record<string, unknown>[]) : [];
+    }
+    if (
+      rows.length === 0 &&
+      normTerm.length >= 4 &&
+      !isResolvedQueryExactGas(inputTerm)
+    ) {
+      const alts = typoRelaxationCandidates(normTerm, 14);
+      for (const alt of alts) {
+        const altOr = buildStrictIntentTextOrFilter(alt);
+        const r2 = await supabase
+          .from("vw_emprendedores_publico")
+          .select("*")
+          .eq("estado_publicacion", "publicado")
+          .in("subcategoria_slug_final", intentSlugs)
+          .or(altOr)
+          .limit(fetchCap);
+        if (r2.error) {
+          return { items: [], error: r2.error.message };
+        }
+        const chunk = Array.isArray(r2.data) ? (r2.data as Record<string, unknown>[]) : [];
+        if (chunk.length) {
+          rows = chunk;
+          break;
+        }
+      }
+      if (rows.length === 0) {
+        const r3 = await supabase
+          .from("vw_emprendedores_publico")
+          .select("*")
+          .eq("estado_publicacion", "publicado")
+          .in("subcategoria_slug_final", intentSlugs)
+          .limit(fetchCap);
+        if (r3.error) {
+          return { items: [], error: r3.error.message };
+        }
+        rows = Array.isArray(r3.data) ? (r3.data as Record<string, unknown>[]) : [];
+      }
+    }
+  } else {
+    const primaryOr = buildGlobalTextOrFilter(normTerm);
+
+    let { data, error } = await supabase
+      .from("vw_emprendedores_publico")
+      .select("*")
+      .eq("estado_publicacion", "publicado")
+      .or(primaryOr)
+      .limit(fetchCap);
+
+    if (error) {
+      return { items: [], error: error.message };
+    }
+
+    rows = Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
+
+    if (
+      rows.length === 0 &&
+      normTerm.length >= 4 &&
+      !isResolvedQueryExactGas(inputTerm)
+    ) {
+      const alts = typoRelaxationCandidates(normTerm, 14);
+      if (alts.length) {
+        const fallbackOr = buildGlobalTextOrFilterFromPatterns(alts);
+        const res = await supabase
+          .from("vw_emprendedores_publico")
+          .select("*")
+          .eq("estado_publicacion", "publicado")
+          .or(fallbackOr)
+          .limit(fetchCap);
+        if (res.error) {
+          return { items: [], error: res.error.message };
+        }
+        rows = Array.isArray(res.data) ? (res.data as Record<string, unknown>[]) : [];
+      }
     }
   }
 

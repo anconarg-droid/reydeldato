@@ -150,9 +150,9 @@ export async function getSimilaresBySlug(actualSlug: string): Promise<{
       addRows(list, 1);
     }
 
-    // 2) Misma categoría + comuna (si hay menos de TARGET_MIN)
+    // 2) Misma categoría + comuna solo si Tier 1 no alcanza o no hubo sub final (no mezclar si Tier 1 ya basta).
     if (
-      collected.length < TARGET_MIN &&
+      (!hadTier1 || collected.length < TARGET_MIN) &&
       (categoriaSlug || categoriaNombre) &&
       (comunaSlug || comunaNombre)
     ) {

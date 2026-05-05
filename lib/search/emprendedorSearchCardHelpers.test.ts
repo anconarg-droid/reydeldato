@@ -48,6 +48,16 @@ describe("emprendedorSearchCardHelpers", () => {
     );
   });
 
+  it("prioriza subcategoriaSlugFinal al alinear nombre con slugs", () => {
+    const item = {
+      categoriaNombre: "Servicios",
+      subcategoriaSlugFinal: "barberia",
+      subcategoriasSlugs: ["peluqueria", "barberia"],
+      subcategoriasNombres: ["Peluquería", "Barbería"],
+    };
+    expect(getLineaTaxonomiaCard(item)).toBe("Servicios · Barbería");
+  });
+
   it("getDescripcionCardCorta usa sub como fallback si no hay categoría ni texto", () => {
     expect(
       getDescripcionCardCorta(

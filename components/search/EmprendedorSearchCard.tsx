@@ -52,6 +52,8 @@ export type EmprendedorSearchCardProps = {
   descripcionLibre: string;
   subcategoriasNombres?: string[];
   subcategoriasSlugs?: string[];
+  /** `subcategoria_slug_final`; la línea de rubro lo prioriza sobre listas. */
+  subcategoriaSlugFinal?: string;
   categoriaNombre?: string;
   coberturaTipo?: string;
   comunasCobertura?: string[];

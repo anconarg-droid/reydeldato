@@ -10,10 +10,13 @@ import { rotationSeed, SEARCH_ROTATION_WINDOW_MS } from "@/lib/search/determinis
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import { searchEmprendedoresGlobalText } from "@/lib/resultadosGlobalSupabase";
 import { recordMatchesRegionSlug } from "@/lib/search/regionTerritoryMatch";
+import { mapQueryToSubcategorias } from "@/lib/search/mapQueryToSubcategorias";
 
 export type EmprendedorGlobalAlgoliaScoreCtx = {
   comunaSlug?: string | null;
   detectedSub?: string | null;
+  /** Slugs `subcategoria_slug_final` permitidos cuando hay intención mapeada. */
+  strictSubSlugs?: string[] | null;
 };
 
 function hash(str: string): number {
@@ -38,9 +41,19 @@ export function computeScore(
 ): number {
   let score = 0;
 
-  const detected = normalizeText(ctx.detectedSub ?? "");
-  if (detected && item.subcategoriasSlugs?.some((x) => normalizeText(x) === detected)) {
-    score += 50;
+  const strict = ctx.strictSubSlugs?.filter(Boolean) ?? [];
+  if (strict.length > 0) {
+    const fin = normalizeText(String(item.subcategoriaSlugFinal ?? ""));
+    const firstSlug = normalizeText(item.subcategoriasSlugs?.[0] ?? "");
+    const principal = fin || firstSlug;
+    if (principal && strict.some((x) => normalizeText(x) === principal)) {
+      score += 50;
+    }
+  } else {
+    const detected = normalizeText(ctx.detectedSub ?? "");
+    if (detected && item.subcategoriasSlugs?.some((x) => normalizeText(x) === detected)) {
+      score += 50;
+    }
   }
 
   const comunaWanted = String(ctx.comunaSlug ?? "").trim();
@@ -213,7 +226,10 @@ function tokensSuggestCosturaTailoring(tokens: string[]): boolean {
 }
 
 function rowPrincipalPasteleriaOrPanaderia(row: Record<string, unknown>): boolean {
-  const sub = normalizeText(row.subcategoria_slug_final ?? row.subcategoria_slug);
+  const sub = normalizeText(
+    String(row.subcategoria_slug_final ?? "").trim() ||
+      String(row.subcategoria_slug ?? "").trim(),
+  );
   return PRINCIPAL_SLUG_PASTRY_OR_BREAD.has(sub);
 }
 
@@ -280,14 +296,16 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     .replace(/,/g, " ")
     .slice(0, 120);
 
-  const tokens = normalizeText(rawTerm).split(/\s+/).filter(Boolean);
+  const normQ = normalizeText(rawTerm);
+  const tokens = normQ.split(/\s+/).filter(Boolean);
   if (tokens.length === 0) {
     return { items: [], error: null };
   }
 
   const queryForAlgolia = tokens.join(" ");
 
-  const detectedSub = detectSubcategoria(tokens);
+  const strictSubSlugs = mapQueryToSubcategorias(normQ);
+  const detectedSub = strictSubSlugs?.length ? null : detectSubcategoria(tokens);
 
   const index = getAlgoliaAdminIndex(INDEX_NAME);
 
@@ -295,6 +313,13 @@ async function searchEmprendedoresGlobalAlgoliaInner(
   const hitsPerPage = regionSlug
     ? Math.min(500, Math.max(limit * 50, 200))
     : Math.min(120, Math.max(limit * 3, limit));
+
+  const intentFilters =
+    strictSubSlugs?.length === 1
+      ? `subcategoria_slug:"${strictSubSlugs[0]}"`
+      : strictSubSlugs?.length
+        ? strictSubSlugs.map((slug) => `subcategoria_slug:"${slug}"`).join(" OR ")
+        : null;
 
   const result = await index.search(queryForAlgolia, {
     hitsPerPage,
@@ -305,7 +330,11 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     removeWordsIfNoResults: "allOptional",
     ignorePlurals: true,
     typoTolerance: "min",
-    ...(detectedSub ? { filters: `subcategoria_slug:"${detectedSub}"` } : {}),
+    ...(intentFilters
+      ? { filters: intentFilters }
+      : detectedSub
+        ? { filters: `subcategoria_slug:"${detectedSub}"` }
+        : {}),
   });
 
   const rawHits = (result.hits || []) as Record<string, unknown>[];
@@ -363,9 +392,17 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     rowsFiltered = rowsFiltered.filter((r) => !rowPrincipalPasteleriaOrPanaderia(r));
   }
 
+  if (strictSubSlugs?.length) {
+    const allow = new Set(strictSubSlugs.map((x) => normalizeText(x)));
+    rowsFiltered = rowsFiltered.filter((r) =>
+      allow.has(normalizeText(String((r as Record<string, unknown>).subcategoria_slug_final ?? ""))),
+    );
+  }
+
   const scoreCtx: EmprendedorGlobalAlgoliaScoreCtx = {
     comunaSlug: String(opts?.comunaSlug ?? "").trim() || null,
     detectedSub,
+    strictSubSlugs: strictSubSlugs?.length ? strictSubSlugs : null,
   };
 
   const packed: VwRowPacked[] = [];

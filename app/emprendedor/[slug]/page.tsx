@@ -1007,6 +1007,7 @@ export default async function Page({
   const lineaTaxonomiaFichaHero = (() => {
     const tax = {
       categoriaNombre: s(item.categoria_nombre),
+      subcategoriaSlugFinal: subcategoriaSlugPrincipal || undefined,
       subcategoriasNombres: subcategorias.length ? subcategorias : undefined,
       subcategoriasSlugs: subcategoriasSlugsFinal.length
         ? subcategoriasSlugsFinal
