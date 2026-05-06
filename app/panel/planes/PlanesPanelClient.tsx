@@ -292,11 +292,75 @@ export default function PlanesPanelClient({
       )
     : false;
 
+  const estaEnTrial =
+    comercialListo &&
+    (estado === "trial_activo" ||
+      estado === "trial_por_vencer" ||
+      estado === "trial_con_plan_confirmado_programado" ||
+      estado === "trial_por_vencer_con_plan_confirmado_programado");
+
+  const inicioPlanDisplay = (() => {
+    if (!comercialListo) return "—";
+    if (planProgramado && comercial.planIniciaAt) {
+      return fechaLargaEs(comercial.planIniciaAt) ?? "—";
+    }
+    if (estaEnTrial) {
+      return fechaLargaEs(comercial.trialExpiraAt) ?? "—";
+    }
+    return "Inmediatamente";
+  })();
+
   const ctaPrincipalLabel = ctaPrincipalLabelFromEstado(
     estado,
     comercialListo,
     modoSoloContacto
   );
+
+  const ensureTransferReference = useCallback(async () => {
+    const cleanId = id.trim();
+    const tok = String(accessToken ?? "").trim();
+    if (!cleanId || tok.length < 8) return;
+    if (planProgramado) return;
+    if (metodoPago !== "transferencia") return;
+    if (transferBusy) return;
+    // Si ya hay una referencia para este plan en pending/en_revision, el API la reusa.
+    setTransferBusy(true);
+    setTransferError(null);
+    try {
+      const r = await fetch("/api/pagos/transferencia/crear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emprendedorId: cleanId,
+          planCodigo: planKeyParaApi(selectedPlan),
+          access_token: tok,
+        }),
+      });
+      const data = (await r.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!r.ok || data.ok !== true || !data.pago) {
+        // No bloquear UI por esto: se muestra error y el usuario puede reintentar cambiando método.
+        setTransferError(
+          typeof data.error === "string" && data.error ? data.error : "No pudimos preparar la transferencia."
+        );
+        return;
+      }
+      const p = data.pago as Record<string, unknown>;
+      setPagoTransfer({
+        id: String(p.id ?? ""),
+        referencia: String(p.referencia ?? ""),
+        estado: String(p.estado ?? ""),
+        monto: Number(p.monto ?? 0),
+        comprobanteUrl:
+          p.comprobanteUrl != null ? String(p.comprobanteUrl) : null,
+      });
+    } finally {
+      setTransferBusy(false);
+    }
+  }, [id, accessToken, planProgramado, metodoPago, transferBusy, selectedPlan]);
+
+  useEffect(() => {
+    void ensureTransferReference();
+  }, [ensureTransferReference]);
 
   const handleCtaPrincipal = useCallback(async () => {
     const MSG_PAGO =
@@ -320,47 +384,7 @@ export default function PlanesPanelClient({
       return;
     }
 
-    if (metodoPago === "transferencia") {
-      setTransferBusy(true);
-      try {
-        const tok = String(accessToken ?? "").trim();
-        if (tok.length < 8) {
-          setTransferError(MSG_PAGO);
-          return;
-        }
-        const r = await fetch("/api/pagos/transferencia/crear", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            emprendedorId: cleanId,
-            planCodigo: planKeyParaApi(selectedPlan),
-            access_token: tok,
-          }),
-        });
-        const data = (await r.json().catch(() => ({}))) as Record<string, unknown>;
-        if (!r.ok || data.ok !== true || !data.pago) {
-          setTransferError(
-            typeof data.error === "string" && data.error ? data.error : MSG_PAGO
-          );
-          return;
-        }
-        const p = data.pago as Record<string, unknown>;
-        setPagoTransfer({
-          id: String(p.id ?? ""),
-          referencia: String(p.referencia ?? ""),
-          estado: String(p.estado ?? ""),
-          monto: Number(p.monto ?? 0),
-          comprobanteUrl:
-            p.comprobanteUrl != null ? String(p.comprobanteUrl) : null,
-        });
-        setTransferOkMsg(
-          "Referencia generada. Realiza la transferencia y sube tu comprobante."
-        );
-      } finally {
-        setTransferBusy(false);
-      }
-      return;
-    }
+    if (metodoPago === "transferencia") return;
 
     if (modoSoloContacto) {
       setRedirigiendoPago(true);
@@ -487,7 +511,7 @@ export default function PlanesPanelClient({
         return;
       }
       if (!pagoTransfer?.id) {
-        setTransferError("Primero genera una referencia para tu transferencia.");
+        setTransferError("Primero necesitamos generar tu referencia de pago.");
         return;
       }
       setTransferBusy(true);
@@ -562,6 +586,18 @@ export default function PlanesPanelClient({
     },
     [accessToken, pagoTransfer, id]
   );
+
+  const copyToClipboard = useCallback(async (text: string) => {
+    const t = String(text ?? "").trim();
+    if (!t) return;
+    try {
+      await navigator.clipboard.writeText(t);
+      setTransferOkMsg("Copiado al portapapeles.");
+      window.setTimeout(() => setTransferOkMsg(null), 1500);
+    } catch {
+      // fallback: no bloquea
+    }
+  }, []);
 
   const tarjetasOrdenadas = ORDEN_TARJETAS_PLANES.map((k) =>
     TARJETAS.find((t) => t.key === k)!
@@ -648,6 +684,20 @@ export default function PlanesPanelClient({
           Selecciona un plan para mantener tu ficha completa activa.
         </p>
       ) : null}
+
+      <section
+        className="rounded-2xl border border-emerald-200/90 bg-emerald-50/50 p-6 sm:p-7"
+        aria-label="Beneficios"
+      >
+        <h2 className="text-lg font-black text-gray-900">
+          Qué logras con tu ficha completa
+        </h2>
+        <ul className="mt-4 list-disc pl-5 text-sm text-gray-800 space-y-2 leading-relaxed">
+          {BENEFICIOS.map((x) => (
+            <li key={x}>{x}</li>
+          ))}
+        </ul>
+      </section>
 
       <section aria-label="Planes">
         <h2 className="sr-only">Elige tu plan</h2>
@@ -742,6 +792,54 @@ export default function PlanesPanelClient({
       </section>
 
       <section
+        className={`rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm ${
+          "lg:sticky lg:top-4"
+        }`}
+        aria-label="Resumen del plan"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+              Plan elegido
+            </p>
+            <p className="mt-1 text-lg sm:text-xl font-black text-gray-900">
+              {tarjetaPorKey(selectedPlan).titulo} —{" "}
+              <span className="tabular-nums">
+                {precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])}
+              </span>
+            </p>
+            <p className="mt-2 text-sm text-slate-700">
+              <span className="font-semibold">Tu plan comenzará:</span>{" "}
+              <span className="font-extrabold tabular-nums">{inicioPlanDisplay}</span>
+            </p>
+            {estaEnTrial ? (
+              <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-emerald-900">
+                <span className="px-2 py-0.5 rounded-md bg-emerald-200/90 text-[0.7rem] font-extrabold uppercase tracking-wide text-emerald-950">
+                  No pierdes días
+                </span>
+                Puedes pagar hoy. Tu plan comienza cuando termine tu prueba gratuita.
+              </p>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCtaPrincipal}
+            disabled={redirigiendoPago || planProgramado || metodoPago !== "webpay"}
+            className="inline-flex w-full sm:w-auto min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-60"
+          >
+            {metodoPago !== "webpay"
+              ? "Pagar con Webpay"
+              : redirigiendoPago
+                ? "Redirigiendo al pago…"
+                : planProgramado
+                  ? "Plan ya programado"
+                  : "Pagar con Webpay"}
+          </button>
+        </div>
+      </section>
+
+      <section
         className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm"
         aria-label="Método de pago"
       >
@@ -779,14 +877,15 @@ export default function PlanesPanelClient({
         </div>
 
         {metodoPago === "transferencia" ? (
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 sm:p-6 space-y-4">
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-base font-black text-gray-900">
-                  Transferencia bancaria
-                </h3>
+                <h3 className="text-base font-black text-gray-900">Transferencia bancaria</h3>
                 <p className="text-sm text-slate-600">
-                  Transfiere el monto exacto y usa la referencia obligatoria.
+                  Puedes transferir desde cualquier banco. Activaremos tu plan al validar el pago.
+                </p>
+                <p className="mt-2 text-xs font-semibold text-slate-600">
+                  Validación manual. Puede tardar algunas horas.
                 </p>
               </div>
               {pagoTransfer?.estado === "en_revision" ? (
@@ -794,6 +893,34 @@ export default function PlanesPanelClient({
                   Pago en revisión
                 </span>
               ) : null}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+              <p className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
+                Monto a transferir
+              </p>
+              <div className="mt-1 flex items-end justify-between gap-3">
+                <p className="text-3xl sm:text-4xl font-black text-gray-900 tabular-nums">
+                  {pagoTransfer?.monto
+                    ? montoExactoDisplayClp(pagoTransfer.monto)
+                    : precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])}
+                </p>
+                <button
+                  type="button"
+                  className="text-xs font-extrabold rounded-lg border border-slate-200 bg-white px-3 py-2 hover:bg-slate-50"
+                  onClick={() =>
+                    void copyToClipboard(
+                      String(
+                        pagoTransfer?.monto
+                          ? pagoTransfer.monto
+                          : PRECIO_PLAN_CLP[selectedPlan]
+                      )
+                    )
+                  }
+                >
+                  Copiar monto
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -825,27 +952,54 @@ export default function PlanesPanelClient({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
-              <p className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
-                Monto exacto
-              </p>
-              <p className="text-2xl font-black text-gray-900 tabular-nums">
-                {pagoTransfer?.monto
-                  ? montoExactoDisplayClp(pagoTransfer.monto)
-                  : precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])}
-              </p>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Referencia obligatoria (sin esto no podemos validar rápido):
-              </p>
-              <p className="font-black text-gray-900 tabular-nums">
-                {pagoTransfer?.referencia ? (
-                  <code className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200">
-                    {pagoTransfer.referencia}
-                  </code>
-                ) : (
-                  <span className="text-slate-500">Genera una referencia</span>
-                )}
-              </p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
+                    Referencia obligatoria
+                  </p>
+                  <p className="mt-1 font-black text-gray-900 tabular-nums">
+                    {pagoTransfer?.referencia ? (
+                      <code className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200">
+                        {pagoTransfer.referencia}
+                      </code>
+                    ) : (
+                      <span className="text-slate-500">Preparando…</span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={!pagoTransfer?.referencia}
+                  className="text-xs font-extrabold rounded-lg border border-slate-200 bg-white px-3 py-2 hover:bg-slate-50 disabled:opacity-60"
+                  onClick={() => void copyToClipboard(String(pagoTransfer?.referencia ?? ""))}
+                >
+                  Copiar referencia
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="w-full text-xs font-extrabold rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 hover:bg-slate-100"
+                onClick={() =>
+                  void copyToClipboard(
+                    [
+                      `Banco: ${transferenciaUi.banco}`,
+                      `Cuenta: ${transferenciaUi.tipoCuenta} ${transferenciaUi.numeroCuenta}`,
+                      `RUT: ${transferenciaUi.rut}`,
+                      `Correo: ${transferenciaUi.correo}`,
+                      `Monto: ${
+                        pagoTransfer?.monto
+                          ? montoExactoDisplayClp(pagoTransfer.monto)
+                          : precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])
+                      }`,
+                      `Referencia: ${String(pagoTransfer?.referencia ?? "").trim()}`,
+                    ].join("\n")
+                  )
+                }
+              >
+                Copiar datos de transferencia
+              </button>
             </div>
 
             {transferError ? (
@@ -860,18 +1014,6 @@ export default function PlanesPanelClient({
             ) : null}
 
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-              <button
-                type="button"
-                onClick={handleCtaPrincipal}
-                disabled={transferBusy}
-                className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-gray-900 px-5 text-sm font-extrabold text-white hover:bg-gray-800 disabled:opacity-70"
-              >
-                {transferBusy
-                  ? "Generando…"
-                  : pagoTransfer?.referencia
-                    ? "Regenerar referencia"
-                    : "Generar referencia"}
-              </button>
               <label className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-white px-5 text-sm font-extrabold text-gray-900 border border-slate-200 hover:bg-slate-50 cursor-pointer">
                 Subir comprobante
                 <input
@@ -883,7 +1025,7 @@ export default function PlanesPanelClient({
                     if (f) void handleUploadComprobante(f);
                     e.currentTarget.value = "";
                   }}
-                  disabled={transferBusy}
+                  disabled={transferBusy || !pagoTransfer?.id || !pagoTransfer?.referencia}
                 />
               </label>
               {pagoTransfer?.comprobanteUrl ? (
@@ -905,45 +1047,9 @@ export default function PlanesPanelClient({
           </div>
         ) : (
           <p className="mt-4 text-sm text-slate-600">
-            Pagarás con Webpay. Serás redirigido para completar el pago.
+            Activación automática inmediata. Serás redirigido a Webpay para completar el pago.
           </p>
         )}
-      </section>
-
-      <section
-        className="rounded-2xl border border-emerald-200/90 bg-emerald-50/50 p-6 sm:p-7"
-        aria-label="Beneficios"
-      >
-        <h2 className="text-lg font-black text-gray-900">
-          Qué logras con tu ficha completa
-        </h2>
-        <ul className="mt-4 list-disc pl-5 text-sm text-gray-800 space-y-2 leading-relaxed">
-          {BENEFICIOS.map((x) => (
-            <li key={x}>{x}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section
-        className="rounded-2xl border border-amber-200/90 bg-amber-50/40 p-6 sm:p-7"
-        aria-label="Si no continúas con ficha completa"
-      >
-        <h2 className="text-lg font-black text-gray-900">
-          Si no continúas con la ficha completa
-        </h2>
-        <p className="mt-3 text-sm font-medium text-gray-800 leading-relaxed">
-          {COPY_PLAN_GRATIS_LUEGO_BASICO}
-        </p>
-        <p className="mt-2 text-xs text-gray-600 leading-relaxed">
-          En comunas con directorio en crecimiento ya hay servicios visibles; el
-          catálogo sigue ampliándose. Los vecinos pueden recomendar negocios y
-          publicar sigue siendo gratuito.
-        </p>
-        <ul className="mt-4 list-disc pl-5 text-sm text-gray-800 space-y-2 leading-relaxed">
-          {PERDIDAS.map((x) => (
-            <li key={x}>{x}</li>
-          ))}
-        </ul>
       </section>
 
       <section
@@ -958,9 +1064,6 @@ export default function PlanesPanelClient({
             {pagoIniciarError}
           </p>
         ) : null}
-        <p className="text-xs text-white/70 uppercase tracking-wide font-semibold">
-          Plan elegido: {tarjetaPorKey(selectedPlan).titulo}
-        </p>
         <button
           type="button"
           disabled={redirigiendoPago || planProgramado}
@@ -973,6 +1076,11 @@ export default function PlanesPanelClient({
               ? "Plan ya programado"
               : ctaPrincipalLabel}
         </button>
+        {estaEnTrial ? (
+          <p className="text-sm text-emerald-200 max-w-md mx-auto leading-relaxed font-semibold">
+            Puedes pagar hoy. Tu plan comenzará automáticamente cuando termine tu prueba gratuita.
+          </p>
+        ) : null}
         {planProgramado && comercialListo ? (
           <p className="text-sm text-white/90 max-w-md mx-auto leading-relaxed">
             Tu pago está confirmado. Tu período pagado comienza el{" "}
@@ -1012,6 +1120,24 @@ export default function PlanesPanelClient({
             )}
           </p>
         )}
+      </section>
+
+      <section
+        className="rounded-2xl border border-amber-200/90 bg-amber-50/40 p-6 sm:p-7"
+        aria-label="Si vuelves a ficha básica"
+      >
+        <h2 className="text-lg font-black text-gray-900">Si vuelves a ficha básica:</h2>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-amber-200 bg-white/80 p-3 text-sm font-bold text-gray-900">
+            ⚠ Solo WhatsApp visible
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-white/80 p-3 text-sm font-bold text-gray-900">
+            ⚠ Menos información
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-white/80 p-3 text-sm font-bold text-gray-900">
+            ⚠ Sin fotos ni Instagram
+          </div>
+        </div>
       </section>
     </div>
   );
