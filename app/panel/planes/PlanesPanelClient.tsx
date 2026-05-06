@@ -964,34 +964,43 @@ export default function PlanesPanelClient({
             ) : null}
           </div>
 
-          <div className="flex w-full shrink-0 flex-col items-start gap-2 md:w-auto md:justify-self-end md:items-end">
-            <button
-              type="button"
-              onClick={handleCtaPrincipal}
-              disabled={redirigiendoPago || planProgramado}
-              className="inline-flex h-14 w-full items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 transition-all duration-200 hover:translate-y-[-1px] hover:bg-gray-800 hover:shadow-xl disabled:opacity-60 md:w-[320px]"
-            >
-              {redirigiendoPago
-                ? "Redirigiendo al pago…"
-                : planProgramado
-                  ? "Plan ya programado"
-                  : "Activar ficha completa"}
-            </button>
-            <p className="text-xs text-slate-500">Pago seguro con Webpay</p>
-            {!planProgramado ? (
+          <div className="flex w-full shrink-0 flex-col gap-4 md:w-auto md:justify-self-end md:items-end">
+            <div className="flex w-full flex-col gap-2 md:w-auto md:items-end">
               <button
                 type="button"
-                aria-expanded={transferenciaExpanded}
-                onClick={() => {
-                  setTransferenciaExpanded((o) => !o);
-                  setTransferError(null);
-                }}
-                className="mt-1 w-full text-left text-sm text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline md:text-right"
+                onClick={handleCtaPrincipal}
+                disabled={redirigiendoPago || planProgramado}
+                className="inline-flex h-14 w-full items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 transition-all duration-200 hover:translate-y-[-1px] hover:bg-gray-800 hover:shadow-xl disabled:opacity-60 md:w-[320px]"
               >
-                {transferenciaExpanded
-                  ? "Ocultar datos de transferencia"
-                  : "¿Prefieres transferencia?"}
+                {redirigiendoPago
+                  ? "Redirigiendo al pago…"
+                  : planProgramado
+                    ? "Plan ya programado"
+                    : "Activar ficha completa"}
               </button>
+              <p className="w-full text-center text-xs text-slate-500 md:w-[320px] md:text-right">
+                Pago seguro con Webpay
+              </p>
+            </div>
+            {!planProgramado ? (
+              <div className="flex w-full flex-col gap-2 md:w-auto md:items-end">
+                <button
+                  type="button"
+                  aria-expanded={transferenciaExpanded}
+                  onClick={() => {
+                    setTransferenciaExpanded((o) => !o);
+                    setTransferError(null);
+                  }}
+                  className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-base font-semibold text-slate-800 transition-all duration-200 hover:bg-slate-50 md:w-[320px]"
+                >
+                  {transferenciaExpanded
+                    ? "Ocultar datos de transferencia"
+                    : "Pagar por transferencia"}
+                </button>
+                <p className="w-full text-center text-xs text-slate-600 md:w-[320px] md:text-right">
+                  Validación manual. Puede tardar algunas horas.
+                </p>
+              </div>
             ) : null}
             <input
               ref={transferFileRef}
@@ -1010,11 +1019,8 @@ export default function PlanesPanelClient({
           <div className="mt-4 border-t border-slate-100 pt-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm">
               <p className="text-xs text-slate-600">
-                El botón superior paga con <span className="font-semibold">Webpay</span> y la
-                activación es automática.
-              </p>
-              <p className="mt-2 text-xs text-slate-500">
-                La activación por transferencia puede tardar algunas horas.
+                <span className="font-semibold">Webpay</span> activa al instante. La transferencia{" "}
+                queda pendiente hasta que revisemos tu comprobante.
               </p>
               <p className="mt-4 font-bold text-gray-900">Transferencia bancaria</p>
               <dl className="mt-2 space-y-1.5 text-slate-700">
