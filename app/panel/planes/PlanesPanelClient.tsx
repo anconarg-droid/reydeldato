@@ -183,6 +183,7 @@ export default function PlanesPanelClient({
   const [nombre, setNombre] = useState("");
   const [comunaSlug, setComunaSlug] = useState("");
   const [fotoPrincipalUrl, setFotoPrincipalUrl] = useState("");
+  const [galeriaPrimeraUrl, setGaleriaPrimeraUrl] = useState("");
   const [comercial, setComercial] = useState<PanelComercialPayload | null>(
     null
   );
@@ -237,11 +238,23 @@ export default function PlanesPanelClient({
                 ""
             ).trim()
           );
+          const galRaw =
+            it.galeriaUrls ??
+            it.galeria_urls ??
+            it.galeria ??
+            it.imagenes ??
+            it.fotos ??
+            [];
+          const gal = Array.isArray(galRaw)
+            ? galRaw.map((x) => String(x ?? "").trim()).filter(Boolean)
+            : [];
+          setGaleriaPrimeraUrl(gal[0] ?? "");
           setComercial(res.comercial as PanelComercialPayload);
         } else {
           setNombre("");
           setComunaSlug("");
           setFotoPrincipalUrl("");
+          setGaleriaPrimeraUrl("");
           setComercial(null);
         }
       })
@@ -249,6 +262,7 @@ export default function PlanesPanelClient({
         setNombre("");
         setComunaSlug("");
         setFotoPrincipalUrl("");
+        setGaleriaPrimeraUrl("");
         setComercial(null);
       })
       .finally(() => setLoading(false));
@@ -866,11 +880,11 @@ export default function PlanesPanelClient({
             </div>
 
             <div className="mt-4 max-w-[420px] mx-auto">
-              <div className="shadow-[0_14px_34px_rgba(16,185,129,0.16)] rounded-2xl">
+              <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(16,185,129,0.18)] shadow-[0_14px_34px_rgba(16,185,129,0.16)]">
                 <EmprendedorSearchCard
                   slug="demo"
                   nombre={nombre || "Tu negocio"}
-                  fotoPrincipalUrl={fotoPrincipalUrl || "/favicon.ico"}
+                  fotoPrincipalUrl={fotoPrincipalUrl || galeriaPrimeraUrl || ""}
                   whatsappPrincipal="+56900000000"
                   estadoPublicacion="publicado"
                   esFichaCompleta
@@ -908,39 +922,30 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className={`rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm ${
+        className={`rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm ${
           "lg:sticky lg:top-4"
         }`}
         aria-label="Resumen del plan"
       >
-        <div className="space-y-4">
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-              Plan elegido
-            </p>
-            <p className="mt-1 text-lg sm:text-xl font-black text-gray-900">
-              {tarjetaPorKey(selectedPlan).titulo} —{" "}
-              <span className="tabular-nums">
-                {precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])}
-              </span>
-            </p>
-            <p className="mt-2 text-sm text-slate-700">
-              <span className="font-semibold">Tu plan comenzará:</span>{" "}
-              <span className="font-extrabold tabular-nums">{inicioPlanDisplay}</span>
-            </p>
-            {estaEnTrial ? (
-              <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-emerald-900">
-                <span className="px-2 py-0.5 rounded-md bg-emerald-200/90 text-[0.7rem] font-extrabold uppercase tracking-wide text-emerald-950">
-                  ✅ No pierdes días
-                </span>
-                No pierdes días de prueba.
-              </p>
-            ) : null}
-          </div>
-
-          <p className="text-sm text-slate-600">
-            Elige tu método de pago abajo y activa tu ficha completa.
+        <div className="space-y-1.5">
+          <p className="text-base sm:text-lg font-black text-gray-900">
+            Plan {tarjetaPorKey(selectedPlan).titulo.toLowerCase()} —{" "}
+            <span className="tabular-nums">
+              {precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])}
+            </span>
           </p>
+          <p className="text-sm font-semibold text-slate-700">
+            Comienza:{" "}
+            <span className="font-extrabold tabular-nums">{inicioPlanDisplay}</span>
+          </p>
+          {estaEnTrial ? (
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-900">
+              <span className="px-2 py-0.5 rounded-md bg-emerald-200/90 text-[0.7rem] font-extrabold uppercase tracking-wide text-emerald-950">
+                ✅ No pierdes días
+              </span>
+              No pierdes días de prueba.
+            </p>
+          ) : null}
         </div>
         {metodoPago === "transferencia" && !pagoTransfer?.referencia ? (
           <p className="mt-3 text-xs text-slate-600">
@@ -960,7 +965,7 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"
+        className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm"
         aria-label="Método de pago"
       >
         <h2 className="text-sm font-extrabold tracking-tight text-gray-900">
@@ -1139,7 +1144,7 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm text-center"
+        className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm text-center"
         aria-label="Activar ficha completa"
       >
         <h2 className="text-lg font-black text-gray-900">Activar ficha completa</h2>
@@ -1149,7 +1154,7 @@ export default function PlanesPanelClient({
             : "Puedes pagar hoy y tu plan comenzará inmediatamente."}
         </p>
 
-        <div className="mt-5">
+        <div className="mt-4">
           <button
             type="button"
             onClick={
@@ -1162,7 +1167,7 @@ export default function PlanesPanelClient({
                 ? redirigiendoPago || planProgramado
                 : transferBusy || !pagoTransfer?.id || !pagoTransfer?.referencia
             }
-            className="inline-flex w-full max-w-md mx-auto min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-60"
+            className="inline-flex w-full max-w-md mx-auto min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors transition-shadow duration-200 hover:shadow-xl disabled:opacity-60"
           >
             {metodoPago === "webpay"
               ? redirigiendoPago
@@ -1187,9 +1192,6 @@ export default function PlanesPanelClient({
             {metodoPago === "webpay"
               ? "Pago seguro con Webpay."
               : "Tu plan se activará al validar la transferencia."}
-          </p>
-          <p className="mt-2 text-xs font-semibold text-slate-600">
-            Tu ficha seguirá activa, pero perderás visibilidad y funciones si vuelves al perfil básico.
           </p>
         </div>
       </section>
