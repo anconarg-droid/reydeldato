@@ -54,6 +54,13 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    const urlLc = comprobanteUrl.toLowerCase();
+    if (!urlLc.startsWith("http://") && !urlLc.startsWith("https://")) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_comprobante_url" },
+        { status: 400 }
+      );
+    }
 
     const { data: row, error: loadErr } = await supabase
       .from("pagos")

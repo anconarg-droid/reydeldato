@@ -81,6 +81,9 @@ export async function POST(req: NextRequest) {
 
     const planCodigo = planRaw as PlanCodigoPago;
     const monto = montoClpPorPlanCodigo(planCodigo);
+    if (!Number.isFinite(monto) || monto <= 0) {
+      return NextResponse.json({ ok: false, error: "invalid_monto" }, { status: 400 });
+    }
 
     // Reusar pago pendiente/en_revision si ya existe para ese plan.
     const { data: existing } = await supabase
@@ -103,11 +106,15 @@ export async function POST(req: NextRequest) {
         monto: number;
         comprobante_url?: string | null;
       };
+      const transferenciaId = s(row.id);
+      const referenciaResp = s(row.referencia_pago);
       return NextResponse.json({
         ok: true,
+        transferenciaId,
+        referencia: referenciaResp,
         pago: {
-          id: s(row.id),
-          referencia: s(row.referencia_pago),
+          id: transferenciaId,
+          referencia: referenciaResp,
           estado: s(row.estado),
           monto: Number(row.monto),
           comprobanteUrl: s(row.comprobante_url ?? "") || null,
@@ -140,11 +147,15 @@ export async function POST(req: NextRequest) {
           estado: string;
           monto: number;
         };
+        const transferenciaId = s(r.id);
+        const referenciaResp = s(r.referencia_pago);
         return NextResponse.json({
           ok: true,
+          transferenciaId,
+          referencia: referenciaResp,
           pago: {
-            id: s(r.id),
-            referencia: s(r.referencia_pago),
+            id: transferenciaId,
+            referencia: referenciaResp,
             estado: s(r.estado),
             monto: Number(r.monto),
             comprobanteUrl: null,
