@@ -927,13 +927,13 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className={`max-w-4xl mx-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm ${
+        className={`max-w-4xl mx-auto w-full rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm ${
           "lg:sticky lg:top-4"
         }`}
         aria-label="Resumen del plan"
       >
-        <div className="flex flex-col gap-6 py-5 md:flex-row md:items-center md:justify-between md:py-6">
-          <div className="min-w-0 flex-1 max-w-xl space-y-3">
+        <div className="grid w-full gap-6 py-5 md:grid-cols-[1fr_auto] md:items-center md:gap-8 md:py-6">
+          <div className="space-y-3 md:max-w-xl md:min-w-[280px]">
             <p className="text-base sm:text-lg font-black text-gray-900">
               Plan {tarjetaPorKey(selectedPlan).titulo.toLowerCase()} —{" "}
               <span className="tabular-nums">
@@ -954,7 +954,7 @@ export default function PlanesPanelClient({
             ) : null}
           </div>
 
-          <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
+          <div className="flex w-full shrink-0 flex-col items-start gap-2 md:w-auto md:justify-self-end md:items-end">
             <button
               type="button"
               onClick={handleCtaPrincipal}
