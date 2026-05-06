@@ -817,20 +817,22 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm"
+        className="-mt-2 sm:-mt-3 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/70 p-7 sm:p-8 shadow-md"
         aria-label="Así te verán las personas"
       >
-        <h2 className="text-lg font-black text-gray-900">Así te verán las personas</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+          Así te verán las personas
+        </h2>
+        <p className="mt-2 text-sm sm:text-base text-slate-700">
           Los perfiles completos generan más confianza y más contactos.
         </p>
 
-        <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-          <div className="rounded-2xl border border-slate-300 bg-slate-100/80 p-5 relative overflow-hidden opacity-80 saturate-50 contrast-75">
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+          <div className="rounded-2xl border border-slate-300 bg-slate-200/60 p-5 relative overflow-hidden opacity-75 saturate-50 contrast-[0.7]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-base font-black text-gray-900">Perfil básico</p>
-                <p className="text-xs font-semibold text-slate-600">Solo WhatsApp</p>
+                <p className="text-base font-black text-slate-800">Perfil básico</p>
+                <p className="text-xs font-semibold text-slate-600/90">Solo WhatsApp</p>
               </div>
               <span className="text-[0.7rem] font-extrabold tracking-wide text-slate-700 bg-slate-200 px-2.5 py-1 rounded-md border border-slate-300/70 shadow-sm">
                 👁 Menos visible
@@ -838,7 +840,7 @@ export default function PlanesPanelClient({
             </div>
 
             <div className="mt-4 max-w-[420px] mx-auto">
-              <div className="opacity-85 [&_img]:blur-[1.5px] [&_img]:saturate-50 [&_img]:contrast-75 [&_a]:bg-none [&_a]:bg-slate-200 [&_a]:text-slate-700 [&_a]:shadow-none [&_a]:from-transparent [&_a]:to-transparent">
+              <div className="opacity-80 [&_img]:blur-[1.5px] [&_img]:saturate-50 [&_img]:contrast-75 [&_a]:bg-none [&_a]:bg-slate-300/60 [&_a]:text-slate-700 [&_a]:shadow-none [&_a]:from-transparent [&_a]:to-transparent">
                 <EmprendedorSearchCard
                   slug="demo"
                   nombre={nombre || "Tu negocio"}
@@ -866,7 +868,7 @@ export default function PlanesPanelClient({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5 relative overflow-hidden">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 relative overflow-hidden shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-black text-gray-900">Perfil completo</p>
@@ -880,7 +882,7 @@ export default function PlanesPanelClient({
             </div>
 
             <div className="mt-4 max-w-[420px] mx-auto">
-              <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(16,185,129,0.18)] shadow-[0_14px_34px_rgba(16,185,129,0.16)]">
+              <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_54px_rgba(16,185,129,0.20)] shadow-[0_16px_40px_rgba(16,185,129,0.18)]">
                 <EmprendedorSearchCard
                   slug="demo"
                   nombre={nombre || "Tu negocio"}
