@@ -610,6 +610,11 @@ function BloqueEstadoPlan({
   const planUi = buildPlanUi(comercial);
   const esAccesoInicial = planUi.titulo === PLAN_UI_TITULO_ACCESO_INICIAL;
 
+  /** Bloque trial: “Plan actual: Trial de … días” (ver {@link buildPlanUi}). */
+  const esTrialEnPlanUi =
+    comercial?.estado === "trial_activo" ||
+    comercial?.estado === "trial_por_vencer";
+
   const verPlanesBtn = planesUiVisible ? (
     <Link
       href={planesHref}
@@ -617,6 +622,16 @@ function BloqueEstadoPlan({
       className="inline-flex shrink-0 min-h-[44px] items-center justify-center rounded-xl px-4 text-sm font-bold bg-gray-900 text-white hover:bg-gray-800"
     >
       Ver planes
+    </Link>
+  ) : null;
+
+  const activarFichaCompletaBtn = planesUiVisible ? (
+    <Link
+      href={planesHref}
+      prefetch={false}
+      className="inline-flex w-full sm:w-auto shrink-0 min-h-[44px] items-center justify-center rounded-xl px-4 text-sm font-bold bg-emerald-700 text-white hover:bg-emerald-800 shadow-sm order-last sm:order-none"
+    >
+      Activar ficha completa
     </Link>
   ) : null;
 
@@ -666,7 +681,7 @@ function BloqueEstadoPlan({
       aria-label="Estado del plan"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1 text-sm text-gray-800 min-w-0">
+        <div className="flex-1 min-w-0 space-y-1 text-sm text-gray-800 order-first">
           <h2 className="text-base font-black text-gray-900 leading-snug">
             {planUi.titulo}
           </h2>
@@ -702,7 +717,7 @@ function BloqueEstadoPlan({
             </>
           )}
         </div>
-        {verPlanesBtn}
+        {esTrialEnPlanUi ? activarFichaCompletaBtn : verPlanesBtn}
       </div>
     </section>
   );
