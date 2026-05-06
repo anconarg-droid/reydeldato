@@ -822,7 +822,7 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="-mt-2 sm:-mt-3 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/70 p-7 sm:p-8 shadow-md"
+        className="-mt-2 sm:-mt-3 max-w-5xl mx-auto rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/70 p-7 sm:p-8 shadow-md"
         aria-label="Así te verán las personas"
       >
         <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
@@ -833,7 +833,7 @@ export default function PlanesPanelClient({
         </p>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-          <div className="rounded-2xl border border-slate-300 bg-slate-200/60 p-4 sm:p-5 relative overflow-hidden opacity-70 saturate-50 contrast-[0.7]">
+          <div className="rounded-2xl border border-slate-300 bg-slate-200/70 p-4 sm:p-5 relative overflow-hidden opacity-60">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-black text-slate-800">Perfil básico</p>
@@ -846,7 +846,7 @@ export default function PlanesPanelClient({
             </div>
 
             <div className="mt-3 max-w-[380px] mx-auto">
-              <div className="opacity-80 [&_img]:blur-[1.5px] [&_img]:saturate-50 [&_img]:contrast-75 [&_a]:bg-none [&_a]:bg-slate-300/60 [&_a]:text-slate-700 [&_a]:shadow-none [&_a]:from-transparent [&_a]:to-transparent">
+              <div className="opacity-70 saturate-0 [&_img]:blur-[1.25px] [&_a]:bg-none [&_a]:bg-slate-300/60 [&_a]:text-slate-700 [&_a]:shadow-none [&_a]:from-transparent [&_a]:to-transparent">
                 <EmprendedorSearchCard
                   slug="demo"
                   nombre={nombre || "Tu negocio"}
@@ -885,7 +885,7 @@ export default function PlanesPanelClient({
             </div>
 
             <div className="mt-4 max-w-[420px] mx-auto">
-              <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_54px_rgba(16,185,129,0.20)] shadow-[0_0_0_1px_rgba(16,185,129,0.12),0_12px_30px_rgba(16,185,129,0.10)]">
+              <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_54px_rgba(16,185,129,0.20)] shadow-[0_10px_30px_rgba(16,185,129,0.12)]">
                 <EmprendedorSearchCard
                   slug="demo"
                   nombre={nombre || "Tu negocio"}
@@ -932,7 +932,7 @@ export default function PlanesPanelClient({
         }`}
         aria-label="Resumen del plan"
       >
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center py-5 md:py-6">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-center py-5">
           <div className="space-y-2">
             <p className="text-base sm:text-lg font-black text-gray-900">
               Plan {tarjetaPorKey(selectedPlan).titulo.toLowerCase()} —{" "}
@@ -949,9 +949,7 @@ export default function PlanesPanelClient({
                 <span className="px-2 py-0.5 rounded-md bg-emerald-200/90 text-[0.7rem] font-extrabold uppercase tracking-wide text-emerald-950">
                   ✅ No pierdes días
                 </span>
-                <span className="text-sm text-slate-600 font-semibold">
-                  Puedes pagar hoy sin perder días de tu prueba.
-                </span>
+                <span className="text-sm text-slate-600 font-semibold">No pierdes días de prueba.</span>
               </div>
             ) : null}
           </div>
@@ -959,41 +957,18 @@ export default function PlanesPanelClient({
           <div className="w-full md:w-auto">
             <button
               type="button"
-              onClick={
-                metodoPago === "webpay"
-                  ? handleCtaPrincipal
-                  : () => transferFileRef.current?.click()
-              }
-              disabled={
-                metodoPago === "webpay"
-                  ? redirigiendoPago || planProgramado
-                  : transferBusy || !pagoTransfer?.id || !pagoTransfer?.referencia
-              }
+              onClick={handleCtaPrincipal}
+              disabled={redirigiendoPago || planProgramado}
               className="inline-flex h-14 w-full md:w-auto md:max-w-[360px] items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 hover:bg-gray-800 transition-all duration-200 hover:scale-[1.01] disabled:opacity-60"
             >
-              {metodoPago === "webpay"
-                ? redirigiendoPago
-                  ? "Redirigiendo al pago…"
-                  : planProgramado
-                    ? "Plan ya programado"
-                    : "Pagar con Webpay"
-                : "Subir comprobante"}
+              {redirigiendoPago
+                ? "Redirigiendo al pago…"
+                : planProgramado
+                  ? "Plan ya programado"
+                  : "Activar ficha completa"}
             </button>
-            <input
-              ref={transferFileRef}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void handleUploadComprobante(f);
-                e.currentTarget.value = "";
-              }}
-            />
             <p className="mt-1.5 text-[11px] font-semibold text-slate-600 md:text-right">
-              {metodoPago === "webpay"
-                ? "Pago seguro con Webpay."
-                : "Tu plan se activará al validar la transferencia."}
+              Pago seguro con Webpay
             </p>
           </div>
         </div>
@@ -1015,173 +990,11 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm"
-        aria-label="Método de pago"
-      >
-        <h2 className="text-sm font-extrabold tracking-tight text-gray-900">
-          Método de pago
-        </h2>
-        <div className="mt-3 space-y-2">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="radio"
-              name="metodoPagoInline"
-              checked={metodoPago === "webpay"}
-              onChange={() => setMetodoPago("webpay")}
-            />
-            <span className="text-sm font-extrabold text-gray-900">Webpay</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="radio"
-              name="metodoPagoInline"
-              checked={metodoPago === "transferencia"}
-              onChange={() => setMetodoPago("transferencia")}
-            />
-            <span className="text-sm font-extrabold text-gray-900">Transferencia</span>
-          </label>
-        </div>
-
-        {metodoPago === "transferencia" ? (
-          <div className="mt-4 space-y-4">
-            <p className="text-sm text-slate-600">
-              Puedes transferir desde cualquier banco. Activamos tu plan al validar tu pago.
-            </p>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-              <p className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
-                Monto a transferir
-              </p>
-              <div className="mt-1 flex items-end justify-between gap-3">
-                <p className="text-3xl sm:text-4xl font-black text-gray-900 tabular-nums">
-                  {pagoTransfer?.monto
-                    ? montoExactoDisplayClp(pagoTransfer.monto)
-                    : precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])}
-                </p>
-                <button
-                  type="button"
-                  className="text-xs font-extrabold rounded-lg border border-slate-200 bg-white px-3 py-2 hover:bg-slate-50"
-                  onClick={() =>
-                    void copyToClipboard(
-                      String(
-                        pagoTransfer?.monto
-                          ? pagoTransfer.monto
-                          : PRECIO_PLAN_CLP[selectedPlan]
-                      )
-                    )
-                  }
-                >
-                  Copiar monto
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div className="rounded-xl border border-slate-200 bg-white p-3">
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                  Banco
-                </p>
-                <p className="font-bold text-gray-900">{transferenciaUi.banco}</p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-3">
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                  Tipo / Nº cuenta
-                </p>
-                <p className="font-bold text-gray-900">
-                  {transferenciaUi.tipoCuenta} · {transferenciaUi.numeroCuenta}
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-3">
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                  RUT
-                </p>
-                <p className="font-bold text-gray-900">{transferenciaUi.rut}</p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-3">
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                  Correo
-                </p>
-                <p className="font-bold text-gray-900">{transferenciaUi.correo}</p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
-                    Referencia obligatoria
-                  </p>
-                  <p className="mt-1 font-black text-gray-900 tabular-nums">
-                    {pagoTransfer?.referencia ? (
-                      <code className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200">
-                        {pagoTransfer.referencia}
-                      </code>
-                    ) : (
-                      <span className="text-slate-500">Preparando…</span>
-                    )}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  disabled={!pagoTransfer?.referencia}
-                  className="text-xs font-extrabold rounded-lg border border-slate-200 bg-white px-3 py-2 hover:bg-slate-50 disabled:opacity-60"
-                  onClick={() => void copyToClipboard(String(pagoTransfer?.referencia ?? ""))}
-                >
-                  Copiar referencia
-                </button>
-              </div>
-
-              <button
-                type="button"
-                className="w-full text-xs font-extrabold rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 hover:bg-slate-100"
-                onClick={() =>
-                  void copyToClipboard(
-                    [
-                      `Banco: ${transferenciaUi.banco}`,
-                      `Cuenta: ${transferenciaUi.tipoCuenta} ${transferenciaUi.numeroCuenta}`,
-                      `RUT: ${transferenciaUi.rut}`,
-                      `Correo: ${transferenciaUi.correo}`,
-                      `Monto: ${
-                        pagoTransfer?.monto
-                          ? montoExactoDisplayClp(pagoTransfer.monto)
-                          : precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])
-                      }`,
-                      `Referencia: ${String(pagoTransfer?.referencia ?? "").trim()}`,
-                    ].join("\n")
-                  )
-                }
-              >
-                Copiar datos de transferencia
-              </button>
-            </div>
-            {pagoTransfer?.comprobanteUrl ? (
-              <a
-                className="text-sm font-bold text-sky-700 hover:underline"
-                href={pagoTransfer.comprobanteUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Ver comprobante enviado
-              </a>
-            ) : (
-              <p className="text-sm text-slate-600">
-                Cuando transfieras, sube tu comprobante desde el botón final.
-              </p>
-            )}
-          </div>
-        ) : (
-          <p className="mt-4 text-sm text-slate-600">
-            Pago seguro con Webpay. Activación automática.
-          </p>
-        )}
-      </section>
-
-      <section
         className="rounded-2xl border border-slate-200 bg-stone-50/70 p-4 sm:p-5"
         aria-label="Tu perfil perderá"
       >
         <h2 className="text-lg font-black text-gray-900">Tu perfil perderá:</h2>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-medium text-slate-800">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm font-medium text-slate-800">
           {PERDIDAS.map((t) => (
             <p key={t} className="flex items-start gap-2 m-0 leading-snug">
               <span className="mt-0.5 text-slate-500 text-xs" aria-hidden>
