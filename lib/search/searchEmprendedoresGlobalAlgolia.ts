@@ -15,8 +15,10 @@ import { mapQueryToSubcategorias } from "@/lib/search/mapQueryToSubcategorias";
 export type EmprendedorGlobalAlgoliaScoreCtx = {
   comunaSlug?: string | null;
   detectedSub?: string | null;
-  /** Slugs `subcategoria_slug_final` permitidos cuando hay intención mapeada. */
-  strictSubSlugs?: string[] | null;
+  /** Slugs `subcategoria_slug_final` sugeridos cuando hay intención mapeada (boost, no filtro). */
+  intentSubSlugs?: string[] | null;
+  /** IntentScore precalculado por slug (derivado de señales Algolia + reglas). */
+  intentScoreBySlug?: Map<string, number> | null;
 };
 
 function hash(str: string): number {
@@ -41,12 +43,12 @@ export function computeScore(
 ): number {
   let score = 0;
 
-  const strict = ctx.strictSubSlugs?.filter(Boolean) ?? [];
-  if (strict.length > 0) {
+  const intents = ctx.intentSubSlugs?.filter(Boolean) ?? [];
+  if (intents.length > 0) {
     const fin = normalizeText(String(item.subcategoriaSlugFinal ?? ""));
     const firstSlug = normalizeText(item.subcategoriasSlugs?.[0] ?? "");
     const principal = fin || firstSlug;
-    if (principal && strict.some((x) => normalizeText(x) === principal)) {
+    if (principal && intents.some((x) => normalizeText(x) === principal)) {
       score += 50;
     }
   } else {
@@ -101,15 +103,26 @@ function stableShuffleKeyed<T>(items: T[], seed: number, keyFn: (item: T) => str
 /** Fila vista + ítem público ya mapeado (evita doble trabajo en score vs fotos). */
 type VwRowPacked = { row: Record<string, unknown>; item: BuscarApiItem };
 
-/** Orden: score descendente → bloques comuna → con foto primero dentro de cada bloque → shuffle estable. */
+function getIntentScoreForPacked(p: VwRowPacked, ctx: EmprendedorGlobalAlgoliaScoreCtx): number {
+  const m = ctx.intentScoreBySlug;
+  if (!m) return 0;
+  const slug = String(p.item.slug ?? "").trim();
+  if (!slug) return 0;
+  return m.get(slug) ?? 0;
+}
+
+/** Orden: intentScore desc → score desc → bloques comuna → con foto primero dentro de cada bloque → shuffle estable. */
 function orderPackedGlobalAlgolia(
   packed: VwRowPacked[],
   ctx: EmprendedorGlobalAlgoliaScoreCtx,
   seed: number
 ): VwRowPacked[] {
-  const sorted = [...packed].sort(
-    (a, b) => computeScore(b.item, ctx) - computeScore(a.item, ctx),
-  );
+  const sorted = [...packed].sort((a, b) => {
+    const ib = getIntentScoreForPacked(b, ctx);
+    const ia = getIntentScoreForPacked(a, ctx);
+    if (ib !== ia) return ib - ia;
+    return computeScore(b.item, ctx) - computeScore(a.item, ctx);
+  });
 
   const splitByFoto = (ps: VwRowPacked[]) => {
     const con: VwRowPacked[] = [];
@@ -304,8 +317,8 @@ async function searchEmprendedoresGlobalAlgoliaInner(
 
   const queryForAlgolia = tokens.join(" ");
 
-  const strictSubSlugs = mapQueryToSubcategorias(normQ);
-  const detectedSub = strictSubSlugs?.length ? null : detectSubcategoria(tokens);
+  const intentSubSlugs = mapQueryToSubcategorias(normQ);
+  const detectedSub = intentSubSlugs?.length ? null : detectSubcategoria(tokens);
 
   const index = getAlgoliaAdminIndex(INDEX_NAME);
 
@@ -314,30 +327,113 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     ? Math.min(500, Math.max(limit * 50, 200))
     : Math.min(120, Math.max(limit * 3, limit));
 
-  const intentFilters =
-    strictSubSlugs?.length === 1
-      ? `subcategoria_slug:"${strictSubSlugs[0]}"`
-      : strictSubSlugs?.length
-        ? strictSubSlugs.map((slug) => `subcategoria_slug:"${slug}"`).join(" OR ")
-        : null;
-
   const result = await index.search(queryForAlgolia, {
     hitsPerPage,
     page: 0,
     facetFilters: [["estado_publicacion:publicado"]],
-    attributesToRetrieve: ["slug", "objectID"],
+    getRankingInfo: true,
+    attributesToRetrieve: [
+      "slug",
+      "objectID",
+      "nombre",
+      "subcategoria_slug",
+      "tags_slugs",
+      "keywords",
+      "descripcion_corta",
+      "descripcion_larga",
+    ],
+    attributesToHighlight: [
+      "nombre",
+      "subcategoria_slug",
+      "tags_slugs",
+      "keywords",
+      "descripcion_corta",
+      "descripcion_larga",
+    ],
     optionalWords: tokens.length > 1 ? tokens : undefined,
     removeWordsIfNoResults: "allOptional",
     ignorePlurals: true,
     typoTolerance: "min",
-    ...(intentFilters
-      ? { filters: intentFilters }
-      : detectedSub
-        ? { filters: `subcategoria_slug:"${detectedSub}"` }
-        : {}),
   });
 
   const rawHits = (result.hits || []) as Record<string, unknown>[];
+  const intentScoreBySlug = new Map<string, number>();
+
+  const intentSet = new Set((intentSubSlugs ?? []).map((x) => normalizeText(x)));
+  const tokenSet = new Set(tokens.map((t) => normalizeText(t)).filter(Boolean));
+
+  const highlightMatchLevel = (h: Record<string, unknown>, key: string): boolean => {
+    const hr = (h as { _highlightResult?: unknown })._highlightResult;
+    if (!hr || typeof hr !== "object") return false;
+    const entry = (hr as Record<string, unknown>)[key];
+    if (!entry) return false;
+    if (Array.isArray(entry)) {
+      return entry.some((x) => {
+        if (!x || typeof x !== "object") return false;
+        const ml = String((x as { matchLevel?: unknown }).matchLevel ?? "");
+        return ml && ml !== "none";
+      });
+    }
+    if (typeof entry === "object") {
+      const ml = String((entry as { matchLevel?: unknown }).matchLevel ?? "");
+      return ml !== "" && ml !== "none";
+    }
+    return false;
+  };
+
+  const safeStrArr = (v: unknown): string[] =>
+    Array.isArray(v) ? v.map((x) => String(x ?? "").trim()).filter(Boolean) : [];
+
+  for (const h of rawHits) {
+    const slug = s(h.slug);
+    if (!slug) continue;
+
+    let score = 0;
+
+    // Señal 1: subcategoría explícita en hit (sin filtrar; solo boost)
+    const hitSub = normalizeText(String(h.subcategoria_slug ?? ""));
+    if (hitSub && intentSet.has(hitSub)) score += 100;
+
+    // Señal 2: highlight exacto en campos "fuertes"
+    const hitKeyword = highlightMatchLevel(h, "keywords") ? 70 : 0;
+    const hitTags = highlightMatchLevel(h, "tags_slugs") ? 40 : 0;
+    const hitSubHl = highlightMatchLevel(h, "subcategoria_slug") ? 100 : 0;
+    score += Math.max(hitSubHl, 0) + Math.max(hitKeyword, 0) + Math.max(hitTags, 0);
+
+    // Señal 3: match débil solo en descripciones (permitir pero abajo)
+    const descHl =
+      highlightMatchLevel(h, "descripcion_corta") || highlightMatchLevel(h, "descripcion_larga");
+    if (descHl) score += 10;
+
+    // Señal 4: fallback semántico por contenido si no vino highlight (defensivo)
+    if (score === 0) {
+      const nombre = normalizeText(String(h.nombre ?? ""));
+      const d1 = normalizeText(String(h.descripcion_corta ?? ""));
+      const d2 = normalizeText(String(h.descripcion_larga ?? ""));
+      const all = `${nombre} ${d1} ${d2}`.trim();
+      if (all) {
+        let matched = 0;
+        for (const t of tokenSet) {
+          if (t && all.includes(t)) matched += 1;
+        }
+        if (matched > 0) score += 10;
+      }
+    }
+
+    // Penalización: si SOLO match en descripción, no en sub/tags/keywords
+    const hasStrong =
+      highlightMatchLevel(h, "subcategoria_slug") ||
+      highlightMatchLevel(h, "tags_slugs") ||
+      highlightMatchLevel(h, "keywords");
+    const onlyDesc = !hasStrong && descHl;
+    if (onlyDesc) score -= 30;
+
+    // Sumar un pequeño boost si el hit tiene evidencia de la intención en subcategorías de VW (vía intentSet).
+    // (No accesible aquí; se refuerza después con ctx.intentSubSlugs en computeScore.)
+
+    intentScoreBySlug.set(slug, score);
+  }
+
   const seenSlug = new Set<string>();
   const slugsOrdered: string[] = [];
   for (const h of rawHits) {
@@ -392,17 +488,11 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     rowsFiltered = rowsFiltered.filter((r) => !rowPrincipalPasteleriaOrPanaderia(r));
   }
 
-  if (strictSubSlugs?.length) {
-    const allow = new Set(strictSubSlugs.map((x) => normalizeText(x)));
-    rowsFiltered = rowsFiltered.filter((r) =>
-      allow.has(normalizeText(String((r as Record<string, unknown>).subcategoria_slug_final ?? ""))),
-    );
-  }
-
   const scoreCtx: EmprendedorGlobalAlgoliaScoreCtx = {
     comunaSlug: String(opts?.comunaSlug ?? "").trim() || null,
     detectedSub,
-    strictSubSlugs: strictSubSlugs?.length ? strictSubSlugs : null,
+    intentSubSlugs: intentSubSlugs?.length ? intentSubSlugs : null,
+    intentScoreBySlug: intentScoreBySlug.size > 0 ? intentScoreBySlug : null,
   };
 
   const packed: VwRowPacked[] = [];

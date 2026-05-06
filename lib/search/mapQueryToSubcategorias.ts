@@ -2,23 +2,26 @@ import { normalizeText } from "@/lib/search/normalizeText";
 
 /**
  * Mapea una consulta de búsqueda global (término normalizado) a slugs de
- * `subcategoria_slug_final` permitidos. Si no hay mapeo, devuelve `null` y
- * la búsqueda sigue el camino amplio actual.
+ * `subcategoria_slug_final` sugeridos para intención. Si no hay mapeo, devuelve `null`
+ * y la búsqueda sigue el camino amplio actual.
  *
  * Slugs alineados con `subcategoria_slug_final` en BD (p. ej. `gasfiteria`, `peluqueria`, …).
  * `yoga` a propósito sin entrada: suele ir en keywords/tags de holísticos con otro slug final.
  */
 const QUERY_KEY_TO_SUBS: Record<string, string[]> = {
-  peluquero: ["peluqueria", "barberia"],
-  peluqueria: ["peluqueria", "barberia"],
+  peluquero: ["peluqueria", "barberia", "estilista"],
+  peluqueria: ["peluqueria", "barberia", "estilista"],
   barbero: ["barberia"],
   barberia: ["barberia"],
+  estilista: ["estilista", "peluqueria", "barberia"],
   gasfiter: ["gasfiteria"],
   gasfiteria: ["gasfiteria"],
   gasfitería: ["gasfiteria"],
   plomero: ["gasfiteria"],
   plomeria: ["gasfiteria"],
   plomería: ["gasfiteria"],
+  reiki: ["terapias-holisticas", "terapias-alternativas"],
+  tarot: ["terapias-holisticas", "terapias-alternativas"],
   carniceria: ["carniceria"],
   carnicero: ["carniceria"],
   cecinas: ["carniceria"],
