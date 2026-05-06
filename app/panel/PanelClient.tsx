@@ -498,7 +498,7 @@ function BloqueFichaPctYMejorar({
   if (fichaLoading) {
     return (
       <div
-        className="max-w-3xl rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 shadow-sm"
+        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 shadow-sm"
         aria-hidden
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -511,7 +511,7 @@ function BloqueFichaPctYMejorar({
   }
   const pct = fichaInfo?.completitud.porcentaje;
   return (
-    <div className="max-w-3xl rounded-xl border border-gray-200 bg-gray-50/90 px-4 py-3 shadow-sm">
+    <div className="w-full rounded-xl border border-gray-200 bg-gray-50/90 px-4 py-3 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {typeof pct === "number" ? (
@@ -583,7 +583,7 @@ function BloqueCuandoTerminePlan({ sinCaja }: { sinCaja?: boolean }) {
 
   return (
     <section
-      className="max-w-3xl rounded-xl border border-gray-200 bg-white p-3 shadow-sm text-sm text-gray-800 sm:p-3.5"
+      className="w-full rounded-xl border border-gray-200 bg-white p-3 shadow-sm text-sm text-gray-800 sm:p-3.5"
       aria-label="Qué pasa cuando termina tu plan"
     >
       {contenido}
@@ -601,7 +601,7 @@ function BloqueEstadoPlan({
   if (fichaLoading) {
     return (
       <div
-        className="max-w-3xl min-h-[88px] rounded-xl bg-gray-100 animate-pulse"
+        className="w-full min-h-[88px] rounded-xl bg-gray-100 animate-pulse"
         aria-hidden
       />
     );
@@ -613,7 +613,7 @@ function BloqueEstadoPlan({
   if (esAccesoInicial) {
     return (
       <section
-        className="max-w-3xl rounded-xl border border-sky-200 bg-sky-50/85 p-3 shadow-sm sm:p-3.5"
+        className="w-full rounded-xl border border-sky-200 bg-sky-50/85 p-3 shadow-sm sm:p-3.5"
         aria-label="Estado del plan"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -651,7 +651,7 @@ function BloqueEstadoPlan({
 
   return (
     <section
-      className={`max-w-3xl rounded-xl border p-3 shadow-sm sm:p-3.5 ${
+      className={`w-full rounded-xl border p-3 shadow-sm sm:p-3.5 ${
         alerta
           ? "border-amber-200 bg-amber-50/90"
           : "border-emerald-200 bg-emerald-50/80"
@@ -1051,7 +1051,7 @@ export default function PanelClient({
   if (loading || data === null) {
     return (
       <div className="w-full">
-        <div className="mx-auto w-full max-w-[1180px] px-4 py-8 space-y-5">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 py-8 space-y-5">
           <PanelBrandHomeBar />
           Cargando…
         </div>
@@ -1061,7 +1061,7 @@ export default function PanelClient({
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-[1180px] px-4 py-5 lg:py-8 space-y-4">
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 py-5 lg:py-8 space-y-4">
       <PanelBrandHomeBar />
       {planesUiVisible && pagoResult === "exito" ? (
         <p
@@ -1086,10 +1086,10 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] xl:gap-10 lg:items-start">
         <div className="min-w-0 space-y-4">
           <div
-            className="max-w-3xl rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
+            className="w-full rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
             aria-label={`Tu negocio: ${tituloHeaderPanel}`}
           >
             <div className="shrink-0 space-y-0.5 border-b border-gray-200/80 pb-2">
@@ -1182,7 +1182,7 @@ export default function PanelClient({
           !fichaLoading &&
           (mostrarBloqueCuandoTerminePlan(comercial) ||
             comercial?.estado === "plan_vencido") ? (
-            <div className="max-w-3xl space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
+            <div className="w-full space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
               <div className="space-y-4">
                 <BloqueCuandoTerminePlan sinCaja />
                 <div className="flex w-full max-w-md flex-col items-center justify-center gap-2.5 rounded-lg border border-amber-300/50 bg-white/90 p-3 text-center shadow-inner mx-auto">
@@ -1226,7 +1226,7 @@ export default function PanelClient({
               ) : null}
             </div>
           ) : tieneNegocio && !fichaLoading ? (
-            <div className="flex max-w-sm flex-col items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/90 px-3 py-3 text-center mx-auto lg:mx-0 lg:max-w-3xl lg:flex-row lg:justify-center lg:gap-6">
+            <div className="flex max-w-sm flex-col items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/90 px-3 py-3 text-center mx-auto lg:mx-0 lg:w-full lg:flex-row lg:justify-center lg:gap-6">
               <p className="text-sm font-black text-gray-900">
                 Compara cómo te ven
               </p>
@@ -1249,7 +1249,7 @@ export default function PanelClient({
                   href={wa}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block max-w-3xl text-center text-sm font-semibold text-sky-700 hover:underline sm:text-left"
+                  className="block w-full text-center text-sm font-semibold text-sky-700 hover:underline sm:text-left"
                 >
                   Activar por WhatsApp
                 </a>
@@ -1397,7 +1397,7 @@ export default function PanelClient({
           aria-label="Tu perfil completo en la web pública"
         >
           {modoVista === "basica" ? (
-            <div className="space-y-3 max-w-2xl">
+            <div className="space-y-3 w-full">
               <h2 className="text-base font-black text-gray-900 leading-tight">
                 Aprovecha todo tu perfil
               </h2>
