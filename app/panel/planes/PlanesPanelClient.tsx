@@ -182,6 +182,7 @@ export default function PlanesPanelClient({
   const transferFileRef = useRef<HTMLInputElement | null>(null);
   const [nombre, setNombre] = useState("");
   const [comunaSlug, setComunaSlug] = useState("");
+  const [fotoPrincipalUrl, setFotoPrincipalUrl] = useState("");
   const [comercial, setComercial] = useState<PanelComercialPayload | null>(
     null
   );
@@ -227,16 +228,27 @@ export default function PlanesPanelClient({
           const it = res.item as Record<string, unknown>;
           setNombre(String(it.nombre ?? "").trim());
           setComunaSlug(String(it.comunaBaseSlug ?? "").trim());
+          setFotoPrincipalUrl(
+            String(
+              it.fotoPrincipalUrl ??
+                it.foto_principal_url ??
+                it.foto_principal ??
+                it.foto_url ??
+                ""
+            ).trim()
+          );
           setComercial(res.comercial as PanelComercialPayload);
         } else {
           setNombre("");
           setComunaSlug("");
+          setFotoPrincipalUrl("");
           setComercial(null);
         }
       })
       .catch(() => {
         setNombre("");
         setComunaSlug("");
+        setFotoPrincipalUrl("");
         setComercial(null);
       })
       .finally(() => setLoading(false));
@@ -800,48 +812,47 @@ export default function PlanesPanelClient({
         </p>
 
         <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 relative overflow-hidden">
+          <div className="rounded-2xl border border-slate-300 bg-slate-100/80 p-5 relative overflow-hidden opacity-80 saturate-50 contrast-75">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-black text-gray-900">Perfil básico</p>
                 <p className="text-xs font-semibold text-slate-600">Solo WhatsApp</p>
               </div>
-              <span className="text-[0.7rem] font-extrabold tracking-wide text-slate-800 bg-slate-200/90 px-2.5 py-1 rounded-md">
+              <span className="text-[0.7rem] font-extrabold tracking-wide text-slate-700 bg-slate-200 px-2.5 py-1 rounded-md border border-slate-300/70 shadow-sm">
                 👁 Menos visible
               </span>
             </div>
 
             <div className="mt-4 max-w-[420px] mx-auto">
-              <div className="[&_img]:blur-[1.25px] [&_img]:saturate-75 [&_img]:contrast-75 saturate-75 contrast-75 opacity-90">
+              <div className="opacity-85 [&_img]:blur-[1.5px] [&_img]:saturate-50 [&_img]:contrast-75 [&_a]:bg-none [&_a]:bg-slate-200 [&_a]:text-slate-700 [&_a]:shadow-none [&_a]:from-transparent [&_a]:to-transparent">
                 <EmprendedorSearchCard
                   slug="demo"
                   nombre={nombre || "Tu negocio"}
-                  fotoPrincipalUrl="/favicon.ico"
+                  fotoPrincipalUrl=""
                   whatsappPrincipal="+56900000000"
                   estadoPublicacion="publicado"
                   esFichaCompleta={false}
                   estadoFicha="ficha_basica"
                   bloqueTerritorial={null}
                   frase=""
-                  descripcionLibre="Solo contacto por WhatsApp."
-                  subcategoriasNombres={["Servicio"]}
-                  subcategoriasSlugs={["servicio"]}
+                  descripcionLibre=""
+                  subcategoriasNombres={[]}
+                  subcategoriasSlugs={[]}
                   comunaBaseNombre="Santiago"
                   comunaBaseSlug="santiago"
                   comunaBaseRegionAbrev="RM"
-                  comunaBuscadaNombre="Santiago"
-                  atiendeLine="Atiende: Santiago"
-                  modoVista="basica"
+                  comunaBuscadaNombre=""
+                  atiendeLine=""
                   bloquearAccesoFichaPublica
                 />
               </div>
               <p className="mt-3 text-xs font-semibold text-slate-600 text-center">
-                Solo WhatsApp visible. Sin ver ficha, sin redes, con menos información.
+                Solo contacto por WhatsApp.
               </p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/30 p-5 relative overflow-hidden">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5 relative overflow-hidden">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-black text-gray-900">Perfil completo</p>
@@ -849,17 +860,17 @@ export default function PlanesPanelClient({
                   Fotos, descripción y más contactos
                 </p>
               </div>
-              <span className="text-[0.7rem] font-extrabold tracking-wide text-white bg-emerald-600 px-2.5 py-1 rounded-md shadow-sm">
+              <span className="text-[0.7rem] font-extrabold tracking-wide text-white bg-emerald-600 px-2.5 py-1 rounded-md shadow-sm border border-emerald-700/20">
                 👁 Más visible
               </span>
             </div>
 
             <div className="mt-4 max-w-[420px] mx-auto">
-              <div className="shadow-[0_10px_28px_rgba(16,185,129,0.10)] rounded-2xl">
+              <div className="shadow-[0_14px_34px_rgba(16,185,129,0.16)] rounded-2xl">
                 <EmprendedorSearchCard
                   slug="demo"
                   nombre={nombre || "Tu negocio"}
-                  fotoPrincipalUrl="/favicon.ico"
+                  fotoPrincipalUrl={fotoPrincipalUrl || "/favicon.ico"}
                   whatsappPrincipal="+56900000000"
                   estadoPublicacion="publicado"
                   esFichaCompleta
@@ -875,6 +886,20 @@ export default function PlanesPanelClient({
                   comunaBuscadaNombre="Santiago"
                   atiendeLine="Atiende: Santiago"
                 />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-emerald-900">
+                <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
+                  <span aria-hidden>✓</span> Perfil completo
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
+                  <span aria-hidden>✓</span> Más información
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
+                  <span aria-hidden>✓</span> Más contacto
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
+                  <span aria-hidden>✓</span> Más confianza
+                </div>
               </div>
             </div>
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-emerald-50/10 via-white/20 to-emerald-100/10" />
@@ -1162,6 +1187,9 @@ export default function PlanesPanelClient({
             {metodoPago === "webpay"
               ? "Pago seguro con Webpay."
               : "Tu plan se activará al validar la transferencia."}
+          </p>
+          <p className="mt-2 text-xs font-semibold text-slate-600">
+            Tu ficha seguirá activa, pero perderás visibilidad y funciones si vuelves al perfil básico.
           </p>
         </div>
       </section>
