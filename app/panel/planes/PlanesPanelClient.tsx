@@ -822,7 +822,7 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="-mt-2 sm:-mt-3 max-w-5xl mx-auto rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/70 p-7 sm:p-8 shadow-md"
+        className="-mt-1 sm:-mt-2 max-w-5xl mx-auto rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/70 p-6 sm:p-7 shadow-md"
         aria-label="Así te verán las personas"
       >
         <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
@@ -833,7 +833,7 @@ export default function PlanesPanelClient({
         </p>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-          <div className="rounded-2xl border border-slate-300 bg-slate-200/70 p-4 sm:p-5 relative overflow-hidden opacity-60">
+          <div className="rounded-2xl border border-slate-300 bg-slate-100/70 p-4 sm:p-5 relative overflow-hidden opacity-55">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-black text-slate-800">Perfil básico</p>
@@ -871,7 +871,7 @@ export default function PlanesPanelClient({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 relative overflow-hidden shadow-sm">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5 relative overflow-hidden shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-black text-gray-900">Perfil completo</p>
@@ -885,7 +885,7 @@ export default function PlanesPanelClient({
             </div>
 
             <div className="mt-4 max-w-[420px] mx-auto">
-              <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_54px_rgba(16,185,129,0.20)] shadow-[0_10px_30px_rgba(16,185,129,0.12)]">
+              <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_54px_rgba(16,185,129,0.20)] shadow-[0_12px_30px_rgba(16,185,129,0.10)]">
                 <EmprendedorSearchCard
                   slug="demo"
                   nombre={nombre || "Tu negocio"}
@@ -932,7 +932,7 @@ export default function PlanesPanelClient({
         }`}
         aria-label="Resumen del plan"
       >
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-center py-5">
+        <div className="py-5 md:py-6 md:flex md:items-center md:justify-between gap-3">
           <div className="space-y-2">
             <p className="text-base sm:text-lg font-black text-gray-900">
               Plan {tarjetaPorKey(selectedPlan).titulo.toLowerCase()} —{" "}
@@ -959,7 +959,7 @@ export default function PlanesPanelClient({
               type="button"
               onClick={handleCtaPrincipal}
               disabled={redirigiendoPago || planProgramado}
-              className="inline-flex h-14 w-full md:w-auto md:max-w-[360px] items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 hover:bg-gray-800 transition-all duration-200 hover:scale-[1.01] disabled:opacity-60"
+              className="inline-flex h-14 w-full md:w-[340px] items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 hover:bg-gray-800 transition-all duration-200 hover:-translate-y-[1px] hover:shadow-xl disabled:opacity-60"
             >
               {redirigiendoPago
                 ? "Redirigiendo al pago…"
@@ -990,11 +990,14 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="rounded-2xl border border-slate-200 bg-stone-50/70 p-4 sm:p-5"
+        className="rounded-2xl border border-slate-200 bg-stone-50/70 p-6"
         aria-label="Tu perfil perderá"
       >
-        <h2 className="text-lg font-black text-gray-900">Tu perfil perderá:</h2>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm font-medium text-slate-800">
+        <h2 className="text-lg font-black text-gray-900">Volverás a una ficha básica</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Tu negocio seguirá visible, pero con menos información y menor confianza visual.
+        </p>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3 text-sm font-medium text-slate-800">
           {PERDIDAS.map((t) => (
             <p key={t} className="flex items-start gap-2 m-0 leading-snug">
               <span className="mt-0.5 text-slate-500 text-xs" aria-hidden>
