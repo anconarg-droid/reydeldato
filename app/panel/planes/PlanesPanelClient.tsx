@@ -833,7 +833,7 @@ export default function PlanesPanelClient({
         </p>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-          <div className="rounded-2xl border border-slate-300 bg-slate-200/60 p-4 sm:p-5 relative overflow-hidden opacity-75 saturate-50 contrast-[0.7]">
+          <div className="rounded-2xl border border-slate-300 bg-slate-200/60 p-4 sm:p-5 relative overflow-hidden opacity-70 saturate-50 contrast-[0.7]">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-black text-slate-800">Perfil básico</p>
@@ -845,7 +845,7 @@ export default function PlanesPanelClient({
               </span>
             </div>
 
-            <div className="mt-3 max-w-[400px] mx-auto">
+            <div className="mt-3 max-w-[380px] mx-auto">
               <div className="opacity-80 [&_img]:blur-[1.5px] [&_img]:saturate-50 [&_img]:contrast-75 [&_a]:bg-none [&_a]:bg-slate-300/60 [&_a]:text-slate-700 [&_a]:shadow-none [&_a]:from-transparent [&_a]:to-transparent">
                 <EmprendedorSearchCard
                   slug="demo"
@@ -885,7 +885,7 @@ export default function PlanesPanelClient({
             </div>
 
             <div className="mt-4 max-w-[420px] mx-auto">
-              <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_54px_rgba(16,185,129,0.20)] shadow-[0_16px_40px_rgba(16,185,129,0.18)]">
+              <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_54px_rgba(16,185,129,0.20)] shadow-[0_0_0_1px_rgba(16,185,129,0.12),0_12px_30px_rgba(16,185,129,0.10)]">
                 <EmprendedorSearchCard
                   slug="demo"
                   nombre={nombre || "Tu negocio"}
@@ -932,25 +932,70 @@ export default function PlanesPanelClient({
         }`}
         aria-label="Resumen del plan"
       >
-        <div className="space-y-1.5">
-          <p className="text-base sm:text-lg font-black text-gray-900">
-            Plan {tarjetaPorKey(selectedPlan).titulo.toLowerCase()} —{" "}
-            <span className="tabular-nums">
-              {precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])}
-            </span>
-          </p>
-          <p className="text-sm font-semibold text-slate-700">
-            Comienza:{" "}
-            <span className="font-extrabold tabular-nums">{inicioPlanDisplay}</span>
-          </p>
-          {estaEnTrial ? (
-            <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-900">
-              <span className="px-2 py-0.5 rounded-md bg-emerald-200/90 text-[0.7rem] font-extrabold uppercase tracking-wide text-emerald-950">
-                ✅ No pierdes días
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center py-5 md:py-6">
+          <div className="space-y-2">
+            <p className="text-base sm:text-lg font-black text-gray-900">
+              Plan {tarjetaPorKey(selectedPlan).titulo.toLowerCase()} —{" "}
+              <span className="tabular-nums">
+                {precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])}
               </span>
-              No pierdes días de prueba.
             </p>
-          ) : null}
+            <p className="text-sm text-slate-700">
+              Tu plan pagado comenzará automáticamente el{" "}
+              <span className="font-extrabold tabular-nums">{inicioPlanDisplay}</span>
+            </p>
+            {estaEnTrial ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md bg-emerald-200/90 text-[0.7rem] font-extrabold uppercase tracking-wide text-emerald-950">
+                  ✅ No pierdes días
+                </span>
+                <span className="text-sm text-slate-600 font-semibold">
+                  Puedes pagar hoy sin perder días de tu prueba.
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="w-full md:w-auto">
+            <button
+              type="button"
+              onClick={
+                metodoPago === "webpay"
+                  ? handleCtaPrincipal
+                  : () => transferFileRef.current?.click()
+              }
+              disabled={
+                metodoPago === "webpay"
+                  ? redirigiendoPago || planProgramado
+                  : transferBusy || !pagoTransfer?.id || !pagoTransfer?.referencia
+              }
+              className="inline-flex h-14 w-full md:w-auto md:max-w-[360px] items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 hover:bg-gray-800 transition-all duration-200 hover:scale-[1.01] disabled:opacity-60"
+            >
+              {metodoPago === "webpay"
+                ? redirigiendoPago
+                  ? "Redirigiendo al pago…"
+                  : planProgramado
+                    ? "Plan ya programado"
+                    : "Pagar con Webpay"
+                : "Subir comprobante"}
+            </button>
+            <input
+              ref={transferFileRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleUploadComprobante(f);
+                e.currentTarget.value = "";
+              }}
+            />
+            <p className="mt-1.5 text-[11px] font-semibold text-slate-600 md:text-right">
+              {metodoPago === "webpay"
+                ? "Pago seguro con Webpay."
+                : "Tu plan se activará al validar la transferencia."}
+            </p>
+          </div>
         </div>
         {metodoPago === "transferencia" && !pagoTransfer?.referencia ? (
           <p className="mt-3 text-xs text-slate-600">
@@ -1132,14 +1177,14 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="rounded-2xl border border-slate-200 bg-stone-50/70 p-6 sm:p-7"
+        className="rounded-2xl border border-slate-200 bg-stone-50/70 p-4 sm:p-5"
         aria-label="Tu perfil perderá"
       >
         <h2 className="text-lg font-black text-gray-900">Tu perfil perderá:</h2>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm font-semibold text-slate-800">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-medium text-slate-800">
           {PERDIDAS.map((t) => (
-            <p key={t} className="flex items-start gap-2 m-0">
-              <span className="mt-0.5 text-slate-500" aria-hidden>
+            <p key={t} className="flex items-start gap-2 m-0 leading-snug">
+              <span className="mt-0.5 text-slate-500 text-xs" aria-hidden>
                 ⚠
               </span>
               <span>{t}</span>
@@ -1148,58 +1193,6 @@ export default function PlanesPanelClient({
         </div>
       </section>
 
-      <section
-        className="rounded-2xl border border-slate-200 bg-white px-4 sm:px-6 py-8 md:py-10 shadow-sm text-center"
-        aria-label="Activar ficha completa"
-      >
-        <h2 className="text-lg font-black text-gray-900">Activar ficha completa</h2>
-        <p className="mt-1.5 text-sm text-slate-600 max-w-xl mx-auto">
-          {estaEnTrial
-            ? "Puedes pagar hoy y tu plan comenzará cuando termine tu prueba gratuita."
-            : "Puedes pagar hoy y tu plan comenzará inmediatamente."}
-        </p>
-
-        <div className="mt-3.5">
-          <button
-            type="button"
-            onClick={
-              metodoPago === "webpay"
-                ? handleCtaPrincipal
-                : () => transferFileRef.current?.click()
-            }
-            disabled={
-              metodoPago === "webpay"
-                ? redirigiendoPago || planProgramado
-                : transferBusy || !pagoTransfer?.id || !pagoTransfer?.referencia
-            }
-            className="inline-flex w-full max-w-md mx-auto min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors transition-shadow duration-200 hover:shadow-xl disabled:opacity-60"
-          >
-            {metodoPago === "webpay"
-              ? redirigiendoPago
-                ? "Redirigiendo al pago…"
-                : planProgramado
-                  ? "Plan ya programado"
-                  : "Activar ficha completa"
-              : "Subir comprobante"}
-          </button>
-          <input
-            ref={transferFileRef}
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void handleUploadComprobante(f);
-              e.currentTarget.value = "";
-            }}
-          />
-          <p className="mt-1.5 text-[11px] font-semibold text-slate-600">
-            {metodoPago === "webpay"
-              ? "Pago seguro con Webpay."
-              : "Tu plan se activará al validar la transferencia."}
-          </p>
-        </div>
-      </section>
     </div>
   );
 }
