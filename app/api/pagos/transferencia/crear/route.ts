@@ -152,6 +152,10 @@ export async function POST(req: NextRequest) {
         });
       }
 
+      if (error) {
+        console.error("[pagos/transferencia/crear] insert:", error.code, error.message);
+      }
+
       referencia = await generarReferenciaPago(emprendedorId);
     }
 

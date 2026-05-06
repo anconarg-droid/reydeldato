@@ -184,6 +184,8 @@ export default function PlanesPanelClient({
   pagoFlash?: "fallo" | null;
 }) {
   const transferFileRef = useRef<HTMLInputElement | null>(null);
+  /** Evita solapamiento y permite no incluir `transferBusy` en deps del callback (eso re-disparaba el effect en bucle). */
+  const transferCrearInflightRef = useRef(false);
   const [nombre, setNombre] = useState("");
   const [comunaSlug, setComunaSlug] = useState("");
   const [fotoPrincipalUrl, setFotoPrincipalUrl] = useState("");
@@ -394,9 +396,10 @@ export default function PlanesPanelClient({
           p.comprobanteUrl != null ? String(p.comprobanteUrl) : null,
       });
     } finally {
+      transferCrearInflightRef.current = false;
       setTransferBusy(false);
     }
-  }, [id, accessToken, planProgramado, transferenciaExpanded, transferBusy, selectedPlan]);
+  }, [id, accessToken, planProgramado, transferenciaExpanded, selectedPlan]);
 
   useEffect(() => {
     void ensureTransferReference();
