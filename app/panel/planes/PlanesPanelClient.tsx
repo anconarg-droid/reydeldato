@@ -932,8 +932,8 @@ export default function PlanesPanelClient({
         }`}
         aria-label="Resumen del plan"
       >
-        <div className="py-5 md:py-6 md:flex md:items-center md:justify-start md:gap-8 gap-4">
-          <div className="min-w-0 space-y-2 md:max-w-xl">
+        <div className="flex flex-col gap-6 py-5 md:flex-row md:items-center md:justify-between md:py-6">
+          <div className="min-w-0 flex-1 max-w-xl space-y-3">
             <p className="text-base sm:text-lg font-black text-gray-900">
               Plan {tarjetaPorKey(selectedPlan).titulo.toLowerCase()} —{" "}
               <span className="tabular-nums">
@@ -954,12 +954,12 @@ export default function PlanesPanelClient({
             ) : null}
           </div>
 
-          <div className="w-full shrink-0 md:w-auto">
+          <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
             <button
               type="button"
               onClick={handleCtaPrincipal}
               disabled={redirigiendoPago || planProgramado}
-              className="inline-flex h-14 w-full md:w-[300px] items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 hover:bg-gray-800 transition-all duration-200 hover:-translate-y-[1px] hover:shadow-xl disabled:opacity-60"
+              className="inline-flex h-14 w-full items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 transition-all duration-200 hover:translate-y-[-1px] hover:bg-gray-800 hover:shadow-xl disabled:opacity-60 md:w-[320px]"
             >
               {redirigiendoPago
                 ? "Redirigiendo al pago…"
@@ -967,7 +967,7 @@ export default function PlanesPanelClient({
                   ? "Plan ya programado"
                   : "Activar ficha completa"}
             </button>
-            <p className="mt-1.5 text-[11px] font-semibold text-slate-600 md:text-right">
+            <p className="text-xs text-slate-500">
               Pago seguro con Webpay
             </p>
           </div>
