@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { PlanPeriodicidad } from "@/lib/planConstants";
 import type { EstadoComercialEmprendedor } from "@/lib/getEstadoComercialEmprendedor";
 import { buildPlanActivationMessage } from "@/lib/buildPlanActivationMessage";
+import { getTransferenciaBancoUi, montoExactoDisplayClp } from "@/lib/panelPlanesTransferencia";
 import {
   ORDEN_TARJETAS_PLANES,
   PLAN_ETIQUETA_WHATSAPP,
@@ -184,10 +185,24 @@ export default function PlanesPanelClient({
   const [selectedPlan, setSelectedPlan] = useState<PlanPeriodicidad>(
     PLAN_RECOMENDADO
   );
+  const [metodoPago, setMetodoPago] = useState<"webpay" | "transferencia">(
+    "webpay"
+  );
+  const [pagoTransfer, setPagoTransfer] = useState<{
+    id: string;
+    referencia: string;
+    estado: string;
+    monto: number;
+    comprobanteUrl: string | null;
+  } | null>(null);
+  const [transferBusy, setTransferBusy] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [transferOkMsg, setTransferOkMsg] = useState<string | null>(null);
   const [redirigiendoPago, setRedirigiendoPago] = useState(false);
   const [pagoIniciarError, setPagoIniciarError] = useState<string | null>(null);
 
   const modoSoloContacto = planesWebpayDeshabilitadoCliente();
+  const transferenciaUi = getTransferenciaBancoUi();
 
   useEffect(() => {
     const cleanId = id.trim();
@@ -222,6 +237,28 @@ export default function PlanesPanelClient({
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    const tok = String(accessToken ?? "").trim();
+    if (tok.length < 8) return;
+    fetch(`/api/pagos/transferencia/estado?access_token=${encodeURIComponent(tok)}`, {
+      cache: "no-store",
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (!j?.ok || !Array.isArray(j.items)) return;
+        const latest = j.items[0];
+        if (!latest?.id) return;
+        setPagoTransfer({
+          id: String(latest.id),
+          referencia: String(latest.referencia || ""),
+          estado: String(latest.estado || ""),
+          monto: Number(latest.monto || 0),
+          comprobanteUrl: latest.comprobanteUrl ? String(latest.comprobanteUrl) : null,
+        });
+      })
+      .catch(() => {});
+  }, [accessToken]);
 
   const panelBack =
     id.trim() !== ""
@@ -266,6 +303,8 @@ export default function PlanesPanelClient({
       "No pudimos iniciar el pago. Inténtalo nuevamente.";
     const cleanId = id.trim();
     setPagoIniciarError(null);
+    setTransferError(null);
+    setTransferOkMsg(null);
 
     if (!cleanId) {
       setPagoIniciarError(
@@ -278,6 +317,48 @@ export default function PlanesPanelClient({
       setPagoIniciarError(
         "Ya tienes un plan pagado programado. No necesitas pagar de nuevo."
       );
+      return;
+    }
+
+    if (metodoPago === "transferencia") {
+      setTransferBusy(true);
+      try {
+        const tok = String(accessToken ?? "").trim();
+        if (tok.length < 8) {
+          setTransferError(MSG_PAGO);
+          return;
+        }
+        const r = await fetch("/api/pagos/transferencia/crear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            emprendedorId: cleanId,
+            planCodigo: planKeyParaApi(selectedPlan),
+            access_token: tok,
+          }),
+        });
+        const data = (await r.json().catch(() => ({}))) as Record<string, unknown>;
+        if (!r.ok || data.ok !== true || !data.pago) {
+          setTransferError(
+            typeof data.error === "string" && data.error ? data.error : MSG_PAGO
+          );
+          return;
+        }
+        const p = data.pago as Record<string, unknown>;
+        setPagoTransfer({
+          id: String(p.id ?? ""),
+          referencia: String(p.referencia ?? ""),
+          estado: String(p.estado ?? ""),
+          monto: Number(p.monto ?? 0),
+          comprobanteUrl:
+            p.comprobanteUrl != null ? String(p.comprobanteUrl) : null,
+        });
+        setTransferOkMsg(
+          "Referencia generada. Realiza la transferencia y sube tu comprobante."
+        );
+      } finally {
+        setTransferBusy(false);
+      }
       return;
     }
 
@@ -395,7 +476,92 @@ export default function PlanesPanelClient({
     comercialListo,
     accessToken,
     planProgramado,
+    metodoPago,
   ]);
+
+  const handleUploadComprobante = useCallback(
+    async (file: File) => {
+      const tok = String(accessToken ?? "").trim();
+      if (tok.length < 8) {
+        setTransferError("No pudimos validar tu acceso. Vuelve al panel e intenta nuevamente.");
+        return;
+      }
+      if (!pagoTransfer?.id) {
+        setTransferError("Primero genera una referencia para tu transferencia.");
+        return;
+      }
+      setTransferBusy(true);
+      setTransferError(null);
+      setTransferOkMsg(null);
+      try {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(new Error("No pudimos leer el archivo."));
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.readAsDataURL(file);
+        });
+
+        const up = await fetch("/api/upload-base64", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            base64,
+            filename: file.name,
+            folder: `pagos/${pagoTransfer.id}`,
+          }),
+        });
+        const upj = (await up.json().catch(() => ({}))) as Record<string, unknown>;
+        const url =
+          typeof upj.publicUrl === "string"
+            ? upj.publicUrl
+            : typeof upj.url === "string"
+              ? upj.url
+              : "";
+        if (!up.ok || !url) {
+          setTransferError(
+            (typeof upj.error === "string" && upj.error) ||
+              "No se pudo subir el comprobante."
+          );
+          return;
+        }
+
+        const r = await fetch("/api/pagos/transferencia/comprobante", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: tok,
+            emprendedorId: id.trim(),
+            pagoId: pagoTransfer.id,
+            comprobanteUrl: url,
+          }),
+        });
+        const j = (await r.json().catch(() => ({}))) as Record<string, unknown>;
+        if (!r.ok || j.ok !== true) {
+          setTransferError(
+            (typeof j.error === "string" && j.error) ||
+              "No se pudo registrar el comprobante."
+          );
+          return;
+        }
+        const p = (j.pago ?? {}) as Record<string, unknown>;
+        setPagoTransfer((prev) =>
+          prev
+            ? {
+                ...prev,
+                estado: String(p.estado ?? prev.estado),
+                comprobanteUrl: url,
+              }
+            : prev
+        );
+        setTransferOkMsg("Comprobante enviado. Tu pago quedó en revisión.");
+      } catch (e) {
+        setTransferError(e instanceof Error ? e.message : "Error al subir comprobante.");
+      } finally {
+        setTransferBusy(false);
+      }
+    },
+    [accessToken, pagoTransfer, id]
+  );
 
   const tarjetasOrdenadas = ORDEN_TARJETAS_PLANES.map((k) =>
     TARJETAS.find((t) => t.key === k)!
@@ -573,6 +739,175 @@ export default function PlanesPanelClient({
             );
           })}
         </div>
+      </section>
+
+      <section
+        className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm"
+        aria-label="Método de pago"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-black text-gray-900">Método de pago</h2>
+            <p className="text-sm text-slate-600">
+              Elige cómo quieres pagar. La transferencia requiere validación manual.
+            </p>
+          </div>
+          <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setMetodoPago("webpay")}
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-extrabold transition-colors ${
+                metodoPago === "webpay"
+                  ? "bg-gray-900 text-white"
+                  : "text-slate-700 hover:bg-white"
+              }`}
+            >
+              Webpay
+            </button>
+            <button
+              type="button"
+              onClick={() => setMetodoPago("transferencia")}
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-extrabold transition-colors ${
+                metodoPago === "transferencia"
+                  ? "bg-gray-900 text-white"
+                  : "text-slate-700 hover:bg-white"
+              }`}
+            >
+              Transferencia
+            </button>
+          </div>
+        </div>
+
+        {metodoPago === "transferencia" ? (
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 sm:p-6 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-base font-black text-gray-900">
+                  Transferencia bancaria
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Transfiere el monto exacto y usa la referencia obligatoria.
+                </p>
+              </div>
+              {pagoTransfer?.estado === "en_revision" ? (
+                <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-amber-950 bg-amber-200/90 px-2 py-1 rounded-md">
+                  Pago en revisión
+                </span>
+              ) : null}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
+                  Banco
+                </p>
+                <p className="font-bold text-gray-900">{transferenciaUi.banco}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
+                  Tipo / Nº cuenta
+                </p>
+                <p className="font-bold text-gray-900">
+                  {transferenciaUi.tipoCuenta} · {transferenciaUi.numeroCuenta}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
+                  RUT
+                </p>
+                <p className="font-bold text-gray-900">{transferenciaUi.rut}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
+                  Correo
+                </p>
+                <p className="font-bold text-gray-900">{transferenciaUi.correo}</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+              <p className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
+                Monto exacto
+              </p>
+              <p className="text-2xl font-black text-gray-900 tabular-nums">
+                {pagoTransfer?.monto
+                  ? montoExactoDisplayClp(pagoTransfer.monto)
+                  : precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])}
+              </p>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Referencia obligatoria (sin esto no podemos validar rápido):
+              </p>
+              <p className="font-black text-gray-900 tabular-nums">
+                {pagoTransfer?.referencia ? (
+                  <code className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200">
+                    {pagoTransfer.referencia}
+                  </code>
+                ) : (
+                  <span className="text-slate-500">Genera una referencia</span>
+                )}
+              </p>
+            </div>
+
+            {transferError ? (
+              <p className="text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                {transferError}
+              </p>
+            ) : null}
+            {transferOkMsg ? (
+              <p className="text-sm text-emerald-900 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+                {transferOkMsg}
+              </p>
+            ) : null}
+
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <button
+                type="button"
+                onClick={handleCtaPrincipal}
+                disabled={transferBusy}
+                className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-gray-900 px-5 text-sm font-extrabold text-white hover:bg-gray-800 disabled:opacity-70"
+              >
+                {transferBusy
+                  ? "Generando…"
+                  : pagoTransfer?.referencia
+                    ? "Regenerar referencia"
+                    : "Generar referencia"}
+              </button>
+              <label className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-white px-5 text-sm font-extrabold text-gray-900 border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                Subir comprobante
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handleUploadComprobante(f);
+                    e.currentTarget.value = "";
+                  }}
+                  disabled={transferBusy}
+                />
+              </label>
+              {pagoTransfer?.comprobanteUrl ? (
+                <a
+                  className="text-sm font-bold text-sky-700 hover:underline"
+                  href={pagoTransfer.comprobanteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ver comprobante
+                </a>
+              ) : null}
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Importante: subir el comprobante <span className="font-semibold">no activa</span>{" "}
+              tu plan automáticamente. Un admin revisa y aprueba.
+            </p>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-slate-600">
+            Pagarás con Webpay. Serás redirigido para completar el pago.
+          </p>
+        )}
       </section>
 
       <section
