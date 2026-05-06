@@ -1086,7 +1086,7 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] xl:gap-10 lg:items-start">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_minmax(260px,400px)] lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] xl:gap-10 md:items-start">
         <div className="min-w-0 space-y-4">
           <div
             className="w-full rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
@@ -1226,7 +1226,7 @@ export default function PanelClient({
               ) : null}
             </div>
           ) : tieneNegocio && !fichaLoading ? (
-            <div className="flex max-w-sm flex-col items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/90 px-3 py-3 text-center mx-auto lg:mx-0 lg:w-full lg:flex-row lg:justify-center lg:gap-6">
+            <div className="flex max-w-sm flex-col items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/90 px-3 py-3 text-center mx-auto md:mx-0 md:w-full md:flex-row md:justify-center md:gap-6">
               <p className="text-sm font-black text-gray-900">
                 Compara cómo te ven
               </p>
@@ -1258,7 +1258,7 @@ export default function PanelClient({
           ) : null}
         </div>
 
-        <aside className="min-w-0 space-y-4 overflow-x-hidden lg:sticky lg:top-24">
+        <aside className="min-w-0 space-y-4 overflow-x-hidden md:sticky md:top-24">
           {estadisticasOcultasEnPanel ? (
             <div
               className="w-full rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
