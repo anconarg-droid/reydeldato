@@ -605,7 +605,7 @@ export default function PlanesPanelClient({
   );
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 pb-16">
+    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-14">
       <PanelBrandHomeBar />
       <div>
         <Link
@@ -755,11 +755,6 @@ export default function PlanesPanelClient({
                         RECOMENDADO
                       </span>
                     ) : null}
-                    {selected ? (
-                      <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-emerald-950 bg-emerald-200/90 px-2 py-1 rounded-md">
-                        Seleccionado
-                      </span>
-                    ) : null}
                   </div>
                 </div>
                 <p className="mt-4 text-3xl font-black text-gray-900 tabular-nums">
@@ -798,8 +793,8 @@ export default function PlanesPanelClient({
         }`}
         aria-label="Resumen del plan"
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
+        <div className="space-y-3">
+          <div>
             <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
               Plan elegido
             </p>
@@ -814,22 +809,22 @@ export default function PlanesPanelClient({
               <span className="font-extrabold tabular-nums">{inicioPlanDisplay}</span>
             </p>
             {estaEnTrial ? (
-              <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-emerald-900">
+              <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-emerald-900">
                 <span className="px-2 py-0.5 rounded-md bg-emerald-200/90 text-[0.7rem] font-extrabold uppercase tracking-wide text-emerald-950">
                   No pierdes días
                 </span>
-                Puedes pagar hoy. Tu plan comienza cuando termine tu prueba gratuita.
+                No pierdes días de prueba.
               </p>
             ) : null}
           </div>
 
           {metodoPago === "webpay" ? (
-            <div className="w-full sm:w-auto">
+            <div className="w-full">
               <button
                 type="button"
                 onClick={handleCtaPrincipal}
                 disabled={redirigiendoPago || planProgramado}
-                className="inline-flex w-full sm:w-auto min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-60"
+                className="inline-flex w-full min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-60"
               >
                 {redirigiendoPago
                   ? "Redirigiendo al pago…"
@@ -837,21 +832,26 @@ export default function PlanesPanelClient({
                     ? "Plan ya programado"
                     : "Pagar con Webpay"}
               </button>
-              <p className="mt-2 text-xs font-semibold text-slate-600 text-center sm:text-left">
+              <p className="mt-2 text-xs font-semibold text-slate-600">
                 Activación automática inmediata.
               </p>
+              {estaEnTrial ? (
+                <p className="mt-2 text-sm font-semibold text-emerald-900">
+                  Puedes pagar hoy. Tu plan comenzará cuando termine tu prueba gratuita.
+                </p>
+              ) : null}
             </div>
           ) : (
-            <div className="w-full sm:w-auto">
+            <div className="w-full">
               <button
                 type="button"
                 onClick={() => transferFileRef.current?.click()}
                 disabled={transferBusy || !pagoTransfer?.id || !pagoTransfer?.referencia}
-                className="inline-flex w-full sm:w-auto min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-60"
+                className="inline-flex w-full min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-60"
               >
                 Subir comprobante
               </button>
-              <p className="mt-2 text-xs font-semibold text-slate-600 text-center sm:text-left">
+              <p className="mt-2 text-xs font-semibold text-slate-600">
                 Validaremos tu transferencia manualmente. Puede tardar algunas horas.
               </p>
               <input
@@ -886,57 +886,38 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm"
+        className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"
         aria-label="Método de pago"
       >
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-lg font-black text-gray-900">Método de pago</h2>
-            <p className="text-sm text-slate-600">
-              Elige cómo quieres pagar.
-            </p>
-          </div>
-          <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setMetodoPago("webpay")}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-extrabold transition-colors ${
-                metodoPago === "webpay"
-                  ? "bg-gray-900 text-white"
-                  : "text-slate-700 hover:bg-white"
-              }`}
-            >
-              Webpay
-            </button>
-            <button
-              type="button"
-              onClick={() => setMetodoPago("transferencia")}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-extrabold transition-colors ${
-                metodoPago === "transferencia"
-                  ? "bg-gray-900 text-white"
-                  : "text-slate-700 hover:bg-white"
-              }`}
-            >
-              Transferencia
-            </button>
-          </div>
+        <h2 className="text-sm font-extrabold tracking-tight text-gray-900">
+          Método de pago
+        </h2>
+        <div className="mt-3 space-y-2">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="metodoPagoInline"
+              checked={metodoPago === "webpay"}
+              onChange={() => setMetodoPago("webpay")}
+            />
+            <span className="text-sm font-extrabold text-gray-900">Webpay</span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="metodoPagoInline"
+              checked={metodoPago === "transferencia"}
+              onChange={() => setMetodoPago("transferencia")}
+            />
+            <span className="text-sm font-extrabold text-gray-900">Transferencia</span>
+          </label>
         </div>
 
         {metodoPago === "transferencia" ? (
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-base font-black text-gray-900">Transferencia bancaria</h3>
-                <p className="text-sm text-slate-600">
-                  Transfiere desde cualquier banco. Activamos tu plan al validar el comprobante.
-                </p>
-              </div>
-              {pagoTransfer?.estado === "en_revision" ? (
-                <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-amber-950 bg-amber-200/90 px-2 py-1 rounded-md">
-                  Pago en revisión
-                </span>
-              ) : null}
-            </div>
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-slate-600">
+              Transfiere desde cualquier banco. Activamos tu plan al validar el comprobante.
+            </p>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
               <p className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
@@ -1067,19 +1048,96 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="rounded-2xl border border-amber-200/90 bg-amber-50/40 p-6 sm:p-7"
+        className="rounded-2xl border border-amber-200/90 bg-amber-50/30 p-6 sm:p-7"
         aria-label="Si vuelves a ficha básica"
       >
         <h2 className="text-lg font-black text-gray-900">Si vuelves a ficha básica:</h2>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-amber-200 bg-white/80 p-3 text-sm font-bold text-gray-900">
-            ⚠ Solo WhatsApp visible
+        <div className="mt-4 space-y-2 text-sm font-semibold text-gray-900">
+          <p>⚠ Solo WhatsApp visible</p>
+          <p>⚠ Menos información</p>
+          <p>⚠ Sin fotos ni Instagram</p>
+        </div>
+      </section>
+
+      <section
+        className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm"
+        aria-label="Así te verán las personas"
+      >
+        <h2 className="text-lg font-black text-gray-900">Así te verán las personas</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Los perfiles completos generan más confianza y más contactos.
+        </p>
+
+        <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 relative overflow-hidden">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-black text-gray-900">Perfil básico</p>
+                <p className="text-xs font-semibold text-slate-600">Solo WhatsApp</p>
+              </div>
+              <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-700 bg-slate-200/80 px-2 py-1 rounded-md">
+                Menos visible
+              </span>
+            </div>
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-14 w-14 rounded-xl bg-slate-100 border border-slate-200" />
+                <div className="min-w-0">
+                  <p className="font-black text-gray-900 leading-tight truncate">
+                    {nombre || "Tu negocio"}
+                  </p>
+                  <p className="text-xs font-semibold text-slate-600 mt-1">
+                    WhatsApp visible
+                  </p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Menos información en la card
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-slate-100 text-slate-600 text-sm font-extrabold min-h-[44px]">
+                WhatsApp
+              </div>
+            </div>
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-slate-100/10 via-slate-200/10 to-slate-300/10" />
           </div>
-          <div className="rounded-xl border border-amber-200 bg-white/80 p-3 text-sm font-bold text-gray-900">
-            ⚠ Menos información
-          </div>
-          <div className="rounded-xl border border-amber-200 bg-white/80 p-3 text-sm font-bold text-gray-900">
-            ⚠ Sin fotos ni Instagram
+
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/30 p-5 relative overflow-hidden">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-black text-gray-900">Perfil completo</p>
+                <p className="text-xs font-semibold text-slate-600">
+                  Fotos, descripción y más contactos
+                </p>
+              </div>
+              <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-emerald-950 bg-emerald-200/90 px-2 py-1 rounded-md">
+                Más visible
+              </span>
+            </div>
+            <div className="mt-4 rounded-2xl border border-emerald-200 bg-white p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-14 w-14 rounded-xl bg-emerald-50 border border-emerald-200" />
+                <div className="min-w-0">
+                  <p className="font-black text-gray-900 leading-tight truncate">
+                    {nombre || "Tu negocio"}
+                  </p>
+                  <p className="text-xs font-semibold text-slate-600 mt-1">
+                    Fotos + Instagram + descripción
+                  </p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Más confianza en la card
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="inline-flex items-center justify-center rounded-xl bg-gray-900 text-white text-sm font-extrabold min-h-[44px]">
+                  WhatsApp
+                </div>
+                <div className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white text-gray-900 text-sm font-extrabold min-h-[44px]">
+                  Ver ficha
+                </div>
+              </div>
+            </div>
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-emerald-50/10 via-white/20 to-emerald-100/10" />
           </div>
         </div>
       </section>
