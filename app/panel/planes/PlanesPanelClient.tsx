@@ -5,7 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PlanPeriodicidad } from "@/lib/planConstants";
 import type { EstadoComercialEmprendedor } from "@/lib/getEstadoComercialEmprendedor";
 import { buildPlanActivationMessage } from "@/lib/buildPlanActivationMessage";
-import { getTransferenciaBancoUi, montoExactoDisplayClp } from "@/lib/panelPlanesTransferencia";
+import {
+  getTransferenciaBancoUi,
+  montoExactoDisplayClp,
+  montoExactoTransferencia,
+} from "@/lib/panelPlanesTransferencia";
 import {
   ORDEN_TARJETAS_PLANES,
   PLAN_ETIQUETA_WHATSAPP,
@@ -191,9 +195,7 @@ export default function PlanesPanelClient({
   const [selectedPlan, setSelectedPlan] = useState<PlanPeriodicidad>(
     PLAN_RECOMENDADO
   );
-  const [metodoPago, setMetodoPago] = useState<"webpay" | "transferencia">(
-    "webpay"
-  );
+  const [transferenciaExpanded, setTransferenciaExpanded] = useState(false);
   const [pagoTransfer, setPagoTransfer] = useState<{
     id: string;
     referencia: string;
@@ -340,6 +342,14 @@ export default function PlanesPanelClient({
     return "Inmediatamente";
   }, [comercialListo, planProgramado, comercial?.planIniciaAt, estaEnTrial, comercial?.trialExpiraAt]);
 
+  const montoTransferSegunPlan = useMemo(
+    () =>
+      montoExactoDisplayClp(
+        montoExactoTransferencia(planKeyParaApi(selectedPlan))
+      ),
+    [selectedPlan]
+  );
+
   const ctaPrincipalLabel = ctaPrincipalLabelFromEstado(
     estado,
     comercialListo,
@@ -351,7 +361,7 @@ export default function PlanesPanelClient({
     const tok = String(accessToken ?? "").trim();
     if (!cleanId || tok.length < 8) return;
     if (planProgramado) return;
-    if (metodoPago !== "transferencia") return;
+    if (!transferenciaExpanded) return;
     if (transferBusy) return;
     // Si ya hay una referencia para este plan en pending/en_revision, el API la reusa.
     setTransferBusy(true);
@@ -386,7 +396,7 @@ export default function PlanesPanelClient({
     } finally {
       setTransferBusy(false);
     }
-  }, [id, accessToken, planProgramado, metodoPago, transferBusy, selectedPlan]);
+  }, [id, accessToken, planProgramado, transferenciaExpanded, transferBusy, selectedPlan]);
 
   useEffect(() => {
     void ensureTransferReference();
@@ -413,8 +423,6 @@ export default function PlanesPanelClient({
       );
       return;
     }
-
-    if (metodoPago === "transferencia") return;
 
     if (modoSoloContacto) {
       setRedirigiendoPago(true);
@@ -530,7 +538,6 @@ export default function PlanesPanelClient({
     comercialListo,
     accessToken,
     planProgramado,
-    metodoPago,
   ]);
 
   const handleUploadComprobante = useCallback(
@@ -967,15 +974,98 @@ export default function PlanesPanelClient({
                   ? "Plan ya programado"
                   : "Activar ficha completa"}
             </button>
-            <p className="text-xs text-slate-500">
-              Pago seguro con Webpay
-            </p>
+            <p className="text-xs text-slate-500">Pago seguro con Webpay</p>
+            {!planProgramado ? (
+              <button
+                type="button"
+                aria-expanded={transferenciaExpanded}
+                onClick={() => {
+                  setTransferenciaExpanded((o) => !o);
+                  setTransferError(null);
+                }}
+                className="mt-1 w-full text-left text-sm text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline md:text-right"
+              >
+                {transferenciaExpanded
+                  ? "Ocultar datos de transferencia"
+                  : "¿Prefieres transferencia?"}
+              </button>
+            ) : null}
+            <input
+              ref={transferFileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void handleUploadComprobante(f);
+              }}
+            />
           </div>
         </div>
-        {metodoPago === "transferencia" && !pagoTransfer?.referencia ? (
-          <p className="mt-3 text-xs text-slate-600">
-            Preparando tu referencia de pago…
-          </p>
+        {transferenciaExpanded && !planProgramado ? (
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm">
+              <p className="text-xs text-slate-600">
+                El botón superior paga con <span className="font-semibold">Webpay</span> y la
+                activación es automática.
+              </p>
+              <p className="mt-2 text-xs text-slate-500">
+                La activación por transferencia puede tardar algunas horas.
+              </p>
+              <p className="mt-4 font-bold text-gray-900">Transferencia bancaria</p>
+              <dl className="mt-2 space-y-1.5 text-slate-700">
+                <div className="flex flex-wrap gap-x-2 gap-y-0">
+                  <dt className="shrink-0 font-medium text-slate-600">Banco</dt>
+                  <dd className="min-w-0">{transferenciaUi.banco}</dd>
+                </div>
+                <div className="flex flex-wrap gap-x-2 gap-y-0">
+                  <dt className="shrink-0 font-medium text-slate-600">Cuenta</dt>
+                  <dd className="min-w-0">
+                    {transferenciaUi.tipoCuenta} {transferenciaUi.numeroCuenta}
+                  </dd>
+                </div>
+                <div className="flex flex-wrap gap-x-2 gap-y-0">
+                  <dt className="shrink-0 font-medium text-slate-600">Rut</dt>
+                  <dd className="min-w-0 tabular-nums">{transferenciaUi.rut}</dd>
+                </div>
+                <div className="flex flex-wrap gap-x-2 gap-y-0">
+                  <dt className="shrink-0 font-medium text-slate-600">Correo</dt>
+                  <dd className="min-w-0 break-all">{transferenciaUi.correo}</dd>
+                </div>
+                <div className="flex flex-wrap gap-x-2 gap-y-0">
+                  <dt className="shrink-0 font-medium text-slate-600">Monto</dt>
+                  <dd className="min-w-0 tabular-nums">{montoTransferSegunPlan}</dd>
+                </div>
+                <div className="flex flex-wrap gap-x-2 gap-y-0">
+                  <dt className="shrink-0 font-medium text-slate-600">Referencia</dt>
+                  <dd className="min-w-0 font-mono text-[0.8rem]">
+                    {transferBusy && !pagoTransfer?.referencia
+                      ? "Generando referencia…"
+                      : pagoTransfer?.referencia || "—"}
+                  </dd>
+                </div>
+              </dl>
+              <button
+                type="button"
+                disabled={
+                  transferBusy ||
+                  !pagoTransfer?.id ||
+                  !!pagoTransfer?.comprobanteUrl
+                }
+                onClick={() => transferFileRef.current?.click()}
+                className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
+              >
+                {pagoTransfer?.comprobanteUrl
+                  ? "Comprobante recibido"
+                  : transferBusy && !pagoTransfer?.referencia
+                    ? "Generando referencia…"
+                    : transferBusy && pagoTransfer?.referencia
+                      ? "Procesando…"
+                      : "Subir comprobante"}
+              </button>
+            </div>
+          </div>
         ) : null}
         {transferError ? (
           <p className="mt-3 text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
