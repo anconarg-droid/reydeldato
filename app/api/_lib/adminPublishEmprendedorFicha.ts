@@ -428,6 +428,11 @@ export async function adminPublishEmprendedorFicha(
       row.plan_activo === true
         ? true
         : null,
+    planIniciaAt:
+      Object.prototype.hasOwnProperty.call(row, "plan_inicia_at") &&
+      s(row.plan_inicia_at)
+        ? s(row.plan_inicia_at)
+        : null,
     planExpiraAt:
       Object.prototype.hasOwnProperty.call(row, "plan_expira_at") &&
       s(row.plan_expira_at)

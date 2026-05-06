@@ -307,7 +307,9 @@ export async function fetchComercialInputParaValidarLocalFisico(
   if (!id) return {};
   const { data, error } = await supabase
     .from("emprendedores")
-    .select("plan_activo, plan_expira_at, trial_expira_at, trial_expira")
+    .select(
+      "plan_activo, plan_inicia_at, plan_expira_at, trial_expira_at, trial_expira"
+    )
     .eq("id", id)
     .maybeSingle();
   if (error) {
@@ -318,6 +320,7 @@ export async function fetchComercialInputParaValidarLocalFisico(
   const row = data as Record<string, unknown>;
   return {
     planActivo: row.plan_activo === true ? true : null,
+    planIniciaAt: s(row.plan_inicia_at) || null,
     planExpiraAt: s(row.plan_expira_at) || null,
     trialExpiraAt: s(row.trial_expira_at) || null,
     trialExpira: s(row.trial_expira) || null,

@@ -17,7 +17,9 @@ export async function activarPlanEmprendedorEnSupabase(
 ): Promise<{ plan_expira_at: string; plan_inicia_at: string }> {
   const { data: emp, error: fe } = await supabase
     .from("emprendedores")
-    .select("plan_activo, plan_expira_at, plan_inicia_at")
+    .select(
+      "plan_activo, plan_expira_at, plan_inicia_at, trial_expira_at, trial_expira"
+    )
     .eq("id", emprendedorId)
     .maybeSingle();
 
@@ -28,6 +30,8 @@ export async function activarPlanEmprendedorEnSupabase(
     plan_activo: boolean | null;
     plan_expira_at: string | null;
     plan_inicia_at: string | null;
+    trial_expira_at: string | null;
+    trial_expira: string | null;
   };
 
   const { plan_inicia_at, plan_expira_at } = calcularUpdatePlanTrasCompra({
@@ -35,6 +39,8 @@ export async function activarPlanEmprendedorEnSupabase(
     planActivoActual: row.plan_activo,
     planExpiraAtActual: row.plan_expira_at,
     planIniciaAtActual: row.plan_inicia_at,
+    trialExpiraAtActual: row.trial_expira_at,
+    trialExpiraLegacyActual: row.trial_expira,
   });
 
   const { error } = await supabase

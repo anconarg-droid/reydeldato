@@ -1085,8 +1085,10 @@ export async function GET(req: NextRequest) {
         instagram: s(row.instagram) || null,
         sitio_web: s(row.sitio_web) || null,
         plan_activo: row.plan_activo === true ? true : null,
+        plan_inicia_at: s(row.plan_inicia_at) || null,
         plan_expira_at: s(row.plan_expira_at) || null,
         trial_expira_at: s(row.trial_expira_at) || null,
+        trial_expira: s(row.trial_expira) || null,
       });
     } catch (e) {
       logPanelNegocioGet("tipoFicha_exception", {
@@ -1108,8 +1110,10 @@ export async function GET(req: NextRequest) {
         instagram: s(row.instagram) || null,
         sitio_web: s(row.sitio_web) || null,
         plan_activo: row.plan_activo === true ? true : null,
+        plan_inicia_at: s(row.plan_inicia_at) || null,
         plan_expira_at: s(row.plan_expira_at) || null,
         trial_expira_at: s(row.trial_expira_at) || null,
+        trial_expira: s(row.trial_expira) || null,
       });
     } catch (e) {
       logPanelNegocioGet("checklist_exception", {
@@ -1123,8 +1127,10 @@ export async function GET(req: NextRequest) {
     try {
       const comercialInput = {
         planActivo: row.plan_activo === true ? true : null,
+        planIniciaAt: s(row.plan_inicia_at) || null,
         planExpiraAt: s(row.plan_expira_at) || null,
         trialExpiraAt: s(row.trial_expira_at) || null,
+        trialExpira: s(row.trial_expira) || null,
       };
       const planEstado = getPlanEstado(comercialInput);
       const esPerfilCompletoComercial = tieneFichaCompleta(comercialInput);
@@ -1132,12 +1138,16 @@ export async function GET(req: NextRequest) {
       const ev = getEstadoComercialEmprendedor(comercialInput);
       const sugiereRenovarPlan =
         ev.estado === "plan_por_vencer" ||
+        ev.estado === "trial_por_vencer_con_plan_confirmado_programado" ||
+        ev.estado === "plan_confirmado_programado_por_arrancar" ||
         (ev.estado === "vencido_reciente" && Boolean(planExpiraAt));
 
       // Bloque “Plan” en panel: el cliente arma la UI solo con `buildPlanUi(comercial)`
       // (lib/panelEstadoPlanUi.ts) usando estas fechas + `estado` / `diasRestantes`.
       comercial = {
         estado: ev.estado,
+        planContratadoPersistido:
+          row.plan_activo === true ? true : row.plan_activo === false ? false : null,
         fechaExpiracion: ev.fechaExpiracion,
         diasRestantes: ev.diasRestantes,
         esPerfilCompletoComercial,
@@ -1162,6 +1172,7 @@ export async function GET(req: NextRequest) {
       });
       comercial = {
         estado: "basico",
+        planContratadoPersistido: null,
         fechaExpiracion: null,
         diasRestantes: null,
         esPerfilCompletoComercial: false,
@@ -2045,12 +2056,15 @@ export async function PUT(req: NextRequest) {
 
     const { data: empComercialRow } = await supabase
       .from("emprendedores")
-      .select("plan_activo, plan_expira_at, trial_expira_at, trial_expira")
+      .select(
+        "plan_activo, plan_inicia_at, plan_expira_at, trial_expira_at, trial_expira"
+      )
       .eq("id", id)
       .maybeSingle();
     const comercialLoc = (empComercialRow ?? {}) as Record<string, unknown>;
     const exigeDirLocalFisico = requiereDireccionSiModalidadLocalFisico({
       planActivo: comercialLoc.plan_activo === true,
+      planIniciaAt: s(comercialLoc.plan_inicia_at) || null,
       planExpiraAt: s(comercialLoc.plan_expira_at) || null,
       trialExpiraAt: s(comercialLoc.trial_expira_at) || null,
       trialExpira: s(comercialLoc.trial_expira) || null,

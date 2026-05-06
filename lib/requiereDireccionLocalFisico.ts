@@ -17,7 +17,11 @@ export function requiereDireccionSiModalidadLocalFisico(
   return (
     estado === "trial_activo" ||
     estado === "trial_por_vencer" ||
+    estado === "trial_con_plan_confirmado_programado" ||
+    estado === "trial_por_vencer_con_plan_confirmado_programado" ||
     estado === "plan_activo" ||
-    estado === "plan_por_vencer"
+    estado === "plan_por_vencer" ||
+    estado === "plan_confirmado_programado" ||
+    estado === "plan_confirmado_programado_por_arrancar"
   );
 }

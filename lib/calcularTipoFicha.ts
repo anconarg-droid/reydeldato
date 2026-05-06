@@ -17,6 +17,7 @@ export type CalcularTipoFichaInput = {
   sitio_web?: string | null;
 
   plan_activo?: boolean | null;
+  plan_inicia_at?: string | null;
   plan_expira_at?: string | null;
   trial_expira_at?: string | null;
   trial_expira?: string | null;
@@ -44,6 +45,7 @@ export function calcularTipoFicha(input: CalcularTipoFichaInput): TipoFicha {
     instagram: input.instagram,
     sitio_web: input.sitio_web,
     plan_activo: input.plan_activo,
+    plan_inicia_at: input.plan_inicia_at ?? null,
     plan_expira_at: input.plan_expira_at ?? null,
     trial_expira_at: input.trial_expira_at ?? null,
     trial_expira: input.trial_expira ?? null,

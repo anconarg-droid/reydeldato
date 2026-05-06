@@ -79,18 +79,23 @@ async function emprendedorYaCoincideConCompra(
   const esperada = planCodigoToPeriodicidad(planCodigo);
   const { data: emp, error } = await supabase
     .from("emprendedores")
-    .select("plan_activo, plan_expira_at, plan_periodicidad")
+    .select("plan_activo, plan_inicia_at, plan_expira_at, plan_periodicidad")
     .eq("id", emprendedorId)
     .maybeSingle();
   if (error || !emp) return false;
   const row = emp as {
     plan_activo: boolean | null;
+    plan_inicia_at: string | null;
     plan_expira_at: string | null;
     plan_periodicidad: string | null;
   };
   if (String(row.plan_periodicidad ?? "").trim() !== esperada) return false;
   return planPagadoVigenteComercial(
-    { planActivo: row.plan_activo, planExpiraAt: row.plan_expira_at },
+    {
+      planActivo: row.plan_activo,
+      planIniciaAt: row.plan_inicia_at,
+      planExpiraAt: row.plan_expira_at,
+    },
     new Date()
   );
 }

@@ -34,4 +34,21 @@ describe("calcularUpdatePlanTrasCompra", () => {
     esperado.setDate(esperado.getDate() + 30);
     expect(exp.toISOString()).toBe(esperado.toISOString());
   });
+
+  it("trial vigente sin plan efectivo: arranca al término del trial", () => {
+    const trialEnd = "2026-09-01T12:00:00.000Z";
+    const r = calcularUpdatePlanTrasCompra({
+      periodicidad: "mensual",
+      planActivoActual: true,
+      planExpiraAtActual: "2027-01-01T00:00:00.000Z",
+      planIniciaAtActual: "2026-10-01T00:00:00.000Z",
+      trialExpiraAtActual: trialEnd,
+      now,
+    });
+    expect(r.plan_inicia_at).toBe(trialEnd);
+    const exp = new Date(r.plan_expira_at);
+    const esperado = new Date(trialEnd);
+    esperado.setDate(esperado.getDate() + 30);
+    expect(exp.toISOString()).toBe(esperado.toISOString());
+  });
 });

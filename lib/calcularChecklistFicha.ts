@@ -10,6 +10,7 @@ export type CalcularChecklistFichaInput = {
   sitio_web?: string | null;
 
   plan_activo?: boolean | null;
+  plan_inicia_at?: string | null;
   plan_expira_at?: string | null;
   trial_expira_at?: string | null;
   trial_expira?: string | null;
@@ -25,6 +26,7 @@ export function calcularChecklistFicha(
 
   const suscripcion = tieneFichaCompleta({
     planActivo: input.plan_activo,
+    planIniciaAt: input.plan_inicia_at ?? null,
     planExpiraAt: input.plan_expira_at ?? null,
     trialExpiraAt: input.trial_expira_at ?? null,
     trialExpira: input.trial_expira ?? null,

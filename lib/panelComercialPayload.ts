@@ -5,6 +5,8 @@ import type { PlanEstado } from "@/lib/planEstado";
 export type PanelComercialPayload = {
   /** Estado fino para copy y CTAs (panel / planes). */
   estado: EstadoComercialEmprendedor;
+  /** Espejo ligero de `emprendedores.plan_activo` (útil para heurísticas client-side sin inferir desde `estado`). */
+  planContratadoPersistido?: boolean | null;
   esPerfilCompletoComercial: boolean;
   fechaExpiracion: string | null;
   diasRestantes: number | null;

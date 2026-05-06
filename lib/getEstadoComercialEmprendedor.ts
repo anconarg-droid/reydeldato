@@ -4,6 +4,7 @@
  * sin redefinir reglas de vigencia.
  */
 
+import { planContratadoPendienteDeInicio } from "@/lib/comercialPlanScheduling";
 import {
   planPagadoVigenteComercial,
   trialComercialVigente,
@@ -17,10 +18,20 @@ export const UMBRAL_DIAS_URGENCIA_COMERCIAL = 7;
 export type EstadoComercialEmprendedor =
   | "trial_activo"
   | "trial_por_vencer"
+  /** Pagó durante trial: trial sigue, plan pagado con inicio diferido. */
+  | "trial_con_plan_confirmado_programado"
+  /** Como anterior, pero el trial está a ≤7 días del término. */
+  | "trial_por_vencer_con_plan_confirmado_programado"
   | "plan_activo"
   | "plan_por_vencer"
+  /** Pago confirmado fuera de trial vigente pero periodo pagado aún no comenzó (caso marginal / datos). */
+  | "plan_confirmado_programado"
+  /** Como `plan_confirmado_programado`, pero el inicio efectivo está a ≤7 días. */
+  | "plan_confirmado_programado_por_arrancar"
   | "basico"
-  | "vencido_reciente";
+  | "vencido_reciente"
+  /** Plan pagado vencido (sin trial vigente). */
+  | "plan_vencido";
 
 function parseFin(iso: string | null | undefined): Date | null {
   if (iso == null || String(iso).trim() === "") return null;
@@ -60,15 +71,24 @@ export type ResultadoEstadoComercialEmprendedor = {
 };
 
 /**
- * Prioridad: plan pagado vigente > trial vigente > vencido reciente > básico.
+ * Prioridad (UI):
+ * - plan pagado efectivo vigente (`planPagadoVigenteComercial`)
+ * - trial vigente (+ variante si hay compra programada)
+ * - compra confirmada pero programada (sin trial vigente)
+ * - vencido reciente > básico / plan_vencido
  */
 export function getEstadoComercialEmprendedor(
   input: TieneFichaCompletaInput,
   now: Date = new Date()
 ): ResultadoEstadoComercialEmprendedor {
-  const planV = planPagadoVigenteComercial(input, now);
+  const contratadoDiferido = planContratadoPendienteDeInicio(
+    input.planActivo,
+    input.planIniciaAt,
+    now
+  );
   const trialEndIso = input.trialExpiraAt ?? input.trialExpira ?? null;
 
+  const planV = planPagadoVigenteComercial(input, now);
   if (planV) {
     const dias = diasRestantesHastaIso(input.planExpiraAt ?? null, now);
     const porVencer =
@@ -84,21 +104,72 @@ export function getEstadoComercialEmprendedor(
   }
 
   if (trialComercialVigente(input, now)) {
-    const dias = diasRestantesHastaIso(trialEndIso, now);
-    const porVencer =
-      dias != null && dias > 0 && dias <= UMBRAL_DIAS_URGENCIA_COMERCIAL;
-    const estado: EstadoComercialEmprendedor = porVencer
+    const diasTrial = diasRestantesHastaIso(trialEndIso, now);
+    const porVencerTrial =
+      diasTrial != null &&
+      diasTrial > 0 &&
+      diasTrial <= UMBRAL_DIAS_URGENCIA_COMERCIAL;
+
+    if (contratadoDiferido) {
+      const estadoTrialConPlan: EstadoComercialEmprendedor = porVencerTrial
+        ? "trial_por_vencer_con_plan_confirmado_programado"
+        : "trial_con_plan_confirmado_programado";
+
+      /** Seguimos contando trial en “días restantes”; fechas pagadas llegan aparte (`plan_inicia_at`/`plan_expira_at`). */
+      return {
+        estado: estadoTrialConPlan,
+        fechaExpiracion: trialEndIso,
+        diasRestantes: diasTrial,
+      };
+    }
+
+    const estadoTrial: EstadoComercialEmprendedor = porVencerTrial
       ? "trial_por_vencer"
       : "trial_activo";
+
     return {
-      estado,
+      estado: estadoTrial,
       fechaExpiracion: trialEndIso,
-      diasRestantes: dias,
+      diasRestantes: diasTrial,
+    };
+  }
+
+  if (contratadoDiferido) {
+    const diasIni = diasRestantesHastaIso(input.planIniciaAt ?? null, now);
+    const porVencer =
+      diasIni != null &&
+      diasIni > 0 &&
+      diasIni <= UMBRAL_DIAS_URGENCIA_COMERCIAL;
+    const estadoProg: EstadoComercialEmprendedor = porVencer
+      ? "plan_confirmado_programado_por_arrancar"
+      : "plan_confirmado_programado";
+
+    /**
+     * Métrica UX: cuántos días faltan para que empiece el periodo efectivo pagado.
+     * (El copy principal en `/panel/planes` usa `plan_inicia_at`.)
+     */
+    return {
+      estado: estadoProg,
+      fechaExpiracion: input.planIniciaAt ?? null,
+      diasRestantes: diasIni,
     };
   }
 
   const trialEnd = parseFin(trialEndIso);
   const planEnd = parseFin(input.planExpiraAt ?? null);
+
+  /** Plan marcado como activo pero vencido (o sin trial que lo “tape”). */
+  if (
+    input.planActivo === true &&
+    planEnd != null &&
+    planEnd.getTime() <= now.getTime()
+  ) {
+    return {
+      estado: "plan_vencido",
+      fechaExpiracion: input.planExpiraAt ?? null,
+      diasRestantes: 0,
+    };
+  }
   const trialReciente = vencioHaceNoMasDe(
     trialEnd,
     UMBRAL_DIAS_URGENCIA_COMERCIAL,

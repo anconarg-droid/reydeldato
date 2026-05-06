@@ -29,6 +29,7 @@ export type CalcularEstadoFichaInput = {
   sitio_web?: string | null;
 
   plan_activo?: boolean | null;
+  plan_inicia_at?: string | null;
   plan_expira_at?: string | null;
   trial_expira_at?: string | null;
   trial_expira?: string | null;
@@ -45,6 +46,7 @@ function s(v: unknown): string {
 export function calcularEstadoFicha(input: CalcularEstadoFichaInput): EstadoFicha {
   const suscripcion = tieneFichaCompleta({
     planActivo: input.plan_activo,
+    planIniciaAt: input.plan_inicia_at ?? null,
     planExpiraAt: input.plan_expira_at ?? null,
     trialExpiraAt: input.trial_expira_at ?? null,
     trialExpira: input.trial_expira ?? null,
@@ -92,10 +94,12 @@ export function trialVigenteOPlanPagoActivoDesdeBusqueda(
 ): boolean {
   const h = hydrated ?? {};
   const planExp = pickField(row, h, "plan_expira_at", "plan_expira");
+  const planIni = pickField(row, h, "plan_inicia_at");
   const trialAt = pickField(row, h, "trial_expira_at");
   const trialLegacy = pickField(row, h, "trial_expira");
   return tieneFichaCompleta({
     planActivo: pickPlanActivo(row, h),
+    planIniciaAt: planIni || null,
     planExpiraAt: planExp || null,
     trialExpiraAt: trialAt || null,
     trialExpira: trialLegacy || null,
@@ -235,6 +239,7 @@ export function fichaPublicaEsMejoradaDesdeItem(
       instagram: pickField(item, null, "instagram"),
       sitio_web: pickField(item, null, "sitio_web", "web"),
       plan_activo: pickPlanActivo(item, null),
+      plan_inicia_at: pickField(item, null, "plan_inicia_at") || null,
       plan_expira_at: pickField(item, null, "plan_expira_at", "plan_expira") || null,
       trial_expira_at: pickField(item, null, "trial_expira_at") || null,
       trial_expira: pickField(item, null, "trial_expira") || null,

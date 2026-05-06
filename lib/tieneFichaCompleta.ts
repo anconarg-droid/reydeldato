@@ -4,6 +4,7 @@
  *
  * - Plan vigente: `plan_activo === true` y, si hay `plan_expira_at`, fecha > ahora
  * - Trial vigente: `trial_expira_at` o `trial_expira` (fallback) > ahora, o `trialActivo === true` (compat API)
+ * - Plan diferido (`plan_inicia_at` futuro): NO cuenta como “plan pagado vigente” para completeness (sigue rigiendo trial).
  */
 
 function parseDate(v: string | null | undefined): Date | null {
@@ -14,6 +15,7 @@ function parseDate(v: string | null | undefined): Date | null {
 
 export type TieneFichaCompletaInput = {
   planActivo?: boolean | null;
+  planIniciaAt?: string | null;
   planExpiraAt?: string | null;
   trialExpiraAt?: string | null;
   trialExpira?: string | null;
@@ -34,6 +36,8 @@ export function planPagadoVigenteComercial(
   now?: Date
 ): boolean {
   const t = nowMs(now);
+  const ini = parseDate(input.planIniciaAt ?? null);
+  if (ini != null && ini.getTime() > t) return false;
   const planEnd = parseDate(input.planExpiraAt);
   return (
     input.planActivo === true &&

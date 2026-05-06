@@ -25,8 +25,11 @@ import {
   COPY_PLAN_GRATIS_LUEGO_BASICO,
   copyBloqueSuperiorPlanesDesdeEstado,
   copyBloqueSuperiorPlanesSinContextoNegocio,
+  fechaLargaEs,
+  mensajeContextualEncimaTarjetasPlanes,
 } from "@/lib/panelComercialCopy";
 import type { PanelComercialPayload } from "@/lib/panelComercialPayload";
+import { planContratadoPendienteDeInicio } from "@/lib/comercialPlanScheduling";
 import PanelBrandHomeBar from "@/components/panel/PanelBrandHomeBar";
 
 const BENEFICIOS = [
@@ -111,6 +114,12 @@ function ctaPrincipalLabelFromEstado(
         return "Gestionar plan";
       case "plan_por_vencer":
         return "Renovar plan";
+      case "trial_con_plan_confirmado_programado":
+      case "trial_por_vencer_con_plan_confirmado_programado":
+      case "plan_confirmado_programado":
+      case "plan_confirmado_programado_por_arrancar":
+        return "Gestionar plan";
+      case "plan_vencido":
       case "vencido_reciente":
         return "Volver a activar";
       default:
@@ -122,6 +131,9 @@ function ctaPrincipalLabelFromEstado(
       return "Gestionar plan";
     case "plan_por_vencer":
       return "Renovar plan";
+    case "plan_vencido":
+    case "vencido_reciente":
+      return "Reactivar ficha completa";
     default:
       return "Pagar y activar ahora";
   }
@@ -130,6 +142,15 @@ function ctaPrincipalLabelFromEstado(
 function whatsappAccion(estado: EstadoComercialEmprendedor): AccionPlanWhatsApp {
   if (estado === "plan_activo") return "gestionar";
   if (estado === "plan_por_vencer") return "renovar";
+  if (
+    estado === "trial_con_plan_confirmado_programado" ||
+    estado === "trial_por_vencer_con_plan_confirmado_programado" ||
+    estado === "plan_confirmado_programado" ||
+    estado === "plan_confirmado_programado_por_arrancar"
+  ) {
+    return "gestionar";
+  }
+  if (estado === "plan_vencido" || estado === "vencido_reciente") return "renovar";
   return "activar";
 }
 
@@ -222,6 +243,18 @@ export default function PlanesPanelClient({
       })
     : copyBloqueSuperiorPlanesSinContextoNegocio();
 
+  const encimaTarjetas = comercialListo
+    ? mensajeContextualEncimaTarjetasPlanes(comercial)
+    : null;
+
+  const planProgramado = comercialListo
+    ? planContratadoPendienteDeInicio(
+        comercial.planContratadoPersistido === true ? true : null,
+        comercial.planIniciaAt ?? null,
+        new Date()
+      )
+    : false;
+
   const ctaPrincipalLabel = ctaPrincipalLabelFromEstado(
     estado,
     comercialListo,
@@ -237,6 +270,13 @@ export default function PlanesPanelClient({
     if (!cleanId) {
       setPagoIniciarError(
         "No pudimos identificar tu negocio. Vuelve al panel e intenta de nuevo."
+      );
+      return;
+    }
+
+    if (planProgramado) {
+      setPagoIniciarError(
+        "Ya tienes un plan pagado programado. No necesitas pagar de nuevo."
       );
       return;
     }
@@ -354,6 +394,7 @@ export default function PlanesPanelClient({
     modoSoloContacto,
     comercialListo,
     accessToken,
+    planProgramado,
   ]);
 
   const tarjetasOrdenadas = ORDEN_TARJETAS_PLANES.map((k) =>
@@ -444,6 +485,11 @@ export default function PlanesPanelClient({
 
       <section aria-label="Planes">
         <h2 className="sr-only">Elige tu plan</h2>
+        {!heroCargando && encimaTarjetas ? (
+          <p className="mb-4 max-w-3xl text-sm font-semibold text-slate-800 leading-relaxed">
+            {encimaTarjetas}
+          </p>
+        ) : null}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5 lg:items-stretch">
           {tarjetasOrdenadas.map((t) => {
             const destacado = t.key === PLAN_RECOMENDADO;
@@ -554,21 +600,53 @@ export default function PlanesPanelClient({
         </p>
         <button
           type="button"
-          disabled={redirigiendoPago}
+          disabled={redirigiendoPago || planProgramado}
           onClick={handleCtaPrincipal}
           className="inline-flex w-full max-w-md mx-auto min-h-[52px] items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-extrabold text-gray-900 shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-70"
         >
           {redirigiendoPago
             ? "Redirigiendo al pago…"
-            : ctaPrincipalLabel}
+            : planProgramado
+              ? "Plan ya programado"
+              : ctaPrincipalLabel}
         </button>
-        {modoSoloContacto ? (
+        {planProgramado && comercialListo ? (
+          <p className="text-sm text-white/90 max-w-md mx-auto leading-relaxed">
+            Tu pago está confirmado. Tu período pagado comienza el{" "}
+            <span className="font-extrabold">
+              {fechaLargaEs(comercial.planIniciaAt) ?? "—"}
+            </span>
+            .
+          </p>
+        ) : modoSoloContacto ? (
           <p className="text-sm text-white/85 max-w-md mx-auto leading-relaxed">
             Activa tu plan por el canal configurado para tu cuenta.
           </p>
         ) : (
           <p className="text-sm text-white/85 max-w-md mx-auto leading-relaxed">
-            Serás redirigido a Webpay para completar el pago.
+            {comercialListo &&
+            (estado === "trial_activo" ||
+              estado === "trial_por_vencer" ||
+              estado === "trial_con_plan_confirmado_programado" ||
+              estado === "trial_por_vencer_con_plan_confirmado_programado") ? (
+              <>
+                Vas a pagar hoy en Webpay, pero tu período pagado efectivo partirá cuando termine tu
+                prueba
+                {comercial.trialExpiraAt ? (
+                  <>
+                    {" "}
+                    (
+                    <span className="font-semibold">
+                      {fechaLargaEs(comercial.trialExpiraAt) ?? "fecha de término"}
+                    </span>
+                    )
+                  </>
+                ) : null}
+                .
+              </>
+            ) : (
+              <>Serás redirigido a Webpay para completar el pago.</>
+            )}
           </p>
         )}
       </section>

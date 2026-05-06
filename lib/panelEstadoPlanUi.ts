@@ -93,9 +93,9 @@ function tituloPlanPagado(c: BuildPlanUiInput): string {
   const p = s(c.planPeriodicidad).toLowerCase();
   const label =
     p && isValidPeriodicidad(p) ? PLAN_PERIODICIDAD_LABELS[p] : null;
-  return label
-    ? `Plan actual: Perfil completo · ${label}`
-    : "Plan actual: Perfil completo";
+  if (!label) return "Plan actual: Perfil completo";
+  if (p === "semestral") return "Plan actual: 6 meses";
+  return `Plan actual: ${label}`;
 }
 
 /** Trial: `trial_inicia_at` si existe; si no, `trial_expira_at` − 90 días; si no, `null`. */
@@ -186,6 +186,16 @@ export function buildPlanUi(
       inicio: null,
       termino: terminoVencidoReciente(c),
       diasRestantes: null,
+      planPagadoSinFechasEnPanel: false,
+    };
+  }
+
+  if (c.estado === "plan_vencido") {
+    return {
+      titulo: "Tu ficha completa venció",
+      inicio: fechaPanel(c.planIniciaAt),
+      termino: fechaPanel(c.planExpiraAt),
+      diasRestantes: 0,
       planPagadoSinFechasEnPanel: false,
     };
   }

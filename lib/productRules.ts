@@ -57,6 +57,7 @@ function instantToIso(v: string | Date | null | undefined): string | null {
  */
 export function isPerfilCompleto(args: {
   planActivo?: boolean | null;
+  planIniciaAt?: string | Date | null;
   planExpiraAt?: string | Date | null;
   trialActivo?: boolean | null;
   trialExpiraAt?: string | Date | null;
@@ -72,6 +73,7 @@ export function isPerfilCompleto(args: {
   return tieneFichaCompleta(
     {
       planActivo: args.planActivo,
+      planIniciaAt: instantToIso(args.planIniciaAt),
       planExpiraAt: instantToIso(args.planExpiraAt),
       trialExpiraAt: instantToIso(args.trialExpiraAt),
       trialExpira: instantToIso(args.trialExpira),
@@ -83,6 +85,7 @@ export function isPerfilCompleto(args: {
 
 export function getEstadoFicha(args: {
   planActivo?: boolean | null;
+  planIniciaAt?: string | Date | null;
   planExpiraAt?: string | Date | null;
   trialActivo?: boolean | null;
   trialExpiraAt?: string | Date | null;

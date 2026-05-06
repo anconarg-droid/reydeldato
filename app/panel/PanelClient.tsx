@@ -25,6 +25,8 @@ import {
   aplicarModoBasicoSearchCardProps,
   type ModoVistaPanel,
 } from "@/lib/panelModoVista";
+import { fechaLargaEs } from "@/lib/panelComercialCopy";
+import { planContratadoPendienteDeInicio } from "@/lib/comercialPlanScheduling";
 import {
   panelNegocioItemToSearchCardProps,
   panelSlugFichaPublicaDesdeItem,
@@ -476,6 +478,8 @@ function mostrarBloqueCuandoTerminePlan(
   return (
     e === "trial_activo" ||
     e === "trial_por_vencer" ||
+    e === "trial_con_plan_confirmado_programado" ||
+    e === "trial_por_vencer_con_plan_confirmado_programado" ||
     e === "plan_activo" ||
     e === "plan_por_vencer"
   );
@@ -590,13 +594,9 @@ function BloqueCuandoTerminePlan({ sinCaja }: { sinCaja?: boolean }) {
 function BloqueEstadoPlan({
   fichaLoading,
   comercial,
-  planesHref,
-  planesUiVisible,
 }: {
   fichaLoading: boolean;
   comercial: PanelComercialPayload | null;
-  planesHref: string;
-  planesUiVisible: boolean;
 }) {
   if (fichaLoading) {
     return (
@@ -609,31 +609,6 @@ function BloqueEstadoPlan({
 
   const planUi = buildPlanUi(comercial);
   const esAccesoInicial = planUi.titulo === PLAN_UI_TITULO_ACCESO_INICIAL;
-
-  /** Bloque trial: “Plan actual: Trial de … días” (ver {@link buildPlanUi}). */
-  const esTrialEnPlanUi =
-    comercial?.estado === "trial_activo" ||
-    comercial?.estado === "trial_por_vencer";
-
-  const verPlanesBtn = planesUiVisible ? (
-    <Link
-      href={planesHref}
-      prefetch={false}
-      className="inline-flex shrink-0 min-h-[44px] items-center justify-center rounded-xl px-4 text-sm font-bold bg-gray-900 text-white hover:bg-gray-800"
-    >
-      Ver planes
-    </Link>
-  ) : null;
-
-  const activarFichaCompletaBtn = planesUiVisible ? (
-    <Link
-      href={planesHref}
-      prefetch={false}
-      className="inline-flex w-full sm:w-auto shrink-0 min-h-[44px] items-center justify-center rounded-xl px-4 text-sm font-bold bg-emerald-700 text-white hover:bg-emerald-800 shadow-sm order-last sm:order-none"
-    >
-      Activar ficha completa
-    </Link>
-  ) : null;
 
   if (esAccesoInicial) {
     return (
@@ -651,7 +626,6 @@ function BloqueEstadoPlan({
               ver y gestionar tu plan aquí.
             </p>
           </div>
-          {verPlanesBtn}
         </div>
       </section>
     );
@@ -659,10 +633,14 @@ function BloqueEstadoPlan({
 
   if (!comercial) return null;
 
+  const estado = comercial.estado;
+
   const alerta =
-    comercial.estado === "trial_por_vencer" ||
-    comercial.estado === "plan_por_vencer" ||
-    comercial.estado === "vencido_reciente";
+    estado === "trial_por_vencer" ||
+    estado === "trial_por_vencer_con_plan_confirmado_programado" ||
+    estado === "plan_por_vencer" ||
+    estado === "plan_confirmado_programado_por_arrancar" ||
+    estado === "vencido_reciente";
 
   const diasRestantesTexto =
     planUi.diasRestantes == null
@@ -683,9 +661,88 @@ function BloqueEstadoPlan({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex-1 min-w-0 space-y-1 text-sm text-gray-800 order-first">
           <h2 className="text-base font-black text-gray-900 leading-snug">
-            {planUi.titulo}
+            {estado === "trial_con_plan_confirmado_programado" ||
+            estado === "trial_por_vencer_con_plan_confirmado_programado"
+              ? planUi.titulo
+              : estado === "plan_confirmado_programado" ||
+                  estado === "plan_confirmado_programado_por_arrancar"
+                ? "Plan pagado confirmado"
+                : estado === "plan_vencido"
+                  ? "Tu ficha completa venció"
+                  : planUi.titulo}
           </h2>
-          {planUi.planPagadoSinFechasEnPanel ? (
+          {estado === "plan_vencido" ? (
+            <div className="space-y-1 text-gray-800 leading-relaxed max-w-xl pt-0.5">
+              <p className="text-gray-700">
+                Reactiva tu ficha completa para volver a mostrar fotos, descripción
+                y enlaces en tu perfil público.
+              </p>
+              {fechaLargaEs(comercial.planExpiraAt) ? (
+                <p className="tabular-nums font-semibold text-gray-900">
+                  Tu último período terminó el {fechaLargaEs(comercial.planExpiraAt)}
+                </p>
+              ) : null}
+            </div>
+          ) : estado === "trial_con_plan_confirmado_programado" ||
+            estado === "trial_por_vencer_con_plan_confirmado_programado" ? (
+            <div className="space-y-2 max-w-xl pt-0.5">
+              <p className="text-xs font-extrabold uppercase tracking-wide text-emerald-900">
+                Plan pagado confirmado
+              </p>
+              <div className="space-y-1 text-gray-800 leading-relaxed">
+                {planUi.inicio ? (
+                  <p>
+                    <span className="text-gray-500">Inicio (prueba gratis):</span>{" "}
+                    <span className="tabular-nums font-medium">
+                      {planUi.inicio}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-gray-800">Inicio no disponible</p>
+                )}
+                <p>
+                  <span className="text-gray-500">Término (prueba gratis):</span>{" "}
+                  <span className="tabular-nums font-medium">
+                    {planUi.termino ?? "No disponible"}
+                  </span>
+                </p>
+                <p className="font-bold text-gray-900 pt-0.5">
+                  Te quedan:{" "}
+                  <span className="tabular-nums">{diasRestantesTexto}</span>
+                </p>
+              </div>
+              <div className="border-t border-amber-200/70 pt-2 space-y-1.5 text-gray-800 leading-relaxed">
+                <p>
+                  <span className="text-gray-500">Comienza el:</span>{" "}
+                  <span className="tabular-nums font-semibold">
+                    {fechaLargaEs(comercial.planIniciaAt) ?? "No disponible"}
+                  </span>
+                </p>
+                <p>
+                  <span className="text-gray-500">Termina el:</span>{" "}
+                  <span className="tabular-nums font-semibold">
+                    {fechaLargaEs(comercial.planExpiraAt) ?? "No disponible"}
+                  </span>
+                </p>
+              </div>
+            </div>
+          ) : estado === "plan_confirmado_programado" ||
+            estado === "plan_confirmado_programado_por_arrancar" ? (
+            <div className="space-y-1.5 text-gray-800 leading-relaxed max-w-xl pt-0.5">
+              <p>
+                <span className="text-gray-500">Comienza el:</span>{" "}
+                <span className="tabular-nums font-semibold">
+                  {fechaLargaEs(comercial.planIniciaAt) ?? "No disponible"}
+                </span>
+              </p>
+              <p>
+                <span className="text-gray-500">Termina el:</span>{" "}
+                <span className="tabular-nums font-semibold">
+                  {fechaLargaEs(comercial.planExpiraAt) ?? "No disponible"}
+                </span>
+              </p>
+            </div>
+          ) : planUi.planPagadoSinFechasEnPanel ? (
             <div className="space-y-2 text-gray-700 leading-relaxed max-w-xl pt-0.5">
               <p className="font-medium text-gray-900">
                 {PLAN_UI_LINEA_PLAN_ACTIVO}
@@ -710,14 +767,23 @@ function BloqueEstadoPlan({
                   {planUi.termino ?? "No disponible"}
                 </span>
               </p>
-              <p className="font-bold text-gray-900 pt-0.5">
-                Te quedan:{" "}
-                <span className="tabular-nums">{diasRestantesTexto}</span>
-              </p>
+              {(estado === "plan_activo" || estado === "plan_por_vencer") &&
+              fechaLargaEs(comercial.planExpiraAt) ? (
+                <p className="font-bold text-gray-900 pt-0.5">
+                  Activo hasta el{" "}
+                  <span className="tabular-nums">
+                    {fechaLargaEs(comercial.planExpiraAt)}
+                  </span>
+                </p>
+              ) : (
+                <p className="font-bold text-gray-900 pt-0.5">
+                  Te quedan:{" "}
+                  <span className="tabular-nums">{diasRestantesTexto}</span>
+                </p>
+              )}
             </>
           )}
         </div>
-        {esTrialEnPlanUi ? activarFichaCompletaBtn : verPlanesBtn}
       </div>
     </section>
   );
@@ -778,6 +844,14 @@ export default function PanelClient({
   );
   const planesHref = buildPanelPlanesHref(id, slug, accessToken);
   const planesUiVisible = panelPlanesVisibleEnCliente();
+  const planContratadoDiferido = Boolean(
+    comercial &&
+      planContratadoPendienteDeInicio(
+        comercial.planContratadoPersistido === true ? true : null,
+        comercial.planIniciaAt ?? null,
+        new Date()
+      )
+  );
   const tieneNegocio = Boolean(
     id?.trim() || slug?.trim() || accessToken?.trim()
   );
@@ -1093,12 +1167,7 @@ export default function PanelClient({
           </div>
 
           {tieneNegocio ? (
-            <BloqueEstadoPlan
-              fichaLoading={fichaLoading}
-              comercial={comercial}
-              planesHref={planesHref}
-              planesUiVisible={planesUiVisible}
-            />
+            <BloqueEstadoPlan fichaLoading={fichaLoading} comercial={comercial} />
           ) : null}
 
           {tieneNegocio ? (
@@ -1111,7 +1180,8 @@ export default function PanelClient({
 
           {tieneNegocio &&
           !fichaLoading &&
-          mostrarBloqueCuandoTerminePlan(comercial) ? (
+          (mostrarBloqueCuandoTerminePlan(comercial) ||
+            comercial?.estado === "plan_vencido") ? (
             <div className="max-w-3xl space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
               <div className="space-y-4">
                 <BloqueCuandoTerminePlan sinCaja />
@@ -1130,13 +1200,29 @@ export default function PanelClient({
                 </div>
               </div>
               {planesUiVisible ? (
-                <Link
-                  href={planesHref}
-                  prefetch={false}
-                  className="flex min-h-[44px] w-full items-center justify-center rounded-xl border-2 border-gray-900 bg-gray-900 px-4 text-center text-sm font-black text-white shadow-md transition hover:border-gray-800 hover:bg-gray-800"
-                >
-                  Mantener perfil completo
-                </Link>
+                <>
+                  <Link
+                    href={planesHref}
+                    prefetch={false}
+                    className="flex min-h-[44px] w-full items-center justify-center rounded-xl border-2 border-gray-900 bg-gray-900 px-4 text-center text-sm font-black text-white shadow-md transition hover:border-gray-800 hover:bg-gray-800"
+                  >
+                    {comercial?.estado === "plan_vencido"
+                      ? "Reactivar ficha completa"
+                      : "Mantener perfil completo"}
+                  </Link>
+                  {comercial &&
+                  (comercial.estado === "trial_activo" ||
+                    comercial.estado === "trial_por_vencer") &&
+                  !planContratadoDiferido ? (
+                    <p className="text-xs sm:text-sm text-center text-gray-800 leading-relaxed max-w-xl mx-auto">
+                      Puedes pagar ahora y tu plan pagado comenzará cuando termine
+                      tu prueba gratis.{" "}
+                      <span className="font-semibold">
+                        No pierdes días de tu trial.
+                      </span>
+                    </p>
+                  ) : null}
+                </>
               ) : null}
             </div>
           ) : tieneNegocio && !fichaLoading ? (

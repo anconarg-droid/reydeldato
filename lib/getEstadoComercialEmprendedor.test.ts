@@ -31,12 +31,26 @@ describe("getEstadoComercialEmprendedor", () => {
     const r = getEstadoComercialEmprendedor(
       {
         planActivo: true,
+        planIniciaAt: "2026-01-01T00:00:00.000Z",
         planExpiraAt: "2026-08-01T12:00:00.000Z",
         trialExpiraAt: "2026-06-16T12:00:00.000Z",
       },
       now
     );
     expect(r.estado).toBe("plan_activo");
+  });
+
+  it("trial sigue si el plan pagado está programado (inicio futuro)", () => {
+    const r = getEstadoComercialEmprendedor(
+      {
+        planActivo: true,
+        planIniciaAt: "2026-07-01T12:00:00.000Z",
+        planExpiraAt: "2026-08-01T12:00:00.000Z",
+        trialExpiraAt: "2026-07-01T12:00:00.000Z",
+      },
+      now
+    );
+    expect(r.estado).toBe("trial_con_plan_confirmado_programado");
   });
 
   it("plan_por_vencer", () => {
@@ -48,6 +62,19 @@ describe("getEstadoComercialEmprendedor", () => {
       now
     );
     expect(r.estado).toBe("plan_por_vencer");
+  });
+
+  it("plan_vencido si plan_activo pero expiración pasó", () => {
+    const r = getEstadoComercialEmprendedor(
+      {
+        planActivo: true,
+        planIniciaAt: "2026-01-01T00:00:00.000Z",
+        planExpiraAt: "2026-06-01T12:00:00.000Z",
+        trialExpiraAt: "2025-01-01T12:00:00.000Z",
+      },
+      now
+    );
+    expect(r.estado).toBe("plan_vencido");
   });
 
   it("basico sin fechas vigentes ni vencimiento reciente", () => {

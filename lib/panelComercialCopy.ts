@@ -1,5 +1,107 @@
 import type { PlanEstado } from "@/lib/planEstado";
 import type { EstadoComercialEmprendedor } from "@/lib/getEstadoComercialEmprendedor";
+import type { PanelComercialPayload } from "@/lib/panelComercialPayload";
+
+function fechaValidaIso(iso: string | null | undefined): boolean {
+  if (iso == null || String(iso).trim() === "") return false;
+  const d = new Date(String(iso));
+  return !Number.isNaN(d.getTime());
+}
+
+function iniEfectivaPlanPagadoMs(
+  iniciaAt: string | null | undefined,
+  expiraAt: string | null | undefined,
+  nowMs: number
+): number | null {
+  const iniS = String(iniciaAt ?? "").trim();
+  const ini = fechaValidaIso(iniS) ? new Date(iniS).getTime() : null;
+  if (ini != null) return ini;
+  /** Compat BD: inferir desde fin − 30d sólo cuando el fin es plausible y cercano (“mensual”). */
+  const finS = String(expiraAt ?? "").trim();
+  if (!fechaValidaIso(finS)) return null;
+  const fin = new Date(finS).getTime();
+  if (fin <= nowMs) return null;
+  return fin - 30 * 86_400_000;
+}
+
+/**
+ * Texto requerido arriba de las tarjetas en `/panel/planes` según estado comercial/fechas.
+ * (Fuera del “hero” principal para no duplicar el bloque superior existente.)
+ */
+export function mensajeContextualEncimaTarjetasPlanes(
+  comercial: PanelComercialPayload | null,
+  now: Date = new Date()
+): string | null {
+  if (!comercial) return null;
+
+  const nowMs = now.getTime();
+  const trialVigente =
+    comercial.estado === "trial_activo" ||
+    comercial.estado === "trial_por_vencer" ||
+    comercial.estado === "trial_con_plan_confirmado_programado" ||
+    comercial.estado === "trial_por_vencer_con_plan_confirmado_programado";
+
+  const iniMs = iniEfectivaPlanPagadoMs(
+    comercial.planIniciaAt,
+    comercial.planExpiraAt,
+    nowMs
+  );
+  const finMs = fechaValidaIso(comercial.planExpiraAt)
+    ? new Date(String(comercial.planExpiraAt)).getTime()
+    : null;
+
+  const planEfectivoVigente =
+    (comercial.estado === "plan_activo" || comercial.estado === "plan_por_vencer") &&
+    finMs != null &&
+    finMs > nowMs &&
+    (iniMs == null || iniMs <= nowMs);
+
+  const planProgramado =
+    comercial.estado === "trial_con_plan_confirmado_programado" ||
+    comercial.estado === "trial_por_vencer_con_plan_confirmado_programado" ||
+    comercial.estado === "plan_confirmado_programado" ||
+    comercial.estado === "plan_confirmado_programado_por_arrancar" ||
+    (Boolean(comercial.planIniciaAt) &&
+      fechaValidaIso(comercial.planIniciaAt) &&
+      new Date(String(comercial.planIniciaAt)).getTime() > nowMs &&
+      comercial.estado !== "trial_activo" &&
+      comercial.estado !== "trial_por_vencer");
+
+  if (trialVigente && planProgramado) {
+    /** El bloque superior ya explica trial + compra; aquí evitamos repetir la misma línea. */
+    return null;
+  }
+
+  if (trialVigente) {
+    return "Estás en prueba gratis. Si pagas hoy, tu plan pagado comenzará cuando termine tu prueba.";
+  }
+
+  if (planProgramado && comercial.planIniciaAt && comercial.planExpiraAt) {
+    const a = fechaLargaEs(comercial.planIniciaAt);
+    const b = fechaLargaEs(comercial.planExpiraAt);
+    if (a && b) {
+      return `Tu pago está confirmado. Tu plan pagado comenzará el ${a} y terminará el ${b}.`;
+    }
+    return null;
+  }
+
+  if (planEfectivoVigente) {
+    const b = fechaLargaEs(comercial.planExpiraAt);
+    return b
+      ? `Tu plan pagado está activo hasta el ${b}.`
+      : "Tu plan pagado está activo.";
+  }
+
+  if (
+    comercial.estado === "basico" ||
+    comercial.estado === "vencido_reciente" ||
+    comercial.estado === "plan_vencido"
+  ) {
+    return "Puedes activar tu ficha completa eligiendo un plan.";
+  }
+
+  return null;
+}
 
 export function fechaLargaEs(iso: string | null | undefined): string | null {
   if (iso == null || String(iso).trim() === "") return null;
@@ -70,6 +172,24 @@ export function copyBloqueSuperiorPlanesDesdeEstado(opts: {
           : "Periodo de prueba: tienes ficha completa activa.",
         subtexto: COPY_PLAN_GRATIS_LUEGO_BASICO,
       };
+    case "trial_con_plan_confirmado_programado":
+    case "trial_por_vencer_con_plan_confirmado_programado":
+      return {
+        titulo: "Tu ficha está activa",
+        texto: dTxt
+          ? `Periodo de prueba: te quedan ${dTxt} días con ficha completa. Además, ya tienes un plan pagado confirmado que comenzará al término de tu prueba.`
+          : "Periodo de prueba: tienes ficha completa activa y un plan pagado confirmado que comenzará al término de tu prueba.",
+        subtexto: COPY_PLAN_GRATIS_LUEGO_BASICO,
+      };
+    case "plan_confirmado_programado":
+    case "plan_confirmado_programado_por_arrancar":
+      return {
+        titulo: "Tu plan está confirmado",
+        texto:
+          "Tu pago está confirmado. Cuando comience tu periodo pagado, tu negocio seguirá apareciendo como perfil completo en las búsquedas.",
+        subtexto:
+          "Mientras tanto, tu ficha sigue publicada según el estado comercial actual.",
+      };
     case "plan_activo":
     case "plan_por_vencer":
       return {
@@ -79,6 +199,13 @@ export function copyBloqueSuperiorPlanesDesdeEstado(opts: {
           : "Tienes un plan activo. Tu negocio sigue apareciendo como perfil completo en las búsquedas.",
         subtexto:
           "Tu ficha completa se mantiene activa mientras tu plan esté vigente.",
+      };
+    case "plan_vencido":
+      return {
+        titulo: "Tu ficha está en modo básico",
+        texto:
+          "Tu plan anterior venció: sigues publicado con datos básicos y WhatsApp. Puedes reactivar la ficha completa eligiendo un plan.",
+        subtexto: COPY_PLAN_GRATIS_LUEGO_BASICO,
       };
     default:
       return {
@@ -115,7 +242,9 @@ export function copyBannerComercialPanelDesdeEstado(opts: {
     actividad &&
     (opts.estado === "basico" ||
       opts.estado === "trial_por_vencer" ||
-      opts.estado === "plan_por_vencer")
+      opts.estado === "trial_por_vencer_con_plan_confirmado_programado" ||
+      opts.estado === "plan_por_vencer" ||
+      opts.estado === "plan_confirmado_programado_por_arrancar")
   ) {
     return {
       titulo: "Tu negocio ya está recibiendo visitas",
@@ -139,6 +268,28 @@ export function copyBannerComercialPanelDesdeEstado(opts: {
           ? `Te quedan ${dTxt} días con ficha completa. ${COPY_PLAN_GRATIS_LUEGO_BASICO}`
           : `Tu periodo de prueba está por terminar. ${COPY_PLAN_GRATIS_LUEGO_BASICO}`,
         cta: "Activar plan ahora",
+      };
+    case "trial_con_plan_confirmado_programado":
+      return {
+        titulo: "Tu ficha está activa (prueba + plan confirmado)",
+        texto: `Tienes periodo de prueba y además un plan pagado confirmado que comenzará al término de la prueba. ${COPY_PLAN_GRATIS_LUEGO_BASICO}`,
+        cta: "Ver planes",
+      };
+    case "trial_por_vencer_con_plan_confirmado_programado":
+      return {
+        titulo: "Tu prueba está por terminar (plan confirmado)",
+        texto: dTxt
+          ? `Te quedan ${dTxt} días con ficha completa. Además, ya tienes un plan pagado confirmado. ${COPY_PLAN_GRATIS_LUEGO_BASICO}`
+          : `Tu periodo de prueba está por terminar y ya tienes un plan pagado confirmado. ${COPY_PLAN_GRATIS_LUEGO_BASICO}`,
+        cta: "Ver planes",
+      };
+    case "plan_confirmado_programado":
+    case "plan_confirmado_programado_por_arrancar":
+      return {
+        titulo: "Plan confirmado (aún no arranca)",
+        texto:
+          "Tu pago está confirmado. Cuando empiece tu periodo pagado, tu negocio seguirá como perfil completo.",
+        cta: "Ver mi plan",
       };
     case "plan_activo":
       return {
@@ -170,5 +321,23 @@ export function copyBannerComercialPanelDesdeEstado(opts: {
           "Tu plan venció recientemente: sigues visible con datos básicos. Reactiva la ficha completa para destacar de nuevo en el directorio en crecimiento de tu zona.",
         cta: "Volver a activar",
       };
+    case "plan_vencido":
+      return {
+        titulo: "Tu plan venció",
+        texto:
+          "Tu negocio sigue visible como perfil básico (WhatsApp y datos esenciales). Reactiva tu ficha completa cuando quieras.",
+        cta: "Volver a activar",
+      };
+    default: {
+      const _exhaustive: never = opts.estado;
+      return {
+        titulo: "Tu ficha",
+        texto:
+          typeof _exhaustive === "string"
+            ? `Estado comercial: ${_exhaustive}`
+            : "Actualiza esta pantalla para ver el estado comercial más reciente.",
+        cta: "Ver planes",
+      };
+    }
   }
 }
