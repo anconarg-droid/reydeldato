@@ -5985,6 +5985,12 @@ export default function NegocioForm({
     }
 
     try {
+      if (isUpgradeMode && persistMediaId && !upgradeProfileDirty) {
+        setPostSaveActionsOpen(true);
+        setUpgradeSilentSave((s) => (s === "saved" ? s : "idle"));
+        setUpgradeSilentErr("");
+        return;
+      }
       upgradeProfileSaveLockRef.current = true;
       setIsSubmitting(true);
       if (isUpgradeMode && persistMediaId) {
@@ -6070,10 +6076,16 @@ export default function NegocioForm({
 
   useEffect(() => {
     if (!isUpgradeMode || !persistMediaId || loading) return;
+    if (!upgradeProfileDirty) {
+      setUpgradeSilentSave((s) => (s === "saved" ? s : "idle"));
+      setUpgradeSilentErr("");
+      return;
+    }
 
     const timer = window.setTimeout(() => {
       void (async () => {
         if (upgradeProfileSaveLockRef.current) return;
+        if (!upgradeProfileDirty) return;
         const nextErrors = validateForm();
         if (Object.keys(nextErrors).length > 0) {
           setUpgradeSilentSave((s) => (s === "saved" ? s : "idle"));
@@ -6120,6 +6132,7 @@ export default function NegocioForm({
     return () => window.clearTimeout(timer);
   }, [
     upgradeProfileSaveSig,
+    upgradeProfileDirty,
     isUpgradeMode,
     persistMediaId,
     loading,
