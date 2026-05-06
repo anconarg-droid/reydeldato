@@ -634,6 +634,23 @@ function BloqueEstadoPlan({
   if (!comercial) return null;
 
   const estado = comercial.estado;
+  const periodicidadRaw = String(comercial.planPeriodicidad ?? "")
+    .trim()
+    .toLowerCase();
+  const planEtiqueta =
+    periodicidadRaw === "anual"
+      ? "Anual"
+      : periodicidadRaw === "semestral"
+        ? "6 meses"
+        : periodicidadRaw === "mensual"
+          ? "Básico"
+          : "";
+
+  const planProgramado = planContratadoPendienteDeInicio(
+    comercial.planContratadoPersistido === true ? true : null,
+    comercial.planIniciaAt ?? null,
+    new Date()
+  );
 
   const alerta =
     estado === "trial_por_vencer" ||
@@ -661,17 +678,52 @@ function BloqueEstadoPlan({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex-1 min-w-0 space-y-1 text-sm text-gray-800 order-first">
           <h2 className="text-base font-black text-gray-900 leading-snug">
-            {estado === "trial_con_plan_confirmado_programado" ||
-            estado === "trial_por_vencer_con_plan_confirmado_programado"
-              ? planUi.titulo
-              : estado === "plan_confirmado_programado" ||
-                  estado === "plan_confirmado_programado_por_arrancar"
-                ? "Plan pagado confirmado"
-                : estado === "plan_vencido"
-                  ? "Tu ficha completa venció"
-                  : planUi.titulo}
+            {estado === "trial_activo" || estado === "trial_por_vencer"
+              ? planProgramado
+                ? "Plan pagado programado"
+                : "Prueba gratuita activa"
+              : estado === "trial_con_plan_confirmado_programado" ||
+                  estado === "trial_por_vencer_con_plan_confirmado_programado"
+                ? "Plan pagado programado"
+                : estado === "plan_confirmado_programado" ||
+                    estado === "plan_confirmado_programado_por_arrancar"
+                  ? "Plan pagado programado"
+                  : estado === "plan_vencido"
+                    ? "Tu ficha completa venció"
+                    : estado === "plan_activo" || estado === "plan_por_vencer"
+                      ? `Plan${planEtiqueta ? ` ${planEtiqueta}` : ""} activo`
+                      : planUi.titulo}
           </h2>
-          {estado === "plan_vencido" ? (
+          {estado === "trial_activo" || estado === "trial_por_vencer" ? (
+            <div className="space-y-2 max-w-xl pt-0.5">
+              {planProgramado ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-emerald-950 bg-emerald-200/90 px-2 py-1 rounded-md">
+                      Pago confirmado
+                    </span>
+                    <p className="text-xs font-bold text-gray-900">
+                      No perderás días de tu prueba gratuita.
+                    </p>
+                  </div>
+                  <p className="text-gray-800 leading-relaxed">
+                    Tu plan{planEtiqueta ? ` ${planEtiqueta}` : ""} comenzará automáticamente el{" "}
+                    <span className="font-extrabold tabular-nums">
+                      {fechaLargaEs(comercial.planIniciaAt) ?? "—"}
+                    </span>
+                    .
+                  </p>
+                </>
+              ) : null}
+              <p className="text-gray-800 leading-relaxed">
+                Tu plan gratuito termina el{" "}
+                <span className="font-extrabold tabular-nums">
+                  {planUi.termino ?? "—"}
+                </span>
+                .
+              </p>
+            </div>
+          ) : estado === "plan_vencido" ? (
             <div className="space-y-1 text-gray-800 leading-relaxed max-w-xl pt-0.5">
               <p className="text-gray-700">
                 Reactiva tu ficha completa para volver a mostrar fotos, descripción
@@ -686,9 +738,14 @@ function BloqueEstadoPlan({
           ) : estado === "trial_con_plan_confirmado_programado" ||
             estado === "trial_por_vencer_con_plan_confirmado_programado" ? (
             <div className="space-y-2 max-w-xl pt-0.5">
-              <p className="text-xs font-extrabold uppercase tracking-wide text-emerald-900">
-                Plan pagado confirmado
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-emerald-950 bg-emerald-200/90 px-2 py-1 rounded-md">
+                  Pago confirmado
+                </span>
+                <p className="text-xs font-bold text-gray-900">
+                  No perderás días de tu prueba gratuita.
+                </p>
+              </div>
               <div className="space-y-1 text-gray-800 leading-relaxed">
                 {planUi.inicio ? (
                   <p>
@@ -729,6 +786,14 @@ function BloqueEstadoPlan({
           ) : estado === "plan_confirmado_programado" ||
             estado === "plan_confirmado_programado_por_arrancar" ? (
             <div className="space-y-1.5 text-gray-800 leading-relaxed max-w-xl pt-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-emerald-950 bg-emerald-200/90 px-2 py-1 rounded-md">
+                  Pago confirmado
+                </span>
+                <p className="text-xs font-bold text-gray-900">
+                  El plan se activará automáticamente.
+                </p>
+              </div>
               <p>
                 <span className="text-gray-500">Comienza el:</span>{" "}
                 <span className="tabular-nums font-semibold">
@@ -1086,7 +1151,7 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,440px)] lg:gap-8 lg:items-start">
+      <div className="w-full space-y-4">
         <div className="min-w-0 space-y-4">
           <div
             className="w-full rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
@@ -1183,22 +1248,7 @@ export default function PanelClient({
           (mostrarBloqueCuandoTerminePlan(comercial) ||
             comercial?.estado === "plan_vencido") ? (
             <div className="w-full space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
-              <div className="space-y-4">
-                <BloqueCuandoTerminePlan sinCaja />
-                <div className="flex w-full max-w-md flex-col items-center justify-center gap-2.5 rounded-lg border border-amber-300/50 bg-white/90 p-3 text-center shadow-inner mx-auto">
-                  <p className="w-full px-1 text-center text-base font-black leading-tight text-gray-900">
-                    Compara cómo te ven
-                  </p>
-                  <p className="w-full text-center text-[10px] font-semibold uppercase tracking-wide text-amber-900/90">
-                    Completa · Básica
-                  </p>
-                  <SwitchModoVista
-                    value={modoVista}
-                    onChange={setModoVista}
-                    size="prominent"
-                  />
-                </div>
-              </div>
+              <BloqueCuandoTerminePlan sinCaja />
               {planesUiVisible ? (
                 <>
                   <Link
@@ -1226,19 +1276,7 @@ export default function PanelClient({
               ) : null}
             </div>
           ) : tieneNegocio && !fichaLoading ? (
-            <div className="flex max-w-sm flex-col items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/90 px-3 py-3 text-center mx-auto md:mx-0 md:w-full md:flex-row md:justify-center md:gap-6">
-              <p className="text-sm font-black text-gray-900">
-                Compara cómo te ven
-              </p>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-600">
-                Completa · Básica
-              </p>
-              <SwitchModoVista
-                value={modoVista}
-                onChange={setModoVista}
-                size="prominent"
-              />
-            </div>
+            <div />
           ) : null}
 
           {!id?.trim() && !esPremium ? (
@@ -1257,139 +1295,234 @@ export default function PanelClient({
             })()
           ) : null}
         </div>
+      </div>
 
-        <aside className="min-w-0 space-y-4 overflow-x-hidden lg:sticky lg:top-6">
-          {estadisticasOcultasEnPanel ? (
-            <div
-              className="w-full rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
-              role="status"
-            >
-              <p className="font-semibold text-gray-900">
-                Estadísticas no visibles con tu plan o perfil actual
-              </p>
-              <p className="mt-1.5 text-gray-700">
-                Visitas, impresiones y contactos{" "}
-                <span className="font-semibold">siguen registrándose</span> en
-                segundo plano. Al reactivar perfil completo verás aquí el total
-                real, incluido lo que ocurra mientras tanto.
-              </p>
+      <section
+        className="w-full rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm"
+        aria-label="Así te ven las personas"
+      >
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg sm:text-xl font-black text-gray-900">
+            Así te ven las personas
+          </h2>
+          <p className="text-sm font-medium text-slate-600">
+            Perfil básico vs perfil completo (lo que cambia en visibilidad y confianza).
+          </p>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 relative overflow-hidden">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-black text-gray-900">Perfil básico</p>
+                <p className="text-xs font-semibold text-slate-600">
+                  Solo contacto por WhatsApp
+                </p>
+              </div>
+              <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-700 bg-slate-200/80 px-2 py-1 rounded-md">
+                Menos visible
+              </span>
             </div>
-          ) : null}
-          {qs && !estadisticasOcultasEnPanel ? (
-            <div className="w-full">
-              {metricasOcultasPorVistaBasica ? (
-                <PanelRendimientoModoBasicaPreview />
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-slate-100/10 via-slate-200/10 to-slate-300/10" />
+            <div className="mt-4">
+              {tieneNegocio ? (
+                fichaLoading ? (
+                  <div className="w-full max-w-[420px] rounded-xl border border-slate-200 bg-slate-100 min-h-[220px] animate-pulse" aria-hidden />
+                ) : previewCardProps ? (
+                  <div className="w-full max-w-[420px] mx-auto">
+                    <EmprendedorSearchCard
+                      {...previewCardProps}
+                      modoVista="basica"
+                      etiquetaVerFicha="Ver ficha"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full max-w-[420px] rounded-xl border border-slate-200 bg-slate-100 min-h-[220px] animate-pulse" aria-hidden />
+                )
               ) : (
-                <MetricsResumenPanel
-                  data={metricsMostrados}
-                  rangeLabel={textoRangoMetricas(rangoMostrado)}
-                  interes={interesMetricasFlags}
-                  loading={loading}
-                  omitInsight
-                  headerRight={
-                    <div
-                      className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
-                      role="group"
-                      aria-label="Periodo de estadísticas"
-                    >
-                      {(["7d", "30d", "all"] as const).map((r) => (
-                        <button
-                          key={r}
-                          type="button"
-                          onClick={() => setRange(r)}
-                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                            range === r
-                              ? "bg-gray-900 text-white"
-                              : "text-gray-600 hover:bg-gray-100"
-                          }`}
-                        >
-                          {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
-                        </button>
-                      ))}
-                    </div>
-                  }
-                />
+                <p className="text-sm text-slate-600">Enlaza tu ficha para ver la comparación.</p>
               )}
             </div>
-          ) : null}
+            <div className="mt-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700">
+              Menos información visible (sin fotos, menos descripción y menos confianza).
+            </div>
+          </div>
 
-          <h2 className="text-sm font-extrabold tracking-tight text-gray-900">
-            Así te ven en resultados
-          </h2>
-          {tieneNegocio ? (
-            fichaLoading ? (
-              <div
-                className="mx-auto w-full max-w-[360px] rounded-xl border border-gray-200 bg-gray-100 min-h-[240px] animate-pulse"
-                aria-hidden
-              />
-            ) : previewCardProps ? (
-              <div className="mx-auto w-full max-w-[360px] space-y-2">
-                {previewInformativa && negocioItem ? (
-                  <div
-                    role="status"
-                    className="rounded-lg border border-slate-200 bg-slate-50/90 px-2.5 py-2 text-left"
-                  >
-                    <p className="m-0 text-[11px] font-extrabold text-slate-900">
-                      Vista previa
-                    </p>
-                    <p className="mt-0.5 m-0 text-[10px] font-medium leading-snug text-slate-600">
-                      {panelPreviewSubtituloInformativo(negocioItem)}
-                    </p>
-                  </div>
-                ) : null}
-                <EmprendedorSearchCard
-                  {...previewCardProps}
-                  modoVista={modoVista}
-                  etiquetaVerFicha="Ver ficha completa"
-                />
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/30 p-4 sm:p-5 relative overflow-hidden">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-black text-gray-900">Perfil completo</p>
+                <p className="text-xs font-semibold text-slate-600">
+                  Más confianza y más contactos
+                </p>
               </div>
-            ) : (
-              <div
-                className="mx-auto w-full max-w-[360px] rounded-xl border border-gray-200 bg-gray-50 min-h-[180px] animate-pulse"
-                aria-hidden
-              />
-            )
-          ) : (
-            <p className="text-sm text-gray-500 py-2">
-              Enlaza tu ficha para ver la vista previa aquí.
-            </p>
-          )}
-
-          {qs &&
-          !estadisticasOcultasEnPanel &&
-          !metricasOcultasPorVistaBasica ? (
-            !loading ? (
-              (() => {
-                const insight = panelInsightMessage(
-                  Number.isFinite(metricsMostrados.impresiones)
-                    ? metricsMostrados.impresiones
-                    : 0,
-                  Number.isFinite(metricsMostrados.visitas)
-                    ? metricsMostrados.visitas
-                    : 0,
-                  Number.isFinite(metricsMostrados.click_whatsapp)
-                    ? metricsMostrados.click_whatsapp
-                    : 0
-                );
-                if (!insight) return null;
-                return (
-                  <div
-                    className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
-                    role="status"
-                  >
-                    {insight}
+              <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-emerald-950 bg-emerald-200/90 px-2 py-1 rounded-md">
+                Más visible
+              </span>
+            </div>
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-emerald-50/10 via-white/20 to-emerald-100/10" />
+            <div className="mt-4">
+              {tieneNegocio ? (
+                fichaLoading ? (
+                  <div className="w-full max-w-[420px] rounded-xl border border-emerald-200 bg-emerald-50 min-h-[220px] animate-pulse" aria-hidden />
+                ) : previewCardProps ? (
+                  <div className="w-full max-w-[420px] mx-auto space-y-3">
+                    {previewInformativa && negocioItem ? (
+                      <div
+                        role="status"
+                        className="rounded-lg border border-slate-200 bg-white/80 px-2.5 py-2 text-left"
+                      >
+                        <p className="m-0 text-[11px] font-extrabold text-slate-900">
+                          Vista previa
+                        </p>
+                        <p className="mt-0.5 m-0 text-[10px] font-medium leading-snug text-slate-600">
+                          {panelPreviewSubtituloInformativo(negocioItem)}
+                        </p>
+                      </div>
+                    ) : null}
+                    <EmprendedorSearchCard
+                      {...previewCardProps}
+                      modoVista="completa"
+                      etiquetaVerFicha="Ver ficha completa"
+                    />
+                    {!previewInformativa && negocioItem ? (
+                      <div className="rounded-2xl border border-emerald-200 bg-white p-3">
+                        <p className="text-xs font-bold text-slate-700 mb-2">
+                          Vista pública (resumen)
+                        </p>
+                        <PanelFichaPublicaEmbed
+                          slug={slugFichaPublica}
+                          modoVista="completa"
+                          item={negocioItem}
+                          urlSlugParam={slug}
+                          vistaPublicaBloqueada={previewInformativa}
+                        />
+                      </div>
+                    ) : null}
                   </div>
-                );
-              })()
+                ) : (
+                  <div className="w-full max-w-[420px] rounded-xl border border-emerald-200 bg-emerald-50 min-h-[220px] animate-pulse" aria-hidden />
+                )
+              ) : (
+                <p className="text-sm text-slate-600">Enlaza tu ficha para ver la comparación.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {planesUiVisible ? (
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-900 p-4 sm:p-5 text-center space-y-3">
+            <Link
+              href={planesHref}
+              prefetch={false}
+              className="inline-flex w-full max-w-md mx-auto min-h-[52px] items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-extrabold text-gray-900 shadow-lg hover:bg-gray-100 transition-colors"
+            >
+              {comercial?.estado === "plan_vencido"
+                ? "Reactivar ficha completa"
+                : "Mantener perfil completo"}
+            </Link>
+            {comercial &&
+            (comercial.estado === "trial_activo" ||
+              comercial.estado === "trial_por_vencer") &&
+            !planContratadoDiferido ? (
+              <p className="text-sm text-white/85 max-w-xl mx-auto leading-relaxed">
+                Puedes pagar hoy y tu plan comenzará cuando termine tu prueba gratuita.{" "}
+                <span className="font-semibold">No pierdes días.</span>
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="w-full space-y-4" aria-label="Rendimiento de tu negocio">
+        {estadisticasOcultasEnPanel ? (
+          <div
+            className="w-full rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
+            role="status"
+          >
+            <p className="font-semibold text-gray-900">
+              Estadísticas no visibles con tu plan o perfil actual
+            </p>
+            <p className="mt-1.5 text-gray-700">
+              Visitas, impresiones y contactos{" "}
+              <span className="font-semibold">siguen registrándose</span> en
+              segundo plano. Al reactivar perfil completo verás aquí el total
+              real, incluido lo que ocurra mientras tanto.
+            </p>
+          </div>
+        ) : null}
+        {qs && !estadisticasOcultasEnPanel ? (
+          <div className="w-full">
+            {metricasOcultasPorVistaBasica ? (
+              <PanelRendimientoModoBasicaPreview />
             ) : (
-              <div
-                className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
-                aria-hidden
+              <MetricsResumenPanel
+                data={metricsMostrados}
+                rangeLabel={textoRangoMetricas(rangoMostrado)}
+                interes={interesMetricasFlags}
+                loading={loading}
+                omitInsight
+                headerRight={
+                  <div
+                    className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
+                    role="group"
+                    aria-label="Periodo de estadísticas"
+                  >
+                    {(["7d", "30d", "all"] as const).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setRange(r)}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                          range === r
+                            ? "bg-gray-900 text-white"
+                            : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
+                      </button>
+                    ))}
+                  </div>
+                }
               />
-            )
-          ) : null}
-        </aside>
-      </div>
+            )}
+          </div>
+        ) : null}
+
+        {qs &&
+        !estadisticasOcultasEnPanel &&
+        !metricasOcultasPorVistaBasica ? (
+          !loading ? (
+            (() => {
+              const insight = panelInsightMessage(
+                Number.isFinite(metricsMostrados.impresiones)
+                  ? metricsMostrados.impresiones
+                  : 0,
+                Number.isFinite(metricsMostrados.visitas)
+                  ? metricsMostrados.visitas
+                  : 0,
+                Number.isFinite(metricsMostrados.click_whatsapp)
+                  ? metricsMostrados.click_whatsapp
+                  : 0
+              );
+              if (!insight) return null;
+              return (
+                <div
+                  className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
+                  role="status"
+                >
+                  {insight}
+                </div>
+              );
+            })()
+          ) : (
+            <div
+              className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
+              aria-hidden
+            />
+          )
+        ) : null}
+      </section>
 
       {tieneNegocio && !fichaLoading && negocioItem ? (
         <section
