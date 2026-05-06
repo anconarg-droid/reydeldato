@@ -10,6 +10,25 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const isDev = process.env.NODE_ENV !== "production";
+
+type SupabaseErrShape = {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+};
+
+function supabaseErrorDevFields(err: SupabaseErrShape | null | undefined) {
+  if (!isDev || !err) return {};
+  return {
+    supabaseCode: err.code,
+    supabaseMessage: err.message,
+    supabaseDetails: err.details,
+    supabaseHint: err.hint,
+  };
+}
+
 function s(v: unknown): string {
   return String(v ?? "").trim();
 }
@@ -68,7 +87,17 @@ export async function POST(req: NextRequest) {
       .eq("id", pagoId)
       .maybeSingle();
 
-    if (loadErr || !row) {
+    if (loadErr) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "db_select_failed",
+          ...supabaseErrorDevFields(loadErr),
+        },
+        { status: 500 }
+      );
+    }
+    if (!row) {
       return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
     }
 
@@ -95,7 +124,14 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (upErr || !updated) {
-      return NextResponse.json({ ok: false, error: "db_update_failed" }, { status: 500 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "db_update_failed",
+          ...supabaseErrorDevFields(upErr ?? undefined),
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

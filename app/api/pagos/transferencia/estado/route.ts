@@ -10,6 +10,25 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const isDev = process.env.NODE_ENV !== "production";
+
+type SupabaseErrShape = {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+};
+
+function supabaseErrorDevFields(err: SupabaseErrShape | null | undefined) {
+  if (!isDev || !err) return {};
+  return {
+    supabaseCode: err.code,
+    supabaseMessage: err.message,
+    supabaseDetails: err.details,
+    supabaseHint: err.hint,
+  };
+}
+
 function s(v: unknown): string {
   return String(v ?? "").trim();
 }
@@ -42,7 +61,14 @@ export async function GET(req: NextRequest) {
       .limit(10);
 
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "db_select_failed",
+          ...supabaseErrorDevFields(error),
+        },
+        { status: 500 }
+      );
     }
 
     const items = (Array.isArray(data) ? data : []).map((r) => {

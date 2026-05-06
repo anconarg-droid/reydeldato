@@ -16,6 +16,25 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const isDev = process.env.NODE_ENV !== "production";
+
+type SupabaseErrShape = {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+};
+
+function supabaseErrorDevFields(err: SupabaseErrShape | null | undefined) {
+  if (!isDev || !err) return {};
+  return {
+    supabaseCode: err.code,
+    supabaseMessage: err.message,
+    supabaseDetails: err.details,
+    supabaseHint: err.hint,
+  };
+}
+
 function s(v: unknown): string {
   return String(v ?? "").trim();
 }
@@ -86,7 +105,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Reusar pago pendiente/en_revision si ya existe para ese plan.
-    const { data: existing } = await supabase
+    const { data: existing, error: existingErr } = await supabase
       .from("pagos")
       .select("id, referencia_pago, estado, monto, comprobante_url, created_at")
       .eq("emprendedor_id", emprendedorId)
@@ -97,6 +116,17 @@ export async function POST(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (existingErr) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "db_select_failed",
+          ...supabaseErrorDevFields(existingErr),
+        },
+        { status: 500 }
+      );
+    }
 
     if (existing) {
       const row = existing as {
@@ -123,6 +153,7 @@ export async function POST(req: NextRequest) {
     }
 
     let referencia = await generarReferenciaPago(emprendedorId);
+    let lastInsertError: SupabaseErrShape | null = null;
     // Best-effort: si colisiona por UNIQUE, regenerar una vez.
     for (let i = 0; i < 2; i++) {
       const { data: inserted, error } = await supabase
@@ -164,13 +195,21 @@ export async function POST(req: NextRequest) {
       }
 
       if (error) {
+        lastInsertError = error;
         console.error("[pagos/transferencia/crear] insert:", error.code, error.message);
       }
 
       referencia = await generarReferenciaPago(emprendedorId);
     }
 
-    return NextResponse.json({ ok: false, error: "db_insert_failed" }, { status: 500 });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "db_insert_failed",
+        ...supabaseErrorDevFields(lastInsertError ?? undefined),
+      },
+      { status: 500 }
+    );
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "unexpected" },
