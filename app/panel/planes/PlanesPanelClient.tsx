@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PlanPeriodicidad } from "@/lib/planConstants";
 import type { EstadoComercialEmprendedor } from "@/lib/getEstadoComercialEmprendedor";
 import { buildPlanActivationMessage } from "@/lib/buildPlanActivationMessage";
@@ -176,6 +176,7 @@ export default function PlanesPanelClient({
   accessToken?: string;
   pagoFlash?: "fallo" | null;
 }) {
+  const transferFileRef = useRef<HTMLInputElement | null>(null);
   const [nombre, setNombre] = useState("");
   const [comunaSlug, setComunaSlug] = useState("");
   const [comercial, setComercial] = useState<PanelComercialPayload | null>(
@@ -299,7 +300,7 @@ export default function PlanesPanelClient({
       estado === "trial_con_plan_confirmado_programado" ||
       estado === "trial_por_vencer_con_plan_confirmado_programado");
 
-  const inicioPlanDisplay = (() => {
+  const inicioPlanDisplay = useMemo(() => {
     if (!comercialListo) return "—";
     if (planProgramado && comercial.planIniciaAt) {
       return fechaLargaEs(comercial.planIniciaAt) ?? "—";
@@ -308,7 +309,7 @@ export default function PlanesPanelClient({
       return fechaLargaEs(comercial.trialExpiraAt) ?? "—";
     }
     return "Inmediatamente";
-  })();
+  }, [comercialListo, planProgramado, comercial?.planIniciaAt, estaEnTrial, comercial?.trialExpiraAt]);
 
   const ctaPrincipalLabel = ctaPrincipalLabelFromEstado(
     estado,
@@ -723,15 +724,15 @@ export default function PlanesPanelClient({
                     setSelectedPlan(t.key);
                   }
                 }}
-                className={`flex flex-col rounded-2xl border p-5 sm:p-6 h-full transition-shadow outline-none cursor-pointer select-none ${
+                className={`flex flex-col rounded-2xl border p-5 sm:p-6 h-full transition-all outline-none cursor-pointer select-none ${
                   destacado
-                    ? "bg-gradient-to-b from-sky-50 via-white to-white shadow-lg lg:scale-[1.02] lg:z-[1]"
+                    ? "bg-gradient-to-b from-sky-50 via-white to-white shadow-lg lg:z-[1]"
                     : "bg-white shadow-sm hover:shadow-md"
                 } ${
                   selected
                     ? destacado
-                      ? "border-sky-600 ring-2 ring-sky-500/40"
-                      : "border-sky-500 ring-2 ring-sky-500/30"
+                      ? "border-sky-600 ring-2 ring-sky-500/40 shadow-xl lg:scale-[1.015]"
+                      : "border-sky-500 ring-2 ring-sky-500/30 shadow-lg lg:scale-[1.01]"
                     : destacado
                       ? "border-sky-500 ring-2 ring-sky-400/30"
                       : "border-slate-200 hover:border-slate-300"
@@ -822,21 +823,66 @@ export default function PlanesPanelClient({
             ) : null}
           </div>
 
-          <button
-            type="button"
-            onClick={handleCtaPrincipal}
-            disabled={redirigiendoPago || planProgramado || metodoPago !== "webpay"}
-            className="inline-flex w-full sm:w-auto min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-60"
-          >
-            {metodoPago !== "webpay"
-              ? "Pagar con Webpay"
-              : redirigiendoPago
-                ? "Redirigiendo al pago…"
-                : planProgramado
-                  ? "Plan ya programado"
-                  : "Pagar con Webpay"}
-          </button>
+          {metodoPago === "webpay" ? (
+            <div className="w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleCtaPrincipal}
+                disabled={redirigiendoPago || planProgramado}
+                className="inline-flex w-full sm:w-auto min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-60"
+              >
+                {redirigiendoPago
+                  ? "Redirigiendo al pago…"
+                  : planProgramado
+                    ? "Plan ya programado"
+                    : "Pagar con Webpay"}
+              </button>
+              <p className="mt-2 text-xs font-semibold text-slate-600 text-center sm:text-left">
+                Activación automática inmediata.
+              </p>
+            </div>
+          ) : (
+            <div className="w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => transferFileRef.current?.click()}
+                disabled={transferBusy || !pagoTransfer?.id || !pagoTransfer?.referencia}
+                className="inline-flex w-full sm:w-auto min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-60"
+              >
+                Subir comprobante
+              </button>
+              <p className="mt-2 text-xs font-semibold text-slate-600 text-center sm:text-left">
+                Validaremos tu transferencia manualmente. Puede tardar algunas horas.
+              </p>
+              <input
+                ref={transferFileRef}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleUploadComprobante(f);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </div>
+          )}
         </div>
+        {metodoPago === "transferencia" && !pagoTransfer?.referencia ? (
+          <p className="mt-3 text-xs text-slate-600">
+            Preparando tu referencia de pago…
+          </p>
+        ) : null}
+        {transferError ? (
+          <p className="mt-3 text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            {transferError}
+          </p>
+        ) : null}
+        {transferOkMsg ? (
+          <p className="mt-3 text-sm text-emerald-900 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+            {transferOkMsg}
+          </p>
+        ) : null}
       </section>
 
       <section
@@ -847,7 +893,7 @@ export default function PlanesPanelClient({
           <div>
             <h2 className="text-lg font-black text-gray-900">Método de pago</h2>
             <p className="text-sm text-slate-600">
-              Elige cómo quieres pagar. La transferencia requiere validación manual.
+              Elige cómo quieres pagar.
             </p>
           </div>
           <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 w-full sm:w-auto">
@@ -882,10 +928,7 @@ export default function PlanesPanelClient({
               <div>
                 <h3 className="text-base font-black text-gray-900">Transferencia bancaria</h3>
                 <p className="text-sm text-slate-600">
-                  Puedes transferir desde cualquier banco. Activaremos tu plan al validar el pago.
-                </p>
-                <p className="mt-2 text-xs font-semibold text-slate-600">
-                  Validación manual. Puede tardar algunas horas.
+                  Transfiere desde cualquier banco. Activamos tu plan al validar el comprobante.
                 </p>
               </div>
               {pagoTransfer?.estado === "en_revision" ? (
@@ -1001,123 +1044,24 @@ export default function PlanesPanelClient({
                 Copiar datos de transferencia
               </button>
             </div>
-
-            {transferError ? (
-              <p className="text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-                {transferError}
+            {pagoTransfer?.comprobanteUrl ? (
+              <a
+                className="text-sm font-bold text-sky-700 hover:underline"
+                href={pagoTransfer.comprobanteUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ver comprobante enviado
+              </a>
+            ) : (
+              <p className="text-sm text-slate-600">
+                Cuando transfieras, sube tu comprobante desde el botón del resumen.
               </p>
-            ) : null}
-            {transferOkMsg ? (
-              <p className="text-sm text-emerald-900 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-                {transferOkMsg}
-              </p>
-            ) : null}
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-              <label className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-white px-5 text-sm font-extrabold text-gray-900 border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                Subir comprobante
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void handleUploadComprobante(f);
-                    e.currentTarget.value = "";
-                  }}
-                  disabled={transferBusy || !pagoTransfer?.id || !pagoTransfer?.referencia}
-                />
-              </label>
-              {pagoTransfer?.comprobanteUrl ? (
-                <a
-                  className="text-sm font-bold text-sky-700 hover:underline"
-                  href={pagoTransfer.comprobanteUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Ver comprobante
-                </a>
-              ) : null}
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Importante: subir el comprobante <span className="font-semibold">no activa</span>{" "}
-              tu plan automáticamente. Un admin revisa y aprueba.
-            </p>
+            )}
           </div>
         ) : (
           <p className="mt-4 text-sm text-slate-600">
-            Activación automática inmediata. Serás redirigido a Webpay para completar el pago.
-          </p>
-        )}
-      </section>
-
-      <section
-        className="rounded-2xl border border-slate-200 bg-slate-900 p-6 sm:p-8 text-center space-y-4"
-        aria-label="Activar o renovar"
-      >
-        {pagoIniciarError ? (
-          <p
-            className="text-sm text-amber-200 max-w-md mx-auto leading-relaxed rounded-lg bg-amber-950/40 border border-amber-800/60 px-4 py-3"
-            role="alert"
-          >
-            {pagoIniciarError}
-          </p>
-        ) : null}
-        <button
-          type="button"
-          disabled={redirigiendoPago || planProgramado}
-          onClick={handleCtaPrincipal}
-          className="inline-flex w-full max-w-md mx-auto min-h-[52px] items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-extrabold text-gray-900 shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-70"
-        >
-          {redirigiendoPago
-            ? "Redirigiendo al pago…"
-            : planProgramado
-              ? "Plan ya programado"
-              : ctaPrincipalLabel}
-        </button>
-        {estaEnTrial ? (
-          <p className="text-sm text-emerald-200 max-w-md mx-auto leading-relaxed font-semibold">
-            Puedes pagar hoy. Tu plan comenzará automáticamente cuando termine tu prueba gratuita.
-          </p>
-        ) : null}
-        {planProgramado && comercialListo ? (
-          <p className="text-sm text-white/90 max-w-md mx-auto leading-relaxed">
-            Tu pago está confirmado. Tu período pagado comienza el{" "}
-            <span className="font-extrabold">
-              {fechaLargaEs(comercial.planIniciaAt) ?? "—"}
-            </span>
-            .
-          </p>
-        ) : modoSoloContacto ? (
-          <p className="text-sm text-white/85 max-w-md mx-auto leading-relaxed">
-            Activa tu plan por el canal configurado para tu cuenta.
-          </p>
-        ) : (
-          <p className="text-sm text-white/85 max-w-md mx-auto leading-relaxed">
-            {comercialListo &&
-            (estado === "trial_activo" ||
-              estado === "trial_por_vencer" ||
-              estado === "trial_con_plan_confirmado_programado" ||
-              estado === "trial_por_vencer_con_plan_confirmado_programado") ? (
-              <>
-                Vas a pagar hoy en Webpay, pero tu período pagado efectivo partirá cuando termine tu
-                prueba
-                {comercial.trialExpiraAt ? (
-                  <>
-                    {" "}
-                    (
-                    <span className="font-semibold">
-                      {fechaLargaEs(comercial.trialExpiraAt) ?? "fecha de término"}
-                    </span>
-                    )
-                  </>
-                ) : null}
-                .
-              </>
-            ) : (
-              <>Serás redirigido a Webpay para completar el pago.</>
-            )}
+            Paga con tarjeta de débito o crédito. Activación automática.
           </p>
         )}
       </section>
