@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import { getSupabaseAdminFromEnv } from "@/lib/supabaseAdmin";
 import { resolveEmprendedorIdForPanelMetrics } from "@/lib/panelNegocioAccessToken";
+import { ensureEmprendedorPanelAccessUrl } from "@/lib/revisarMagicLink";
 import { panelPlanesVisibleEnServidor } from "@/lib/panelPlanesVisibility";
 import PlanesPanelClientGate from "./PlanesPanelClientGate";
 
@@ -32,6 +33,24 @@ export default async function PlanesPage({
 
   // /panel/planes no es público: requiere access_token (mismo mecanismo que panel).
   if (accessToken.length < 8) {
+    const cleanId = idParam.trim();
+    if (cleanId) {
+      /**
+       * Soportar accesos legacy vía `id` (ej. desde /panel?id=...):
+       * emitimos/aseguramos un `access_token` válido y redirigimos a /panel/planes?access_token=...
+       * para mantener el mismo mecanismo (y permitir iniciar pago en Webpay).
+       */
+      const admin = getSupabaseAdminFromEnv();
+      const { url } = await ensureEmprendedorPanelAccessUrl(admin, cleanId);
+      const u = new URL(url);
+      const tok = String(u.searchParams.get("token") || u.searchParams.get("access_token") || "").trim();
+      if (tok.length >= 8) {
+        const sp = new URLSearchParams();
+        sp.set("access_token", tok);
+        if (slug) sp.set("slug", slug);
+        redirect(`/panel/planes?${sp.toString()}`);
+      }
+    }
     redirect("/panel");
   }
 
