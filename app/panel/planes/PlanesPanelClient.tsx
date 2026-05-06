@@ -497,11 +497,29 @@ export default function PlanesPanelClient({
             return (
               <div
                 key={t.key}
-                className={`flex flex-col rounded-2xl border p-5 sm:p-6 h-full transition-shadow ${
+                role="button"
+                tabIndex={0}
+                aria-pressed={selected}
+                onClick={() => setSelectedPlan(t.key)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedPlan(t.key);
+                  }
+                }}
+                className={`flex flex-col rounded-2xl border p-5 sm:p-6 h-full transition-shadow outline-none cursor-pointer select-none ${
                   destacado
-                    ? "border-sky-500 bg-gradient-to-b from-sky-50 via-white to-white shadow-lg ring-2 ring-sky-400/30 lg:scale-[1.02] lg:z-[1]"
-                    : "border-slate-200 bg-white shadow-sm hover:border-slate-300"
-                } ${selected && !destacado ? "ring-2 ring-gray-900/10" : ""}`}
+                    ? "bg-gradient-to-b from-sky-50 via-white to-white shadow-lg lg:scale-[1.02] lg:z-[1]"
+                    : "bg-white shadow-sm hover:shadow-md"
+                } ${
+                  selected
+                    ? destacado
+                      ? "border-sky-600 ring-2 ring-sky-500/40"
+                      : "border-sky-500 ring-2 ring-sky-500/30"
+                    : destacado
+                      ? "border-sky-500 ring-2 ring-sky-400/30"
+                      : "border-slate-200 hover:border-slate-300"
+                } focus-visible:ring-2 focus-visible:ring-sky-500/40`}
               >
                 <div className="flex items-start justify-between gap-2 min-h-[2rem]">
                   <div>
@@ -514,11 +532,18 @@ export default function PlanesPanelClient({
                       </p>
                     ) : null}
                   </div>
-                  {destacado ? (
-                    <span className="shrink-0 text-[0.65rem] font-extrabold uppercase tracking-wider text-sky-900 bg-sky-200/90 px-2 py-1 rounded-md">
-                      RECOMENDADO
-                    </span>
-                  ) : null}
+                  <div className="shrink-0 flex flex-col items-end gap-2">
+                    {destacado ? (
+                      <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-sky-900 bg-sky-200/90 px-2 py-1 rounded-md">
+                        RECOMENDADO
+                      </span>
+                    ) : null}
+                    {selected ? (
+                      <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-emerald-950 bg-emerald-200/90 px-2 py-1 rounded-md">
+                        Seleccionado
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <p className="mt-4 text-3xl font-black text-gray-900 tabular-nums">
                   {t.precioDisplay}
@@ -532,7 +557,10 @@ export default function PlanesPanelClient({
                 </p>
                 <button
                   type="button"
-                  onClick={() => setSelectedPlan(t.key)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPlan(t.key);
+                  }}
                   className={`mt-5 w-full rounded-xl font-bold transition-colors ${
                     destacado
                       ? "min-h-[48px] text-base bg-sky-600 text-white hover:bg-sky-700 shadow-lg ring-2 ring-sky-500/40 hover:ring-sky-500/60"
