@@ -755,7 +755,7 @@ export default function PlanesPanelClient({
                 }}
                 className={`flex flex-col rounded-2xl border p-5 sm:p-6 h-full transition-all outline-none cursor-pointer select-none ${
                   destacado
-                    ? "bg-gradient-to-b from-sky-50 via-white to-white shadow-lg lg:z-[1]"
+                    ? "bg-gradient-to-b from-sky-50 via-white to-white lg:z-[1] shadow-[0_0_0_1px_rgba(59,130,246,0.15),0_10px_30px_rgba(59,130,246,0.10)]"
                     : "bg-white shadow-sm hover:shadow-md"
                 } ${
                   selected
@@ -780,7 +780,7 @@ export default function PlanesPanelClient({
                   </div>
                   <div className="shrink-0 flex flex-col items-end gap-2">
                     {destacado ? (
-                      <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-sky-900 bg-sky-200/90 px-2 py-1 rounded-md">
+                      <span className="text-[0.65rem] font-black uppercase tracking-wider text-white bg-sky-600 px-2.5 py-1 rounded-md shadow-sm">
                         RECOMENDADO
                       </span>
                     ) : null}
@@ -796,6 +796,11 @@ export default function PlanesPanelClient({
                   {t.apoyo}
                   {t.apoyoExtra ? `\n${t.apoyoExtra}` : ""}
                 </p>
+                {t.key === "anual" ? (
+                  <p className="mt-3 text-xs text-slate-500">
+                    Más elegido por negocios que quieren resultados constantes
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -828,18 +833,19 @@ export default function PlanesPanelClient({
         </p>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-          <div className="rounded-2xl border border-slate-300 bg-slate-200/60 p-5 relative overflow-hidden opacity-75 saturate-50 contrast-[0.7]">
+          <div className="rounded-2xl border border-slate-300 bg-slate-200/60 p-4 sm:p-5 relative overflow-hidden opacity-75 saturate-50 contrast-[0.7]">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-black text-slate-800">Perfil básico</p>
-                <p className="text-xs font-semibold text-slate-600/90">Solo WhatsApp</p>
+                <p className="text-xs font-semibold text-slate-600/90">Sin ficha pública</p>
+                <p className="text-xs text-slate-500 mt-0.5">Menos información visible</p>
               </div>
               <span className="text-[0.7rem] font-extrabold tracking-wide text-slate-700 bg-slate-200 px-2.5 py-1 rounded-md border border-slate-300/70 shadow-sm">
                 👁 Menos visible
               </span>
             </div>
 
-            <div className="mt-4 max-w-[420px] mx-auto">
+            <div className="mt-3 max-w-[400px] mx-auto">
               <div className="opacity-80 [&_img]:blur-[1.5px] [&_img]:saturate-50 [&_img]:contrast-75 [&_a]:bg-none [&_a]:bg-slate-300/60 [&_a]:text-slate-700 [&_a]:shadow-none [&_a]:from-transparent [&_a]:to-transparent">
                 <EmprendedorSearchCard
                   slug="demo"
@@ -862,9 +868,6 @@ export default function PlanesPanelClient({
                   bloquearAccesoFichaPublica
                 />
               </div>
-              <p className="mt-3 text-xs font-semibold text-slate-600 text-center">
-                Solo contacto por WhatsApp.
-              </p>
             </div>
           </div>
 
@@ -1146,17 +1149,17 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm text-center"
+        className="rounded-2xl border border-slate-200 bg-white px-4 sm:px-6 py-8 md:py-10 shadow-sm text-center"
         aria-label="Activar ficha completa"
       >
         <h2 className="text-lg font-black text-gray-900">Activar ficha completa</h2>
-        <p className="mt-2 text-sm text-slate-600 max-w-xl mx-auto">
+        <p className="mt-1.5 text-sm text-slate-600 max-w-xl mx-auto">
           {estaEnTrial
             ? "Puedes pagar hoy y tu plan comenzará cuando termine tu prueba gratuita."
             : "Puedes pagar hoy y tu plan comenzará inmediatamente."}
         </p>
 
-        <div className="mt-4">
+        <div className="mt-3.5">
           <button
             type="button"
             onClick={
@@ -1190,7 +1193,7 @@ export default function PlanesPanelClient({
               e.currentTarget.value = "";
             }}
           />
-          <p className="mt-2 text-xs font-semibold text-slate-600">
+          <p className="mt-1.5 text-[11px] font-semibold text-slate-600">
             {metodoPago === "webpay"
               ? "Pago seguro con Webpay."
               : "Tu plan se activará al validar la transferencia."}
