@@ -833,7 +833,7 @@ export default function PlanesPanelClient({
         </p>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-          <div className="rounded-2xl border border-slate-300 bg-slate-100/70 p-4 sm:p-5 relative overflow-hidden opacity-55">
+          <div className="rounded-2xl border border-slate-300 bg-slate-100/70 p-4 sm:p-5 relative overflow-hidden opacity-50">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-black text-slate-800">Perfil básico</p>
@@ -927,13 +927,13 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className={`rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm ${
+        className={`max-w-4xl mx-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm ${
           "lg:sticky lg:top-4"
         }`}
         aria-label="Resumen del plan"
       >
-        <div className="py-5 md:py-6 md:flex md:items-center md:justify-between gap-3">
-          <div className="space-y-2">
+        <div className="py-5 md:py-6 md:flex md:items-center md:justify-start md:gap-8 gap-4">
+          <div className="min-w-0 space-y-2 md:max-w-xl">
             <p className="text-base sm:text-lg font-black text-gray-900">
               Plan {tarjetaPorKey(selectedPlan).titulo.toLowerCase()} —{" "}
               <span className="tabular-nums">
@@ -954,12 +954,12 @@ export default function PlanesPanelClient({
             ) : null}
           </div>
 
-          <div className="w-full md:w-auto">
+          <div className="w-full shrink-0 md:w-auto">
             <button
               type="button"
               onClick={handleCtaPrincipal}
               disabled={redirigiendoPago || planProgramado}
-              className="inline-flex h-14 w-full md:w-[340px] items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 hover:bg-gray-800 transition-all duration-200 hover:-translate-y-[1px] hover:shadow-xl disabled:opacity-60"
+              className="inline-flex h-14 w-full md:w-[300px] items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 hover:bg-gray-800 transition-all duration-200 hover:-translate-y-[1px] hover:shadow-xl disabled:opacity-60"
             >
               {redirigiendoPago
                 ? "Redirigiendo al pago…"
