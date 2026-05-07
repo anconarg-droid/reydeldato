@@ -122,6 +122,65 @@ export const INTENT_ALIASES: Record<string, IntentDef> = {
     ],
   },
 
+  mecanico_automotriz: {
+    finalQuery: "mecanico automotriz",
+    sectorSlug: "automotriz",
+    aliases: [
+      "mecanico automotriz",
+      "mecánico automotriz",
+      "mecanico de autos",
+      "mecánico de autos",
+      "auto",
+      "autos",
+      "automotriz",
+    ],
+  },
+
+  autolavado: {
+    finalQuery: "autolavado",
+    sectorSlug: "automotriz",
+    aliases: [
+      "autolavado",
+      "auto lavado",
+      "lavado de auto",
+      "lavado de autos",
+      "lavadero",
+      "lavadero de autos",
+      "auto",
+      "autos",
+    ],
+  },
+
+  repuestos: {
+    finalQuery: "repuestos",
+    sectorSlug: "automotriz",
+    aliases: [
+      "repuestos",
+      "repuesto",
+      "repuestos auto",
+      "repuestos automotrices",
+      "autopartes",
+      "auto partes",
+      "auto",
+      "autos",
+    ],
+  },
+
+  taller_mecanico: {
+    finalQuery: "taller mecanico",
+    sectorSlug: "automotriz",
+    aliases: [
+      "taller mecanico",
+      "taller mecánico",
+      "taller de autos",
+      "mecanico",
+      "mecánico",
+      "auto",
+      "autos",
+      "automotriz",
+    ],
+  },
+
   panaderia: {
     finalQuery: "panaderia",
     sectorSlug: "alimentacion",

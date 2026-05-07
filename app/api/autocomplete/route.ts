@@ -95,6 +95,7 @@ export async function GET(req: NextRequest) {
     const qNorm = norm(q);
     const seen = new Set<string>();
     let suggestions: AutocompleteSuggestion[] = [];
+    const matchedIntentValues = new Set<string>();
 
     function dedupeKey(type: string, value: string, comuna?: string): string {
       return comuna ? `${type}:${value}:${comuna}` : `${type}:${value}`;
@@ -150,8 +151,17 @@ export async function GET(req: NextRequest) {
           }
         }
       }
+      // Desambiguación: "auto" tiende a matchear alias como "automático" (electricista),
+      // pero el usuario espera contexto automotriz. Si la query parte con "auto",
+      // solo permitimos matches por alias para intents del sector automotriz; para el resto,
+      // exigimos match directo por label/value.
+      if (match && qNorm.startsWith("auto") && def.sectorSlug !== "automotriz") {
+        const direct = valueNorm.includes(qNorm) || labelNorm.includes(qNorm);
+        if (!direct) match = false;
+      }
       if (match) {
         intentsMatched.push({ value, label });
+        matchedIntentValues.add(value);
         add({
           type: "intent",
           label,
@@ -162,25 +172,31 @@ export async function GET(req: NextRequest) {
     }
 
     // 3) intent_comuna (prioridad 2)
+    // Solo generamos intent_comuna si el usuario:
+    // - seleccionó comuna vía parámetro, o
+    // - la query está relacionada a comunas (match explícito)
+    // Evita ruido tipo "electricista en ..." cuando el usuario solo escribe "auto".
     const comunasPool =
-      comunasMatched.length > 0
-        ? comunasMatched
-        : Object.entries(COMUNA_ALIASES)
-            .map(([slug]) => ({ slug, label: comunaLabelFromSlug(slug) }))
-            .slice(0, 6);
+      comunaParam
+        ? [{ slug: comunaParam, label: comunaLabelFromSlug(comunaParam) }]
+        : comunasMatched.length > 0
+          ? comunasMatched.slice(0, 6)
+          : [];
     let intentComunaCount = 0;
-    for (const { value, label: intentLabel } of intentsMatched) {
-      if (intentComunaCount >= 4) break;
-      for (const { slug, label: comunaLabel } of comunasPool) {
+    if (comunasPool.length > 0) {
+      for (const { value, label: intentLabel } of intentsMatched) {
         if (intentComunaCount >= 4) break;
-        add({
-          type: "intent_comuna",
-          label: `${intentLabel} en ${comunaLabel}`,
-          value,
-          comuna: slug,
-          url: `/buscar?q=${encodeURIComponent(value)}&comuna=${encodeURIComponent(slug)}`,
-        });
-        intentComunaCount++;
+        for (const { slug, label: comunaLabel } of comunasPool) {
+          if (intentComunaCount >= 4) break;
+          add({
+            type: "intent_comuna",
+            label: `${intentLabel} en ${comunaLabel}`,
+            value,
+            comuna: slug,
+            url: `/buscar?q=${encodeURIComponent(value)}&comuna=${encodeURIComponent(slug)}`,
+          });
+          intentComunaCount++;
+        }
       }
     }
 
@@ -239,12 +255,16 @@ export async function GET(req: NextRequest) {
             if (def) {
               const value = def.finalQuery;
               const label = intentLabelFromSlug(value);
-              add({
-                type: "intent",
-                label,
-                value,
-                url: `/buscar?q=${encodeURIComponent(value)}`,
-              });
+              // Estricto: solo agregamos si el intent realmente matchea lo escrito.
+              // Algolia puede retornar hits "cercanos" (typo tolerance) y tags no relacionados.
+              if (matchesQuery(norm(label), qNorm) || matchesQuery(norm(value), qNorm)) {
+                add({
+                  type: "intent",
+                  label,
+                  value,
+                  url: `/buscar?q=${encodeURIComponent(value)}`,
+                });
+              }
             }
           }
           const sec = s(hit.sector_slug);
@@ -253,17 +273,34 @@ export async function GET(req: NextRequest) {
         for (const sectorSlug of sectorsFromAlgolia) {
           const sector = SECTORES.find((x) => norm(x.slug) === norm(sectorSlug));
           if (sector && !seen.has(dedupeKey("sector", sector.slug, ""))) {
-            add({
-              type: "sector",
-              label: sector.label,
-              sector: sector.slug,
-              url: `/buscar?sector=${encodeURIComponent(sector.slug)}`,
-            });
+            // Estricto: el sector debe matchear la query
+            if (matchesQuery(norm(sector.label), qNorm) || matchesQuery(norm(sector.slug), qNorm)) {
+              add({
+                type: "sector",
+                label: sector.label,
+                sector: sector.slug,
+                url: `/buscar?sector=${encodeURIComponent(sector.slug)}`,
+              });
+            }
           }
         }
       } catch {
         // Algolia opcional; si falla seguimos con intents/comunas/sectores
       }
+    }
+
+    // Filtro final estricto:
+    // - intents: solo los que realmente matchearon por value/label/alias (intentsMatched)
+    // - sector/comuna: deben matchear por label
+    // - intent_comuna: solo si el intent matcheó (y además viene desde comunasPool)
+    if (qNorm) {
+      suggestions = suggestions.filter((sug) => {
+        if (sug.type === "intent") return matchedIntentValues.has(sug.value) || matchesQuery(norm(sug.label), qNorm);
+        if (sug.type === "intent_comuna") return matchedIntentValues.has(sug.value) || matchesQuery(norm(sug.label), qNorm);
+        if (sug.type === "sector") return matchesQuery(norm(sug.label), qNorm) || matchesQuery(norm(sug.sector), qNorm);
+        if (sug.type === "comuna") return matchesQuery(norm(sug.label), qNorm) || matchesQuery(norm(sug.comuna), qNorm);
+        return false;
+      });
     }
 
     if (isResolvedQueryExactGas(q)) {
