@@ -78,7 +78,7 @@ export function parseSearchIntent(raw: string): ParsedSearchIntent {
       if (!best || score > best.score) best = { def, score };
       if (best.score >= 100) break;
     }
-    if (best?.score >= 100) break;
+    if (best && best.score >= 100) break;
   }
 
   if (best) {
