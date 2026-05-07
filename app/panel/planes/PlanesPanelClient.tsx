@@ -392,12 +392,13 @@ export default function PlanesPanelClient({
       }
       const iniP = parseIsoDate(comercial.planIniciaAt);
       if (iniP) {
+        const per = String(comercial.planPeriodicidad ?? "").toLowerCase();
         const meses =
-          comercial.planPeriodicidad === "mensual"
+          per === "mensual"
             ? 1
-            : comercial.planPeriodicidad === "semestral"
+            : per === "semestral"
               ? 6
-              : comercial.planPeriodicidad === "anual"
+              : per === "anual"
                 ? 12
                 : monthsForPeriodicidad(selectedPlan);
         const finP = addCalendarMonthsFromDate(startOfLocalDay(iniP), meses);
