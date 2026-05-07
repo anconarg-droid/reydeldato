@@ -35,6 +35,12 @@ export function parseSearchIntent(raw: string): ParsedSearchIntent {
     return { finalQuery: rest, sectorSlug: null, comunaSlug };
   }
 
+  // Caso especial: "auto"/"autos" es demasiado genérico. No lo convertimos a un intent específico
+  // (ej. "mecánico automotriz") al presionar Enter.
+  if (restNorm === "auto" || restNorm === "autos") {
+    return { finalQuery: rest, sectorSlug: null, comunaSlug };
+  }
+
   // Resolver intención por "mejor match".
   // Importante: evitamos que queries cortas (ej. "auto") matcheen dentro de palabras
   // no relacionadas (ej. "automático" → electricista). Para esas, exigimos match
