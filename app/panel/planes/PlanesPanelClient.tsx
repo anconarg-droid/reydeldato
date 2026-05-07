@@ -1213,7 +1213,7 @@ export default function PlanesPanelClient({
         }`}
         aria-label="Resumen del plan"
       >
-        <div className="grid w-full gap-6 py-5 md:grid-cols-[1fr_auto] md:items-center md:gap-8 md:py-6">
+        <div className="grid w-full gap-6 py-5 md:grid-cols-[1fr_auto] md:items-start md:gap-8 md:py-6">
           <div className="space-y-3 md:max-w-xl md:min-w-[280px]">
             <p className="text-base sm:text-lg font-black text-gray-900">
               Plan {tarjetaPorKey(selectedPlan).titulo.toLowerCase()} —{" "}
@@ -1258,26 +1258,32 @@ export default function PlanesPanelClient({
             ) : null}
           </div>
 
-          <div className="flex w-full shrink-0 flex-col gap-4 md:w-auto md:justify-self-end md:items-end">
-            <div className="flex w-full flex-col gap-2 md:w-auto md:items-end">
-              <button
-                type="button"
-                onClick={handleCtaPrincipal}
-                disabled={redirigiendoPago || planProgramado}
-                className="inline-flex h-14 w-full items-center justify-center rounded-xl bg-gray-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 transition-all duration-200 hover:translate-y-[-1px] hover:bg-gray-800 hover:shadow-xl disabled:opacity-60 md:w-[320px]"
-              >
-                {redirigiendoPago
-                  ? "Redirigiendo al pago…"
-                  : planProgramado
-                    ? "Plan ya programado"
-                    : "Activar ficha completa"}
-              </button>
-              <p className="w-full text-center text-xs text-slate-500 md:w-[320px] md:text-right">
-                Pago seguro con Webpay
-              </p>
+          <div className="flex w-full shrink-0 flex-col gap-5 md:w-auto md:justify-self-end md:items-end">
+            <div className="flex w-full flex-col gap-3 md:w-[320px] md:items-end">
+              <h2 className="w-full text-center text-lg font-black text-gray-900 tracking-tight md:text-right">
+                Activa tu ficha completa
+              </h2>
+              <div className="flex w-full flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={handleCtaPrincipal}
+                  disabled={redirigiendoPago || planProgramado}
+                  className="inline-flex h-14 w-full items-center justify-center rounded-xl bg-gray-900 px-4 text-base font-semibold text-white shadow-lg shadow-slate-900/10 transition-all duration-200 hover:translate-y-[-1px] hover:bg-gray-800 hover:shadow-xl disabled:opacity-60 sm:px-6 md:w-[320px]"
+                >
+                  {redirigiendoPago
+                    ? "Redirigiendo al pago…"
+                    : planProgramado
+                      ? "Plan ya programado"
+                      : "Pagar con Webpay"}
+                </button>
+                <div className="w-full space-y-1 text-center text-xs text-slate-600 md:text-right">
+                  <p className="font-medium text-slate-700">Activación automática.</p>
+                  <p className="text-slate-500">Pago seguro con Webpay</p>
+                </div>
+              </div>
             </div>
             {!planProgramado ? (
-              <div className="flex w-full flex-col gap-2 md:w-auto md:items-end">
+              <div className="flex w-full flex-col gap-2 md:w-[320px] md:items-end">
                 <button
                   type="button"
                   aria-expanded={transferenciaExpanded}
@@ -1291,7 +1297,7 @@ export default function PlanesPanelClient({
                     ? "Ocultar datos de transferencia"
                     : "Pagar por transferencia"}
                 </button>
-                <p className="w-full text-center text-xs text-slate-600 md:w-[320px] md:text-right">
+                <p className="w-full text-center text-xs text-slate-600 md:text-right">
                   Validación manual. Puede tardar algunas horas.
                 </p>
               </div>
@@ -1312,9 +1318,9 @@ export default function PlanesPanelClient({
         {transferenciaExpanded && !planProgramado ? (
           <div className="mt-4 border-t border-slate-100 pt-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm">
-              <p className="text-xs text-slate-600">
-                <span className="font-semibold">Webpay</span> activa al instante. La transferencia{" "}
-                queda pendiente hasta que revisemos tu comprobante.
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Transfiere el monto exacto y sube tu comprobante. Revisaremos el pago antes de activar
+                el plan.
               </p>
               <p className="mt-4 font-bold text-gray-900">Transferencia bancaria</p>
               <dl className="mt-2 space-y-1.5 text-slate-700">
