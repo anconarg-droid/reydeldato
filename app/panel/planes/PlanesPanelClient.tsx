@@ -167,6 +167,11 @@ const allowClientPlanActivate =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_PANEL_ALLOW_CLIENT_ACTIVATE === "true";
 
+const transferenciaDisponible =
+  Boolean(process.env.NEXT_PUBLIC_TRANSFER_BANK_NAME) &&
+  Boolean(process.env.NEXT_PUBLIC_TRANSFER_ACCOUNT_NUMBER) &&
+  Boolean(process.env.NEXT_PUBLIC_TRANSFER_EMAIL);
+
 export default function PlanesPanelClient({
   id,
   slug,
@@ -301,6 +306,7 @@ export default function PlanesPanelClient({
   }, [id]);
 
   useEffect(() => {
+    if (!transferenciaDisponible) return;
     const tok = String(accessToken ?? "").trim();
     if (tok.length < 8) return;
     fetch(`/api/pagos/transferencia/estado?access_token=${encodeURIComponent(tok)}`, {
@@ -320,7 +326,11 @@ export default function PlanesPanelClient({
         });
       })
       .catch(() => {});
-  }, [accessToken]);
+  }, [accessToken, transferenciaDisponible]);
+
+  useEffect(() => {
+    if (!transferenciaDisponible) setTransferenciaExpanded(false);
+  }, [transferenciaDisponible]);
 
   const panelBack =
     id.trim() !== ""
@@ -463,6 +473,7 @@ export default function PlanesPanelClient({
     const tok = String(accessToken ?? "").trim();
     if (!cleanId || tok.length < 8) return;
     if (planProgramado) return;
+    if (!transferenciaDisponible) return;
     if (!transferenciaExpanded) return;
     if (transferBusy) return;
     // Si ya hay una referencia para este plan en pending/en_revision, el API la reusa.
@@ -1282,40 +1293,42 @@ export default function PlanesPanelClient({
                 </div>
               </div>
             </div>
-            {!planProgramado ? (
-              <div className="flex w-full flex-col gap-2 md:w-[320px] md:items-end">
-                <button
-                  type="button"
-                  aria-expanded={transferenciaExpanded}
-                  onClick={() => {
-                    setTransferenciaExpanded((o) => !o);
-                    setTransferError(null);
+            {transferenciaDisponible && !planProgramado ? (
+              <>
+                <div className="flex w-full flex-col gap-2 md:w-[320px] md:items-end">
+                  <button
+                    type="button"
+                    aria-expanded={transferenciaExpanded}
+                    onClick={() => {
+                      setTransferenciaExpanded((o) => !o);
+                      setTransferError(null);
+                    }}
+                    className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-base font-semibold text-slate-800 transition-all duration-200 hover:bg-slate-50 md:w-[320px]"
+                  >
+                    {transferenciaExpanded
+                      ? "Ocultar datos de transferencia"
+                      : "Pagar por transferencia"}
+                  </button>
+                  <p className="w-full text-center text-xs text-slate-600 md:text-right">
+                    Validación manual. Puede tardar algunas horas.
+                  </p>
+                </div>
+                <input
+                  ref={transferFileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) void handleUploadComprobante(f);
                   }}
-                  className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-base font-semibold text-slate-800 transition-all duration-200 hover:bg-slate-50 md:w-[320px]"
-                >
-                  {transferenciaExpanded
-                    ? "Ocultar datos de transferencia"
-                    : "Pagar por transferencia"}
-                </button>
-                <p className="w-full text-center text-xs text-slate-600 md:text-right">
-                  Validación manual. Puede tardar algunas horas.
-                </p>
-              </div>
+                />
+              </>
             ) : null}
-            <input
-              ref={transferFileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              className="sr-only"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (f) void handleUploadComprobante(f);
-              }}
-            />
           </div>
         </div>
-        {transferenciaExpanded && !planProgramado ? (
+        {transferenciaDisponible && transferenciaExpanded && !planProgramado ? (
           <div className="mt-4 border-t border-slate-100 pt-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm">
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -1376,12 +1389,12 @@ export default function PlanesPanelClient({
             </div>
           </div>
         ) : null}
-        {transferError ? (
+        {transferenciaDisponible && transferError ? (
           <p className="mt-3 text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
             {transferError}
           </p>
         ) : null}
-        {transferOkMsg ? (
+        {transferenciaDisponible && transferOkMsg ? (
           <p className="mt-3 text-sm text-emerald-900 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
             {transferOkMsg}
           </p>
