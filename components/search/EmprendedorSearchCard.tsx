@@ -83,6 +83,8 @@ export type EmprendedorSearchCardProps = {
   etiquetaVerFicha?: string;
   /** Si viene, el CTA "Ver detalles" usa esta URL (p. ej. demos en home). */
   fichaPublicaHrefOverride?: string | null;
+  /** Si se define, "Ver detalles" ejecuta esto en lugar de navegar a la ficha pública. */
+  onVerDetallesClick?: (() => void) | null;
   /** Id en DB cuando viene del API (tracking `/api/event`). */
   emprendedorId?: string | null;
   /**
@@ -297,6 +299,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             }
           : null,
       );
+
+  const verDetallesHandler =
+    typeof p.onVerDetallesClick === "function" ? p.onVerDetallesClick : null;
 
   const vistaBasicaPanel = (p.modoVista ?? "completa") === "basica";
   const etiquetaVerFicha = String(p.etiquetaVerFicha ?? "").trim() || "Ver detalles";
@@ -994,35 +999,59 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               >
                 WhatsApp
               </TrackedCardLink>
-              <TrackedCardLink
-                slug={p.slug}
-                href={fichaHref}
-                type="view_ficha"
-                analyticsSource={analyticsSource}
-                trackingComunaSlug={p.fichaContextComunaSlug ?? null}
-                trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
-                style={{ minHeight: 44, height: ACTIONS_H }}
-                aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
-              >
-                {etiquetaVerFicha}
-              </TrackedCardLink>
+              {verDetallesHandler ? (
+                <button
+                  type="button"
+                  onClick={verDetallesHandler}
+                  className="flex min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                  style={{ minHeight: 44, height: ACTIONS_H }}
+                  aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
+                >
+                  {etiquetaVerFicha}
+                </button>
+              ) : (
+                <TrackedCardLink
+                  slug={p.slug}
+                  href={fichaHref}
+                  type="view_ficha"
+                  analyticsSource={analyticsSource}
+                  trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+                  trackingEmprendedorId={p.emprendedorId ?? null}
+                  className="flex min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                  style={{ minHeight: 44, height: ACTIONS_H }}
+                  aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
+                >
+                  {etiquetaVerFicha}
+                </TrackedCardLink>
+              )}
             </div>
           ) : listadoUiPerfilCompleto && puedeVerFichaPublica && !tieneWhatsappValido ? (
             <div className="flex min-h-[48px] w-full shrink-0 justify-center">
-              <TrackedCardLink
-                slug={p.slug}
-                href={fichaHref}
-                type="view_ficha"
-                analyticsSource={analyticsSource}
-                trackingComunaSlug={p.fichaContextComunaSlug ?? null}
-                trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
-                style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
-                aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
-              >
-                {etiquetaVerFicha}
-              </TrackedCardLink>
+              {verDetallesHandler ? (
+                <button
+                  type="button"
+                  onClick={verDetallesHandler}
+                  className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                  style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                  aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
+                >
+                  {etiquetaVerFicha}
+                </button>
+              ) : (
+                <TrackedCardLink
+                  slug={p.slug}
+                  href={fichaHref}
+                  type="view_ficha"
+                  analyticsSource={analyticsSource}
+                  trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+                  trackingEmprendedorId={p.emprendedorId ?? null}
+                  className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                  style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                  aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
+                >
+                  {etiquetaVerFicha}
+                </TrackedCardLink>
+              )}
             </div>
           ) : !listadoUiPerfilCompleto && tieneWhatsappValido ? (
             <div className="flex w-full flex-col items-center justify-center gap-2">
@@ -1049,19 +1078,31 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             </div>
           ) : puedeVerFichaPublica ? (
             <div className="flex min-h-[48px] w-full shrink-0 justify-center">
-              <TrackedCardLink
-                slug={p.slug}
-                href={fichaHref}
-                type="view_ficha"
-                analyticsSource={analyticsSource}
-                trackingComunaSlug={p.fichaContextComunaSlug ?? null}
-                trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
-                style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
-                aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
-              >
-                {etiquetaVerFicha}
-              </TrackedCardLink>
+              {verDetallesHandler ? (
+                <button
+                  type="button"
+                  onClick={verDetallesHandler}
+                  className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                  style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                  aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
+                >
+                  {etiquetaVerFicha}
+                </button>
+              ) : (
+                <TrackedCardLink
+                  slug={p.slug}
+                  href={fichaHref}
+                  type="view_ficha"
+                  analyticsSource={analyticsSource}
+                  trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+                  trackingEmprendedorId={p.emprendedorId ?? null}
+                  className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                  style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
+                  aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
+                >
+                  {etiquetaVerFicha}
+                </TrackedCardLink>
+              )}
             </div>
           ) : null}
         </div>

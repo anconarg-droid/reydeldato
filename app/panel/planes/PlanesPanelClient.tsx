@@ -27,9 +27,9 @@ import {
   planesWebpayDeshabilitadoCliente,
 } from "@/lib/planesPanelWebpay";
 import {
-  COPY_PLAN_GRATIS_LUEGO_BASICO,
   copyBloqueSuperiorPlanesDesdeEstado,
   copyBloqueSuperiorPlanesSinContextoNegocio,
+  diasRestantesHasta,
   fechaLargaEs,
   mensajeContextualEncimaTarjetasPlanes,
 } from "@/lib/panelComercialCopy";
@@ -110,43 +110,6 @@ function comunaDesdeSlug(slug: string): string {
     .join(" ");
 }
 
-function ctaPrincipalLabelFromEstado(
-  estado: EstadoComercialEmprendedor,
-  comercialListo: boolean,
-  modoSoloContacto: boolean
-): string {
-  if (modoSoloContacto) {
-    if (!comercialListo) return "Activar mi ficha completa";
-    switch (estado) {
-      case "plan_activo":
-        return "Gestionar plan";
-      case "plan_por_vencer":
-        return "Renovar plan";
-      case "trial_con_plan_confirmado_programado":
-      case "trial_por_vencer_con_plan_confirmado_programado":
-      case "plan_confirmado_programado":
-      case "plan_confirmado_programado_por_arrancar":
-        return "Gestionar plan";
-      case "plan_vencido":
-      case "vencido_reciente":
-        return "Volver a activar";
-      default:
-        return "Activar mi ficha completa";
-    }
-  }
-  switch (estado) {
-    case "plan_activo":
-      return "Gestionar plan";
-    case "plan_por_vencer":
-      return "Renovar plan";
-    case "plan_vencido":
-    case "vencido_reciente":
-      return "Reactivar ficha completa";
-    default:
-      return "Pagar y activar ahora";
-  }
-}
-
 function whatsappAccion(estado: EstadoComercialEmprendedor): AccionPlanWhatsApp {
   if (estado === "plan_activo") return "gestionar";
   if (estado === "plan_por_vencer") return "renovar";
@@ -166,6 +129,38 @@ function planKeyParaApi(p: PlanPeriodicidad): "basico" | "semestral" | "anual" {
   if (p === "mensual") return "basico";
   if (p === "semestral") return "semestral";
   return "anual";
+}
+
+function parseIsoDate(iso: string | null | undefined): Date | null {
+  if (iso == null || String(iso).trim() === "") return null;
+  const d = new Date(String(iso));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function startOfLocalDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function addCalendarMonthsFromDate(start: Date, months: number): Date {
+  const d = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const origDay = d.getDate();
+  d.setMonth(d.getMonth() + months);
+  if (d.getDate() !== origDay) d.setDate(0);
+  return d;
+}
+
+function monthsForPeriodicidad(p: PlanPeriodicidad): number {
+  if (p === "mensual") return 1;
+  if (p === "semestral") return 6;
+  return 12;
+}
+
+function formatFechaLocal(d: Date): string {
+  return new Intl.DateTimeFormat("es-CL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(d);
 }
 
 const allowClientPlanActivate =
@@ -210,6 +205,14 @@ export default function PlanesPanelClient({
   const [transferOkMsg, setTransferOkMsg] = useState<string | null>(null);
   const [redirigiendoPago, setRedirigiendoPago] = useState(false);
   const [pagoIniciarError, setPagoIniciarError] = useState<string | null>(null);
+  const [negocioSlug, setNegocioSlug] = useState("");
+  const [comunaNombreDisplay, setComunaNombreDisplay] = useState("");
+  const [descripcionLarga, setDescripcionLarga] = useState("");
+  const [whatsappNegocio, setWhatsappNegocio] = useState("");
+  const [instagramNegocio, setInstagramNegocio] = useState("");
+  const [webNegocio, setWebNegocio] = useState("");
+  const [emailNegocio, setEmailNegocio] = useState("");
+  const [previewPublicOpen, setPreviewPublicOpen] = useState(false);
 
   const modoSoloContacto = planesWebpayDeshabilitadoCliente();
   const transferenciaUi = getTransferenciaBancoUi();
@@ -233,6 +236,17 @@ export default function PlanesPanelClient({
           const it = res.item as Record<string, unknown>;
           setNombre(String(it.nombre ?? "").trim());
           setComunaSlug(String(it.comunaBaseSlug ?? "").trim());
+          setNegocioSlug(String(it.slug ?? "").trim());
+          setComunaNombreDisplay(String(it.comunaBaseNombre ?? "").trim());
+          setDescripcionLarga(
+            String(it.descripcionLarga ?? it.descripcion_larga ?? "").trim()
+          );
+          setWhatsappNegocio(String(it.whatsapp ?? "").trim());
+          setInstagramNegocio(String(it.instagram ?? "").trim());
+          setWebNegocio(
+            String(it.web ?? it.sitio_web ?? it.sitioWeb ?? "").trim()
+          );
+          setEmailNegocio(String(it.email ?? "").trim());
           setFotoPrincipalUrl(
             String(
               it.fotoPrincipalUrl ??
@@ -259,6 +273,13 @@ export default function PlanesPanelClient({
           setComunaSlug("");
           setFotoPrincipalUrl("");
           setGaleriaPrimeraUrl("");
+          setNegocioSlug("");
+          setComunaNombreDisplay("");
+          setDescripcionLarga("");
+          setWhatsappNegocio("");
+          setInstagramNegocio("");
+          setWebNegocio("");
+          setEmailNegocio("");
           setComercial(null);
         }
       })
@@ -267,6 +288,13 @@ export default function PlanesPanelClient({
         setComunaSlug("");
         setFotoPrincipalUrl("");
         setGaleriaPrimeraUrl("");
+        setNegocioSlug("");
+        setComunaNombreDisplay("");
+        setDescripcionLarga("");
+        setWhatsappNegocio("");
+        setInstagramNegocio("");
+        setWebNegocio("");
+        setEmailNegocio("");
         setComercial(null);
       })
       .finally(() => setLoading(false));
@@ -333,16 +361,76 @@ export default function PlanesPanelClient({
       estado === "trial_con_plan_confirmado_programado" ||
       estado === "trial_por_vencer_con_plan_confirmado_programado");
 
-  const inicioPlanDisplay = useMemo(() => {
-    if (!comercialListo) return "—";
-    if (planProgramado && comercial.planIniciaAt) {
-      return fechaLargaEs(comercial.planIniciaAt) ?? "—";
+  const heroTrialDetallado =
+    comercialListo &&
+    (estado === "trial_activo" ||
+      estado === "trial_por_vencer" ||
+      estado === "trial_con_plan_confirmado_programado" ||
+      estado === "trial_por_vencer_con_plan_confirmado_programado");
+
+  const heroPlanPagadoActivo =
+    comercialListo && (estado === "plan_activo" || estado === "plan_por_vencer");
+
+  const diasTrialHero = useMemo(() => {
+    if (!comercialListo || !comercial) return null;
+    if (comercial.diasRestantes != null && comercial.diasRestantes > 0) {
+      return comercial.diasRestantes;
     }
-    if (estaEnTrial) {
-      return fechaLargaEs(comercial.trialExpiraAt) ?? "—";
+    return diasRestantesHasta(comercial.trialExpiraAt);
+  }, [comercialListo, comercial]);
+
+  const vigenciaPlanLabels = useMemo(() => {
+    if (!comercialListo || !comercial) {
+      return { inicio: null as string | null, fin: null as string | null };
     }
-    return "Inmediatamente";
-  }, [comercialListo, planProgramado, comercial?.planIniciaAt, estaEnTrial, comercial?.trialExpiraAt]);
+    if (planProgramado && comercial.planIniciaAt && fechaLargaEs(comercial.planIniciaAt)) {
+      if (comercial.planExpiraAt && fechaLargaEs(comercial.planExpiraAt)) {
+        return {
+          inicio: fechaLargaEs(comercial.planIniciaAt),
+          fin: fechaLargaEs(comercial.planExpiraAt),
+        };
+      }
+      const iniP = parseIsoDate(comercial.planIniciaAt);
+      if (iniP) {
+        const meses =
+          comercial.planPeriodicidad === "mensual"
+            ? 1
+            : comercial.planPeriodicidad === "semestral"
+              ? 6
+              : comercial.planPeriodicidad === "anual"
+                ? 12
+                : monthsForPeriodicidad(selectedPlan);
+        const finP = addCalendarMonthsFromDate(startOfLocalDay(iniP), meses);
+        return {
+          inicio: formatFechaLocal(startOfLocalDay(iniP)),
+          fin: formatFechaLocal(finP),
+        };
+      }
+    }
+    let inicioDt: Date | null = null;
+    if (estaEnTrial && comercial.trialExpiraAt) {
+      const t = parseIsoDate(comercial.trialExpiraAt);
+      inicioDt = t ? startOfLocalDay(t) : null;
+    } else {
+      inicioDt = startOfLocalDay(new Date());
+    }
+    if (!inicioDt) return { inicio: null, fin: null };
+    const finDt = addCalendarMonthsFromDate(
+      inicioDt,
+      monthsForPeriodicidad(selectedPlan)
+    );
+    return {
+      inicio: formatFechaLocal(inicioDt),
+      fin: formatFechaLocal(finDt),
+    };
+  }, [
+    comercialListo,
+    comercial,
+    planProgramado,
+    estaEnTrial,
+    selectedPlan,
+    comercial?.planPeriodicidad,
+  ]);
 
   const montoTransferSegunPlan = useMemo(
     () =>
@@ -352,11 +440,22 @@ export default function PlanesPanelClient({
     [selectedPlan]
   );
 
-  const ctaPrincipalLabel = ctaPrincipalLabelFromEstado(
-    estado,
-    comercialListo,
-    modoSoloContacto
-  );
+  const hrefFichaPublicaPreview = useMemo(() => {
+    const s = negocioSlug.trim();
+    if (!s) return "";
+    const path = `/emprendedor/${encodeURIComponent(s)}`;
+    const c = comunaSlug.trim();
+    if (!c) return path;
+    const q = new URLSearchParams();
+    q.set("comuna", c);
+    const n = comunaNombreDisplay.trim();
+    if (n) q.set("comunaNombre", n);
+    return `${path}?${q.toString()}`;
+  }, [negocioSlug, comunaSlug, comunaNombreDisplay]);
+
+  const abrirPreviewFichaPublica = useCallback(() => {
+    setPreviewPublicOpen(true);
+  }, []);
 
   const ensureTransferReference = useCallback(async () => {
     const cleanId = id.trim();
@@ -654,8 +753,13 @@ export default function PlanesPanelClient({
           ← Volver al panel
         </Link>
         <h1 className="mt-4 text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-          Planes y ficha completa
+          {nombre.trim()
+            ? `Planes para ${nombre.trim()}`
+            : "Planes y ficha completa"}
         </h1>
+        <p className="mt-2 text-sm text-slate-600 max-w-2xl">
+          Activa o mantén tu ficha completa en Rey del Dato.
+        </p>
       </div>
 
       {pagoFlash === "fallo" && !loading ? (
@@ -697,6 +801,57 @@ export default function PlanesPanelClient({
             <div className="h-4 w-full max-w-xl bg-slate-100 rounded animate-pulse" />
             <div className="h-4 max-w-lg w-full bg-slate-100 rounded animate-pulse" />
           </div>
+        ) : heroTrialDetallado && comercial ? (
+          <>
+            {nombre.trim() ? (
+              <p className="text-sm font-semibold text-slate-600 mb-1">{nombre.trim()}</p>
+            ) : null}
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 leading-tight">
+              Tu ficha completa está activa
+            </h2>
+            <ul className="mt-3 space-y-1.5 text-sm text-gray-800 max-w-2xl">
+              {comercial.trialIniciaAt && fechaLargaEs(comercial.trialIniciaAt) ? (
+                <li>
+                  <span className="font-semibold text-slate-700">Inicio prueba: </span>
+                  {fechaLargaEs(comercial.trialIniciaAt)}
+                </li>
+              ) : null}
+              {comercial.trialExpiraAt && fechaLargaEs(comercial.trialExpiraAt) ? (
+                <li>
+                  <span className="font-semibold text-slate-700">Termina prueba: </span>
+                  {fechaLargaEs(comercial.trialExpiraAt)}
+                </li>
+              ) : null}
+              {diasTrialHero != null && diasTrialHero > 0 ? (
+                <li>
+                  <span className="font-semibold text-slate-700">Te quedan: </span>
+                  {diasTrialHero} {diasTrialHero === 1 ? "día" : "días"}
+                </li>
+              ) : null}
+            </ul>
+            <p className="mt-3 text-sm text-slate-700 leading-relaxed max-w-2xl">
+              Durante la prueba tu ficha completa se mantiene visible sin costo.
+            </p>
+            {planProgramado ? (
+              <p className="mt-2 text-sm text-slate-700 leading-relaxed max-w-2xl">
+                Además, ya tienes un plan pagado confirmado que comenzará al término de tu prueba.
+              </p>
+            ) : null}
+          </>
+        ) : heroPlanPagadoActivo && comercial ? (
+          <>
+            {nombre.trim() ? (
+              <p className="text-sm font-semibold text-slate-600 mb-1">{nombre.trim()}</p>
+            ) : null}
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 leading-tight">
+              Tu ficha completa está activa
+            </h2>
+            <p className="mt-3 text-base text-gray-800 leading-relaxed max-w-2xl">
+              {comercial.planExpiraAt && fechaLargaEs(comercial.planExpiraAt)
+                ? `Tu plan pagado está vigente hasta el ${fechaLargaEs(comercial.planExpiraAt)}. Tu negocio sigue apareciendo como perfil completo en las búsquedas.`
+                : "Tu plan pagado está vigente. Tu negocio sigue apareciendo como perfil completo en las búsquedas."}
+            </p>
+          </>
         ) : (
           <>
             {comercialListo && nombre ? (
@@ -897,43 +1052,158 @@ export default function PlanesPanelClient({
             <div className="mt-4 max-w-[420px] mx-auto">
               <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_54px_rgba(16,185,129,0.20)] shadow-[0_12px_30px_rgba(16,185,129,0.10)]">
                 <EmprendedorSearchCard
-                  slug="demo"
+                  slug={negocioSlug.trim() || "demo"}
                   nombre={nombre || "Tu negocio"}
                   fotoPrincipalUrl={fotoPrincipalUrl || galeriaPrimeraUrl || ""}
-                  whatsappPrincipal="+56900000000"
+                  whatsappPrincipal={
+                    String(whatsappNegocio || "")
+                      .replace(/\D/g, "")
+                      .length >= 8
+                      ? whatsappNegocio
+                      : "+56900000000"
+                  }
                   estadoPublicacion="publicado"
                   esFichaCompleta
                   estadoFicha="ficha_completa"
                   bloqueTerritorial={null}
                   frase=""
-                  descripcionLibre="Fotos, descripción y más señales de confianza en la card."
+                  descripcionLibre={
+                    descripcionLarga ||
+                    "Fotos, descripción y más señales de confianza en la card."
+                  }
                   subcategoriasNombres={["Servicio"]}
                   subcategoriasSlugs={["servicio"]}
-                  comunaBaseNombre="Santiago"
-                  comunaBaseSlug="santiago"
+                  comunaBaseNombre={comunaNombreDisplay || "Santiago"}
+                  comunaBaseSlug={comunaSlug || "santiago"}
                   comunaBaseRegionAbrev="RM"
-                  comunaBuscadaNombre="Santiago"
-                  atiendeLine="Atiende: Santiago"
+                  comunaBuscadaNombre={comunaNombreDisplay || "Santiago"}
+                  atiendeLine={
+                    comunaNombreDisplay.trim()
+                      ? `Atiende: ${comunaNombreDisplay.trim()}`
+                      : "Atiende: Santiago"
+                  }
+                  fichaContextComunaSlug={comunaSlug.trim() || null}
+                  fichaContextComunaNombre={comunaNombreDisplay.trim() || null}
+                  onVerDetallesClick={abrirPreviewFichaPublica}
                 />
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-emerald-900">
                 <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
-                  <span aria-hidden>✓</span> Perfil completo
+                  <span aria-hidden>✓</span> Card más visible en resultados
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
-                  <span aria-hidden>✓</span> Más información
+                  <span aria-hidden>✓</span> Ficha pública completa
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
-                  <span aria-hidden>✓</span> Más contacto
+                  <span aria-hidden>✓</span> Fotos, descripción y redes
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
-                  <span aria-hidden>✓</span> Más confianza
+                  <span aria-hidden>✓</span> Más formas de contacto
                 </div>
               </div>
             </div>
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-emerald-50/10 via-white/20 to-emerald-100/10" />
           </div>
         </div>
+
+        <p className="mt-5 text-center text-sm text-slate-700 max-w-2xl mx-auto leading-relaxed px-1">
+          Con ficha completa, las personas no solo ven tu card: también pueden abrir una página con
+          más información de tu negocio.
+        </p>
+
+        {previewPublicOpen ? (
+          <div
+            className="mt-6 rounded-2xl border border-emerald-200 bg-white p-5 sm:p-6 shadow-sm overflow-x-hidden"
+            role="region"
+            aria-label="Vista previa de tu ficha pública"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-3 mb-4">
+              <h3 className="text-lg font-black text-gray-900 pr-2">
+                Así se verá tu ficha pública completa
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPreviewPublicOpen(false)}
+                className="shrink-0 text-sm font-semibold text-slate-600 hover:text-gray-900 underline-offset-2 hover:underline"
+              >
+                Cerrar
+              </button>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-5 max-w-3xl mx-auto min-w-0">
+              <div className="shrink-0 w-full sm:w-40 mx-auto sm:mx-0">
+                {fotoPrincipalUrl || galeriaPrimeraUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={fotoPrincipalUrl || galeriaPrimeraUrl}
+                    alt=""
+                    className="w-full aspect-square max-h-48 sm:max-h-none object-cover rounded-xl border border-slate-200"
+                  />
+                ) : (
+                  <div className="w-full aspect-square max-h-48 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-xs font-medium text-slate-500 text-center px-2">
+                    Sin imagen principal
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1 space-y-2 text-sm">
+                <p className="text-lg font-black text-gray-900 break-words">
+                  {nombre.trim() || "Tu negocio"}
+                </p>
+                {comunaNombreDisplay.trim() ? (
+                  <p className="text-slate-600">
+                    <span className="font-semibold">Comuna: </span>
+                    {comunaNombreDisplay.trim()}
+                  </p>
+                ) : null}
+                {descripcionLarga.trim() ? (
+                  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap break-words">
+                    {descripcionLarga.trim()}
+                  </p>
+                ) : (
+                  <p className="text-slate-500 italic">Aún no hay descripción larga en tu ficha.</p>
+                )}
+                {String(whatsappNegocio || "").replace(/\D/g, "").length >= 8 ? (
+                  <p className="text-slate-700">
+                    <span className="font-semibold">WhatsApp: </span>
+                    <span className="tabular-nums">{whatsappNegocio.trim()}</span>
+                  </p>
+                ) : null}
+                {instagramNegocio.trim() ? (
+                  <p className="text-slate-700 break-all">
+                    <span className="font-semibold">Instagram: </span>
+                    {instagramNegocio.trim()}
+                  </p>
+                ) : null}
+                {webNegocio.trim() ? (
+                  <p className="text-slate-700 break-all">
+                    <span className="font-semibold">Web: </span>
+                    {webNegocio.trim()}
+                  </p>
+                ) : null}
+                {emailNegocio.trim() ? (
+                  <p className="text-slate-700 break-all">
+                    <span className="font-semibold">Correo: </span>
+                    {emailNegocio.trim()}
+                  </p>
+                ) : null}
+                <p className="text-xs text-slate-500 pt-1">
+                  Disponible mientras mantengas ficha completa.
+                </p>
+                {hrefFichaPublicaPreview ? (
+                  <p className="pt-2">
+                    <Link
+                      href={hrefFichaPublicaPreview}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-semibold text-sky-700 hover:text-sky-800 underline-offset-2 hover:underline break-all"
+                    >
+                      Abrir tu ficha pública en una pestaña nueva
+                    </Link>
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section
@@ -950,10 +1220,33 @@ export default function PlanesPanelClient({
                 {precioPlanesDisplaySimple(PRECIO_PLAN_CLP[selectedPlan])}
               </span>
             </p>
-            <p className="text-sm text-slate-700">
-              Tu plan pagado comenzará automáticamente el{" "}
-              <span className="font-extrabold tabular-nums">{inicioPlanDisplay}</span>
-            </p>
+            {planProgramado ? (
+              <p className="text-sm text-slate-700">
+                Tu plan pagado ya está confirmado. La vigencia que ves corresponde a tu compra
+                programada.
+              </p>
+            ) : estaEnTrial ? (
+              <p className="text-sm text-slate-700">
+                Si pagas hoy, tu plan partirá cuando termine tu prueba.
+              </p>
+            ) : (
+              <p className="text-sm text-slate-700">
+                Si pagas hoy, tu plan comenzará en la fecha de inicio indicada abajo.
+              </p>
+            )}
+            {vigenciaPlanLabels.inicio && vigenciaPlanLabels.fin ? (
+              <>
+                <p className="text-sm font-semibold text-slate-800">
+                  Vigencia: {vigenciaPlanLabels.inicio} al {vigenciaPlanLabels.fin}
+                </p>
+                {!planProgramado ? (
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Si pagas hoy, tu plan comenzará el {vigenciaPlanLabels.inicio} y terminará el{" "}
+                    {vigenciaPlanLabels.fin}.
+                  </p>
+                ) : null}
+              </>
+            ) : null}
             {estaEnTrial ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-2 py-0.5 rounded-md bg-emerald-200/90 text-[0.7rem] font-extrabold uppercase tracking-wide text-emerald-950">
