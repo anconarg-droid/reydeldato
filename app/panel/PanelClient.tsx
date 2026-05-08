@@ -1128,7 +1128,7 @@ export default function PanelClient({
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-5 lg:py-8 space-y-4">
+      <div className="mx-auto w-full max-w-[1400px] px-4 lg:px-8 py-5 lg:py-8 space-y-4">
       <PanelBrandHomeBar />
       {planesUiVisible && pagoResult === "exito" ? (
         <p
@@ -1153,7 +1153,7 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="w-full space-y-4">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,0.75fr)] gap-8 items-start">
         <div className="min-w-0 space-y-4">
           <div
             className="w-full rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
@@ -1245,38 +1245,145 @@ export default function PanelClient({
             />
           ) : null}
 
+          <section className="w-full space-y-4" aria-label="Rendimiento de tu negocio">
+            {estadisticasOcultasEnPanel ? (
+              <div
+                className="w-full rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
+                role="status"
+              >
+                <p className="font-semibold text-gray-900">
+                  Estadísticas no visibles con tu plan o perfil actual
+                </p>
+                <p className="mt-1.5 text-gray-700">
+                  Visitas, impresiones y contactos{" "}
+                  <span className="font-semibold">siguen registrándose</span> en
+                  segundo plano. Al reactivar perfil completo verás aquí el total
+                  real, incluido lo que ocurra mientras tanto.
+                </p>
+              </div>
+            ) : null}
+            {qs && !estadisticasOcultasEnPanel ? (
+              <div className="w-full">
+                {metricasOcultasPorVistaBasica ? (
+                  <PanelRendimientoModoBasicaPreview />
+                ) : (
+                  <MetricsResumenPanel
+                    data={metricsMostrados}
+                    rangeLabel={textoRangoMetricas(rangoMostrado)}
+                    interes={interesMetricasFlags}
+                    loading={loading}
+                    omitInsight
+                    headerRight={
+                      <div
+                        className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
+                        role="group"
+                        aria-label="Periodo de estadísticas"
+                      >
+                        {(["7d", "30d", "all"] as const).map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => setRange(r)}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                              range === r
+                                ? "bg-gray-900 text-white"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                          >
+                            {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
+                          </button>
+                        ))}
+                      </div>
+                    }
+                  />
+                )}
+              </div>
+            ) : null}
+
+            {qs &&
+            !estadisticasOcultasEnPanel &&
+            !metricasOcultasPorVistaBasica ? (
+              !loading ? (
+                (() => {
+                  const insight = panelInsightMessage(
+                    Number.isFinite(metricsMostrados.impresiones)
+                      ? metricsMostrados.impresiones
+                      : 0,
+                    Number.isFinite(metricsMostrados.visitas)
+                      ? metricsMostrados.visitas
+                      : 0,
+                    Number.isFinite(metricsMostrados.click_whatsapp)
+                      ? metricsMostrados.click_whatsapp
+                      : 0
+                  );
+                  if (!insight) return null;
+                  return (
+                    <div
+                      className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
+                      role="status"
+                    >
+                      {insight}
+                    </div>
+                  );
+                })()
+              ) : (
+                <div
+                  className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
+                  aria-hidden
+                />
+              )
+            ) : null}
+          </section>
+
           {tieneNegocio &&
           !fichaLoading &&
           (mostrarBloqueCuandoTerminePlan(comercial) ||
             comercial?.estado === "plan_vencido") ? (
-            <div className="w-full space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
-              <BloqueCuandoTerminePlan sinCaja />
+            <section
+              className="w-full space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-4 shadow-sm"
+              aria-label="Cuando termine tu plan"
+            >
+              <div className="space-y-1">
+                <p className="text-base font-black text-gray-900 leading-snug">
+                  {comercial?.estado === "trial_activo" ||
+                  comercial?.estado === "trial_por_vencer"
+                    ? "Cuando termine tu prueba"
+                    : "Cuando termine tu plan"}
+                </p>
+                <p className="text-sm text-amber-950/90 leading-relaxed">
+                  Tu negocio seguirá visible, pero pasarás a un perfil básico con menos información.
+                </p>
+              </div>
+              <ul className="space-y-2 text-sm text-gray-800 leading-snug">
+                <li className="flex gap-2.5 items-start">
+                  <span className="text-amber-900 font-bold shrink-0" aria-hidden>
+                    •
+                  </span>
+                  <span>Tu negocio seguirá visible en tu comuna.</span>
+                </li>
+                <li className="flex gap-2.5 items-start">
+                  <span className="text-amber-900 font-bold shrink-0" aria-hidden>
+                    •
+                  </span>
+                  <span>Pasarás a ficha básica: solo WhatsApp y datos esenciales.</span>
+                </li>
+                <li className="flex gap-2.5 items-start">
+                  <span className="text-amber-900 font-bold shrink-0" aria-hidden>
+                    •
+                  </span>
+                  <span>No podrás mostrar fotos, redes ni descripción completa.</span>
+                </li>
+              </ul>
               {planesUiVisible ? (
-                <>
-                  <Link
-                    href={planesHref}
-                    prefetch={false}
-                    className="flex min-h-[44px] w-full items-center justify-center rounded-xl border-2 border-gray-900 bg-gray-900 px-4 text-center text-sm font-black text-white shadow-md transition hover:border-gray-800 hover:bg-gray-800"
-                  >
-                    {comercial?.estado === "plan_vencido"
-                      ? "Reactivar ficha completa"
-                      : "Mantener perfil completo"}
-                  </Link>
-                  {comercial &&
-                  (comercial.estado === "trial_activo" ||
-                    comercial.estado === "trial_por_vencer") &&
-                  !planContratadoDiferido ? (
-                    <p className="text-xs sm:text-sm text-center text-gray-800 leading-relaxed max-w-xl mx-auto">
-                      Puedes pagar ahora y tu plan pagado comenzará cuando termine
-                      tu prueba gratis.{" "}
-                      <span className="font-semibold">
-                        No pierdes días de tu trial.
-                      </span>
-                    </p>
-                  ) : null}
-                </>
+                <Link
+                  href={planesHref}
+                  prefetch={false}
+                  className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-gray-900 bg-transparent px-4 text-center text-sm font-black text-gray-900 shadow-sm transition hover:bg-white"
+                >
+                  Mantener perfil completo
+                </Link>
               ) : null}
-            </div>
+            </section>
           ) : tieneNegocio && !fichaLoading ? (
             <div />
           ) : null}
@@ -1297,289 +1404,99 @@ export default function PanelClient({
             })()
           ) : null}
         </div>
-      </div>
-
-      <section
-        className="w-full rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm"
-        aria-label="Así te ven las personas"
-      >
-        <div className="flex flex-col gap-1">
-          <h2 className="text-lg sm:text-xl font-black text-gray-900">
-            Así te ven las personas
-          </h2>
-          <p className="text-sm font-medium text-slate-600">
-            Perfil básico vs perfil completo (lo que cambia en visibilidad y confianza).
-          </p>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 relative overflow-hidden">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-base font-black text-gray-900">Perfil básico</p>
-                <p className="text-xs font-semibold text-slate-600">
-                  Solo contacto por WhatsApp
-                </p>
-              </div>
-              <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-slate-700 bg-slate-200/80 px-2 py-1 rounded-md">
-                Menos visible
-              </span>
+        
+        <div className="min-w-0 space-y-4 xl:sticky xl:top-24">
+          {/* DERECHA: previews + CTA (sin comparación larga; eso queda en /panel/planes) */}
+          <section
+            className="w-full rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm"
+            aria-label="Así te ven en resultados"
+          >
+            <div className="space-y-1">
+              <h2 className="text-base sm:text-lg font-black text-gray-900">
+                Así te ven en resultados
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600">
+                Vista real de tu card en el buscador.
+              </p>
             </div>
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-slate-100/10 via-slate-200/10 to-slate-300/10" />
             <div className="mt-4">
               {tieneNegocio ? (
                 fichaLoading ? (
-                  <div className="w-full max-w-[420px] rounded-xl border border-slate-200 bg-slate-100 min-h-[220px] animate-pulse" aria-hidden />
+                  <div
+                    className="w-full rounded-xl border border-slate-200 bg-slate-100 min-h-[220px] animate-pulse"
+                    aria-hidden
+                  />
                 ) : previewCardProps ? (
-                  <div className="w-full max-w-[420px] mx-auto">
-                    <EmprendedorSearchCard
-                      {...previewCardProps}
-                      modoVista="basica"
-                      etiquetaVerFicha="Ver ficha"
-                    />
-                  </div>
+                  <EmprendedorSearchCard
+                    {...previewCardProps}
+                    modoVista={perfilCompletoEnHeader ? "completa" : "basica"}
+                    etiquetaVerFicha={perfilCompletoEnHeader ? "Ver ficha" : undefined}
+                  />
                 ) : (
-                  <div className="w-full max-w-[420px] rounded-xl border border-slate-200 bg-slate-100 min-h-[220px] animate-pulse" aria-hidden />
+                  <div
+                    className="w-full rounded-xl border border-slate-200 bg-slate-100 min-h-[220px] animate-pulse"
+                    aria-hidden
+                  />
                 )
               ) : (
-                <p className="text-sm text-slate-600">Enlaza tu ficha para ver la comparación.</p>
-              )}
-            </div>
-            <div className="mt-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700">
-              Menos información visible (sin fotos, menos descripción y menos confianza).
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/30 p-4 sm:p-5 relative overflow-hidden">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-base font-black text-gray-900">Perfil completo</p>
-                <p className="text-xs font-semibold text-slate-600">
-                  Más confianza y más contactos
+                <p className="text-sm text-slate-600">
+                  Enlaza tu ficha para ver la vista previa.
                 </p>
-              </div>
-              <span className="text-[0.65rem] font-extrabold uppercase tracking-wider text-emerald-950 bg-emerald-200/90 px-2 py-1 rounded-md">
-                Más visible
-              </span>
-            </div>
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-emerald-50/10 via-white/20 to-emerald-100/10" />
-            <div className="mt-4">
-              {tieneNegocio ? (
-                fichaLoading ? (
-                  <div className="w-full max-w-[420px] rounded-xl border border-emerald-200 bg-emerald-50 min-h-[220px] animate-pulse" aria-hidden />
-                ) : previewCardProps ? (
-                  <div className="w-full max-w-[420px] mx-auto space-y-3">
-                    {previewInformativa && negocioItem ? (
-                      <div
-                        role="status"
-                        className="rounded-lg border border-slate-200 bg-white/80 px-2.5 py-2 text-left"
-                      >
-                        <p className="m-0 text-[11px] font-extrabold text-slate-900">
-                          Vista previa
-                        </p>
-                        <p className="mt-0.5 m-0 text-[10px] font-medium leading-snug text-slate-600">
-                          {panelPreviewSubtituloInformativo(negocioItem)}
-                        </p>
-                      </div>
-                    ) : null}
-                    <EmprendedorSearchCard
-                      {...previewCardProps}
-                      modoVista="completa"
-                      etiquetaVerFicha="Ver ficha completa"
-                    />
-                    {!previewInformativa && negocioItem ? (
-                      <div className="rounded-2xl border border-emerald-200 bg-white p-3">
-                        <p className="text-xs font-bold text-slate-700 mb-2">
-                          Vista pública (resumen)
-                        </p>
-                        <PanelFichaPublicaEmbed
-                          slug={slugFichaPublica}
-                          modoVista="completa"
-                          item={negocioItem}
-                          urlSlugParam={slug}
-                          vistaPublicaBloqueada={previewInformativa}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className="w-full max-w-[420px] rounded-xl border border-emerald-200 bg-emerald-50 min-h-[220px] animate-pulse" aria-hidden />
-                )
-              ) : (
-                <p className="text-sm text-slate-600">Enlaza tu ficha para ver la comparación.</p>
               )}
             </div>
-          </div>
-        </div>
-
-        {planesUiVisible ? (
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-900 p-4 sm:p-5 text-center space-y-3">
-            <Link
-              href={planesHref}
-              prefetch={false}
-              className="inline-flex w-full max-w-md mx-auto min-h-[52px] items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-extrabold text-gray-900 shadow-lg hover:bg-gray-100 transition-colors"
+          </section>
+          
+          <section
+            className="w-full rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm"
+            aria-label="Tu ficha pública completa"
+          >
+            <div className="space-y-1">
+              <h2 className="text-base sm:text-lg font-black text-gray-900">
+                Tu ficha pública
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600">
+                La página que se abre desde la búsqueda.
+              </p>
+            </div>
+            <div className="mt-4">
+              {tieneNegocio && !fichaLoading && negocioItem ? (
+                <PanelFichaPublicaEmbed
+                  slug={slugFichaPublica}
+                  modoVista={perfilCompletoEnHeader ? "completa" : "basica"}
+                  item={negocioItem}
+                  urlSlugParam={slug}
+                  vistaPublicaBloqueada={previewInformativa}
+                />
+              ) : (
+                <div
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/70 min-h-[180px] animate-pulse"
+                  aria-hidden
+                />
+              )}
+            </div>
+          </section>
+          
+          {planesUiVisible ? (
+            <section
+              className="w-full rounded-2xl border border-slate-200 bg-slate-900 p-4 sm:p-5 shadow-sm"
+              aria-label="Mantener perfil completo"
             >
-              {comercial?.estado === "plan_vencido"
-                ? "Reactivar ficha completa"
-                : "Mantener perfil completo"}
-            </Link>
-            {comercial &&
-            (comercial.estado === "trial_activo" ||
-              comercial.estado === "trial_por_vencer") &&
-            !planContratadoDiferido ? (
-              <p className="text-sm text-white/85 max-w-xl mx-auto leading-relaxed">
+              <Link
+                href={planesHref}
+                prefetch={false}
+                className="inline-flex w-full min-h-[52px] items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-extrabold text-gray-900 shadow-lg hover:bg-gray-100 transition-colors"
+              >
+                Mantener perfil completo
+              </Link>
+              <p className="mt-3 text-sm text-white/85 leading-relaxed">
                 Puedes pagar hoy y tu plan comenzará cuando termine tu prueba gratuita.{" "}
                 <span className="font-semibold">No pierdes días.</span>
               </p>
-            ) : null}
-          </div>
-        ) : null}
-      </section>
-
-      <section className="w-full space-y-4" aria-label="Rendimiento de tu negocio">
-        {estadisticasOcultasEnPanel ? (
-          <div
-            className="w-full rounded-lg border border-amber-200/90 bg-amber-50/90 px-3 py-3 text-sm leading-snug text-gray-800 sm:px-4"
-            role="status"
-          >
-            <p className="font-semibold text-gray-900">
-              Estadísticas no visibles con tu plan o perfil actual
-            </p>
-            <p className="mt-1.5 text-gray-700">
-              Visitas, impresiones y contactos{" "}
-              <span className="font-semibold">siguen registrándose</span> en
-              segundo plano. Al reactivar perfil completo verás aquí el total
-              real, incluido lo que ocurra mientras tanto.
-            </p>
-          </div>
-        ) : null}
-        {qs && !estadisticasOcultasEnPanel ? (
-          <div className="w-full">
-            {metricasOcultasPorVistaBasica ? (
-              <PanelRendimientoModoBasicaPreview />
-            ) : (
-              <MetricsResumenPanel
-                data={metricsMostrados}
-                rangeLabel={textoRangoMetricas(rangoMostrado)}
-                interes={interesMetricasFlags}
-                loading={loading}
-                omitInsight
-                headerRight={
-                  <div
-                    className="inline-flex max-w-full flex-wrap rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
-                    role="group"
-                    aria-label="Periodo de estadísticas"
-                  >
-                    {(["7d", "30d", "all"] as const).map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => setRange(r)}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                          range === r
-                            ? "bg-gray-900 text-white"
-                            : "text-gray-600 hover:bg-gray-100"
-                        }`}
-                      >
-                        {r === "7d" ? "7d" : r === "30d" ? "30d" : "Total"}
-                      </button>
-                    ))}
-                  </div>
-                }
-              />
-            )}
-          </div>
-        ) : null}
-
-        {qs &&
-        !estadisticasOcultasEnPanel &&
-        !metricasOcultasPorVistaBasica ? (
-          !loading ? (
-            (() => {
-              const insight = panelInsightMessage(
-                Number.isFinite(metricsMostrados.impresiones)
-                  ? metricsMostrados.impresiones
-                  : 0,
-                Number.isFinite(metricsMostrados.visitas)
-                  ? metricsMostrados.visitas
-                  : 0,
-                Number.isFinite(metricsMostrados.click_whatsapp)
-                  ? metricsMostrados.click_whatsapp
-                  : 0
-              );
-              if (!insight) return null;
-              return (
-                <div
-                  className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
-                  role="status"
-                >
-                  {insight}
-                </div>
-              );
-            })()
-          ) : (
-            <div
-              className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
-              aria-hidden
-            />
-          )
-        ) : null}
-      </section>
-
-      {tieneNegocio && !fichaLoading && negocioItem ? (
-        <section
-          className="space-y-3 border-t border-gray-200 pt-8 mt-6 sm:pt-10 sm:mt-8"
-          aria-label="Tu perfil completo en la web pública"
-        >
-          {modoVista === "basica" ? (
-            <div className="space-y-3 w-full">
-              <h2 className="text-base font-black text-gray-900 leading-tight">
-                Aprovecha todo tu perfil
-              </h2>
-              <ul className="space-y-2 text-sm text-gray-800 leading-snug">
-                <li className="flex gap-2.5 items-start">
-                  <span className="text-emerald-600 font-bold shrink-0" aria-hidden>
-                    ✓
-                  </span>
-                  <span>Muestra tu trabajo con fotos</span>
-                </li>
-                <li className="flex gap-2.5 items-start">
-                  <span className="text-emerald-600 font-bold shrink-0" aria-hidden>
-                    ✓
-                  </span>
-                  <span>Explicas mejor lo que haces</span>
-                </li>
-                <li className="flex gap-2.5 items-start">
-                  <span className="text-emerald-600 font-bold shrink-0" aria-hidden>
-                    ✓
-                  </span>
-                  <span>Más formas para que te contacten</span>
-                </li>
-              </ul>
-              <p className="mt-4 rounded-lg border border-amber-200/90 bg-amber-50/95 px-3 py-3.5 text-base font-black leading-snug text-gray-900 shadow-sm sm:px-4 sm:py-4 sm:text-lg">
-                Perfil básico = contacto solo por WhatsApp
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              <h2 className="text-base font-extrabold text-gray-900">
-                Tu perfil completo (página pública)
-              </h2>
-              <p className="text-xs text-gray-600">
-                Así te ven al abrir tu ficha desde la búsqueda.
-              </p>
-            </div>
-          )}
-          <PanelFichaPublicaEmbed
-            slug={slugFichaPublica}
-            modoVista={modoVista}
-            item={negocioItem}
-            urlSlugParam={slug}
-            vistaPublicaBloqueada={previewInformativa}
-          />
-        </section>
-      ) : null}
+            </section>
+          ) : null}
+        </div>
       </div>
+    </div>
     </div>
   );
 }
