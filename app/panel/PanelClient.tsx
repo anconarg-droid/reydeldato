@@ -149,19 +149,21 @@ function focusParaMejorarFicha(
   return null;
 }
 
+/** Misma prioridad que `panel1`: token → id → slug (única pantalla oficial `/panel/planes`). */
 function buildPanelPlanesHref(
   id?: string,
   slug?: string,
   accessToken?: string | null
 ): string {
+  const params = new URLSearchParams();
+  const tok = accessToken?.trim();
   const cleanId = id?.trim();
   const cleanSlug = slug?.trim();
-  const tok = accessToken?.trim();
-  if (cleanId) return `/panel/planes?id=${encodeURIComponent(cleanId)}`;
-  if (cleanSlug) return `/panel/planes?slug=${encodeURIComponent(cleanSlug)}`;
-  if (tok)
-    return `/panel/planes?access_token=${encodeURIComponent(tok)}`;
-  return "/panel/planes";
+  if (tok) params.set("access_token", tok);
+  else if (cleanId) params.set("id", cleanId);
+  else if (cleanSlug) params.set("slug", cleanSlug);
+  const qs = params.toString();
+  return qs ? `/panel/planes?${qs}` : "/panel/planes";
 }
 
 function parsePanelMejorarFichaFocus(
