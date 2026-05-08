@@ -4,9 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import PanelBrandHomeBar from "@/components/panel/PanelBrandHomeBar";
-import PanelFichaPublicaEmbed from "@/components/panel/PanelFichaPublicaEmbed";
 import { PanelRendimientoModoBasicaPreview } from "@/components/panel/PanelRendimientoModoBasicaPreview";
-import { SwitchModoVista } from "@/components/panel/SwitchModoVista";
 import type { PerfilCompleto } from "@/lib/calcularCompletitudEmprendedor";
 import type { TipoFicha } from "@/lib/calcularTipoFicha";
 import type { PanelComercialPayload } from "@/lib/panelComercialPayload";
@@ -970,6 +968,23 @@ export default function PanelClient({
     return panelSlugFichaPublicaDesdeItem(negocioItem, slug);
   }, [negocioItem, slug]);
 
+  const fichaPublicaHref = useMemo(() => {
+    const s = String(slugFichaPublica || "").trim();
+    return s ? `/emprendedor/${encodeURIComponent(s)}` : null;
+  }, [slugFichaPublica]);
+
+  const fotoFichaPublica = useMemo(() => {
+    if (!negocioItem) return "";
+    return String(
+      negocioItem.fotoPrincipalUrl ?? negocioItem.foto_principal_url ?? ""
+    ).trim();
+  }, [negocioItem]);
+
+  const comunaFichaPublica = useMemo(() => {
+    if (!negocioItem) return "";
+    return String(negocioItem.comunaBaseNombre ?? "").trim();
+  }, [negocioItem]);
+
   const interesMetricasFlags = useMemo(
     () => panelInteresMetricasFlagsDesdeNegocioItem(negocioItem),
     [negocioItem]
@@ -1128,7 +1143,7 @@ export default function PanelClient({
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-[1400px] px-4 lg:px-8 py-5 lg:py-8 space-y-4">
+      <div className="max-w-[1500px] mx-auto px-4 lg:px-8 py-5 lg:py-8 space-y-4">
       <PanelBrandHomeBar />
       {planesUiVisible && pagoResult === "exito" ? (
         <p
@@ -1153,8 +1168,8 @@ export default function PanelClient({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,0.75fr)] gap-8 items-start">
-        <div className="min-w-0 space-y-4">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-8 items-start">
+        <div className="min-w-0 space-y-4 xl:row-start-1">
           <div
             className="w-full rounded-xl border border-gray-200 bg-gradient-to-br from-white via-gray-50/80 to-gray-50/40 px-4 py-3 shadow-sm ring-1 ring-gray-900/[0.04] sm:px-5 sm:py-3.5"
             aria-label={`Tu negocio: ${tituloHeaderPanel}`}
@@ -1335,166 +1350,196 @@ export default function PanelClient({
             ) : null}
           </section>
 
-          {tieneNegocio &&
-          !fichaLoading &&
-          (mostrarBloqueCuandoTerminePlan(comercial) ||
-            comercial?.estado === "plan_vencido") ? (
-            <section
-              className="w-full space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-4 shadow-sm"
-              aria-label="Cuando termine tu plan"
-            >
-              <div className="space-y-1">
-                <p className="text-base font-black text-gray-900 leading-snug">
-                  {comercial?.estado === "trial_activo" ||
-                  comercial?.estado === "trial_por_vencer"
-                    ? "Cuando termine tu prueba"
-                    : "Cuando termine tu plan"}
-                </p>
-                <p className="text-sm text-amber-950/90 leading-relaxed">
-                  Tu negocio seguirá visible, pero pasarás a un perfil básico con menos información.
-                </p>
+        </div>
+        
+        <div className="min-w-0 xl:sticky xl:top-24 xl:row-span-2">
+          <section
+            className="w-full rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-5"
+            aria-label="Vista rápida"
+          >
+            <div className="space-y-1">
+              <h2 className="text-base sm:text-lg font-black text-gray-900">
+                Vista rápida
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600">
+                Previews compactos de tu presencia pública.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-extrabold text-gray-900">
+                Así te ven en resultados
+              </p>
+              <div className="w-full max-w-[360px] mx-auto">
+                {tieneNegocio ? (
+                  fichaLoading ? (
+                    <div
+                      className="w-full rounded-xl border border-slate-200 bg-slate-100 min-h-[220px] animate-pulse"
+                      aria-hidden
+                    />
+                  ) : previewCardProps ? (
+                    <div className="space-y-2">
+                      {previewInformativa && negocioItem ? (
+                        <div
+                          role="status"
+                          className="rounded-lg border border-slate-200 bg-slate-50/90 px-2.5 py-2 text-left"
+                        >
+                          <p className="m-0 text-[11px] font-extrabold text-slate-900">
+                            Vista previa
+                          </p>
+                          <p className="mt-0.5 m-0 text-[10px] font-medium leading-snug text-slate-600">
+                            {panelPreviewSubtituloInformativo(negocioItem)}
+                          </p>
+                        </div>
+                      ) : null}
+                      <EmprendedorSearchCard
+                        {...previewCardProps}
+                        modoVista={perfilCompletoEnHeader ? "completa" : "basica"}
+                        etiquetaVerFicha={
+                          perfilCompletoEnHeader ? "Ver ficha" : undefined
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="w-full rounded-xl border border-slate-200 bg-slate-100 min-h-[220px] animate-pulse"
+                      aria-hidden
+                    />
+                  )
+                ) : (
+                  <p className="text-sm text-slate-600 py-2">
+                    Enlaza tu ficha para ver la vista previa.
+                  </p>
+                )}
               </div>
-              <ul className="space-y-2 text-sm text-gray-800 leading-snug">
-                <li className="flex gap-2.5 items-start">
-                  <span className="text-amber-900 font-bold shrink-0" aria-hidden>
-                    •
-                  </span>
-                  <span>Tu negocio seguirá visible en tu comuna.</span>
-                </li>
-                <li className="flex gap-2.5 items-start">
-                  <span className="text-amber-900 font-bold shrink-0" aria-hidden>
-                    •
-                  </span>
-                  <span>Pasarás a ficha básica: solo WhatsApp y datos esenciales.</span>
-                </li>
-                <li className="flex gap-2.5 items-start">
-                  <span className="text-amber-900 font-bold shrink-0" aria-hidden>
-                    •
-                  </span>
-                  <span>No podrás mostrar fotos, redes ni descripción completa.</span>
-                </li>
-              </ul>
-              {planesUiVisible ? (
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-extrabold text-gray-900">
+                Tu ficha pública
+              </p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                <div className="flex gap-3 items-start">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-200">
+                    {fotoFichaPublica ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={fotoFichaPublica}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-black text-gray-900 truncate">
+                      {tituloHeaderPanel}
+                    </p>
+                    {comunaFichaPublica ? (
+                      <p className="text-xs font-medium text-slate-600 truncate">
+                        {comunaFichaPublica}
+                      </p>
+                    ) : null}
+                    <p className="mt-1 text-xs text-slate-600">
+                      Disponible mientras mantengas ficha completa.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  {fichaPublicaHref && !previewInformativa ? (
+                    <Link
+                      href={fichaPublicaHref}
+                      prefetch={false}
+                      className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-extrabold text-gray-900 hover:bg-slate-50"
+                    >
+                      Abrir ficha pública
+                    </Link>
+                  ) : (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-950">
+                      Tu ficha pública aún no está disponible.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {planesUiVisible ? (
+              <div className="pt-1">
                 <Link
                   href={planesHref}
                   prefetch={false}
-                  className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-gray-900 bg-transparent px-4 text-center text-sm font-black text-gray-900 shadow-sm transition hover:bg-white"
+                  className="inline-flex w-full min-h-[52px] items-center justify-center rounded-xl bg-gray-900 px-6 py-3 text-base font-extrabold text-white shadow-sm hover:bg-gray-800 transition-colors"
                 >
                   Mantener perfil completo
                 </Link>
-              ) : null}
-            </section>
-          ) : tieneNegocio && !fichaLoading ? (
-            <div />
-          ) : null}
+              </div>
+            ) : null}
 
-          {!id?.trim() && !esPremium ? (
-            (() => {
-              const wa = buildActivarFichaWhatsAppHref(slug);
-              return wa ? (
-                <a
-                  href={wa}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full text-center text-sm font-semibold text-sky-700 hover:underline sm:text-left"
-                >
-                  Activar por WhatsApp
-                </a>
-              ) : null;
-            })()
-          ) : null}
+            {!id?.trim() && !esPremium ? (
+              (() => {
+                const wa = buildActivarFichaWhatsAppHref(slug);
+                return wa ? (
+                  <a
+                    href={wa}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center text-sm font-semibold text-sky-700 hover:underline"
+                  >
+                    Activar por WhatsApp
+                  </a>
+                ) : null;
+              })()
+            ) : null}
+          </section>
         </div>
-        
-        <div className="min-w-0 space-y-4 xl:sticky xl:top-24">
-          {/* DERECHA: previews + CTA (sin comparación larga; eso queda en /panel/planes) */}
+
+        {tieneNegocio &&
+        !fichaLoading &&
+        (mostrarBloqueCuandoTerminePlan(comercial) ||
+          comercial?.estado === "plan_vencido") ? (
           <section
-            className="w-full rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm"
-            aria-label="Así te ven en resultados"
+            className="w-full space-y-3 rounded-xl border-2 border-amber-200/80 bg-white p-4 shadow-sm xl:row-start-2"
+            aria-label="Cuando termine tu prueba"
           >
             <div className="space-y-1">
-              <h2 className="text-base sm:text-lg font-black text-gray-900">
-                Así te ven en resultados
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600">
-                Vista real de tu card en el buscador.
+              <p className="text-base font-black text-gray-900 leading-snug">
+                Cuando termine tu prueba
+              </p>
+              <p className="text-sm text-amber-950/90 leading-relaxed">
+                Tu negocio seguirá visible, pero pasará a ficha básica.
               </p>
             </div>
-            <div className="mt-4">
-              {tieneNegocio ? (
-                fichaLoading ? (
-                  <div
-                    className="w-full rounded-xl border border-slate-200 bg-slate-100 min-h-[220px] animate-pulse"
-                    aria-hidden
-                  />
-                ) : previewCardProps ? (
-                  <EmprendedorSearchCard
-                    {...previewCardProps}
-                    modoVista={perfilCompletoEnHeader ? "completa" : "basica"}
-                    etiquetaVerFicha={perfilCompletoEnHeader ? "Ver ficha" : undefined}
-                  />
-                ) : (
-                  <div
-                    className="w-full rounded-xl border border-slate-200 bg-slate-100 min-h-[220px] animate-pulse"
-                    aria-hidden
-                  />
-                )
-              ) : (
-                <p className="text-sm text-slate-600">
-                  Enlaza tu ficha para ver la vista previa.
-                </p>
-              )}
-            </div>
-          </section>
-          
-          <section
-            className="w-full rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm"
-            aria-label="Tu ficha pública completa"
-          >
-            <div className="space-y-1">
-              <h2 className="text-base sm:text-lg font-black text-gray-900">
-                Tu ficha pública
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600">
-                La página que se abre desde la búsqueda.
-              </p>
-            </div>
-            <div className="mt-4">
-              {tieneNegocio && !fichaLoading && negocioItem ? (
-                <PanelFichaPublicaEmbed
-                  slug={slugFichaPublica}
-                  modoVista={perfilCompletoEnHeader ? "completa" : "basica"}
-                  item={negocioItem}
-                  urlSlugParam={slug}
-                  vistaPublicaBloqueada={previewInformativa}
-                />
-              ) : (
-                <div
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/70 min-h-[180px] animate-pulse"
-                  aria-hidden
-                />
-              )}
-            </div>
-          </section>
-          
-          {planesUiVisible ? (
-            <section
-              className="w-full rounded-2xl border border-slate-200 bg-slate-900 p-4 sm:p-5 shadow-sm"
-              aria-label="Mantener perfil completo"
-            >
+            <ul className="space-y-2 text-sm text-gray-800 leading-snug">
+              <li className="flex gap-2.5 items-start">
+                <span className="text-amber-900 font-bold shrink-0" aria-hidden>
+                  •
+                </span>
+                <span>Solo WhatsApp y datos esenciales</span>
+              </li>
+              <li className="flex gap-2.5 items-start">
+                <span className="text-amber-900 font-bold shrink-0" aria-hidden>
+                  •
+                </span>
+                <span>Sin fotos, redes ni descripción completa</span>
+              </li>
+              <li className="flex gap-2.5 items-start">
+                <span className="text-amber-900 font-bold shrink-0" aria-hidden>
+                  •
+                </span>
+                <span>Menor confianza visual</span>
+              </li>
+            </ul>
+            {planesUiVisible ? (
               <Link
                 href={planesHref}
                 prefetch={false}
-                className="inline-flex w-full min-h-[52px] items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-extrabold text-gray-900 shadow-lg hover:bg-gray-100 transition-colors"
+                className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-gray-900 bg-transparent px-4 text-center text-sm font-black text-gray-900 shadow-sm transition hover:bg-white"
               >
                 Mantener perfil completo
               </Link>
-              <p className="mt-3 text-sm text-white/85 leading-relaxed">
-                Puedes pagar hoy y tu plan comenzará cuando termine tu prueba gratuita.{" "}
-                <span className="font-semibold">No pierdes días.</span>
-              </p>
-            </section>
-          ) : null}
-        </div>
+            ) : null}
+          </section>
+        ) : null}
       </div>
     </div>
     </div>
