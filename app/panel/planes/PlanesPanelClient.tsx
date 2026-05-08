@@ -190,6 +190,7 @@ export default function PlanesPanelClient({
   const [comunaSlug, setComunaSlug] = useState("");
   const [fotoPrincipalUrl, setFotoPrincipalUrl] = useState("");
   const [galeriaPrimeraUrl, setGaleriaPrimeraUrl] = useState("");
+  const [galeriaUrls, setGaleriaUrls] = useState<string[]>([]);
   const [comercial, setComercial] = useState<PanelComercialPayload | null>(
     null
   );
@@ -217,8 +218,6 @@ export default function PlanesPanelClient({
   const [instagramNegocio, setInstagramNegocio] = useState("");
   const [webNegocio, setWebNegocio] = useState("");
   const [emailNegocio, setEmailNegocio] = useState("");
-  const [previewPublicOpen, setPreviewPublicOpen] = useState(false);
-
   const modoSoloContacto = planesWebpayDeshabilitadoCliente();
   const transferenciaUi = getTransferenciaBancoUi();
 
@@ -272,12 +271,14 @@ export default function PlanesPanelClient({
             ? galRaw.map((x) => String(x ?? "").trim()).filter(Boolean)
             : [];
           setGaleriaPrimeraUrl(gal[0] ?? "");
+          setGaleriaUrls(gal.slice(0, 6));
           setComercial(res.comercial as PanelComercialPayload);
         } else {
           setNombre("");
           setComunaSlug("");
           setFotoPrincipalUrl("");
           setGaleriaPrimeraUrl("");
+          setGaleriaUrls([]);
           setNegocioSlug("");
           setComunaNombreDisplay("");
           setDescripcionLarga("");
@@ -293,6 +294,7 @@ export default function PlanesPanelClient({
         setComunaSlug("");
         setFotoPrincipalUrl("");
         setGaleriaPrimeraUrl("");
+        setGaleriaUrls([]);
         setNegocioSlug("");
         setComunaNombreDisplay("");
         setDescripcionLarga("");
@@ -464,9 +466,19 @@ export default function PlanesPanelClient({
     return `${path}?${q.toString()}`;
   }, [negocioSlug, comunaSlug, comunaNombreDisplay]);
 
-  const abrirPreviewFichaPublica = useCallback(() => {
-    setPreviewPublicOpen(true);
-  }, []);
+  /** Fotos únicas para la vista “perfil completo” (principal + galería). */
+  const fotosPreviewListado = useMemo(() => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const u of [fotoPrincipalUrl, ...galeriaUrls]) {
+      const s = String(u ?? "").trim();
+      if (!s || seen.has(s)) continue;
+      seen.add(s);
+      out.push(s);
+      if (out.length >= 4) break;
+    }
+    return out;
+  }, [fotoPrincipalUrl, galeriaUrls]);
 
   const ensureTransferReference = useCallback(async () => {
     const cleanId = id.trim();
@@ -755,7 +767,7 @@ export default function PlanesPanelClient({
   );
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-14">
+    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-14">
       <PanelBrandHomeBar />
       <div>
         <Link
@@ -999,36 +1011,45 @@ export default function PlanesPanelClient({
       </section>
 
       <section
-        className="-mt-1 sm:-mt-2 max-w-5xl mx-auto rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/70 p-6 sm:p-7 shadow-md"
+        className="-mt-1 sm:-mt-2 w-full rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/70 p-6 sm:p-8 lg:p-10 shadow-md"
         aria-label="Así te verán las personas"
       >
-        <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+        <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
           Así te verán las personas
         </h2>
-        <p className="mt-2 text-sm sm:text-base text-slate-700">
-          Los perfiles completos generan más confianza y más contactos.
+        <p className="mt-3 text-base sm:text-lg text-slate-700 leading-relaxed max-w-4xl">
+          Con <strong className="font-semibold text-slate-900">ficha completa</strong>, te ves más
+          serio en el listado y además obtienes una{" "}
+          <strong className="font-semibold text-slate-900">página pública</strong> que la gente puede
+          abrir para ver fotos, descripción y más contactos.
         </p>
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-          <div className="rounded-2xl border border-slate-300 bg-slate-100/70 p-4 sm:p-5 relative overflow-hidden opacity-50">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-base font-black text-slate-800">Perfil básico</p>
-                <p className="text-xs font-semibold text-slate-600/90">Sin ficha pública</p>
-                <p className="text-xs text-slate-500 mt-0.5">Menos información visible</p>
-              </div>
-              <span className="text-[0.7rem] font-extrabold tracking-wide text-slate-700 bg-slate-200 px-2.5 py-1 rounded-md border border-slate-300/70 shadow-sm">
-                👁 Menos visible
+        <div className="mt-8 lg:mt-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-stretch">
+          {/* Perfil básico — menos visible, solo listado + WhatsApp */}
+          <div className="relative flex min-h-[720px] flex-col rounded-2xl border border-slate-300/90 bg-slate-100/70 p-6 sm:p-8 lg:p-10 shadow-inner">
+            <div className="absolute right-4 top-4 sm:right-8 sm:top-8">
+              <span className="inline-flex items-center rounded-lg border border-slate-400/70 bg-slate-200/95 px-3 py-1.5 text-[0.7rem] font-extrabold uppercase tracking-wide text-slate-800 shadow-sm">
+                Menos visible
               </span>
             </div>
-
-            <div className="mt-3 max-w-[380px] mx-auto">
-              <div className="opacity-70 saturate-0 [&_img]:blur-[1.25px] [&_a]:bg-none [&_a]:bg-slate-300/60 [&_a]:text-slate-700 [&_a]:shadow-none [&_a]:from-transparent [&_a]:to-transparent">
+            <div className="pr-24 sm:pr-28">
+              <p className="text-xl font-black text-slate-800">Perfil básico</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Apareces en el directorio con menos contexto. Contacto principal: WhatsApp desde la
+                card.
+              </p>
+            </div>
+            <div className="mt-6 flex flex-1 flex-col rounded-xl border border-slate-300/60 bg-white/60 p-4 sm:p-5 lg:p-6 [&_img]:opacity-80 [&_img]:blur-[0.5px]">
+              <div className="w-full grayscale-[0.35] opacity-90 saturate-[0.7] contrast-[0.95]">
                 <EmprendedorSearchCard
                   slug="demo"
-                  nombre={nombre || "Tu negocio"}
+                  nombre={nombre.trim() || "Tu negocio"}
                   fotoPrincipalUrl=""
-                  whatsappPrincipal="+56900000000"
+                  whatsappPrincipal={
+                    String(whatsappNegocio || "").replace(/\D/g, "").length >= 8
+                      ? whatsappNegocio
+                      : "+56900000000"
+                  }
                   estadoPublicacion="publicado"
                   esFichaCompleta={false}
                   estadoFicha="ficha_basica"
@@ -1037,189 +1058,195 @@ export default function PlanesPanelClient({
                   descripcionLibre=""
                   subcategoriasNombres={[]}
                   subcategoriasSlugs={[]}
-                  comunaBaseNombre="Santiago"
-                  comunaBaseSlug="santiago"
+                  comunaBaseNombre={comunaNombreDisplay.trim() || "Tu comuna"}
+                  comunaBaseSlug={comunaSlug.trim() || "santiago"}
                   comunaBaseRegionAbrev="RM"
                   comunaBuscadaNombre=""
-                  atiendeLine=""
+                  atiendeLine={
+                    comunaNombreDisplay.trim()
+                      ? `Atiende: ${comunaNombreDisplay.trim()}`
+                      : "Atiende tu comuna"
+                  }
                   bloquearAccesoFichaPublica
                 />
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5 relative overflow-hidden shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-base font-black text-gray-900">Perfil completo</p>
-                <p className="text-xs font-semibold text-slate-600">
-                  Fotos, descripción y más contactos
-                </p>
-              </div>
-              <span className="text-[0.7rem] font-extrabold tracking-wide text-white bg-emerald-600 px-2.5 py-1 rounded-md shadow-sm border border-emerald-700/20">
-                👁 Más visible
+          {/* Perfil completo — más visible + página pública (una sola vez) */}
+          <div className="relative flex min-h-[720px] flex-col rounded-2xl border-2 border-teal-600/25 bg-gradient-to-b from-teal-50/40 via-white to-white p-6 sm:p-8 lg:p-10 shadow-[0_12px_48px_rgba(15,118,110,0.12)]">
+            <div className="absolute right-4 top-4 sm:right-8 sm:top-8">
+              <span className="inline-flex items-center rounded-lg border border-teal-700 bg-[#0f766e] px-3 py-1.5 text-[0.7rem] font-extrabold uppercase tracking-wide text-white shadow-sm">
+                Más visible
+              </span>
+            </div>
+            <div className="pr-24 sm:pr-28">
+              <p className="text-xl font-black text-gray-900">Perfil completo</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Card con más contexto en resultados, galería y señales de confianza; desde la card se
+                abre tu página pública.
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="inline-flex rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-bold text-teal-900">
+                Más contexto en el listado
+              </span>
+              <span className="inline-flex rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-bold text-teal-900">
+                Galería visible
+              </span>
+              <span className="inline-flex rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-bold text-teal-900">
+                Más confianza
               </span>
             </div>
 
-            <div className="mt-4 max-w-[420px] mx-auto">
-              <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_54px_rgba(16,185,129,0.20)] shadow-[0_12px_30px_rgba(16,185,129,0.10)]">
-                <EmprendedorSearchCard
-                  slug={negocioSlug.trim() || "demo"}
-                  nombre={nombre || "Tu negocio"}
-                  fotoPrincipalUrl={fotoPrincipalUrl || galeriaPrimeraUrl || ""}
-                  whatsappPrincipal={
-                    String(whatsappNegocio || "")
-                      .replace(/\D/g, "")
-                      .length >= 8
-                      ? whatsappNegocio
-                      : "+56900000000"
-                  }
-                  estadoPublicacion="publicado"
-                  esFichaCompleta
-                  estadoFicha="ficha_completa"
-                  bloqueTerritorial={null}
-                  frase=""
-                  descripcionLibre={
-                    descripcionLarga ||
-                    "Fotos, descripción y más señales de confianza en la card."
-                  }
-                  subcategoriasNombres={["Servicio"]}
-                  subcategoriasSlugs={["servicio"]}
-                  comunaBaseNombre={comunaNombreDisplay || "Santiago"}
-                  comunaBaseSlug={comunaSlug || "santiago"}
-                  comunaBaseRegionAbrev="RM"
-                  comunaBuscadaNombre={comunaNombreDisplay || "Santiago"}
-                  atiendeLine={
-                    comunaNombreDisplay.trim()
-                      ? `Atiende: ${comunaNombreDisplay.trim()}`
-                      : "Atiende: Santiago"
-                  }
-                  fichaContextComunaSlug={comunaSlug.trim() || null}
-                  fichaContextComunaNombre={comunaNombreDisplay.trim() || null}
-                  onVerDetallesClick={abrirPreviewFichaPublica}
-                />
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold text-emerald-900">
-                <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
-                  <span aria-hidden>✓</span> Card más visible en resultados
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
-                  <span aria-hidden>✓</span> Ficha pública completa
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
-                  <span aria-hidden>✓</span> Fotos, descripción y redes
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2">
-                  <span aria-hidden>✓</span> Más formas de contacto
-                </div>
-              </div>
-            </div>
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-emerald-50/10 via-white/20 to-emerald-100/10" />
-          </div>
-        </div>
-
-        <p className="mt-5 text-center text-sm text-slate-700 max-w-2xl mx-auto leading-relaxed px-1">
-          Con ficha completa, las personas no solo ven tu card: también pueden abrir una página con
-          más información de tu negocio.
-        </p>
-
-        {previewPublicOpen ? (
-          <div
-            className="mt-6 rounded-2xl border border-emerald-200 bg-white p-5 sm:p-6 shadow-sm overflow-x-hidden"
-            role="region"
-            aria-label="Vista previa de tu ficha pública"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-3 mb-4">
-              <h3 className="text-lg font-black text-gray-900 pr-2">
-                Así se verá tu ficha pública completa
-              </h3>
-              <button
-                type="button"
-                onClick={() => setPreviewPublicOpen(false)}
-                className="shrink-0 text-sm font-semibold text-slate-600 hover:text-gray-900 underline-offset-2 hover:underline"
-              >
-                Cerrar
-              </button>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-5 max-w-3xl mx-auto min-w-0">
-              <div className="shrink-0 w-full sm:w-40 mx-auto sm:mx-0">
-                {fotoPrincipalUrl || galeriaPrimeraUrl ? (
+            {fotosPreviewListado.length > 0 ? (
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+                {fotosPreviewListado.map((src) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={fotoPrincipalUrl || galeriaPrimeraUrl}
+                    key={src}
+                    src={src}
                     alt=""
-                    className="w-full aspect-square max-h-48 sm:max-h-none object-cover rounded-xl border border-slate-200"
+                    className="aspect-[4/3] w-full rounded-xl border border-teal-100 object-cover shadow-sm"
                   />
-                ) : (
-                  <div className="w-full aspect-square max-h-48 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-xs font-medium text-slate-500 text-center px-2">
-                    Sin imagen principal
-                  </div>
-                )}
+                ))}
               </div>
-              <div className="min-w-0 flex-1 space-y-2 text-sm">
-                <p className="text-lg font-black text-gray-900 break-words">
-                  {nombre.trim() || "Tu negocio"}
-                </p>
-                {comunaNombreDisplay.trim() ? (
-                  <p className="text-slate-600">
-                    <span className="font-semibold">Comuna: </span>
-                    {comunaNombreDisplay.trim()}
-                  </p>
-                ) : null}
-                {descripcionLarga.trim() ? (
-                  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap break-words">
-                    {descripcionLarga.trim()}
-                  </p>
-                ) : (
-                  <p className="text-slate-500 italic">Aún no hay descripción larga en tu ficha.</p>
-                )}
-                {String(whatsappNegocio || "").replace(/\D/g, "").length >= 8 ? (
-                  <p className="text-slate-700">
-                    <span className="font-semibold">WhatsApp: </span>
-                    <span className="tabular-nums">{whatsappNegocio.trim()}</span>
-                  </p>
-                ) : null}
-                {instagramNegocio.trim() ? (
-                  <p className="text-slate-700 break-all">
-                    <span className="font-semibold">Instagram: </span>
-                    {instagramNegocio.trim()}
-                  </p>
-                ) : null}
-                {webNegocio.trim() ? (
-                  <p className="text-slate-700 break-all">
-                    <span className="font-semibold">Web: </span>
-                    {webNegocio.trim()}
-                  </p>
-                ) : null}
-                {emailNegocio.trim() ? (
-                  <p className="text-slate-700 break-all">
-                    <span className="font-semibold">Correo: </span>
-                    {emailNegocio.trim()}
-                  </p>
-                ) : null}
-                <p className="text-xs text-slate-500 pt-1">
-                  Disponible mientras mantengas ficha completa.
-                </p>
-                {hrefFichaPublicaPreview ? (
-                  <p className="pt-2">
-                    <Link
-                      href={hrefFichaPublicaPreview}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-semibold text-sky-700 hover:text-sky-800 underline-offset-2 hover:underline break-all"
-                    >
-                      Abrir tu ficha pública en una pestaña nueva
-                    </Link>
-                  </p>
-                ) : null}
-              </div>
+            ) : null}
+
+            <div className="mt-5 w-full flex-1 rounded-xl border border-teal-100/80 bg-white/80 p-4 sm:p-5 lg:p-6 shadow-sm">
+              <EmprendedorSearchCard
+                slug={negocioSlug.trim() || "demo"}
+                nombre={nombre.trim() || "Tu negocio"}
+                fotoPrincipalUrl={fotoPrincipalUrl || galeriaPrimeraUrl || ""}
+                whatsappPrincipal={
+                  String(whatsappNegocio || "").replace(/\D/g, "").length >= 8
+                    ? whatsappNegocio
+                    : "+56900000000"
+                }
+                estadoPublicacion="publicado"
+                esFichaCompleta
+                estadoFicha="ficha_completa"
+                bloqueTerritorial={null}
+                frase=""
+                descripcionLibre={
+                  descripcionLarga.trim() ||
+                  "Aquí va tu descripción: servicios, experiencia y lo que te diferencia."
+                }
+                subcategoriasNombres={["Servicio"]}
+                subcategoriasSlugs={["servicio"]}
+                comunaBaseNombre={comunaNombreDisplay.trim() || "Tu comuna"}
+                comunaBaseSlug={comunaSlug.trim() || "santiago"}
+                comunaBaseRegionAbrev="RM"
+                comunaBuscadaNombre={comunaNombreDisplay.trim() || ""}
+                atiendeLine={
+                  comunaNombreDisplay.trim()
+                    ? `Atiende: ${comunaNombreDisplay.trim()}`
+                    : "Atiende tu comuna"
+                }
+                fichaContextComunaSlug={comunaSlug.trim() || null}
+                fichaContextComunaNombre={comunaNombreDisplay.trim() || null}
+                disponibleHoy
+                respondeRapido
+                etiquetaVerFicha="Ver ficha"
+                fichaPublicaHrefOverride={hrefFichaPublicaPreview || null}
+              />
             </div>
+
+            {hrefFichaPublicaPreview ? (
+              <div
+                id="panel-ficha-publica"
+                className="mt-6 rounded-2xl border-2 border-teal-200 bg-white p-6 sm:p-8 shadow-md"
+              >
+                <p className="text-xs font-extrabold uppercase tracking-wide text-[#0f766e]">
+                  Tu página pública
+                </p>
+                <p className="mt-3 text-base font-black text-gray-900">Una página para compartir</p>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-700">
+                  Es el destino cuando alguien hace clic en <span className="font-semibold">Ver ficha</span>:
+                  más fotos, texto completo y tus otros contactos (redes, web, correo).
+                </p>
+                <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-start">
+                  <div className="shrink-0">
+                    {fotoPrincipalUrl || galeriaPrimeraUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={fotoPrincipalUrl || galeriaPrimeraUrl}
+                        alt=""
+                        className="h-40 w-40 rounded-2xl border border-slate-200 object-cover shadow-sm sm:h-44 sm:w-44"
+                      />
+                    ) : (
+                      <div className="flex h-40 w-40 items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-center text-xs font-medium text-slate-500 sm:h-44 sm:w-44">
+                        Añade fotos
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-3 text-sm">
+                    <p className="text-lg font-black text-gray-900">
+                      {nombre.trim() || "Tu negocio"}
+                    </p>
+                    {comunaNombreDisplay.trim() ? (
+                      <p className="text-slate-600">
+                        <span className="font-semibold">Ubicación: </span>
+                        {comunaNombreDisplay.trim()}
+                      </p>
+                    ) : null}
+                    {descripcionLarga.trim() ? (
+                      <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-slate-700 leading-relaxed">
+                        {descripcionLarga.trim()}
+                      </p>
+                    ) : (
+                      <p className="text-slate-500 italic">
+                        Tu descripción larga se mostrará aquí cuando la completes en el panel.
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-slate-700">
+                      {String(whatsappNegocio || "").replace(/\D/g, "").length >= 8 ? (
+                        <span>
+                          <span className="font-semibold">WhatsApp</span>{" "}
+                          <span className="tabular-nums">{whatsappNegocio.trim()}</span>
+                        </span>
+                      ) : null}
+                      {instagramNegocio.trim() ? (
+                        <span className="break-all">
+                          <span className="font-semibold">Instagram</span> {instagramNegocio.trim()}
+                        </span>
+                      ) : null}
+                      {webNegocio.trim() ? (
+                        <span className="break-all">
+                          <span className="font-semibold">Web</span> {webNegocio.trim()}
+                        </span>
+                      ) : null}
+                      {emailNegocio.trim() ? (
+                        <span className="break-all">
+                          <span className="font-semibold">Correo</span> {emailNegocio.trim()}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="pt-2">
+                      <Link
+                        href={hrefFichaPublicaPreview}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-12 items-center justify-center rounded-xl bg-[#0f766e] px-6 text-sm font-bold text-white shadow-md transition hover:bg-[#0d9488]"
+                      >
+                        Ver ficha
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-600">
+                Guarda el slug de tu negocio para ver aquí el enlace de tu página pública.
+              </p>
+            )}
           </div>
-        ) : null}
+        </div>
       </section>
 
       <section
-        className={`max-w-4xl mx-auto w-full rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm ${
+        className={`max-w-[1600px] mx-auto w-full rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm ${
           "lg:sticky lg:top-4"
         }`}
         aria-label="Resumen del plan"
@@ -1270,7 +1297,7 @@ export default function PlanesPanelClient({
           </div>
 
           <div className="flex w-full shrink-0 flex-col gap-5 md:w-auto md:justify-self-end md:items-end">
-            <div className="flex w-full flex-col gap-3 md:w-[320px] md:items-end">
+            <div className="flex w-full flex-col gap-3 md:w-full md:max-w-md md:items-end">
               <h2 className="w-full text-center text-lg font-black text-gray-900 tracking-tight md:text-right">
                 Activa tu ficha completa
               </h2>
@@ -1279,13 +1306,13 @@ export default function PlanesPanelClient({
                   type="button"
                   onClick={handleCtaPrincipal}
                   disabled={redirigiendoPago || planProgramado}
-                  className="inline-flex h-14 w-full items-center justify-center rounded-xl bg-gray-900 px-4 text-base font-semibold text-white shadow-lg shadow-slate-900/10 transition-all duration-200 hover:translate-y-[-1px] hover:bg-gray-800 hover:shadow-xl disabled:opacity-60 sm:px-6 md:w-[320px]"
+                  className="inline-flex h-14 w-full items-center justify-center rounded-xl bg-gray-900 px-4 text-base font-semibold text-white shadow-lg shadow-slate-900/10 transition-all duration-200 hover:translate-y-[-1px] hover:bg-gray-800 hover:shadow-xl disabled:opacity-60 sm:px-6"
                 >
                   {redirigiendoPago
                     ? "Redirigiendo al pago…"
                     : planProgramado
                       ? "Plan ya programado"
-                      : "Pagar con Webpay"}
+                      : "Mantener perfil completo"}
                 </button>
                 <div className="w-full space-y-1 text-center text-xs text-slate-600 md:text-right">
                   <p className="font-medium text-slate-700">Activación automática.</p>
@@ -1295,7 +1322,7 @@ export default function PlanesPanelClient({
             </div>
             {transferenciaDisponible && !planProgramado ? (
               <>
-                <div className="flex w-full flex-col gap-2 md:w-[320px] md:items-end">
+                <div className="flex w-full flex-col gap-2 md:w-full md:max-w-md md:items-end">
                   <button
                     type="button"
                     aria-expanded={transferenciaExpanded}
@@ -1303,7 +1330,7 @@ export default function PlanesPanelClient({
                       setTransferenciaExpanded((o) => !o);
                       setTransferError(null);
                     }}
-                    className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-base font-semibold text-slate-800 transition-all duration-200 hover:bg-slate-50 md:w-[320px]"
+                    className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-base font-semibold text-slate-800 transition-all duration-200 hover:bg-slate-50"
                   >
                     {transferenciaExpanded
                       ? "Ocultar datos de transferencia"
