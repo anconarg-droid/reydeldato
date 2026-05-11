@@ -338,6 +338,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     lineaTaxonomia,
     getSubcategoriaDescripcionFallback(p),
   );
+  const descriptionClass = homeCarousel
+    ? "line-clamp-2 min-h-[3.5rem]"
+    : "line-clamp-2 md:line-clamp-3";
+  const locationBlockClass = homeCarousel ? "min-h-[4.25rem]" : "";
 
   const comunaNomRaw = String(p.comunaBaseNombre || "").trim();
   const reg = String(p.comunaBaseRegionAbrev || "").trim();
@@ -710,7 +714,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           </p>
 
           <p
-            className={`m-0 ${homeCarousel ? "line-clamp-2" : "line-clamp-2 md:line-clamp-3"} w-full shrink-0 text-sm font-medium leading-relaxed text-slate-700`}
+            className={`m-0 ${descriptionClass} w-full shrink-0 text-sm font-medium leading-relaxed text-slate-700`}
           >
             {descDisplay}
           </p>
@@ -719,113 +723,115 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             {confianzaTexto || " "}
           </p>
 
-          {/* Ubicación: siempre 📍 En {comuna base} — {región}; en listado por comuna, “Atiende …” si el negocio no tiene base en la comuna buscada. */}
-          {(() => {
-            const regComunaBuscada = String(p.fichaContextComunaRegionAbrev ?? "").trim();
-            const regBase = String(p.comunaBaseRegionAbrev ?? "").trim();
-            const nombreBaseLinea =
-              comunaNomRaw.trim() ||
-              (String(p.comunaBaseSlug ?? "").trim()
-                ? tituloDesdeSlugComuna(String(p.comunaBaseSlug).trim())
-                : "");
-            const textoEnBaseRegion =
-              nombreBaseLinea && regBase
-                ? `En ${nombreBaseLinea} — ${regBase}`
-                : nombreBaseLinea
-                  ? `En ${nombreBaseLinea}`
-                  : regBase
-                    ? `En ${regBase}`
-                    : "";
-            const lineaClass =
-              "m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800";
-            const lineaBaseP =
-              textoEnBaseRegion ? (
-                <p className={lineaClass}>
-                  <span aria-hidden>📍 </span>
-                  {textoEnBaseRegion}
-                </p>
-              ) : null;
+          <div className={`w-full shrink-0 ${locationBlockClass}`}>
+            {/* Ubicación: siempre 📍 En {comuna base} — {región}; en listado por comuna, “Atiende …” si el negocio no tiene base en la comuna buscada. */}
+            {(() => {
+              const regComunaBuscada = String(p.fichaContextComunaRegionAbrev ?? "").trim();
+              const regBase = String(p.comunaBaseRegionAbrev ?? "").trim();
+              const nombreBaseLinea =
+                comunaNomRaw.trim() ||
+                (String(p.comunaBaseSlug ?? "").trim()
+                  ? tituloDesdeSlugComuna(String(p.comunaBaseSlug).trim())
+                  : "");
+              const textoEnBaseRegion =
+                nombreBaseLinea && regBase
+                  ? `En ${nombreBaseLinea} — ${regBase}`
+                  : nombreBaseLinea
+                    ? `En ${nombreBaseLinea}`
+                    : regBase
+                      ? `En ${regBase}`
+                      : "";
+              const lineaClass =
+                "m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800";
+              const lineaBaseP =
+                textoEnBaseRegion ? (
+                  <p className={lineaClass}>
+                    <span aria-hidden>📍 </span>
+                    {textoEnBaseRegion}
+                  </p>
+                ) : null;
 
-            if (mostrarUbicacionModoComuna) {
-              const mostrarSegundaAtiende =
-                Boolean(String(comunaBuscadaDisplay ?? "").trim()) && !esBaseEnComuna;
-              return (
-                <>
-                  {lineaBaseP ? (
-                    lineaBaseP
-                  ) : (
+              if (mostrarUbicacionModoComuna) {
+                const mostrarSegundaAtiende =
+                  Boolean(String(comunaBuscadaDisplay ?? "").trim()) && !esBaseEnComuna;
+                return (
+                  <>
+                    {lineaBaseP ? (
+                      lineaBaseP
+                    ) : (
+                      <p className={lineaClass}>
+                        <span aria-hidden>📍 </span>
+                        En {comunaBuscadaDisplay}
+                        {regComunaBuscada || regBase ? ` — ${regComunaBuscada || regBase}` : ""}
+                      </p>
+                    )}
+                    {mostrarSegundaAtiende ? (
+                      <p className="m-0 min-h-[1.1rem] w-full shrink-0 text-[13px] font-medium leading-snug text-slate-700">
+                        Atiende {comunaBuscadaDisplay}
+                        {regComunaBuscada ? ` — ${regComunaBuscada}` : ""}
+                      </p>
+                    ) : null}
+                  </>
+                );
+              }
+
+              if (ubicacionPorBloqueTerritorialExplicito) {
+                return p.bloqueTerritorial === "de_tu_comuna" ? (
+                  lineaBaseP ?? (
                     <p className={lineaClass}>
                       <span aria-hidden>📍 </span>
-                      En {comunaBuscadaDisplay}
-                      {regComunaBuscada || regBase ? ` — ${regComunaBuscada || regBase}` : ""}
+                      En {nombreBuscadaTerritorial}
                     </p>
-                  )}
-                  {mostrarSegundaAtiende ? (
+                  )
+                ) : (
+                  <>
+                    {lineaBaseP ?? (
+                      <p className={lineaClass}>
+                        <span aria-hidden>📍 </span>
+                        Base en {comunaBaseLabel}
+                      </p>
+                    )}
                     <p className="m-0 min-h-[1.1rem] w-full shrink-0 text-[13px] font-medium leading-snug text-slate-700">
-                      Atiende {comunaBuscadaDisplay}
-                      {regComunaBuscada ? ` — ${regComunaBuscada}` : ""}
+                      Atiende {nombreBuscadaTerritorial}
+                    </p>
+                  </>
+                );
+              }
+
+              if (lineaBaseP) return lineaBaseP;
+
+              return (
+                <>
+                  <p className="m-0 min-h-[1.375rem] w-full shrink-0 truncate text-[13px] font-medium leading-tight text-slate-800">
+                    <span aria-hidden>📍 </span>
+                    {pinUbicacion.primary}
+                  </p>
+                  {pinUbicacion.secondary ? (
+                    <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 truncate text-[11px] leading-tight text-slate-500">
+                      {pinUbicacion.secondary}
                     </p>
                   ) : null}
                 </>
               );
-            }
+            })()}
 
-            if (ubicacionPorBloqueTerritorialExplicito) {
-              return p.bloqueTerritorial === "de_tu_comuna" ? (
-                lineaBaseP ?? (
-                  <p className={lineaClass}>
-                    <span aria-hidden>📍 </span>
-                    En {nombreBuscadaTerritorial}
-                  </p>
-                )
-              ) : (
-                <>
-                  {lineaBaseP ?? (
-                    <p className={lineaClass}>
-                      <span aria-hidden>📍 </span>
-                      Base en {comunaBaseLabel}
-                    </p>
-                  )}
-                  <p className="m-0 min-h-[1.1rem] w-full shrink-0 text-[13px] font-medium leading-snug text-slate-700">
-                    Atiende {nombreBuscadaTerritorial}
-                  </p>
-                </>
-              );
-            }
+            {String(p.listadoNotaDebajoUbicacion ?? "").trim() ? (
+              <p className="m-0 min-h-[1rem] w-full shrink-0 text-xs font-medium leading-snug text-amber-900/85">
+                {String(p.listadoNotaDebajoUbicacion).trim()}
+              </p>
+            ) : null}
 
-            if (lineaBaseP) return lineaBaseP;
-
-            return (
-              <>
-                <p className="m-0 min-h-[1.375rem] w-full shrink-0 truncate text-[13px] font-medium leading-tight text-slate-800">
-                  <span aria-hidden>📍 </span>
-                  {pinUbicacion.primary}
-                </p>
-                {pinUbicacion.secondary ? (
-                  <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 truncate text-[11px] leading-tight text-slate-500">
-                    {pinUbicacion.secondary}
-                  </p>
-                ) : null}
-              </>
-            );
-          })()}
-
-          {String(p.listadoNotaDebajoUbicacion ?? "").trim() ? (
-            <p className="m-0 min-h-[1rem] w-full shrink-0 text-xs font-medium leading-snug text-amber-900/85">
-              {String(p.listadoNotaDebajoUbicacion).trim()}
-            </p>
-          ) : null}
-
-          {!mostrarUbicacionModoComuna ? (
-            <p
-              className={`m-0 w-full shrink-0 text-xs leading-snug text-slate-500 ${
-                coberturaTxt.trim() ? (homeCarousel ? "line-clamp-1" : "line-clamp-2 md:line-clamp-1") : "line-clamp-1"
-              } min-h-[1rem]`}
-              title={coberturaTxt.trim() || undefined}
-            >
-              {coberturaDisplay}
-            </p>
-          ) : null}
+            {!mostrarUbicacionModoComuna ? (
+              <p
+                className={`m-0 w-full shrink-0 text-xs leading-snug text-slate-500 ${
+                  coberturaTxt.trim() ? (homeCarousel ? "line-clamp-1" : "line-clamp-2 md:line-clamp-1") : "line-clamp-1"
+                } min-h-[1rem]`}
+                title={coberturaTxt.trim() || undefined}
+              >
+                {coberturaDisplay}
+              </p>
+            ) : null}
+          </div>
 
           <div
             className="flex min-h-[32px] w-full shrink-0 flex-wrap content-center items-center gap-1.5"

@@ -272,9 +272,9 @@ export default function HomeUltimosPublicadosClient({
                   key={props.slug}
                   data-carousel-card
                   role="listitem"
-                  className="group shrink-0 snap-start transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px] w-[min(92vw,22rem)] md:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-3rem)/3)]"
+                  className="group h-full shrink-0 snap-start transition-transform duration-200 ease-out will-change-transform hover:-translate-y-[2px] w-[min(92vw,22rem)] md:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-3rem)/3)]"
                 >
-                  <div className="home-carousel-card-shell flex h-full min-h-[min(520px,calc(100dvh-11rem))] flex-col rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)] md:min-h-[520px]">
+                  <div className="home-carousel-card-shell flex h-[min(520px,calc(100dvh-11rem))] flex-col rounded-3xl border border-slate-200/80 bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-[box-shadow,transform] duration-200 ease-out group-hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)] md:h-[520px]">
                     <div className="relative">
                       <div className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-900">
                         Disponible ahora
