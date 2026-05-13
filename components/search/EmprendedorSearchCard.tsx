@@ -935,31 +935,52 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           </div>
 
           <div
-            className="flex h-[38px] w-full shrink-0 items-stretch gap-1.5"
+            className="grid w-full shrink-0 grid-cols-2 gap-1.5"
             aria-label="Modalidades de atención"
           >
             {(
               [
-                { slot: "local_fisico" as const, label: "Local físico", Icon: IconHome },
-                { slot: "domicilio" as const, label: "A domicilio", Icon: IconVehicle },
-                { slot: "delivery" as const, label: "Delivery", Icon: IconPackage },
-                { slot: "online" as const, label: "Online", Icon: IconMonitor },
+                {
+                  slot: "local_fisico" as const,
+                  label: "Local físico",
+                  display: "🏠 Local físico",
+                  Icon: IconHome,
+                },
+                {
+                  slot: "domicilio" as const,
+                  label: "A domicilio",
+                  display: "🚗 A domicilio",
+                  Icon: IconVehicle,
+                },
+                {
+                  slot: "delivery" as const,
+                  label: "Delivery",
+                  display: "📦 Delivery",
+                  Icon: IconPackage,
+                },
+                {
+                  slot: "online" as const,
+                  label: "Online",
+                  display: "💻 Online",
+                  Icon: IconMonitor,
+                },
               ] as const
-            ).map(({ slot, label, Icon }) => {
+            ).map(({ slot, label, display, Icon }) => {
               const active = modalidadFijaSlotActiva(slot, modalidadChips);
               return (
                 <span
                   key={slot}
-                  title={label}
+                  title={display}
                   aria-label={label}
                   className={cn(
-                    "flex min-w-0 flex-1 items-center justify-center rounded-lg border",
+                    "flex min-w-0 items-center gap-1.5 rounded-lg border px-2 py-1.5",
                     active
-                      ? "border-[#5DCAA5] bg-[#E1F5EE] text-[#085041]"
+                      ? "border-[#5DCAA5] bg-[#E1F5EE] font-medium text-[#085041]"
                       : "border-gray-200 bg-transparent text-gray-300",
                   )}
                 >
                   <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="min-w-0 flex-1 text-left text-[11px] leading-tight">{display}</span>
                 </span>
               );
             })}
