@@ -237,9 +237,9 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
                     </p>
                     <Link
                       href="/planes"
-                      className="mt-2 inline-flex w-fit text-sm font-semibold text-teal-800 hover:text-teal-900"
+                      className="mt-2 mb-3 inline-flex items-center justify-center bg-transparent text-[#0F6E56] border border-[#0F6E56] rounded-lg px-4 h-9 text-sm font-medium hover:bg-[#0F6E56]/5 transition-colors"
                     >
-                      Ver planes →
+                      Ver planes
                     </Link>
                     <p className="mt-2 text-sm font-semibold leading-snug text-slate-800">
                       Por una suma pequeña puedes mejorar tu ficha. Si no, sigues publicado con
