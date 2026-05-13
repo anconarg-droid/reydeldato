@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Card unificada (búsqueda, categoría, home, panel): altura fija móvil/desktop, imagen 170px, cuerpo `flex-1`,
- * textos con line-clamp y bloques de altura reservada; footer `mt-auto` + CTAs según `listadoPerfilCompletoUi`.
+ * Card unificada: imagen fija, cuerpo en orden fijo (nombre → rubro → confianza md → desc → ubicación → territorial → modalidad),
+ * espacio sobrante solo en spacer `flex-1` antes del footer (footer sin `mt-auto`).
  */
 
 import { useState, type CSSProperties } from "react";
@@ -611,7 +611,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         </div>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-3">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+          <div className="flex w-full shrink-0 flex-col gap-2.5">
             <h3
               className={cn(
                 "m-0 line-clamp-2 min-h-[3.25rem] w-full shrink-0 text-lg font-bold leading-snug",
@@ -628,15 +628,15 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               {lineaTaxonomia.trim() ? lineaTaxonomia.trim() : "\u00A0"}
             </p>
 
-            <p className="m-0 line-clamp-3 min-h-[4.5rem] w-full shrink-0 text-sm font-medium leading-relaxed text-slate-700">
-              {descDisplay}
-            </p>
-
             <p className="m-0 hidden min-h-[1.25rem] w-full shrink-0 text-xs leading-tight text-slate-500 md:block">
               {confianzaTexto || "\u00A0"}
             </p>
 
-            <div className="flex min-h-[48px] w-full shrink-0 flex-col justify-start gap-0.5">
+            <p className="m-0 line-clamp-3 w-full shrink-0 text-sm font-medium leading-relaxed text-slate-700">
+              {descDisplay}
+            </p>
+
+            <div className="flex w-full shrink-0 flex-col gap-0.5">
             {/* Ubicación: siempre 📍 En {comuna base} — {región}; en listado por comuna, “Atiende …” si el negocio no tiene base en la comuna buscada. */}
             {(() => {
               const regComunaBuscada = String(p.fichaContextComunaRegionAbrev ?? "").trim();
@@ -655,7 +655,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                       ? `En ${regBase}`
                       : "";
               const lineaClass =
-                "m-0 line-clamp-1 min-h-[1.25rem] w-full shrink-0 break-words text-[13px] font-medium leading-snug text-slate-800";
+                "m-0 line-clamp-1 w-full shrink-0 break-words text-[13px] font-medium leading-snug text-slate-800";
               const lineaBaseP =
                 textoEnBaseRegion ? (
                   <p className={lineaClass}>
@@ -783,7 +783,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             )}
           </div>
 
-          <div className="flex min-h-[52px] w-full shrink-0 flex-col justify-start gap-1">
+          <div className="flex w-full shrink-0 flex-col gap-1">
             <p className="m-0 text-xs font-semibold tracking-wide text-slate-600">
               Modalidad de atención
             </p>
@@ -824,9 +824,11 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
 
           </div>
 
+          <div className="min-h-0 min-w-0 w-full flex-1 shrink" aria-hidden />
+
         <div
           className={cn(
-            "mt-auto w-full shrink-0 border-t pt-4",
+            "w-full shrink-0 border-t pt-4",
             listadoUiPerfilCompleto ? "border-slate-300/40" : "border-slate-200",
           )}
         >
