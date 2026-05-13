@@ -148,27 +148,6 @@ function IconCheckMini(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function IconGlobeMini(props: SVGProps<SVGSVGElement>) {
-  const { className, ...rest } = props;
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={cn("h-3.5 w-3.5 shrink-0", className)}
-      aria-hidden
-      {...rest}
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="2" y1="12" x2="22" y2="12" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
-  );
-}
-
 /** Cuatro slots fijos de modalidad en card; activo si el chip aparece en datos de listado. */
 function modalidadFijaSlotActiva(
   slot: "local_fisico" | "domicilio" | "delivery" | "online",
@@ -520,11 +499,11 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         )}
         aria-label={`${nombreDisplay}: disponible cuando la comuna esté activa`}
       >
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3.5">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3">
           <div
             className={cn(
-              "relative h-[170px] w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90",
-              mostrarFoto ? "bg-slate-100" : "bg-gradient-to-br from-[#E1F5EE] to-[#D1EDE0]",
+              "relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90",
+              mostrarFoto ? "h-[170px] bg-slate-100" : "h-[124px] bg-gradient-to-br from-[#cfece4] to-[#b5e3d6]",
             )}
           >
             {mostrarFoto ? (
@@ -539,18 +518,18 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 />
               </>
             ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center px-3 py-4 text-center">
-                <div className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#0F6E56]">
-                  <IconImagePlaceholder />
+              <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 px-3 py-2 text-center">
+                <div className="mb-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/95 text-[#0F6E56] shadow-sm">
+                  <IconImagePlaceholder className="h-4 w-4" />
                 </div>
-                <span className="text-sm font-semibold text-[#085041]">Sin imágenes</span>
-                <span className="max-w-[15rem] text-xs font-medium leading-snug text-[#0F6E56]">
+                <span className="text-sm font-bold text-[#064e3b]">Sin imágenes</span>
+                <span className="max-w-[14rem] text-[11px] font-semibold leading-snug text-[#0a5c48]">
                   Pide referencias por WhatsApp
                 </span>
               </div>
             )}
           </div>
-          <div className="flex min-h-0 flex-1 flex-col justify-center pt-3">
+          <div className="flex min-h-0 flex-1 flex-col justify-center pt-2">
             {puedeNavegarFicha ? (
               <TrackedCardLink
                 slug={p.slug}
@@ -622,15 +601,15 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           listadoUiPerfilCompleto ? "bg-white" : "bg-slate-50",
         )}
       >
-        {/* Imagen: altura fija; no condiciona la altura total de la card. */}
+        {/* Imagen h-[170px]; sin foto placeholder compacto h-[124px] para menos vacío visual. */}
         <div
           className={cn(
-            "relative h-[170px] w-full shrink-0 overflow-hidden rounded-xl",
-            mostrarFoto ? "bg-slate-100" : "",
+            "relative w-full shrink-0 overflow-hidden rounded-xl",
+            mostrarFoto ? "h-[170px] bg-slate-100" : "h-[124px]",
             !mostrarFoto &&
               (listadoUiPerfilCompleto
-                ? "bg-gradient-to-br from-[#E1F5EE] to-[#D1EDE0]"
-                : "bg-slate-100"),
+                ? "bg-gradient-to-br from-[#cfece4] to-[#b5e3d6]"
+                : "bg-gradient-to-br from-emerald-50 via-white to-teal-50"),
           )}
         >
           {mostrarFoto ? (
@@ -656,12 +635,12 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               ) : null}
             </>
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center px-4 py-4 text-center">
-              <div className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#0F6E56]">
-                <IconImagePlaceholder />
+            <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 px-3 py-2 text-center">
+              <div className="mb-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/95 text-[#0F6E56] shadow-sm">
+                <IconImagePlaceholder className="h-4 w-4" />
               </div>
-              <span className="text-sm font-extrabold text-[#085041]">Sin imágenes</span>
-              <span className="max-w-[16rem] text-xs font-semibold leading-snug text-[#0F6E56]">
+              <span className="text-sm font-bold text-[#064e3b]">Sin imágenes</span>
+              <span className="max-w-[14rem] text-[11px] font-semibold leading-snug text-[#0a5c48]">
                 Pide referencias por WhatsApp
               </span>
             </div>
@@ -688,9 +667,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           ) : null}
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-2.5">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-2">
           <div className="flex min-h-0 w-full shrink-0 flex-col">
-            <div className="mb-1.5 flex min-h-[2.75rem] w-full flex-col justify-start">
+            <div className="mb-1 flex min-h-[2.75rem] w-full flex-col justify-start">
               <h3
                 className={cn(
                   "m-0 line-clamp-2 min-h-0 w-full shrink-0 text-lg font-bold leading-snug",
@@ -708,17 +687,17 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               </p>
             </div>
 
-            <p className="m-0 mb-1.5 hidden min-h-[1.25rem] w-full shrink-0 text-xs leading-tight text-slate-500 md:block">
+            <p className="m-0 mb-1 hidden min-h-[1.25rem] w-full shrink-0 text-xs leading-tight text-slate-500 md:block">
               {confianzaTexto || "\u00A0"}
             </p>
 
-            <div className="mb-2 flex min-h-[52px] w-full flex-col justify-start">
+            <div className="mb-1.5 flex min-h-[48px] w-full flex-col justify-start">
               <p className="m-0 line-clamp-3 w-full shrink-0 text-sm font-medium leading-relaxed text-slate-700">
                 {descDisplay}
               </p>
             </div>
 
-            <div className="mb-1.5 flex min-h-[24px] w-full shrink-0 flex-col gap-0.5">
+            <div className="mb-1 flex min-h-[22px] w-full shrink-0 flex-col gap-0.5">
             {/* Ubicación: siempre 📍 En {comuna base} — {región}; en listado por comuna, “Atiende …” si el negocio no tiene base en la comuna buscada. */}
             {(() => {
               const regComunaBuscada = String(p.fichaContextComunaRegionAbrev ?? "").trim();
@@ -827,14 +806,14 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           </div>
 
           <div
-            className="mb-1 flex min-h-[22px] w-full shrink-0 flex-wrap items-center gap-1.5"
+            className="mb-0.5 flex min-h-[20px] w-full shrink-0 flex-wrap items-center gap-1"
             aria-hidden={!showCoberturaStatusRow}
           >
             {showCoberturaStatusRow ? (
               <>
                 {p.bloqueTerritorial === "de_tu_comuna" ? (
                   <span
-                    className="inline-flex items-center gap-1 rounded-md bg-[#0d9488] px-1.5 py-0.5 text-xs font-medium leading-tight text-white shadow-sm"
+                    className="inline-flex items-center gap-1 rounded-md bg-[#0f766e] px-1.5 py-0.5 text-xs font-medium leading-tight text-white shadow-sm"
                     title={mostrarComunaBusquedaSecundaria ? `Cobertura hacia ${comunaBuscadaTrim}` : undefined}
                   >
                     <IconCheckMini className="h-3 w-3 shrink-0 text-white" />
@@ -842,10 +821,12 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                   </span>
                 ) : p.bloqueTerritorial === "atienden_tu_comuna" ? (
                   <span
-                    className="inline-flex items-center gap-1 rounded-md border border-slate-200/80 bg-slate-50/80 px-1.5 py-0.5 text-xs font-normal leading-tight text-slate-600"
+                    className="inline-flex items-center gap-1 rounded-md border border-sky-400/50 bg-sky-100/95 px-1.5 py-0.5 text-xs font-medium leading-tight text-sky-950"
                     title={mostrarComunaBusquedaSecundaria ? `Cobertura hacia ${comunaBuscadaTrim}` : undefined}
                   >
-                    <IconGlobeMini className="h-3 w-3 shrink-0 text-slate-500" />
+                    <span className="shrink-0 text-[11px] leading-none text-sky-800" aria-hidden>
+                      ◉
+                    </span>
                     Atiende tu comuna
                   </span>
                 ) : null}
@@ -871,40 +852,42 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           {(() => {
             const actives = modalidadesActivasEnOrden(modalidadChips);
             if (actives.length === 0) return null;
-            const visible = actives.length <= 4 ? actives : actives.slice(0, 4);
-            const extra = actives.length > 4 ? actives.length - 4 : 0;
+            const visible = actives.length <= 4 ? actives : actives.slice(0, 3);
+            const extra = actives.length > 4 ? actives.length - 3 : 0;
             return (
               <div
-                className="mb-1 flex min-h-0 w-full shrink-0 flex-wrap items-center gap-1.5"
+                className="mb-0.5 h-[48px] max-h-[48px] w-full shrink-0 overflow-hidden"
                 aria-label="Modalidades de atención"
               >
-                {visible.map((m) => (
-                  <span
-                    key={m.slot}
-                    title={m.label}
-                    className="inline-flex max-h-7 min-h-[22px] max-w-full items-center gap-1 rounded-md border border-slate-200/60 bg-slate-50/60 px-2 py-1 text-xs leading-none text-slate-600"
-                  >
-                    <span className="shrink-0 text-[13px] leading-none" aria-hidden>
-                      {m.emoji}
+                <div className="flex h-full max-h-full flex-wrap content-start gap-x-1 gap-y-0.5">
+                  {visible.map((m) => (
+                    <span
+                      key={m.slot}
+                      title={m.label}
+                      className="inline-flex max-h-[22px] max-w-[calc(50%-0.125rem)] shrink-0 items-center gap-0.5 rounded border border-slate-200/70 bg-slate-50/80 px-1.5 py-0.5 text-xs leading-none text-slate-700"
+                    >
+                      <span className="shrink-0 text-[12px] leading-none" aria-hidden>
+                        {m.emoji}
+                      </span>
+                      <span className="min-w-0 truncate font-normal">{m.label}</span>
                     </span>
-                    <span className="min-w-0 truncate font-normal">{m.label}</span>
-                  </span>
-                ))}
-                {extra > 0 ? (
-                  <span
-                    className="inline-flex max-h-7 min-h-[22px] items-center rounded-md border border-slate-200/60 bg-slate-50/40 px-2 py-1 text-xs font-medium tabular-nums leading-none text-slate-500"
-                    title={`${extra} modalidad${extra === 1 ? "" : "es"} más`}
-                  >
-                    +{extra}
-                  </span>
-                ) : null}
+                  ))}
+                  {extra > 0 ? (
+                    <span
+                      className="inline-flex max-h-[22px] shrink-0 items-center rounded border border-slate-200/70 bg-slate-50/60 px-1.5 py-0.5 text-xs font-medium tabular-nums leading-none text-slate-600"
+                      title={`${extra} modalidad${extra === 1 ? "" : "es"} más`}
+                    >
+                      +{extra}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             );
           })()}
 
           </div>
 
-        <div className="mt-auto w-full shrink-0 border-t border-slate-200/70 pt-2.5">
+        <div className="mt-auto w-full shrink-0 border-t border-slate-200/70 pt-2">
           {/* Perfil completo (listadoUiPerfilCompleto): WhatsApp + Ver ficha. Básico: leyenda + solo WhatsApp. */}
           {p.bloquearAccesoFichaPublica ? (
             <div className="flex w-full shrink-0 flex-row items-stretch justify-center gap-1.5">
@@ -994,11 +977,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             </div>
           ) : !listadoUiPerfilCompleto && tieneWhatsappValido ? (
             <div className="flex w-full flex-col items-center gap-1.5">
-              <div className="w-full rounded-lg border border-slate-200/60 bg-slate-50/50 px-2.5 py-1.5 text-center">
-                <p className="m-0 text-xs font-medium leading-snug text-slate-600">
-                  Solo contacto por WhatsApp
-                </p>
-              </div>
+              <p className="m-0 mb-0.5 max-w-full text-center text-xs leading-snug text-slate-500">
+                Solo contacto por WhatsApp
+              </p>
               <TrackedCardLink
                 slug={p.slug}
                 href={whatsappUrl || whatsappHref}
