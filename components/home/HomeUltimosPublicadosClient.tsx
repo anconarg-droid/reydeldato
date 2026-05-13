@@ -279,7 +279,7 @@ export default function HomeUltimosPublicadosClient({
                       <div className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-900">
                         Disponible ahora
                       </div>
-                      <EmprendedorSearchCard {...props} homeCarousel />
+                      <EmprendedorSearchCard {...props} variant="carousel" />
                     </div>
                   </div>
                 </div>

@@ -91,7 +91,12 @@ export type EmprendedorSearchCardProps = {
    * sin WhatsApp, ver ficha, descripción, ubicación ni modalidad.
    */
   usarCardSimple?: boolean;
-  /** Ajustes de layout para vitrina Home (altura uniforme). */
+  /**
+   * Misma card que en búsqueda; en carrusel home usar `variant="carousel"` (altura `h-full` dentro del shell).
+   * `homeCarousel` queda como alias retrocompatible.
+   */
+  variant?: "default" | "carousel";
+  /** @deprecated Preferir `variant="carousel"`. */
   homeCarousel?: boolean;
   /** Nota opcional bajo la línea de ubicación (p. ej. listados nacionales en página de comuna). */
   listadoNotaDebajoUbicacion?: string | null;
@@ -271,7 +276,7 @@ function slotOrSpace(text: string): string {
 }
 
 export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
-  const homeCarousel = p.homeCarousel === true;
+  const isCarousel = p.variant === "carousel" || p.homeCarousel === true;
   const whatsappHref = buildWhatsappHref(p.whatsappPrincipal);
   /** Dígitos presentes → enlace wa.me válido; no acoplado a tipo de perfil. */
   const tieneWhatsappValido = Boolean(whatsappHref);
@@ -461,7 +466,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       <article
         className={cn(
           "flex min-h-[500px] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-300 bg-slate-50 shadow-sm md:h-[520px] md:max-h-[520px] md:min-h-[520px]",
-          homeCarousel && "h-full min-h-0",
+          isCarousel && "h-full min-h-0",
         )}
         aria-label={`${nombreDisplay}: disponible cuando la comuna esté activa`}
       >
@@ -565,7 +570,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       className={cn(
         "flex min-h-[500px] min-w-0 flex-col overflow-hidden rounded-2xl border md:h-[520px] md:max-h-[520px] md:min-h-[520px]",
         listadoUiPerfilCompleto ? "border-[#0f766e] bg-white" : "border-slate-300 bg-slate-50",
-        homeCarousel && "h-full min-h-0",
+        isCarousel && "h-full min-h-0",
       )}
       style={{
         boxShadow: cardShadow,
@@ -584,7 +589,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
 
       <div
         className={cn(
-          "flex min-h-0 min-w-0 flex-1 flex-col",
+          "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
           listadoUiPerfilCompleto ? "bg-white" : "bg-slate-50",
         )}
       >
@@ -648,7 +653,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           ) : null}
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col px-4 py-3">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-3">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
             <h3
               className={cn(
