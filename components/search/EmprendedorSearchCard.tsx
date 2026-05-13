@@ -5,7 +5,7 @@
  * cuerpo con slots de altura mínima; el footer de acciones usa `mt-auto` para anclarse al borde inferior.
  */
 
-import { useState, type ReactNode, type SVGProps } from "react";
+import { useState, type SVGProps } from "react";
 
 import TrackedCardLink, {
   type CardViewListingSource,
@@ -96,13 +96,13 @@ export type EmprendedorSearchCardProps = {
 };
 
 const CTA_WHATSAPP_CLASS =
-  "flex h-[38px] min-w-0 w-[calc((100%-0.5rem)/2)] shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-medium leading-tight text-white shadow-md shadow-green-600/25";
+  "flex h-[38px] min-w-0 w-[calc((100%-0.5rem)/2)] shrink-0 items-center justify-center rounded-xl bg-[#1D9E75] px-3 text-center text-sm font-medium leading-tight text-white shadow-sm";
 
 const CTA_VER_FICHA_CLASS =
   "flex h-[38px] min-w-0 w-[calc((100%-0.5rem)/2)] shrink-0 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-medium text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50";
 
 const CTA_WHATSAPP_SOLO =
-  "mt-auto flex h-[38px] w-full shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-sm font-medium text-white shadow-md shadow-green-600/25";
+  "mt-auto flex h-[38px] w-full shrink-0 items-center justify-center rounded-xl bg-[#1D9E75] px-3 text-sm font-medium text-white shadow-sm";
 
 function IconHome(props: SVGProps<SVGSVGElement>) {
   const { className, ...rest } = props;
@@ -250,26 +250,28 @@ function IconGlobeMini(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function modalidadChipLeadContent(label: string, iconActive: boolean): ReactNode {
-  const iconTone = iconActive ? "text-[#0F6E56]" : "text-gray-300";
-  const raw = String(label).trim();
-  const norm = raw.toLowerCase();
-  if (norm.startsWith("+")) return null;
-  if (norm.includes("domicilio") && norm.includes("delivery")) {
-    return (
-      <span className="inline-flex shrink-0 items-center gap-0.5">
-        <IconVehicle className={iconTone} />
-        <IconPackage className={iconTone} />
-      </span>
+/** Cuatro slots fijos de modalidad en card; activo si el chip aparece en datos de listado. */
+function modalidadFijaSlotActiva(
+  slot: "local_fisico" | "domicilio" | "delivery" | "online",
+  chips: string[],
+): boolean {
+  const lowered = chips.map((c) => String(c ?? "").trim().toLowerCase());
+  if (!lowered.length) return false;
+  if (slot === "local_fisico") {
+    return lowered.some(
+      (n) => n.includes("local") && (n.includes("físico") || n.includes("fisico")),
     );
   }
-  if (norm.includes("local") && (norm.includes("físico") || norm.includes("fisico"))) {
-    return <IconHome className={iconTone} />;
+  if (slot === "domicilio") {
+    return lowered.some((n) => n.includes("domicilio"));
   }
-  if (norm === "delivery") return <IconPackage className={iconTone} />;
-  if (norm.includes("domicilio")) return <IconVehicle className={iconTone} />;
-  if (norm.includes("online")) return <IconMonitor className={iconTone} />;
-  return null;
+  if (slot === "delivery") {
+    return lowered.some((n) => n.includes("delivery"));
+  }
+  if (slot === "online") {
+    return lowered.some((n) => n.includes("online"));
+  }
+  return false;
 }
 
 function buildWhatsappHref(numero: string) {
@@ -332,17 +334,6 @@ function getCoberturaTextoUnificado(item: {
   if (base) return `Atiende: ${prettyComuna(base) || base}`;
 
   return "";
-}
-
-function getModalidadesLimitadas(modalidades: string[]) {
-  const list = Array.isArray(modalidades)
-    ? modalidades.map((x) => String(x ?? "").trim()).filter(Boolean)
-    : [];
-  if (!list.length) return [];
-  const visibles = list.slice(0, 2);
-  const extra = list.length - visibles.length;
-  if (extra > 0) return [...visibles, `+${extra}`];
-  return visibles;
 }
 
 /** Si hay señal de local en datos de listado pero no chip explícito, añade solo la etiqueta (sin dirección). */
@@ -456,16 +447,6 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     getModalidadesChips({ modalidadesCardBadges: p.modalidadesCardBadges }),
     p,
   );
-  const resumenLocalesRaw = String(p.resumenLocalesLinea ?? "").trim();
-  const resumenLocalesTieneExtra =
-    /\n\+\d+\s+local(?:es)?\s+m[aá]s\b/i.test(resumenLocalesRaw) ||
-    /^\+\d+\s+local(?:es)?\s+m[aá]s\b/i.test(
-      resumenLocalesRaw.split(/\r?\n/).slice(-1)[0] ?? ""
-    );
-  const modalidadesLimitadas = resumenLocalesTieneExtra
-    ? getModalidadesLimitadas(modalidadChips).filter((x) => !/^\+\d+\b/.test(String(x).trim()))
-    : getModalidadesLimitadas(modalidadChips);
-
   const lineaTaxonomia = getLineaTaxonomiaCard(p);
   const coberturaTxt = getCoberturaTextoUnificado({
     comunas_cobertura: p.comunasCobertura ?? null,
@@ -953,46 +934,35 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             )}
           </div>
 
-          <div className="flex w-full shrink-0 flex-col gap-1">
-            <p className="m-0 text-xs font-semibold tracking-wide text-slate-600">
-              Modalidad de atención
-            </p>
-            <div
-              className="flex h-[26px] min-h-[26px] max-h-[26px] w-full shrink-0 flex-nowrap items-center gap-1 overflow-hidden"
-              aria-label="Modalidades de atención"
-            >
-              {modalidadesLimitadas.length > 0 ? (
-                <>
-                  {modalidadesLimitadas.map((label, idx) => {
-                    const isMas = String(label).trim().startsWith("+");
-                    return (
-                      <span
-                        key={`${idx}-${label}`}
-                        className={`inline-flex max-w-full shrink-0 items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-tight tracking-wide max-h-6 border ${
-                          isMas
-                            ? listadoUiPerfilCompleto
-                              ? "border-slate-200 bg-slate-100 text-slate-500"
-                              : "border-slate-200 bg-slate-100 text-slate-500"
-                            : listadoUiPerfilCompleto
-                              ? "border-slate-200 bg-slate-50 text-slate-600"
-                              : "border-slate-200 bg-slate-50 text-slate-600"
-                        }`}
-                        title={isMas ? `${label.replace("+", "")} modalidades más` : undefined}
-                      >
-                        <span className="inline-flex min-w-0 max-w-full items-center gap-1">
-                          {modalidadChipLeadContent(label, listadoUiPerfilCompleto && !isMas)}
-                          <span className="min-w-0 truncate">{label}</span>
-                        </span>
-                      </span>
-                    );
-                  })}
-                </>
-              ) : (
-                <span className="invisible text-[9px] font-bold" aria-hidden>
-                  —
+          <div
+            className="flex h-[38px] w-full shrink-0 items-stretch gap-1.5"
+            aria-label="Modalidades de atención"
+          >
+            {(
+              [
+                { slot: "local_fisico" as const, label: "Local físico", Icon: IconHome },
+                { slot: "domicilio" as const, label: "A domicilio", Icon: IconVehicle },
+                { slot: "delivery" as const, label: "Delivery", Icon: IconPackage },
+                { slot: "online" as const, label: "Online", Icon: IconMonitor },
+              ] as const
+            ).map(({ slot, label, Icon }) => {
+              const active = modalidadFijaSlotActiva(slot, modalidadChips);
+              return (
+                <span
+                  key={slot}
+                  title={label}
+                  aria-label={label}
+                  className={cn(
+                    "flex min-w-0 flex-1 items-center justify-center rounded-lg border",
+                    active
+                      ? "border-[#5DCAA5] bg-[#E1F5EE] text-[#085041]"
+                      : "border-gray-200 bg-transparent text-gray-300",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
                 </span>
-              )}
-            </div>
+              );
+            })}
           </div>
 
           </div>
