@@ -141,18 +141,20 @@ export default function InformacionUtilPage() {
                   No cambias tu posición en los resultados. Solo mejoras tu presentación para generar
                   más confianza.
                 </p>
-                <Link
-                  href="/publicar"
-                  className="mt-3 inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
-                >
-                  Publicar mi negocio gratis
-                </Link>
-                <Link
-                  href="/planes"
-                  className="mt-3 inline-flex w-fit text-sm font-semibold text-teal-800 hover:text-teal-900"
-                >
-                  Ver planes y precios →
-                </Link>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <Link
+                    href="/publicar"
+                    className="inline-flex h-11 items-center justify-center rounded-lg bg-teal-700 px-5 text-sm font-medium text-white hover:bg-teal-800"
+                  >
+                    Publicar mi negocio gratis
+                  </Link>
+                  <Link
+                    href="/planes"
+                    className="inline-flex items-center justify-center bg-transparent text-[#0F6E56] border border-[#0F6E56] rounded-lg px-5 h-11 text-sm font-medium hover:bg-[#0F6E56]/5 transition-colors"
+                  >
+                    Ver planes y precios
+                  </Link>
+                </div>
               </article>
             </div>
             <p className="text-sm text-slate-600">
