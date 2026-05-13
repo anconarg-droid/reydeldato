@@ -104,6 +104,12 @@ export type EmprendedorSearchCardProps = {
 
 const ACTIONS_H = 48;
 
+const CTA_WHATSAPP_CLASS =
+  "flex min-w-0 w-[calc((100%-0.5rem)/2)] shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25";
+
+const CTA_VER_FICHA_CLASS =
+  "flex min-w-0 w-[calc((100%-0.5rem)/2)] shrink-0 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50";
+
 function buildWhatsappHref(numero: string) {
   const clean = (numero || "").replace(/[^\d]/g, "");
   return clean ? `https://wa.me/${clean}` : "";
@@ -177,48 +183,17 @@ function getModalidadesLimitadas(modalidades: string[]) {
   return visibles;
 }
 
-function formatDireccionCardDisplay(raw: string): string {
-  const t = String(raw ?? "");
-  if (!t.trim()) return slotOrSpace("");
-  return t
-    .split(/\r?\n/)
-    // Dirección debe mostrarse tal cual viene (solo trim). No abreviar ni title-case.
-    .map((ln) => String(ln ?? "").trim())
-    .join("\n");
-}
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/**
- * Limpia dirección solo para presentación (no persiste en DB):
- * - si la línea viene como "Comuna · Dirección Comuna", quita comuna del inicio/fin
- * - quita duplicados simples y separadores sobrantes
- */
-function cleanDireccionLocalParaCard(raw: string, comunaBaseNombre: string): string {
-  let t = String(raw ?? "").trim();
-  if (!t) return "";
-
-  // Quitar emoji/label si viniera con prefijo
-  t = t.replace(/^📍\s*/g, "").trim();
-  t = t.replace(/^Local\s+en\s+/i, "").trim();
-
-  const comuna = String(comunaBaseNombre ?? "").trim();
-  if (comuna) {
-    const c = escapeRegExp(comuna);
-    // "Comuna · ..."
-    t = t.replace(new RegExp(`^${c}\\s*[·,\\-–—]\\s*`, "i"), "").trim();
-    // "... · Comuna"
-    t = t.replace(new RegExp(`\\s*[·,\\-–—]\\s*${c}$`, "i"), "").trim();
-    // "... Comuna" (al final con espacio)
-    t = t.replace(new RegExp(`\\s+${c}$`, "i"), "").trim();
-  }
-
-  // Solo limpieza superficial de puntuación sobrante (sin modificar palabras).
-  t = t.replace(/^[,\-–—·\s]+/, "").replace(/[,\-–—·\s]+$/, "").trim();
-
-  return t;
+/** Si hay señal de local en datos de listado pero no chip explícito, añade solo la etiqueta (sin dirección). */
+function conChipLocalFisicoInferido(
+  chips: string[],
+  p: Pick<EmprendedorSearchCardProps, "localFisicoComunaNombre" | "resumenLocalesLinea">,
+): string[] {
+  const tieneSeñalLocal =
+    Boolean(String(p.localFisicoComunaNombre ?? "").trim()) ||
+    Boolean(String(p.resumenLocalesLinea ?? "").trim());
+  if (!tieneSeñalLocal) return chips;
+  if (tieneModalidadLocalFisicoEnChips(chips)) return chips;
+  return ["Local físico", ...chips];
 }
 
 function tituloDesdeSlugComuna(slug: string): string {
@@ -315,11 +290,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   const listadoPieDosCtas = listadoFooterCtasDosColumnas(p);
   const esIntermedio = perfilIntermedioListadoPorTexto(p);
 
-  const modalidadChips = getModalidadesChips({ modalidadesCardBadges: p.modalidadesCardBadges });
-  const tieneLocalFisico =
-    tieneModalidadLocalFisicoEnChips(modalidadChips) ||
-    Boolean(String(p.resumenLocalesLinea ?? "").trim()) ||
-    Boolean(String(p.localFisicoComunaNombre ?? "").trim());
+  const modalidadChips = conChipLocalFisicoInferido(
+    getModalidadesChips({ modalidadesCardBadges: p.modalidadesCardBadges }),
+    p,
+  );
   const resumenLocalesRaw = String(p.resumenLocalesLinea ?? "").trim();
   const resumenLocalesTieneExtra =
     /\n\+\d+\s+local(?:es)?\s+m[aá]s\b/i.test(resumenLocalesRaw) ||
@@ -541,23 +515,6 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
 
   const descDisplay = slotOrSpace(displayCapitalizeSentenceStarts(descTextRaw));
   const coberturaDisplay = slotOrSpace(coberturaTxt);
-  const localFisicoComuna = String(p.localFisicoComunaNombre ?? "").trim();
-  const ubicacionesRaw = resumenLocalesRaw;
-  const ubicacionesLines = listadoUiPerfilCompleto
-    ? ubicacionesRaw
-        .split(/\r?\n/)
-        .map((x) => String(x ?? "").trim())
-        .filter((ln) => Boolean(ln) && !/^\+\d+\b/.test(ln))
-    : localFisicoComuna
-      ? [`Local en ${localFisicoComuna}`]
-      : [];
-  const ubicacionesVisibles = ubicacionesLines.slice(0, 2);
-  const ubicacionesExtra = Math.max(0, ubicacionesLines.length - ubicacionesVisibles.length);
-  const localDireccionRaw = String(ubicacionesVisibles[0] ?? "").trim();
-  const localDireccionClean = cleanDireccionLocalParaCard(localDireccionRaw, comunaNomRaw);
-  const localDireccionDisplay = localDireccionClean
-    ? formatDireccionCardDisplay(localDireccionClean)
-    : "";
 
   const placeholderSinFotoStyle: CSSProperties | undefined = mostrarFoto
     ? undefined
@@ -826,68 +783,43 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             )}
           </div>
 
-          <div
-            className="flex h-[26px] min-h-[26px] max-h-[26px] w-full shrink-0 flex-nowrap items-center gap-1 overflow-hidden"
-            aria-label="Forma de atención"
-          >
-            {modalidadesLimitadas.length > 0 ? (
-              <>
-                {modalidadesLimitadas.map((label, idx) => {
-                  const isMas = String(label).trim().startsWith("+");
-                  return (
-                    <span
-                      key={`${idx}-${label}`}
-                      className={`inline-flex max-w-full shrink-0 items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-tight tracking-wide max-h-6 border ${
-                        isMas
-                          ? listadoUiPerfilCompleto
-                            ? "border-slate-200 bg-slate-100 text-slate-500"
-                            : "border-slate-200 bg-slate-100 text-slate-500"
-                          : listadoUiPerfilCompleto
-                            ? "border-slate-200 bg-slate-50 text-slate-600"
-                            : "border-slate-200 bg-slate-50 text-slate-600"
-                      }`}
-                      title={isMas ? `${label.replace("+", "")} modalidades más` : undefined}
-                    >
-                      {label}
-                    </span>
-                  );
-                })}
-              </>
-            ) : (
-              <span className="invisible text-sm" aria-hidden>
-                {" "}
-              </span>
-            )}
-          </div>
-
-          <div
-            className={cn(
-              "my-1 flex h-[52px] w-full shrink-0 flex-col justify-center overflow-hidden rounded-lg border border-slate-200 px-2.5 py-1",
-              listadoUiPerfilCompleto ? "bg-slate-50" : "bg-slate-100/80",
-              !tieneLocalFisico && "invisible",
-            )}
-            aria-hidden={!tieneLocalFisico}
-          >
-            <p className="m-0 flex min-h-0 items-center gap-1.5 truncate text-[12px] font-bold leading-tight text-slate-800">
-              <span aria-hidden className="shrink-0">
-                🏪
-              </span>
-              <span className="min-w-0 truncate">
-                Local físico
-                {ubicacionesExtra > 0 ? ` · +${ubicacionesExtra}` : ""}
-              </span>
+          <div className="flex min-h-[52px] w-full shrink-0 flex-col justify-start gap-1">
+            <p className="m-0 text-xs font-semibold tracking-wide text-slate-600">
+              Modalidad de atención
             </p>
-            <p className="m-0 mt-0.5 flex min-h-0 items-start gap-1.5 text-[13px] leading-snug text-slate-700">
-              <span aria-hidden className="mt-0.5 shrink-0">
-                📍
-              </span>
-              <span
-                className="line-clamp-2 min-w-0 flex-1 break-words"
-                title={localDireccionDisplay.trim() || undefined}
-              >
-                {localDireccionDisplay || "\u00A0"}
-              </span>
-            </p>
+            <div
+              className="flex h-[26px] min-h-[26px] max-h-[26px] w-full shrink-0 flex-nowrap items-center gap-1 overflow-hidden"
+              aria-label="Modalidades de atención"
+            >
+              {modalidadesLimitadas.length > 0 ? (
+                <>
+                  {modalidadesLimitadas.map((label, idx) => {
+                    const isMas = String(label).trim().startsWith("+");
+                    return (
+                      <span
+                        key={`${idx}-${label}`}
+                        className={`inline-flex max-w-full shrink-0 items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-tight tracking-wide max-h-6 border ${
+                          isMas
+                            ? listadoUiPerfilCompleto
+                              ? "border-slate-200 bg-slate-100 text-slate-500"
+                              : "border-slate-200 bg-slate-100 text-slate-500"
+                            : listadoUiPerfilCompleto
+                              ? "border-slate-200 bg-slate-50 text-slate-600"
+                              : "border-slate-200 bg-slate-50 text-slate-600"
+                        }`}
+                        title={isMas ? `${label.replace("+", "")} modalidades más` : undefined}
+                      >
+                        {label}
+                      </span>
+                    );
+                  })}
+                </>
+              ) : (
+                <span className="invisible text-[9px] font-bold" aria-hidden>
+                  —
+                </span>
+              )}
+            </div>
           </div>
 
           </div>
@@ -900,10 +832,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
         >
           {/* Perfil completo (listadoUiPerfilCompleto): WhatsApp + Ver ficha. Básico: leyenda + solo WhatsApp. */}
           {p.bloquearAccesoFichaPublica ? (
-            <div className="flex w-full shrink-0 flex-row items-stretch gap-2">
+            <div className="flex w-full shrink-0 flex-row items-stretch justify-center gap-2">
               {tieneWhatsappValido ? (
                 <span
-                  className="flex min-w-0 flex-1 cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-center text-sm font-extrabold leading-tight text-slate-400"
+                  className="flex min-w-0 w-[calc((100%-0.5rem)/2)] shrink-0 cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-center text-sm font-extrabold leading-tight text-slate-400"
                   style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
                   aria-disabled
                 >
@@ -912,7 +844,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               ) : null}
               {listadoPieDosCtas ? (
                 <span
-                  className="flex min-w-0 flex-1 cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-1 text-center text-sm font-extrabold leading-tight text-slate-400 shadow-none"
+                  className="flex min-w-0 w-[calc((100%-0.5rem)/2)] shrink-0 cursor-not-allowed select-none items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-1 text-center text-sm font-extrabold leading-tight text-slate-400 shadow-none"
                   style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
                   role="status"
                   aria-disabled
@@ -922,7 +854,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               ) : null}
             </div>
           ) : listadoUiPerfilCompleto && puedeVerFichaPublica && tieneWhatsappValido ? (
-            <div className="flex w-full shrink-0 flex-row items-stretch gap-2">
+            <div className="flex w-full shrink-0 flex-row items-stretch justify-center gap-2">
               <TrackedCardLink
                 slug={p.slug}
                 href={whatsappUrl || whatsappHref}
@@ -930,7 +862,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 analyticsSource={analyticsSource}
                 trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                 trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex min-w-0 flex-1 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
+                className={CTA_WHATSAPP_CLASS}
                 style={{ minHeight: 44, height: ACTIONS_H }}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -942,7 +874,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 <button
                   type="button"
                   onClick={verDetallesHandler}
-                  className="flex min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                  className={CTA_VER_FICHA_CLASS}
                   style={{ minHeight: 44, height: ACTIONS_H }}
                   aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
                 >
@@ -956,7 +888,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                   analyticsSource={analyticsSource}
                   trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                   trackingEmprendedorId={p.emprendedorId ?? null}
-                  className="flex min-w-0 flex-1 items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
+                  className={CTA_VER_FICHA_CLASS}
                   style={{ minHeight: 44, height: ACTIONS_H }}
                   aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
                 >
@@ -993,27 +925,29 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               )}
             </div>
           ) : !listadoUiPerfilCompleto && tieneWhatsappValido ? (
-            <div className="flex w-full flex-col items-stretch justify-center gap-2">
+            <div className="flex w-full flex-col items-center gap-2">
               <div className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-center">
                 <p className="m-0 text-xs font-semibold leading-snug text-slate-700">
                   Solo contacto por WhatsApp
                 </p>
               </div>
-              <TrackedCardLink
-                slug={p.slug}
-                href={whatsappUrl || whatsappHref}
-                type="whatsapp"
-                analyticsSource={analyticsSource}
-                trackingComunaSlug={p.fichaContextComunaSlug ?? null}
-                trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex w-full shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
-                style={{ minHeight: 44, height: ACTIONS_H }}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`WhatsApp: ${nombreDisplay}`}
-              >
-                WhatsApp
-              </TrackedCardLink>
+              <div className="flex w-full justify-center">
+                <TrackedCardLink
+                  slug={p.slug}
+                  href={whatsappUrl || whatsappHref}
+                  type="whatsapp"
+                  analyticsSource={analyticsSource}
+                  trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+                  trackingEmprendedorId={p.emprendedorId ?? null}
+                  className={CTA_WHATSAPP_CLASS}
+                  style={{ minHeight: 44, height: ACTIONS_H }}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`WhatsApp: ${nombreDisplay}`}
+                >
+                  WhatsApp
+                </TrackedCardLink>
+              </div>
             </div>
           ) : (
             <div className="min-h-[52px] w-full shrink-0" aria-hidden />
