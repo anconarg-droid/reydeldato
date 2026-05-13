@@ -6383,7 +6383,7 @@ export default function NegocioForm({
    * Referencia — avisos de revisión / moderación en el formulario (no incluye pantalla post-guardado):
    * - Caja ámbar al inicio del `<form>` si moderación o ficha no visible.
    * - `nf-mejorar-ficha-banner--revision` si `bannerRevision`.
-   * - Footer upgrade: `nf-upgrade-autosave-footer` (autosave / fotos / revisión).
+   * - Footer upgrade: solo error / carga inicial; CTAs sin banner de estado (autosave silencioso).
    */
   return (
     <form
@@ -7415,30 +7415,8 @@ export default function NegocioForm({
                   >
                     {isSubmitting ? "Guardando..." : "Guardar cambios"}
                   </button>
-                  <div
-                    className={[
-                      "nf-upgrade-autosave-footer",
-                      upgradeSilentSave === "err"
-                        ? "nf-upgrade-autosave-footer--error"
-                        : "",
-                      lastSavedProfileSig == null &&
-                      upgradeSilentSave !== "err" &&
-                      !isSubmitting &&
-                      upgradeSilentSave !== "saving"
-                        ? "nf-upgrade-autosave-footer--neutral"
-                        : "",
-                      upgradeProfileDirty &&
-                      upgradeSilentSave !== "err" &&
-                      !isSubmitting &&
-                      upgradeSilentSave !== "saving" &&
-                      lastSavedProfileSig != null
-                        ? "nf-upgrade-autosave-footer--pending"
-                        : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    {upgradeSilentSave === "err" ? (
+                  {upgradeSilentSave === "err" ? (
+                    <div className="nf-upgrade-autosave-footer nf-upgrade-autosave-footer--error">
                       <>
                         <p
                           className="nf-upgrade-autosave-footer-title nf-upgrade-autosave-footer-title--error"
@@ -7452,96 +7430,67 @@ export default function NegocioForm({
                           </p>
                         ) : null}
                       </>
-                    ) : isSubmitting || upgradeSilentSave === "saving" ? (
-                      <>
-                        <p className="nf-upgrade-autosave-footer-title">Guardando...</p>
-                        <p className="nf-upgrade-autosave-footer-sub">
-                          Puedes seguir editando; no cierres la pestaña.
-                        </p>
-                      </>
-                    ) : upgradeProfileDirty ? (
-                      <>
-                        <p className="nf-upgrade-autosave-footer-title nf-upgrade-autosave-footer-title--pending">
-                          Hay cambios sin guardar
-                        </p>
-                        <p className="nf-upgrade-autosave-footer-sub nf-upgrade-autosave-footer-sub--pending">
-                          Haz clic en «Guardar cambios» para confirmar. También guardamos automáticamente cuando el formulario es válido.
-                        </p>
-                      </>
-                    ) : lastSavedProfileSig == null ? (
-                      <>
-                        <p className="nf-upgrade-autosave-footer-title nf-upgrade-autosave-footer-title--muted">
-                          Cargando perfil…
-                        </p>
-                        <p className="nf-upgrade-autosave-footer-sub nf-upgrade-autosave-footer-sub--muted">
-                          En un momento podrás guardar.
-                        </p>
-                      </>
-                    ) : totalFotos < 3 ? (
-                      <>
-                        <p className="nf-upgrade-autosave-footer-title">
-                          Guardado. ¿Qué quieres hacer ahora?
-                        </p>
-                        <div
+                    </div>
+                  ) : lastSavedProfileSig == null &&
+                    !isSubmitting &&
+                    upgradeSilentSave !== "saving" ? (
+                    <div className="nf-upgrade-autosave-footer nf-upgrade-autosave-footer--neutral">
+                      <p className="nf-upgrade-autosave-footer-title nf-upgrade-autosave-footer-title--muted">
+                        Cargando perfil…
+                      </p>
+                      <p className="nf-upgrade-autosave-footer-sub nf-upgrade-autosave-footer-sub--muted">
+                        En un momento podrás guardar.
+                      </p>
+                    </div>
+                  ) : isSubmitting || upgradeSilentSave === "saving" ? null : upgradeProfileDirty ? null : totalFotos < 3 ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 10,
+                        alignItems: "center",
+                      }}
+                    >
+                      {datosBasicosHref ? (
+                        <Link
+                          href={datosBasicosHref}
+                          className="nf-upgrade-datos-basicos-cta"
+                          style={{ alignSelf: "flex-start", width: "auto", minHeight: 0 }}
+                          aria-label="Editar datos básicos del emprendimiento"
+                        >
+                          <Pencil className="nf-upgrade-datos-basicos-cta-icon" size={18} strokeWidth={2.25} aria-hidden />
+                          Editar datos básicos
+                        </Link>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="nf-upgrade-save-primary-btn"
+                        style={{
+                          alignSelf: "flex-start",
+                          background: "#111827",
+                        }}
+                        onClick={scrollToUpgradeFotosBlock}
+                      >
+                        Seguir mejorando la ficha
+                      </button>
+                      {fichaPublicaEnSitioVisible && fichaPublicaHref ? (
+                        <a
+                          href={fichaPublicaHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="nf-upgrade-save-secondary-link"
                           style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: 10,
-                            marginTop: 10,
+                            alignSelf: "center",
+                            fontSize: 13,
+                            textDecoration: "underline",
+                            padding: "10px 6px",
                           }}
                         >
-                          {datosBasicosHref ? (
-                            <Link
-                              href={datosBasicosHref}
-                              className="nf-upgrade-datos-basicos-cta"
-                              style={{ alignSelf: "flex-start", width: "auto", minHeight: 0 }}
-                              aria-label="Editar datos básicos del emprendimiento"
-                            >
-                              <Pencil className="nf-upgrade-datos-basicos-cta-icon" size={18} strokeWidth={2.25} aria-hidden />
-                              Editar datos básicos
-                            </Link>
-                          ) : null}
-                          <button
-                            type="button"
-                            className="nf-upgrade-save-primary-btn"
-                            style={{
-                              alignSelf: "flex-start",
-                              background: "#111827",
-                            }}
-                            onClick={scrollToUpgradeFotosBlock}
-                          >
-                            Seguir mejorando la ficha
-                          </button>
-                          {fichaPublicaEnSitioVisible && fichaPublicaHref ? (
-                            <a
-                              href={fichaPublicaHref}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="nf-upgrade-save-secondary-link"
-                              style={{
-                                alignSelf: "center",
-                                fontSize: 13,
-                                textDecoration: "underline",
-                                padding: "10px 6px",
-                              }}
-                            >
-                              Ver cómo quedará mi perfil
-                            </a>
-                          ) : null}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <p className="nf-upgrade-autosave-footer-title">
-                          Tu perfil se actualizará después de revisión. Puedes seguir mejorándolo
-                          mientras tanto.
-                        </p>
-                        <p className="nf-upgrade-autosave-footer-sub">
-                          Guardando en segundo plano mientras editas.
-                        </p>
-                      </>
-                    )}
-                  </div>
+                          Ver cómo quedará mi perfil
+                        </a>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <div

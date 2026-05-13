@@ -205,7 +205,7 @@ export default function HomeUltimosPublicadosClient({
           Más de {negociosLabel.toLocaleString("es-CL")} negocios ya están publicados
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-center text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">
-          Últimos en publicarse o actualizarse: deslizá la ficha o tocá las flechas a los lados.
+          Últimos negocios aprobados y publicados: deslizá la ficha o tocá las flechas a los lados.
         </p>
 
         <div
@@ -251,7 +251,7 @@ export default function HomeUltimosPublicadosClient({
               ref={scrollerRef}
               className="home-carousel-scroll flex flex-nowrap gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-3 pl-0.5 pr-6 pt-1 [-webkit-overflow-scrolling:touch] md:gap-5 lg:gap-6 lg:pr-0 focus:outline-none"
               role="list"
-              aria-label="Emprendimientos publicados recientemente"
+              aria-label="Últimos negocios aprobados y publicados"
               tabIndex={0}
               onPointerDownCapture={bumpInteractionPause}
               onWheelCapture={bumpInteractionPause}

@@ -2,15 +2,14 @@
 
 import { Suspense, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import PublicarFormLoadingPlaceholder from "@/components/publicar/PublicarFormLoadingPlaceholder";
 
 const PublicarSimpleClient = dynamic(
   () => import("@/app/publicar/PublicarSimpleClient"),
   {
     ssr: false,
     loading: () => (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-600">
-        Cargando formulario de publicación…
-      </div>
+      <PublicarFormLoadingPlaceholder className="min-h-[120px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-10" />
     ),
   }
 );
@@ -72,11 +71,8 @@ export default function HomePublicarLazy() {
 
   if (!comunas || !regiones) {
     return (
-      <div
-        id="home-publicar-panel"
-        className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-600"
-      >
-        Preparando formulario…
+      <div id="home-publicar-panel" className="mt-4">
+        <PublicarFormLoadingPlaceholder className="min-h-[120px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-10" />
       </div>
     );
   }
@@ -86,11 +82,7 @@ export default function HomePublicarLazy() {
       id="home-publicar-panel"
       className="mt-4 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm"
     >
-      <Suspense
-        fallback={
-          <div className="px-4 py-10 text-center text-sm text-slate-600">Cargando…</div>
-        }
-      >
+      <Suspense fallback={<PublicarFormLoadingPlaceholder className="px-4 py-12" />}>
         <PublicarSimpleClient
           comunas={comunas}
           regiones={regiones}

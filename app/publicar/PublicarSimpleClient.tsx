@@ -19,6 +19,7 @@ import {
 import { getRegionShort } from "@/utils/regionShort";
 import { normalizeAndValidateChileWhatsappStrict } from "@/utils/phone";
 import PasoInformacionBasica from "./PasoInformacionBasica";
+import PublicarFormLoadingPlaceholder from "@/components/publicar/PublicarFormLoadingPlaceholder";
 import { INITIAL_FORM as PUBLICAR_INITIAL_FORM, type FormData } from "./PublicarClient";
 import Link from "next/link";
 import {
@@ -1317,7 +1318,15 @@ export default function PublicarSimpleClient({
             </div>
           </header>
         ) : null}
-        <section style={contentSectionStyle} />
+        <section style={contentSectionStyle}>
+          <PublicarFormLoadingPlaceholder
+            className={
+              embedOnHome
+                ? "py-14"
+                : "mx-auto max-w-2xl rounded-2xl border border-slate-100 bg-slate-50 py-16"
+            }
+          />
+        </section>
       </main>
     );
   }
@@ -1386,12 +1395,21 @@ export default function PublicarSimpleClient({
               errors={errors}
               setField={setPasoField}
               submitForm={() => void submitForm()}
+              saving={saving}
               comunas={comunas}
               regiones={regiones}
               showIntro={false}
             />
           </>
-        ) : null}
+        ) : (
+          <PublicarFormLoadingPlaceholder
+            className={
+              embedOnHome
+                ? "py-14"
+                : "mx-auto max-w-2xl rounded-2xl border border-slate-100 bg-slate-50 py-16"
+            }
+          />
+        )}
 
         {serverError ? (
           <div

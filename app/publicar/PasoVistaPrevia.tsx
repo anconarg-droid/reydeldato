@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import type {
   Categoria,
   Comuna,
@@ -440,6 +441,7 @@ export default function PasoVistaPrevia({
             type="button"
             onClick={submitForm}
             disabled={saving || !puedeEnviar}
+            aria-busy={saving}
             style={{
               ...primaryButtonStyle,
               opacity: saving || !puedeEnviar ? 0.55 : 1,
@@ -447,13 +449,26 @@ export default function PasoVistaPrevia({
                 saving || !puedeEnviar ? "not-allowed" : "pointer",
             }}
           >
-            {saving
-              ? mode === "advanced"
-                ? "Guardando..."
-                : "Enviando..."
-              : mode === "advanced"
-                ? "Guardar cambios"
-                : "Enviar para revisión"}
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+              }}
+            >
+              {saving ? (
+                <Loader2
+                  size={20}
+                  className="shrink-0 animate-spin text-white"
+                  strokeWidth={2.5}
+                  aria-hidden
+                />
+              ) : null}
+              <span>
+                {mode === "advanced" ? "Guardar cambios" : "Enviar para revisión"}
+              </span>
+            </span>
           </button>
         </div>
       </div>

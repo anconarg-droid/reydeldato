@@ -280,7 +280,9 @@ export async function POST(req: NextRequest) {
       await sendEmail({
         to: emailNorm,
         subject: "Recibimos tu solicitud — Rey del Dato",
-        html: recibimosTuSolicitudEmailHtml(),
+        html: recibimosTuSolicitudEmailHtml({
+          nombreEmprendimiento: nombreEmprendimiento || null,
+        }),
       });
     } catch {
       // Errores ya se registran dentro de sendEmail; nunca romper flujo.

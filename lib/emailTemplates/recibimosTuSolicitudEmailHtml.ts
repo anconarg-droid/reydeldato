@@ -7,7 +7,33 @@ const SITE = "https://reydeldato.cl";
 /** Enlaces de cuerpo: verde y subrayado (clientes de correo). */
 const LINK = "color:#0d4a3a;text-decoration:underline;font-weight:600;";
 
-export function recibimosTuSolicitudEmailHtml(): string {
+export type RecibimosTuSolicitudEmailOptions = {
+  nombreEmprendimiento?: string | null;
+};
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function recibimosTuSolicitudEmailHtml(
+  options?: RecibimosTuSolicitudEmailOptions | null
+): string {
+  const nameRaw = options?.nombreEmprendimiento;
+  const nameTrim =
+    typeof nameRaw === "string" ? nameRaw.trim() : "";
+  const introMarginBottom = nameTrim ? "16px" : "26px";
+
+  const nombreBloque = nameTrim
+    ? `<div style="margin:0 auto 20px;max-width:420px;text-align:center;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;">
+        <p style="margin:0;color:#64748b;font-size:12px;font-weight:600;line-height:1.45;letter-spacing:0.01em;">Solicitud recibida para:</p>
+        <p style="margin:8px 0 0;color:#14532d;font-size:15px;font-weight:800;line-height:1.35;">${escapeHtml(nameTrim)}</p>
+      </div>`
+    : "";
+
   return `<div style="margin:0;padding:24px 16px;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;">
     <div style="background-color:#0d4a3a;padding:22px 24px;">
@@ -21,7 +47,8 @@ export function recibimosTuSolicitudEmailHtml(): string {
         <span style="display:inline-block;width:52px;height:52px;line-height:52px;border-radius:50%;background:#d1fae5;color:#065f46;font-size:24px;text-align:center;">✅</span>
       </div>
       <h1 style="margin:0 0 14px;color:#111827;font-size:22px;font-weight:700;line-height:1.3;text-align:center;">Recibimos tu solicitud</h1>
-      <p style="margin:0 0 26px;color:#4b5563;font-size:15px;line-height:1.6;text-align:center;">Hola, gracias por publicar tu negocio en <a href="${SITE}" style="${LINK}">Rey del Dato</a>. Ya tenemos tu información y estamos revisándola.</p>
+      <p style="margin:0 0 ${introMarginBottom};color:#4b5563;font-size:15px;line-height:1.6;text-align:center;">Hola, gracias por publicar tu negocio en <a href="${SITE}" style="${LINK}">Rey del Dato</a>. Ya recibimos la información de tu emprendimiento y estamos revisándola.</p>
+      ${nombreBloque}
       <div style="background:#f3f4f6;border-radius:8px;padding:18px 20px;margin-bottom:20px;">
         <p style="margin:0 0 14px;color:#111827;font-size:15px;font-weight:700;line-height:1.35;">¿Qué pasa ahora?</p>
         <ol style="margin:0;padding:0 0 0 22px;color:#374151;font-size:14px;line-height:1.55;">

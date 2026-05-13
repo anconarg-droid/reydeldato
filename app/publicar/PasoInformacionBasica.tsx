@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import type { FormData } from "./PublicarClient";
 import type { Comuna } from "./PublicarClient";
 import type { Region } from "./PublicarClient";
@@ -48,6 +49,7 @@ export default function PasoInformacionBasica({
   comunas,
   regiones,
   showIntro = true,
+  saving = false,
 }: {
   form: FormData;
   errors: Record<string, string>;
@@ -57,6 +59,8 @@ export default function PasoInformacionBasica({
   regiones: Region[];
   /** Si false, oculta título y aviso duplicados (layout con hero externo). */
   showIntro?: boolean;
+  /** Envío final (flujo simple): muestra spinner sin cambiar el texto del botón. */
+  saving?: boolean;
 }) {
   const MAX_COMUNAS_VARIAS = 8;
 
@@ -1132,10 +1136,25 @@ export default function PasoInformacionBasica({
           <button
             type="button"
             onClick={submitForm}
+            disabled={saving}
+            aria-busy={saving}
             className={primaryButtonClass}
-            style={primaryButtonStyle}
+            style={{
+              ...primaryButtonStyle,
+              opacity: saving ? 0.88 : 1,
+              cursor: saving ? "wait" : "pointer",
+            }}
           >
-            Publicar y empezar a recibir contactos
+            <span className="inline-flex items-center justify-center gap-2">
+              {saving ? (
+                <Loader2
+                  className="h-5 w-5 shrink-0 animate-spin text-white"
+                  strokeWidth={2.5}
+                  aria-hidden
+                />
+              ) : null}
+              <span>Publicar y empezar a recibir contactos</span>
+            </span>
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import PublicarFormLoadingPlaceholder from "@/components/publicar/PublicarFormLoadingPlaceholder";
 import PublicarSimpleClientGate from "./PublicarSimpleClientGate";
 import { createSupabaseServerPublicClient } from "@/lib/supabase/server";
 import { recordEvent } from "@/lib/analytics/recordEvent";
@@ -179,8 +180,8 @@ export default async function PublicarPage({ searchParams }: PageProps) {
   return (
     <Suspense
       fallback={
-        <main style={{ minHeight: "50vh", padding: 24 }}>
-          <p>Cargando…</p>
+        <main className="min-h-[50vh] px-6 py-10">
+          <PublicarFormLoadingPlaceholder className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-slate-50 py-16" />
         </main>
       }
     >

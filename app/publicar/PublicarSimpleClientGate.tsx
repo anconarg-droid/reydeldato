@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import PublicarFormLoadingPlaceholder from "@/components/publicar/PublicarFormLoadingPlaceholder";
 
 type Comuna = {
   id: string;
@@ -24,8 +25,8 @@ export type PublicarSimpleClientGateProps = {
 const PublicarSimpleClient = dynamic(() => import("./PublicarSimpleClient"), {
   ssr: false,
   loading: () => (
-    <main style={{ minHeight: "50vh", padding: 24 }}>
-      <p>Cargando formulario…</p>
+    <main className="min-h-[50vh] px-6 py-10">
+      <PublicarFormLoadingPlaceholder className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-slate-50 py-16" />
     </main>
   ),
 });

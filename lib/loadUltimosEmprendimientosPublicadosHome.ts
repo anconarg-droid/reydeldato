@@ -7,9 +7,10 @@ const MAX_ITEMS = 10;
 const FETCH_LIMIT = 40;
 
 /**
- * Emprendimientos `publicado` más recientes para la home.
- * Orden: `updated_at` (cubre recién aprobados / cambios en ficha) y desempate `created_at`.
- * Hasta {@link MAX_ITEMS} tarjetas para {@link EmprendedorSearchCard}; si no hay filas, `[]` (mock en el caller).
+ * Emprendimientos `publicado` (aprobados y visibles) más recientes para la home.
+ * Orden: `created_at` descendente (últimos que entraron al directorio al aprobarse);
+ * desempate `updated_at` por si hubiera empate de timestamp.
+ * Hasta {@link MAX_ITEMS} tarjetas para {@link EmprendedorSearchCard}; si no hay filas, `[]`.
  */
 export async function loadUltimosEmprendimientosPublicadosHome(): Promise<EmprendedorSearchCardProps[]> {
   try {
@@ -18,8 +19,8 @@ export async function loadUltimosEmprendimientosPublicadosHome(): Promise<Empren
       .from("vw_emprendedores_publico")
       .select("*")
       .eq("estado_publicacion", "publicado")
+      .order("created_at", { ascending: false, nullsFirst: false })
       .order("updated_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
       .limit(FETCH_LIMIT);
 
     if (error) {
