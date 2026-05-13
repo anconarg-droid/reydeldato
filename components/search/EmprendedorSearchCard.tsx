@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Card de resultados — layout estable: columna flex `h-full`, imagen altura fija, textos con line-clamp
- * y min-heights alineados; CTAs en footer con `mt-auto`. Cobertura / chips con filas de altura mínima fija.
+ * Card unificada (búsqueda, categoría, home, panel): altura fija móvil/desktop, imagen 170px, cuerpo `flex-1`,
+ * textos con line-clamp y bloques de altura reservada; footer `mt-auto` + CTAs según `listadoPerfilCompletoUi`.
  */
 
 import { useState, type CSSProperties } from "react";
@@ -17,12 +17,10 @@ const PLACEHOLDER_SIN_FOTO_AREA_STYLE: CSSProperties = {
 import TrackedCardLink, {
   type CardViewListingSource,
 } from "@/components/search/TrackedCardLink";
-import { getPlaceholderSinFotoSub } from "@/lib/productRules";
 import { urlTieneFotoListado } from "@/lib/search/sortItemsConFotoPrimero";
 import type { ModoVistaPanel } from "@/lib/panelModoVista";
 import {
   getDescripcionCardCorta,
-  getDireccionCard,
   getLineaTaxonomiaCard,
   getModalidadesChips,
   getSubcategoriaDescripcionFallback,
@@ -37,6 +35,7 @@ import {
   displayCapitalizeSentenceStarts,
   displayTitleCaseWords,
 } from "@/lib/displayTextFormat";
+import { cn } from "@/lib/utils";
 
 export type EmprendedorSearchCardProps = {
   slug: string;
@@ -79,11 +78,11 @@ export type EmprendedorSearchCardProps = {
   destacarMejoresOpciones?: boolean;
   modoVista?: ModoVistaPanel;
   bloquearAccesoFichaPublica?: boolean;
-  /** Texto del CTA secundario (por defecto: "Ver detalles"). */
+  /** Texto del CTA secundario (por defecto: "Ver ficha"). */
   etiquetaVerFicha?: string;
-  /** Si viene, el CTA "Ver detalles" usa esta URL (p. ej. demos en home). */
+  /** Si viene, el CTA secundario usa esta URL (p. ej. demos en home). */
   fichaPublicaHrefOverride?: string | null;
-  /** Si se define, "Ver detalles" ejecuta esto en lugar de navegar a la ficha pública. */
+  /** Si se define, el CTA secundario ejecuta esto en lugar de navegar a la ficha pública. */
   onVerDetallesClick?: (() => void) | null;
   /** Id en DB cuando viene del API (tracking `/api/event`). */
   emprendedorId?: string | null;
@@ -304,10 +303,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     typeof p.onVerDetallesClick === "function" ? p.onVerDetallesClick : null;
 
   const vistaBasicaPanel = (p.modoVista ?? "completa") === "basica";
-  const etiquetaVerFicha = String(p.etiquetaVerFicha ?? "").trim() || "Ver detalles";
-  /** Badge, borde teal, sombra y CTA “Ver detalles” activo: trial/plan + publicado + sin bloqueo. */
+  const etiquetaVerFicha = String(p.etiquetaVerFicha ?? "").trim() || "Ver ficha";
+  /** Badge, borde teal, sombra y CTA secundario activo: trial/plan + publicado + sin bloqueo. */
   const listadoUiPerfilCompleto = listadoPerfilCompletoUi(p);
-  /** WhatsApp + columna Ver detalles (enlace o deshabilitada): trial/plan + publicado. */
+  /** WhatsApp + columna secundaria (enlace o deshabilitada): trial/plan + publicado. */
   const listadoPieDosCtas = listadoFooterCtasDosColumnas(p);
   const esIntermedio = perfilIntermedioListadoPorTexto(p);
 
@@ -338,10 +337,6 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     lineaTaxonomia,
     getSubcategoriaDescripcionFallback(p),
   );
-  const descriptionClass = homeCarousel
-    ? "line-clamp-2 min-h-[3.5rem]"
-    : "line-clamp-2 md:line-clamp-3";
-  const locationBlockClass = homeCarousel ? "min-h-[4.25rem]" : "";
 
   const comunaNomRaw = String(p.comunaBaseNombre || "").trim();
   const reg = String(p.comunaBaseRegionAbrev || "").trim();
@@ -459,17 +454,24 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             : null,
         );
     const puedeNavegarFicha = fichaPublicaDisponible && !p.bloquearAccesoFichaPublica;
+    const simplePlaceholderStyle: CSSProperties | undefined = mostrarFoto
+      ? undefined
+      : { backgroundColor: "#f1f5f9" };
     return (
       <article
-        className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+        className={cn(
+          "flex min-h-[500px] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-300 bg-slate-50 shadow-sm md:h-[520px] md:max-h-[520px] md:min-h-[520px]",
+          homeCarousel && "h-full min-h-0",
+        )}
         aria-label={`${nombreDisplay}: disponible cuando la comuna esté activa`}
       >
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3.5">
           <div
-            className={`relative w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90 aspect-square ${
-              mostrarFoto ? "bg-slate-100" : ""
-            }`}
-            style={mostrarFoto ? undefined : PLACEHOLDER_SIN_FOTO_AREA_STYLE}
+            className={cn(
+              "relative h-[170px] w-full shrink-0 overflow-hidden rounded-xl border border-slate-200/90",
+              mostrarFoto ? "bg-slate-100" : "",
+            )}
+            style={mostrarFoto ? undefined : simplePlaceholderStyle}
           >
             {mostrarFoto ? (
               <>
@@ -483,37 +485,39 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 />
               </>
             ) : (
-              <div className="flex h-full min-h-40 w-full flex-col items-center justify-center gap-1.5 px-3 py-4 text-center">
+              <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-3 py-4 text-center">
                 <span className="text-sm font-semibold text-slate-700">Sin imágenes</span>
                 <span className="max-w-[15rem] text-xs font-medium leading-snug text-slate-600">
-                  {getPlaceholderSinFotoSub()}
+                  Pide referencias por WhatsApp
                 </span>
               </div>
             )}
           </div>
-          {puedeNavegarFicha ? (
-            <TrackedCardLink
-              slug={p.slug}
-              href={fichaHref}
-              type="view_ficha"
-              analyticsSource={analyticsSource}
-              trackingComunaSlug={p.fichaContextComunaSlug ?? null}
-              trackingEmprendedorId={p.emprendedorId ?? null}
-              className="mt-2 block w-full"
-              aria-label={`Ver ficha: ${nombreDisplay}`}
-            >
-              <h3 className="m-0 line-clamp-2 min-h-[2.5rem] w-full text-center text-base font-extrabold leading-snug text-slate-900">
+          <div className="flex min-h-0 flex-1 flex-col justify-center pt-3">
+            {puedeNavegarFicha ? (
+              <TrackedCardLink
+                slug={p.slug}
+                href={fichaHref}
+                type="view_ficha"
+                analyticsSource={analyticsSource}
+                trackingComunaSlug={p.fichaContextComunaSlug ?? null}
+                trackingEmprendedorId={p.emprendedorId ?? null}
+                className="block w-full"
+                aria-label={`Ver ficha: ${nombreDisplay}`}
+              >
+                <h3 className="m-0 line-clamp-2 min-h-[3.25rem] w-full text-center text-lg font-bold leading-snug text-slate-900">
+                  {nombreDisplay}
+                </h3>
+              </TrackedCardLink>
+            ) : (
+              <h3 className="m-0 line-clamp-2 min-h-[3.25rem] w-full shrink-0 text-center text-lg font-bold leading-snug text-slate-900">
                 {nombreDisplay}
               </h3>
-            </TrackedCardLink>
-          ) : (
-            <h3 className="m-0 mt-2 line-clamp-2 min-h-[2.5rem] w-full shrink-0 text-center text-base font-extrabold leading-snug text-slate-900">
-              {nombreDisplay}
-            </h3>
-          )}
-          <p className="m-0 mt-1.5 w-full shrink-0 px-1 text-center text-[11px] font-medium leading-snug text-slate-500">
-            Disponible cuando se active la comuna
-          </p>
+            )}
+            <p className="m-0 mt-2 w-full shrink-0 px-1 text-center text-[11px] font-medium leading-snug text-slate-500">
+              Disponible cuando se active la comuna
+            </p>
+          </div>
         </div>
       </article>
     );
@@ -526,14 +530,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       : esIntermedio
         ? "text-slate-700"
         : "text-slate-600";
-  const titleFontClassResponsive = listadoUiPerfilCompleto
-    ? "font-semibold md:font-bold"
-    : "font-semibold";
 
   const chipBase =
     "inline-flex max-w-full shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight tracking-wide";
 
-  const categoriaDisplay = slotOrSpace(lineaTaxonomia);
   const descDisplay = slotOrSpace(displayCapitalizeSentenceStarts(descTextRaw));
   const coberturaDisplay = slotOrSpace(coberturaTxt);
   const localFisicoComuna = String(p.localFisicoComunaNombre ?? "").trim();
@@ -554,60 +554,19 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     ? formatDireccionCardDisplay(localDireccionClean)
     : "";
 
-  if (process.env.NODE_ENV !== "production") {
-    const nameKey = String(p.nombre ?? "").toLowerCase();
-    const slugKey = String(p.slug ?? "").toLowerCase();
-    const match =
-      nameKey.includes("mecanico") ||
-      nameKey.includes("abrazo") ||
-      slugKey.includes("mecanico") ||
-      slugKey.includes("abrazo");
-    if (match) {
-      // Logs temporales para depuración de la card pedida.
-      // eslint-disable-next-line no-console
-      console.log("[card-debug] raw props", {
-        slug: p.slug,
-        nombre: p.nombre,
-        categoriaNombre: p.categoriaNombre,
-        subcategoriasNombres: p.subcategoriasNombres,
-        subcategoriasSlugs: p.subcategoriasSlugs,
-        resumenLocalesLinea: p.resumenLocalesLinea,
-        localFisicoComunaNombre: p.localFisicoComunaNombre,
-        modalidadesCardBadges: p.modalidadesCardBadges,
-        esFichaCompleta: p.esFichaCompleta,
-        modoVista: p.modoVista,
-      });
-      // eslint-disable-next-line no-console
-      console.log("[card-debug] computed", {
-        lineaTaxonomia,
-        categoriaDisplay,
-        ubicacionesLines,
-        tieneLocalFisico,
-        listadoUiPerfilCompleto,
-        listadoPieDosCtas,
-        estadoPublicacion: p.estadoPublicacion,
-      });
-      if (!String(p.categoriaNombre ?? "").trim() && !(p.subcategoriasNombres?.length || p.subcategoriasSlugs?.length)) {
-        // eslint-disable-next-line no-console
-        console.log("[card-debug] categoria/sub vacías: item no trae taxonomía");
-      }
-      if (ubicacionesLines.length === 0) {
-        // eslint-disable-next-line no-console
-        console.log("[card-debug] dirección vacía: revisar locales/modalidades/plan", {
-          resumenLocalesLinea: p.resumenLocalesLinea,
-          localFisicoComunaNombre: p.localFisicoComunaNombre,
-          tieneLocalFisico,
-          listadoUiPerfilCompleto,
-        });
-      }
-    }
-  }
+  const placeholderSinFotoStyle: CSSProperties | undefined = mostrarFoto
+    ? undefined
+    : listadoUiPerfilCompleto
+      ? PLACEHOLDER_SIN_FOTO_AREA_STYLE
+      : { backgroundColor: "#f1f5f9" };
 
   return (
     <article
-      className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border bg-white ${
-        listadoUiPerfilCompleto ? "border-[#0f766e]" : "border-slate-200 opacity-[0.95]"
-      }`}
+      className={cn(
+        "flex min-h-[500px] min-w-0 flex-col overflow-hidden rounded-2xl border md:h-[520px] md:max-h-[520px] md:min-h-[520px]",
+        listadoUiPerfilCompleto ? "border-[#0f766e] bg-white" : "border-slate-300 bg-slate-50",
+        homeCarousel && "h-full min-h-0",
+      )}
       style={{
         boxShadow: cardShadow,
         transform: hovered ? "translateY(-2px)" : "translateY(0)",
@@ -624,22 +583,18 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
       ) : null}
 
       <div
-        className={`flex min-h-0 min-w-0 flex-1 flex-col ${
-          listadoUiPerfilCompleto
-            ? "bg-white"
-            : vistaBasicaPanel
-              ? "bg-white"
-              : esIntermedio
-                ? "bg-slate-50"
-                : "bg-white"
-        }`}
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col",
+          listadoUiPerfilCompleto ? "bg-white" : "bg-slate-50",
+        )}
       >
-        {/* Imagen: mismo marco con/sin foto (evita cards “sin caja” en la zona superior). */}
+        {/* Imagen: altura fija; no condiciona la altura total de la card. */}
         <div
-          className={`relative w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 ${
-            homeCarousel ? "h-[160px] md:h-44" : "h-[180px] md:h-[160px] xl:h-[150px]"
-          }`}
-          style={mostrarFoto ? undefined : undefined}
+          className={cn(
+            "relative h-[170px] w-full shrink-0 overflow-hidden rounded-xl",
+            mostrarFoto ? "bg-slate-100" : "",
+          )}
+          style={placeholderSinFotoStyle}
         >
           {mostrarFoto ? (
             <>
@@ -693,37 +648,33 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           ) : null}
         </div>
 
-        <div
-          className={`flex min-h-0 min-w-0 flex-1 flex-col ${
-            homeCarousel ? "px-3.5 py-3 md:px-4 md:py-[0.85rem]" : "px-4 py-[0.85rem]"
-          }`}
-        >
-          {/* Cuerpo: crece; reserva footer abajo */}
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
-          <h3
-            className={`m-0 line-clamp-2 min-h-[2.5rem] w-full shrink-0 text-base font-semibold leading-snug ${titleColor}`}
-          >
-            {nombreDisplay}
-          </h3>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col px-4 py-3">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+            <h3
+              className={cn(
+                "m-0 line-clamp-2 min-h-[3.25rem] w-full shrink-0 text-lg font-bold leading-snug",
+                titleColor,
+              )}
+            >
+              {nombreDisplay}
+            </h3>
 
-          <p
-            className="m-0 min-h-[1rem] w-full shrink-0 text-xs font-medium leading-snug text-slate-500"
-            title={lineaTaxonomia.trim() || undefined}
-          >
-            {lineaTaxonomia.trim() ? lineaTaxonomia.trim() : " "}
-          </p>
+            <p
+              className="m-0 line-clamp-1 min-h-[1.25rem] w-full shrink-0 text-xs font-medium leading-snug text-slate-500"
+              title={lineaTaxonomia.trim() || undefined}
+            >
+              {lineaTaxonomia.trim() ? lineaTaxonomia.trim() : "\u00A0"}
+            </p>
 
-          <p
-            className={`m-0 ${descriptionClass} w-full shrink-0 text-sm font-medium leading-relaxed text-slate-700`}
-          >
-            {descDisplay}
-          </p>
+            <p className="m-0 line-clamp-3 min-h-[4.5rem] w-full shrink-0 text-sm font-medium leading-relaxed text-slate-700">
+              {descDisplay}
+            </p>
 
-          <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 text-xs leading-tight text-slate-500">
-            {confianzaTexto || " "}
-          </p>
+            <p className="m-0 hidden min-h-[1.25rem] w-full shrink-0 text-xs leading-tight text-slate-500 md:block">
+              {confianzaTexto || "\u00A0"}
+            </p>
 
-          <div className={`w-full shrink-0 ${locationBlockClass}`}>
+            <div className="flex min-h-[48px] w-full shrink-0 flex-col justify-start gap-0.5">
             {/* Ubicación: siempre 📍 En {comuna base} — {región}; en listado por comuna, “Atiende …” si el negocio no tiene base en la comuna buscada. */}
             {(() => {
               const regComunaBuscada = String(p.fichaContextComunaRegionAbrev ?? "").trim();
@@ -742,7 +693,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                       ? `En ${regBase}`
                       : "";
               const lineaClass =
-                "m-0 min-h-[1.25rem] w-full shrink-0 whitespace-normal break-words text-[13px] font-medium leading-snug text-slate-800";
+                "m-0 line-clamp-1 min-h-[1.25rem] w-full shrink-0 break-words text-[13px] font-medium leading-snug text-slate-800";
               const lineaBaseP =
                 textoEnBaseRegion ? (
                   <p className={lineaClass}>
@@ -766,8 +717,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                       </p>
                     )}
                     {mostrarSegundaAtiende ? (
-                      <p className="m-0 min-h-[1.1rem] w-full shrink-0 text-[13px] font-medium leading-snug text-slate-700">
-                        Atiende {comunaBuscadaDisplay}
+                      <p className="m-0 line-clamp-1 w-full shrink-0 text-[13px] font-medium leading-snug text-slate-700">
+                        Atiende: {comunaBuscadaDisplay}
                         {regComunaBuscada ? ` — ${regComunaBuscada}` : ""}
                       </p>
                     ) : null}
@@ -791,8 +742,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                         Base en {comunaBaseLabel}
                       </p>
                     )}
-                    <p className="m-0 min-h-[1.1rem] w-full shrink-0 text-[13px] font-medium leading-snug text-slate-700">
-                      Atiende {nombreBuscadaTerritorial}
+                    <p className="m-0 line-clamp-1 w-full shrink-0 text-[13px] font-medium leading-snug text-slate-700">
+                      Atiende: {nombreBuscadaTerritorial}
                     </p>
                   </>
                 );
@@ -807,7 +758,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                     {pinUbicacion.primary}
                   </p>
                   {pinUbicacion.secondary ? (
-                    <p className="m-0 hidden md:block min-h-[1rem] w-full shrink-0 truncate text-[11px] leading-tight text-slate-500">
+                    <p className="m-0 line-clamp-1 min-h-[1rem] w-full shrink-0 text-[11px] leading-tight text-slate-500">
                       {pinUbicacion.secondary}
                     </p>
                   ) : null}
@@ -816,16 +767,14 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             })()}
 
             {String(p.listadoNotaDebajoUbicacion ?? "").trim() ? (
-              <p className="m-0 min-h-[1rem] w-full shrink-0 text-xs font-medium leading-snug text-amber-900/85">
+              <p className="m-0 line-clamp-1 w-full shrink-0 text-xs font-medium leading-snug text-amber-900/85">
                 {String(p.listadoNotaDebajoUbicacion).trim()}
               </p>
             ) : null}
 
             {!mostrarUbicacionModoComuna ? (
               <p
-                className={`m-0 w-full shrink-0 text-xs leading-snug text-slate-500 ${
-                  coberturaTxt.trim() ? (homeCarousel ? "line-clamp-1" : "line-clamp-2 md:line-clamp-1") : "line-clamp-1"
-                } min-h-[1rem]`}
+                className="m-0 line-clamp-1 min-h-[1rem] w-full shrink-0 text-xs leading-snug text-slate-500"
                 title={coberturaTxt.trim() || undefined}
               >
                 {coberturaDisplay}
@@ -834,7 +783,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           </div>
 
           <div
-            className="flex min-h-[32px] w-full shrink-0 flex-wrap content-center items-center gap-1.5"
+            className="flex h-[28px] min-h-[28px] max-h-[28px] w-full shrink-0 items-center gap-1.5 overflow-hidden"
             aria-hidden={!showCoberturaStatusRow}
           >
             {showCoberturaStatusRow ? (
@@ -873,7 +822,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           </div>
 
           <div
-            className="hidden md:flex min-h-[26px] max-h-[26px] w-full shrink-0 flex-wrap content-start items-center gap-1 overflow-hidden"
+            className="flex h-[26px] min-h-[26px] max-h-[26px] w-full shrink-0 flex-nowrap items-center gap-1 overflow-hidden"
             aria-label="Forma de atención"
           >
             {modalidadesLimitadas.length > 0 ? (
@@ -906,66 +855,45 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             )}
           </div>
 
-          {/* Bloque: Local físico + dirección (siempre ocupa alto fijo en Home). */}
-          {homeCarousel ? (
-            <div
-              className={`my-1 w-full shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 ${
-                tieneLocalFisico ? "" : "opacity-0"
-              }`}
-              style={{ height: 60 }}
-              aria-hidden={!tieneLocalFisico}
-            >
-              <p className="m-0 flex items-center gap-1.5 text-[12px] font-bold leading-tight text-slate-800">
-                <span aria-hidden>🏪</span>
-                <span>Local físico</span>
-              </p>
-              <p className="m-0 mt-1 flex items-start gap-1.5 text-[13px] leading-tight text-slate-700">
-                <span aria-hidden className="mt-[1px]">
-                  📍
-                </span>
-                <span className="truncate">
-                  {localDireccionDisplay ? localDireccionDisplay : "\u00A0"}
-                </span>
-              </p>
-            </div>
-          ) : tieneLocalFisico ? (
-            <div className="my-1 hidden w-full shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 md:block">
-              <p className="m-0 flex items-center gap-1.5 text-[12px] font-bold leading-tight text-slate-800">
-                <span aria-hidden>🏪</span>
-                <span>Local físico</span>
-              </p>
-              {localDireccionDisplay ? (
-                <p
-                  className="m-0 mt-1 flex items-start gap-1.5 text-[13px] leading-tight text-slate-700"
-                  title={localDireccionDisplay.trim() || undefined}
-                >
-                  <span aria-hidden className="mt-[1px]">
-                    📍
-                  </span>
-                  <span className="truncate">{localDireccionDisplay}</span>
-                </p>
-              ) : null}
-              {ubicacionesExtra > 0 ? (
-                <p className="m-0 mt-1 text-xs font-medium leading-snug text-slate-500">
-                  +{ubicacionesExtra} locales más
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+          <div
+            className={cn(
+              "my-1 flex h-[52px] w-full shrink-0 flex-col justify-center overflow-hidden rounded-lg border border-slate-200 px-2.5 py-1",
+              listadoUiPerfilCompleto ? "bg-slate-50" : "bg-slate-100/80",
+              !tieneLocalFisico && "invisible",
+            )}
+            aria-hidden={!tieneLocalFisico}
+          >
+            <p className="m-0 flex min-h-0 items-center gap-1.5 truncate text-[12px] font-bold leading-tight text-slate-800">
+              <span aria-hidden className="shrink-0">
+                🏪
+              </span>
+              <span className="min-w-0 truncate">
+                Local físico
+                {ubicacionesExtra > 0 ? ` · +${ubicacionesExtra}` : ""}
+              </span>
+            </p>
+            <p className="m-0 mt-0.5 flex min-h-0 items-start gap-1.5 text-[13px] leading-snug text-slate-700">
+              <span aria-hidden className="mt-0.5 shrink-0">
+                📍
+              </span>
+              <span
+                className="line-clamp-2 min-w-0 flex-1 break-words"
+                title={localDireccionDisplay.trim() || undefined}
+              >
+                {localDireccionDisplay || "\u00A0"}
+              </span>
+            </p>
+          </div>
 
           </div>
 
-        {tieneWhatsappValido || puedeVerFichaPublica ? (
         <div
-          className={`mt-auto w-full shrink-0 border-t pt-3 ${
-            listadoUiPerfilCompleto ? "border-slate-300/40" : "border-slate-200"
-          }`}
+          className={cn(
+            "mt-auto w-full shrink-0 border-t pt-4",
+            listadoUiPerfilCompleto ? "border-slate-300/40" : "border-slate-200",
+          )}
         >
-          {/*
-            Perfil completo: WhatsApp + Ver detalles (misma fila que antes).
-            Perfil básico: solo WhatsApp; leyenda + botón con el mismo ancho que cada columna
-            del perfil completo (~50% − mitad del gap), centrados.
-          */}
+          {/* Perfil completo (listadoUiPerfilCompleto): WhatsApp + Ver ficha. Básico: leyenda + solo WhatsApp. */}
           {p.bloquearAccesoFichaPublica ? (
             <div className="flex w-full shrink-0 flex-row items-stretch gap-2">
               {tieneWhatsappValido ? (
@@ -1060,8 +988,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               )}
             </div>
           ) : !listadoUiPerfilCompleto && tieneWhatsappValido ? (
-            <div className="flex w-full flex-col items-center justify-center gap-2">
-              <div className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center md:max-w-[calc(50%-0.25rem)]">
+            <div className="flex w-full flex-col items-stretch justify-center gap-2">
+              <div className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-center">
                 <p className="m-0 text-xs font-semibold leading-snug text-slate-700">
                   Solo contacto por WhatsApp
                 </p>
@@ -1073,7 +1001,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 analyticsSource={analyticsSource}
                 trackingComunaSlug={p.fichaContextComunaSlug ?? null}
                 trackingEmprendedorId={p.emprendedorId ?? null}
-                className="flex w-full shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25 md:max-w-[calc(50%-0.25rem)]"
+                className="flex w-full shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-center text-sm font-extrabold leading-tight text-white shadow-md shadow-green-600/25"
                 style={{ minHeight: 44, height: ACTIONS_H }}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1082,37 +1010,10 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 WhatsApp
               </TrackedCardLink>
             </div>
-          ) : puedeVerFichaPublica ? (
-            <div className="flex min-h-[48px] w-full shrink-0 justify-center">
-              {verDetallesHandler ? (
-                <button
-                  type="button"
-                  onClick={verDetallesHandler}
-                  className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
-                  style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
-                  aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
-                >
-                  {etiquetaVerFicha}
-                </button>
-              ) : (
-                <TrackedCardLink
-                  slug={p.slug}
-                  href={fichaHref}
-                  type="view_ficha"
-                  analyticsSource={analyticsSource}
-                  trackingComunaSlug={p.fichaContextComunaSlug ?? null}
-                  trackingEmprendedorId={p.emprendedorId ?? null}
-                  className="flex w-full max-w-sm min-w-[200px] items-center justify-center rounded-xl border-2 border-teal-600 bg-white text-sm font-extrabold text-teal-900 shadow-md shadow-teal-900/15 transition-colors hover:border-teal-700 hover:bg-teal-50"
-                  style={{ minHeight: ACTIONS_H, height: ACTIONS_H }}
-                  aria-label={`${etiquetaVerFicha}: ${nombreDisplay}`}
-                >
-                  {etiquetaVerFicha}
-                </TrackedCardLink>
-              )}
-            </div>
-          ) : null}
+          ) : (
+            <div className="min-h-[52px] w-full shrink-0" aria-hidden />
+          )}
         </div>
-        ) : null}
         </div>
       </div>
     </article>
