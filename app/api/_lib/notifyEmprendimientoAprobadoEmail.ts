@@ -15,6 +15,14 @@ function emailBasicoValido(raw: string): boolean {
   return t.length > 0 && t.includes("@");
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 export type NotifyEmprendimientoAprobadoEmailResult = {
   fichaPublicaUrl: string | null;
   panelUrl: string | null;
@@ -74,8 +82,13 @@ export async function notifyEmprendimientoAprobadoEmail(
       }
     }
 
-    const formattedNombre = formatNombreEmprendimiento(nombre);
-    const safeNombre = formattedNombre || nombre || "tu negocio";
+    const nombreTrim = s(nombre);
+    const nombreDisplay =
+      formatNombreEmprendimiento(nombreTrim) || nombreTrim;
+    const nombreEscaped = nombreDisplay ? escapeHtml(nombreDisplay) : "";
+    const introLine = nombreDisplay
+      ? `<p style="margin:0 0 18px 0;color:#4b5563;line-height:1.65;font-size:15px;">Tu negocio <strong style="color:#111827;">&ldquo;${nombreEscaped}&rdquo;</strong> ya está publicado en Rey del Dato.</p>`
+      : `<p style="margin:0 0 18px 0;color:#4b5563;line-height:1.65;font-size:15px;">Tu negocio ya está publicado en Rey del Dato.</p>`;
 
     if (!emailBasicoValido(emailTo)) {
       // eslint-disable-next-line no-console
@@ -86,42 +99,62 @@ export async function notifyEmprendimientoAprobadoEmail(
       return { fichaPublicaUrl, panelUrl };
     }
 
-    const panelCta =
-      panelUrl
-        ? `<a href="${panelUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:800;font-size:16px;line-height:1;border-radius:12px;padding:14px 18px;">Editar y mejorar mi perfil</a>`
-        : "";
-    const fichaSec =
+    const panelCta = panelUrl
+      ? `<a href="${panelUrl}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:800;font-size:16px;line-height:1.25;border-radius:12px;padding:16px 20px;">Entrar a mi panel</a>`
+      : "";
+
+    const panelAyuda = `<div style="margin:14px 0 20px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
+      <p style="margin:0 0 8px 0;color:#334155;font-size:14px;font-weight:700;line-height:1.45;">Desde tu panel podrás:</p>
+      <ul style="margin:0;padding:0 0 0 18px;color:#475569;font-size:14px;line-height:1.55;">
+        <li style="margin:0 0 6px 0;">Editar tu información</li>
+        <li style="margin:0 0 6px 0;">Subir fotos</li>
+        <li style="margin:0;">Revisar visitas y contactos</li>
+      </ul>
+    </div>`;
+
+    const fichaSecundaria =
       fichaPublicaUrl
-        ? `<a href="${fichaPublicaUrl}" style="color:#0f766e;text-decoration:underline;">Ver mi ficha</a>`
+        ? `<p style="margin:0 0 22px 0;color:#64748b;font-size:14px;line-height:1.55;">También puedes ver tu ficha pública aquí:<br />
+<a href="${fichaPublicaUrl}" style="color:#0f766e;font-weight:600;text-decoration:underline;">Ver mi ficha pública</a></p>`
         : "";
+
+    const bloqueConsejo = `<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:14px 16px;margin:0 0 4px 0;">
+      <p style="margin:0 0 8px 0;color:#92400e;font-size:14px;font-weight:800;line-height:1.35;">💡 Consejo</p>
+      <p style="margin:0 0 10px 0;color:#78350f;font-size:14px;line-height:1.55;">Los negocios con fotos reales y una descripción clara suelen generar más confianza y recibir más contactos.</p>
+      <ul style="margin:0;padding:0 0 0 18px;color:#78350f;font-size:13px;line-height:1.5;">
+        <li style="margin:0 0 6px 0;">Sube fotos reales de tu trabajo o local.</li>
+        <li style="margin:0;">Mantén tu información actualizada.</li>
+      </ul>
+    </div>`;
+
+    const footerExtra = `<div style="margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb;">
+      <p style="margin:0 0 12px 0;color:#64748b;font-size:13px;line-height:1.55;">Si necesitas ayuda, puedes responder este correo o escribirnos por <a href="https://wa.me/56975949281" style="color:#0f766e;font-weight:600;">WhatsApp</a>.</p>
+      <p style="margin:0 0 10px 0;color:#6b7280;font-size:13px;line-height:1.5;">— Equipo Rey del Dato</p>
+      <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;">
+        <a href="${base}/que-es" style="color:#0f766e;text-decoration:underline;">Qué es Rey del Dato</a>
+        <span style="color:#cbd5e1;"> · </span>
+        <a href="${base}/contacto" style="color:#0f766e;text-decoration:underline;">Contacto</a>
+        <span style="color:#cbd5e1;"> · </span>
+        <a href="${base}/privacidad" style="color:#0f766e;text-decoration:underline;">Política de privacidad</a>
+      </p>
+      <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.45;">© Rey del Dato SpA · RUT 78.403.835-1</p>
+    </div>`;
 
     const html = `<div style="background:#f9fafb;padding:24px;font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#111827;">
   <div style="max-width:560px;margin:0 auto;">
     <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;">
       <div style="font-weight:900;letter-spacing:0.06em;font-size:12px;color:#0f766e;margin-bottom:10px;">REY DEL DATO</div>
-      <h1 style="font-size:20px;line-height:1.3;margin:0 0 10px 0;color:#111827;">🚀 Tu negocio ya está visible</h1>
-
-      <p style="margin:0 0 12px 0;color:#4b5563;line-height:1.6;">Tu negocio <strong style="color:#111827;">“${safeNombre}”</strong> ya está publicado en Rey del Dato.</p>
-
-      <p style="margin:0 0 16px 0;color:#4b5563;line-height:1.6;"><strong style="color:#111827;">Qué pasa ahora:</strong> desde ahora, personas de tu comuna pueden encontrarte y contactarte directamente por WhatsApp.</p>
-
-      <p style="margin:0 0 12px 0;color:#111827;font-weight:800;">Qué hacer ahora</p>
-      <div style="margin:0 0 14px 0;">${panelCta}</div>
-      <p style="margin:0 0 0 0;color:#4b5563;line-height:1.6;">También puedes ver tu ficha pública: ${fichaSec}</p>
-
-      <div style="border-top:1px solid #e5e7eb;margin:18px 0;"></div>
-
-      <p style="margin:0 0 10px 0;color:#111827;font-weight:800;">📈 Importante</p>
-      <p style="margin:0 0 12px 0;color:#4b5563;line-height:1.6;">Los perfiles con fotos y descripción completa reciben más contactos.</p>
-      <ul style="margin:0 0 12px 18px;padding:0;color:#4b5563;line-height:1.6;">
-        <li>Sube fotos</li>
-        <li>Mejora tu descripción</li>
-        <li>Completa tu información</li>
-      </ul>
-      <p style="margin:0;color:#4b5563;line-height:1.6;">Mientras más completo tu perfil, más clientes generas.</p>
+      <h1 style="font-size:20px;line-height:1.3;margin:0 0 14px 0;color:#111827;">🚀 Tu negocio ya está visible</h1>
+      ${introLine}
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:16px 18px;margin:0 0 20px 0;">
+        <p style="margin:0 0 8px 0;color:#14532d;font-size:15px;font-weight:800;line-height:1.35;">¿Qué pasa ahora?</p>
+        <p style="margin:0;color:#374151;font-size:14px;line-height:1.55;">Desde este momento, las personas de tu comuna pueden encontrarte y contactarte directamente por WhatsApp.</p>
+      </div>
+      ${panelCta ? `<div style="margin:0 0 0 0;">${panelCta}</div>${panelAyuda}` : ""}
+      ${fichaSecundaria}
+      ${bloqueConsejo}
+      ${footerExtra}
     </div>
-
-    <p style="margin:14px 0 0 0;color:#6b7280;font-size:13px;line-height:1.5;">— Equipo Rey del Dato</p>
   </div>
 </div>`;
 
@@ -129,7 +162,7 @@ export async function notifyEmprendimientoAprobadoEmail(
     console.log("[email][aprobacion] intentando enviar", {
       emprendedorId,
       email: emailTo,
-      nombre: safeNombre,
+      nombre: nombreDisplay || null,
     });
 
     const enviadoOk = await sendEmail({
@@ -143,14 +176,14 @@ export async function notifyEmprendimientoAprobadoEmail(
       console.log("[email][aprobacion] enviado", {
         emprendedorId,
         email: emailTo,
-        nombre: safeNombre,
+        nombre: nombreDisplay || null,
       });
     } else {
       // eslint-disable-next-line no-console
       console.error("[email][aprobacion] fallo", {
         emprendedorId,
         email: emailTo,
-        nombre: safeNombre,
+        nombre: nombreDisplay || null,
         error: "sendEmail no confirmó envío (omitido, API o error Resend; ver logs [email])",
       });
     }

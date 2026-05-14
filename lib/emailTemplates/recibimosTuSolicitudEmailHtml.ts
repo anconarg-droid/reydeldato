@@ -19,18 +19,41 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** Capitaliza cada palabra (y segmentos con guion) para mostrar el nombre en el correo, p. ej. `la espuela` → `La Espuela`. */
+function nombreEmprendimientoTituloEsCl(raw: string): string {
+  const t = raw.trim();
+  if (!t) return "";
+  const out = t
+    .split(/\s+/)
+    .map((word) =>
+      word
+        .split("-")
+        .map((part) => {
+          const lower = part.toLocaleLowerCase("es-CL");
+          if (!lower) return part;
+          return (
+            lower.charAt(0).toLocaleUpperCase("es-CL") + lower.slice(1)
+          );
+        })
+        .join("-")
+    )
+    .join(" ");
+  return out.trim() || t;
+}
+
 export function recibimosTuSolicitudEmailHtml(
   options?: RecibimosTuSolicitudEmailOptions | null
 ): string {
   const nameRaw = options?.nombreEmprendimiento;
   const nameTrim =
     typeof nameRaw === "string" ? nameRaw.trim() : "";
+  const nameDisplay = nameTrim ? nombreEmprendimientoTituloEsCl(nameTrim) : "";
   const introMarginBottom = nameTrim ? "16px" : "26px";
 
   const nombreBloque = nameTrim
     ? `<div style="margin:0 auto 20px;max-width:420px;text-align:center;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;">
         <p style="margin:0;color:#64748b;font-size:12px;font-weight:600;line-height:1.45;letter-spacing:0.01em;">Solicitud recibida para:</p>
-        <p style="margin:8px 0 0;color:#14532d;font-size:15px;font-weight:800;line-height:1.35;">${escapeHtml(nameTrim)}</p>
+        <p style="margin:8px 0 0;color:#14532d;font-size:15px;font-weight:800;line-height:1.35;">${escapeHtml(nameDisplay)}</p>
       </div>`
     : "";
 
