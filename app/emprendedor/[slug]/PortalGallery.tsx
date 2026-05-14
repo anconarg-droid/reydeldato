@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   getPlaceholderSinFotoSub,
   getPlaceholderSinFotoTitulo,
@@ -99,6 +99,18 @@ export function puntuacionUrlHero(
   return s;
 }
 
+/** URLs no vacías que pueden mostrarse como imagen (excluye placeholders / basura). */
+export function esUrlFichaGaleriaValida(raw: string): boolean {
+  const u = String(raw || "").trim();
+  if (!u) return false;
+  const lower = u.toLowerCase();
+  if (lower === "null" || lower === "undefined" || lower === "none") return false;
+  if (/^https?:\/\//i.test(u)) return true;
+  if (u.startsWith("//") && u.length > 4) return true;
+  if (u.startsWith("/") && u.length > 2 && !u.startsWith("//")) return true;
+  return false;
+}
+
 /** Ordena candidatos: mejor score primero; empate → orden original. */
 export function ordenFotosParaHero(fotoPrincipal: string, galeria: string[]): string[] {
   const ordenados: string[] = [];
@@ -106,7 +118,7 @@ export function ordenFotosParaHero(fotoPrincipal: string, galeria: string[]): st
 
   const push = (raw: string) => {
     const t = String(raw || "").trim();
-    if (!t || seen.has(t)) return;
+    if (!t || !esUrlFichaGaleriaValida(t) || seen.has(t)) return;
     seen.add(t);
     ordenados.push(t);
   };
@@ -155,14 +167,12 @@ export default function PortalGallery({
   const galFirma = Array.isArray(galeria) ? galeria.join("\u0001") : "";
 
   const { fotos, tieneImagenes } = useMemo(() => {
-    const fp = String(fotoPrincipal || "").trim();
+    const fpRaw = String(fotoPrincipal || "").trim();
+    const fp = esUrlFichaGaleriaValida(fpRaw) ? fpRaw : "";
     const gal = (galeria || [])
       .map((u) => String(u || "").trim())
-      .filter(Boolean);
-    const tiene = !!(
-      (fotoPrincipal && String(fotoPrincipal).trim()) ||
-      gal.length > 0
-    );
+      .filter((u) => esUrlFichaGaleriaValida(u));
+    const tiene = Boolean(fp || gal.length > 0);
     return {
       fotos: ordenFotosParaHero(fp, gal),
       tieneImagenes: tiene,
@@ -190,12 +200,40 @@ export default function PortalGallery({
     setIndex((i) => (i - 1 + fotos.length) % fotos.length);
   }
 
+  const nFotos = fotos.length;
   const leyendaGaleria =
-    !sinFotos && fotos.length > 1
-      ? `Galería · ${fotos.length} fotos`
+    !sinFotos && nFotos > 1
+      ? `Galería · ${nFotos} fotos`
       : !sinFotos
         ? "Foto principal"
         : "";
+
+  const thumbStripRef = useRef<HTMLDivElement | null>(null);
+  const [thumbStripNeedsScroll, setThumbStripNeedsScroll] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!mostrarMiniaturasDebajo || nFotos <= 1) {
+      setThumbStripNeedsScroll(false);
+      return;
+    }
+    const el = thumbStripRef.current;
+    if (!el) return;
+    const measure = () => {
+      setThumbStripNeedsScroll(el.scrollWidth > el.clientWidth + 2);
+    };
+    measure();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [mostrarMiniaturasDebajo, nFotos, fotosFirma]);
+
+  const mostrarAyudaDeslizaFotos =
+    mostrarMiniaturasDebajo &&
+    (thumbStripNeedsScroll || nFotos > 3);
 
   const heroFrameStyle: CSSProperties = {
     position: "relative",
@@ -372,38 +410,57 @@ export default function PortalGallery({
           </div>
 
           {mostrarMiniaturasDebajo ? (
-            <div
-              className="flex max-h-[108px] min-h-0 shrink-0 flex-row gap-2 overflow-x-auto overflow-y-hidden border-t border-slate-800 bg-slate-900/98 p-2.5 lg:max-h-none lg:w-[104px] lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:border-l lg:border-t-0 lg:p-2"
-              style={{ scrollbarWidth: "thin" }}
-              role="list"
-              aria-label="Miniaturas de la galería"
-            >
-              {fotos.map((url, i) => (
-                <button
-                  key={`${i}-${url.slice(0, 48)}`}
-                  type="button"
-                  role="listitem"
-                  aria-label={`Mostrar foto ${i + 1} de ${fotos.length}`}
-                  aria-current={i === index ? "true" : undefined}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIndex(i);
-                  }}
-                  className={
-                    i === index
-                      ? "shrink-0 overflow-hidden rounded-lg border-2 border-emerald-400 bg-slate-800 p-0 shadow-[0_0_0_2px_rgba(52,211,153,0.35)] ring-1 ring-white/10 lg:aspect-[4/3] lg:w-full lg:max-w-none lg:shrink-0 h-[72px] w-[96px] lg:h-auto"
-                      : "shrink-0 overflow-hidden rounded-lg border border-white/15 bg-slate-800/80 p-0 opacity-85 transition-opacity hover:border-white/30 hover:opacity-100 lg:aspect-[4/3] lg:w-full lg:max-w-none lg:shrink-0 h-[72px] w-[96px] lg:h-auto"
-                  }
+            <div className="min-w-0 shrink-0 border-t border-slate-800 bg-slate-900/98 lg:flex lg:w-[104px] lg:flex-col lg:border-l lg:border-t-0">
+              {mostrarAyudaDeslizaFotos ? (
+                <p
+                  className="mb-0 bg-slate-900/98 px-3 py-2 text-center text-xs font-medium text-slate-400 md:hidden"
+                  aria-hidden
                 >
-                  <img
-                    src={url}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover object-center"
-                    style={imgThumbCover}
-                  />
-                </button>
-              ))}
+                  Desliza para ver más fotos →
+                </p>
+              ) : null}
+              <div
+                className={
+                  thumbStripNeedsScroll
+                    ? "relative min-h-0 flex-1 max-lg:after:pointer-events-none max-lg:after:absolute max-lg:after:right-0 max-lg:after:top-0 max-lg:after:z-[1] max-lg:after:h-full max-lg:after:w-8 max-lg:after:bg-gradient-to-l max-lg:after:from-slate-950 max-lg:after:to-transparent lg:after:hidden"
+                    : "min-h-0 flex-1"
+                }
+              >
+                <div
+                  ref={thumbStripRef}
+                  className="flex max-h-[108px] min-h-0 shrink-0 flex-row gap-2 overflow-x-auto overflow-y-hidden overscroll-x-contain p-2.5 [scrollbar-width:thin] max-lg:snap-x max-lg:snap-mandatory max-lg:scroll-smooth lg:max-h-none lg:w-full lg:flex-1 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:p-2 lg:snap-none"
+                  style={{ WebkitOverflowScrolling: "touch" }}
+                  role="list"
+                  aria-label="Miniaturas de la galería"
+                >
+                  {fotos.map((url, i) => (
+                    <button
+                      key={`${i}-${url.slice(0, 48)}`}
+                      type="button"
+                      role="listitem"
+                      aria-label={`Mostrar foto ${i + 1} de ${fotos.length}`}
+                      aria-current={i === index ? "true" : undefined}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIndex(i);
+                      }}
+                      className={
+                        i === index
+                          ? "max-lg:snap-start shrink-0 overflow-hidden rounded-lg border-2 border-emerald-400 bg-slate-800 p-0 shadow-[0_0_0_2px_rgba(52,211,153,0.35)] ring-1 ring-white/10 lg:aspect-[4/3] lg:w-full lg:max-w-none lg:shrink-0 h-[72px] w-[96px] lg:h-auto"
+                          : "max-lg:snap-start shrink-0 overflow-hidden rounded-lg border border-white/15 bg-slate-800/80 p-0 opacity-85 transition-opacity hover:border-white/30 hover:opacity-100 lg:aspect-[4/3] lg:w-full lg:max-w-none lg:shrink-0 h-[72px] w-[96px] lg:h-auto"
+                      }
+                    >
+                      <img
+                        src={url}
+                        alt=""
+                        loading="lazy"
+                        className="h-full w-full object-cover object-center"
+                        style={imgThumbCover}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : null}
         </div>

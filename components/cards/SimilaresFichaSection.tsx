@@ -72,14 +72,20 @@ export default function SimilaresFichaSection({
           "Negocios que pueden atenderte en tu comuna u opciones parecidas en el rubro."}
       </p>
 
+      {items.length > 1 ? (
+        <p className="mb-3 mt-1 text-sm font-medium text-slate-500 md:hidden">
+          Desliza para ver más negocios →
+        </p>
+      ) : null}
+
       <div
-        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [-webkit-overflow-scrolling:touch] sm:gap-4"
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2 [-webkit-overflow-scrolling:touch] sm:gap-4 md:snap-none"
         style={{ alignItems: "stretch" }}
       >
         {items.map((n, i) => (
           <div
             key={n.slug}
-            className="snap-start min-w-0 flex-none w-[200px] sm:w-[220px] lg:w-[200px]"
+            className="w-[min(186px,calc(100vw-4.25rem))] flex-none snap-start min-w-0 sm:w-[220px] lg:w-[200px]"
           >
             <SimilarFichaCard
               item={n}

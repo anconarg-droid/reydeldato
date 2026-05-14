@@ -9,6 +9,7 @@ import {
   getTransferenciaBancoUi,
   montoExactoDisplayClp,
   montoExactoTransferencia,
+  transferenciaBancoEnvCompleto,
 } from "@/lib/panelPlanesTransferencia";
 import {
   ORDEN_TARJETAS_PLANES,
@@ -167,10 +168,7 @@ const allowClientPlanActivate =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_PANEL_ALLOW_CLIENT_ACTIVATE === "true";
 
-const transferenciaDisponible =
-  Boolean(process.env.NEXT_PUBLIC_TRANSFER_BANK_NAME) &&
-  Boolean(process.env.NEXT_PUBLIC_TRANSFER_ACCOUNT_NUMBER) &&
-  Boolean(process.env.NEXT_PUBLIC_TRANSFER_EMAIL);
+const transferenciaDisponible = transferenciaBancoEnvCompleto();
 
 export default function PlanesPanelClient({
   id,
@@ -1336,8 +1334,8 @@ export default function PlanesPanelClient({
                       ? "Ocultar datos de transferencia"
                       : "Pagar por transferencia"}
                   </button>
-                  <p className="w-full text-center text-xs text-slate-600 md:text-right">
-                    Validación manual. Puede tardar algunas horas.
+                  <p className="w-full text-center text-xs text-slate-500 md:text-right">
+                    La activación por transferencia puede tardar algunas horas.
                   </p>
                 </div>
                 <input
@@ -1358,61 +1356,78 @@ export default function PlanesPanelClient({
         {transferenciaDisponible && transferenciaExpanded && !planProgramado ? (
           <div className="mt-4 border-t border-slate-100 pt-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm">
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Transfiere el monto exacto y sube tu comprobante. Revisaremos el pago antes de activar
-                el plan.
-              </p>
-              <p className="mt-4 font-bold text-gray-900">Transferencia bancaria</p>
-              <dl className="mt-2 space-y-1.5 text-slate-700">
-                <div className="flex flex-wrap gap-x-2 gap-y-0">
-                  <dt className="shrink-0 font-medium text-slate-600">Banco</dt>
-                  <dd className="min-w-0">{transferenciaUi.banco}</dd>
-                </div>
-                <div className="flex flex-wrap gap-x-2 gap-y-0">
-                  <dt className="shrink-0 font-medium text-slate-600">Cuenta</dt>
-                  <dd className="min-w-0">
-                    {transferenciaUi.tipoCuenta} {transferenciaUi.numeroCuenta}
-                  </dd>
-                </div>
-                <div className="flex flex-wrap gap-x-2 gap-y-0">
-                  <dt className="shrink-0 font-medium text-slate-600">Rut</dt>
-                  <dd className="min-w-0 tabular-nums">{transferenciaUi.rut}</dd>
-                </div>
-                <div className="flex flex-wrap gap-x-2 gap-y-0">
-                  <dt className="shrink-0 font-medium text-slate-600">Correo</dt>
-                  <dd className="min-w-0 break-all">{transferenciaUi.correo}</dd>
-                </div>
-                <div className="flex flex-wrap gap-x-2 gap-y-0">
-                  <dt className="shrink-0 font-medium text-slate-600">Monto</dt>
-                  <dd className="min-w-0 tabular-nums">{montoTransferSegunPlan}</dd>
-                </div>
-                <div className="flex flex-wrap gap-x-2 gap-y-0">
-                  <dt className="shrink-0 font-medium text-slate-600">Referencia</dt>
-                  <dd className="min-w-0 font-mono text-[0.8rem]">
-                    {transferBusy && !pagoTransfer?.referencia
-                      ? "Generando referencia…"
-                      : pagoTransfer?.referencia || "—"}
-                  </dd>
-                </div>
-              </dl>
-              <button
-                type="button"
-                disabled={
-                  transferBusy ||
-                  !pagoTransfer?.id ||
-                  !!pagoTransfer?.comprobanteUrl
-                }
-                onClick={() => transferFileRef.current?.click()}
-                className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
-              >
-                {pagoTransfer?.comprobanteUrl
-                  ? "Comprobante recibido"
-                  : transferBusy && !pagoTransfer?.referencia
-                    ? "Generando referencia…"
-                    : transferBusy && pagoTransfer?.referencia
-                      ? "Procesando…"
-                      : "Subir comprobante"}
-              </button>
+              {!transferenciaUi.configuracionCompleta ? (
+                <p className="m-0 text-sm font-semibold text-amber-900">
+                  Datos de transferencia no configurados.
+                </p>
+              ) : (
+                <>
+                  <p className="m-0 text-xs text-slate-600 leading-relaxed">
+                    Transfiere el monto exacto y sube tu comprobante. Revisaremos el pago antes de
+                    activar el plan.
+                  </p>
+                  <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+                    La activación por transferencia puede tardar algunas horas.
+                  </p>
+                  <p className="mt-4 font-bold text-gray-900">Transferencia bancaria</p>
+                  <dl className="mt-2 space-y-1.5 text-slate-700">
+                    <div className="flex flex-wrap gap-x-2 gap-y-0">
+                      <dt className="shrink-0 font-medium text-slate-600">Titular</dt>
+                      <dd className="min-w-0">{transferenciaUi.titular}</dd>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0">
+                      <dt className="shrink-0 font-medium text-slate-600">RUT</dt>
+                      <dd className="min-w-0 tabular-nums">{transferenciaUi.rut}</dd>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0">
+                      <dt className="shrink-0 font-medium text-slate-600">Banco</dt>
+                      <dd className="min-w-0">{transferenciaUi.banco}</dd>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0">
+                      <dt className="shrink-0 font-medium text-slate-600">Tipo de cuenta</dt>
+                      <dd className="min-w-0">{transferenciaUi.tipoCuenta}</dd>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0">
+                      <dt className="shrink-0 font-medium text-slate-600">N° cuenta</dt>
+                      <dd className="min-w-0 tabular-nums">{transferenciaUi.numeroCuenta}</dd>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0">
+                      <dt className="shrink-0 font-medium text-slate-600">Correo</dt>
+                      <dd className="min-w-0 break-all">{transferenciaUi.correo}</dd>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0">
+                      <dt className="shrink-0 font-medium text-slate-600">Monto</dt>
+                      <dd className="min-w-0 tabular-nums">{montoTransferSegunPlan}</dd>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0">
+                      <dt className="shrink-0 font-medium text-slate-600">Referencia</dt>
+                      <dd className="min-w-0 font-mono text-[0.8rem]">
+                        {transferBusy && !pagoTransfer?.referencia
+                          ? "Generando referencia…"
+                          : pagoTransfer?.referencia || "—"}
+                      </dd>
+                    </div>
+                  </dl>
+                  <button
+                    type="button"
+                    disabled={
+                      transferBusy ||
+                      !pagoTransfer?.id ||
+                      !!pagoTransfer?.comprobanteUrl
+                    }
+                    onClick={() => transferFileRef.current?.click()}
+                    className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
+                  >
+                    {pagoTransfer?.comprobanteUrl
+                      ? "Comprobante recibido"
+                      : transferBusy && !pagoTransfer?.referencia
+                        ? "Generando referencia…"
+                        : transferBusy && pagoTransfer?.referencia
+                          ? "Procesando…"
+                          : "Subir comprobante"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ) : null}
