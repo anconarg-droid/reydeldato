@@ -48,6 +48,9 @@ type Props = {
   regiones: Region[];
   /** `id` en la URL o desde el servidor; se valida o se reemplaza por un borrador nuevo. */
   initialPostulacionId?: string | null;
+  /** Desde `/publicar?...&edicion_basica=1` (panel): id de emprendedor publicado. */
+  initialEdicionBasicaEmprendedorId?: string | null;
+  initialEdicionBasicaAccessToken?: string | null;
   /** Si true, no hace `router.replace` a `/publicar?id=` (formulario embebido en la home). */
   embedOnHome?: boolean;
 };
@@ -250,9 +253,14 @@ type FetchDraftOutcome =
   | { kind: "fail"; message: string };
 
 /** Lee borrador existente para hidratar formulario y detectar fase (borrador vs revisión). */
-async function fetchDraftById(id: string): Promise<FetchDraftOutcome> {
+async function fetchDraftById(
+  id: string,
+  edicionBasica: boolean
+): Promise<FetchDraftOutcome> {
   try {
-    const res = await fetch(publicarBorradorByIdPath(id), { method: "GET" });
+    const res = await fetch(publicarBorradorByIdPath(id, { edicionBasica }), {
+      method: "GET",
+    });
     let data: Record<string, unknown> = {};
     try {
       data = (await res.json()) as Record<string, unknown>;
@@ -340,6 +348,8 @@ export default function PublicarSimpleClient({
   comunas,
   regiones,
   initialPostulacionId = null,
+  initialEdicionBasicaEmprendedorId = null,
+  initialEdicionBasicaAccessToken = null,
   embedOnHome = false,
 }: Props) {
   const mainShellStyle: CSSProperties = embedOnHome
@@ -365,6 +375,7 @@ export default function PublicarSimpleClient({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [edicionBasicaRevisionOk, setEdicionBasicaRevisionOk] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [bootstrapPhase, setBootstrapPhase] = useState<BootstrapPhase>("loading");
@@ -439,6 +450,19 @@ export default function PublicarSimpleClient({
   const idEnUrl = s(searchParams.get("id"));
   const effectiveUrlId = idEnUrl;
   const fromServer = s(initialPostulacionId);
+  const edicionBasicaMode = useMemo(() => {
+    const fromQuery = isEdicionBasicaQuery(searchParams.get("edicion_basica"));
+    return (
+      fromQuery ||
+      Boolean(s(initialEdicionBasicaEmprendedorId)) ||
+      Boolean(s(initialEdicionBasicaAccessToken))
+    );
+  }, [
+    searchParams,
+    initialEdicionBasicaEmprendedorId,
+    initialEdicionBasicaAccessToken,
+  ]);
+
   const draftIdCandidate =
     pendingCandidateId || effectiveUrlId || fromServer;
   const comunaSlugById = useMemo(() => {
@@ -506,7 +530,7 @@ export default function PublicarSimpleClient({
 
       try {
         if (candidate) {
-          const outcome = await fetchDraftById(candidate);
+          const outcome = await fetchDraftById(candidate, edicionBasicaMode);
           if (cancelled) return;
           if (outcome.kind === "fail") {
             bootstrappedKeyRef.current = null;
@@ -576,6 +600,9 @@ export default function PublicarSimpleClient({
             if (!embedOnHome && effectiveUrlId !== canonicalId) {
               const qs = new URLSearchParams(searchParams.toString());
               qs.set("id", canonicalId);
+              if (edicionBasicaMode && !isEdicionBasicaQuery(qs.get("edicion_basica"))) {
+                qs.set("edicion_basica", "1");
+              }
               router.replace(`/publicar?${qs.toString()}`, { scroll: false });
             }
             setServerError("");
@@ -627,7 +654,7 @@ export default function PublicarSimpleClient({
     };
     /* router estable; no incluir en deps (re-disparaba bootstrap). */
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftIdCandidate, bootstrapRetryNonce, comunaSlugById, embedOnHome]);
+  }, [draftIdCandidate, bootstrapRetryNonce, comunaSlugById, embedOnHome, edicionBasicaMode]);
 
   useEffect(() => {
     setHydrated(true);
@@ -654,11 +681,14 @@ export default function PublicarSimpleClient({
     setSuccessFotoUploading(true);
     try {
       const url = await uploadFileToLocalApi(file, "postulaciones/foto-principal");
-      const res = await fetch(publicarBorradorByIdPath(id), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ foto_principal_url: url }),
-      });
+      const res = await fetch(
+        publicarBorradorByIdPath(id, { edicionBasica: edicionBasicaMode }),
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ foto_principal_url: url }),
+        }
+      );
       let data: Record<string, unknown> = {};
       try {
         data = (await res.json()) as Record<string, unknown>;
@@ -696,7 +726,7 @@ export default function PublicarSimpleClient({
     } finally {
       setSuccessFotoUploading(false);
     }
-  }, [draftId]);
+  }, [draftId, edicionBasicaMode]);
 
   function onSuccessFotoInputChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -1032,9 +1062,11 @@ export default function PublicarSimpleClient({
         "Selecciona la comuna base para definir tu región de cobertura.";
     }
 
-    if (!form.aceptaTerminosPrivacidad) {
-      nextErrors.aceptaTerminosPrivacidad =
-        "Debes aceptar los Términos y Condiciones y la Política de Privacidad.";
+    if (!edicionBasicaMode) {
+      if (!form.aceptaTerminosPrivacidad) {
+        nextErrors.aceptaTerminosPrivacidad =
+          "Debes aceptar los Términos y Condiciones y la Política de Privacidad.";
+      }
     }
 
     const valido = Object.keys(nextErrors).length === 0;
@@ -1087,7 +1119,9 @@ export default function PublicarSimpleClient({
     if (form.modalidades.length) payload.modalidades_atencion = form.modalidades;
 
     try {
-      const res = await fetch(publicarBorradorByIdPath(currentDraftId), {
+      const res = await fetch(
+        publicarBorradorByIdPath(currentDraftId, { edicionBasica: edicionBasicaMode }),
+        {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -1137,7 +1171,7 @@ export default function PublicarSimpleClient({
         );
       }
     }
-  }, [form, emailNormalizado, whatsappValido, whatsappNormalizado]);
+  }, [form, emailNormalizado, whatsappValido, whatsappNormalizado, edicionBasicaMode]);
 
   useEffect(() => {
     if (bootstrapPhase !== "ready") return;
@@ -1210,13 +1244,16 @@ export default function PublicarSimpleClient({
           : {}),
       };
 
-      const patchRes = await fetch(publicarBorradorByIdPath(currentDraftId), {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(patchPayload),
-      });
+      const patchRes = await fetch(
+        publicarBorradorByIdPath(currentDraftId, { edicionBasica: edicionBasicaMode }),
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(patchPayload),
+        }
+      );
 
       let patchData: Record<string, unknown> = {};
       try {
@@ -1249,6 +1286,15 @@ export default function PublicarSimpleClient({
             s(patchData.error) ||
             "No se pudo actualizar la postulación."
         );
+        return;
+      }
+
+      if (edicionBasicaMode) {
+        identifyPosthogUser(emailNormalizado);
+        capturePosthogEvent("edicion_basica_enviada_revision");
+        setServerError("");
+        setAutosaveBaseline(cloneSimpleForm(form));
+        setEdicionBasicaRevisionOk(true);
         return;
       }
 
@@ -1390,16 +1436,54 @@ export default function PublicarSimpleClient({
       <section style={contentSectionStyle}>
         {bootstrapPhase === "ready" ? (
           <>
-            <PasoInformacionBasica
-              form={formForPaso}
-              errors={errors}
-              setField={setPasoField}
-              submitForm={() => void submitForm()}
-              saving={saving}
-              comunas={comunas}
-              regiones={regiones}
-              showIntro={false}
-            />
+            {edicionBasicaRevisionOk ? (
+              <div
+                style={{
+                  maxWidth: 560,
+                  margin: "0 auto 24px",
+                  padding: "20px 22px",
+                  borderRadius: 16,
+                  background: "#ecfdf5",
+                  border: "1px solid #6ee7b7",
+                  color: "#065f46",
+                  fontWeight: 700,
+                  lineHeight: 1.55,
+                  fontSize: 15,
+                }}
+              >
+                <p style={{ margin: "0 0 12px" }}>
+                  Tus cambios fueron enviados a revisión. Mientras revisamos la
+                  actualización, tu ficha seguirá publicada con la información anterior.
+                </p>
+                <Link
+                  href="/panel"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    fontWeight: 800,
+                    color: "#0f766e",
+                    textDecoration: "underline",
+                    textUnderlineOffset: 3,
+                  }}
+                >
+                  Volver al panel
+                </Link>
+              </div>
+            ) : (
+              <PasoInformacionBasica
+                form={formForPaso}
+                errors={errors}
+                setField={setPasoField}
+                submitForm={() => void submitForm()}
+                saving={saving}
+                comunas={comunas}
+                regiones={regiones}
+                showIntro={false}
+                variant={
+                  edicionBasicaMode ? "edicion_basica_publicado" : "default"
+                }
+              />
+            )}
           </>
         ) : (
           <PublicarFormLoadingPlaceholder

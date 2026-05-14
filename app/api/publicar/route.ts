@@ -73,7 +73,7 @@ async function resolveRegionSlugFromComunaId(
     .maybeSingle();
 
   if (comunaError) {
-    throw new Error(`Error obteniendo regi?n de comuna: ${comunaError.message}`);
+    throw new Error(`Error obteniendo región de comuna: ${comunaError.message}`);
   }
 
   const rid = (comuna as { region_id?: unknown } | null)?.region_id;
@@ -93,7 +93,7 @@ async function resolveRegionSlugFromComunaId(
     .maybeSingle();
 
   if (regionError) {
-    throw new Error(`Error obteniendo slug de regi?n: ${regionError.message}`);
+    throw new Error(`Error obteniendo slug de región: ${regionError.message}`);
   }
 
   return region && typeof (region as { slug?: unknown }).slug === "string"
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
 
     if (!draft) {
       return NextResponse.json(
-        { ok: false, error: "Postulaci?n no encontrada" },
+        { ok: false, error: "Postulación no encontrada" },
         { status: 404 }
       );
     }
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
 
     if (s(row.estado).toLowerCase() === "aprobada") {
       return NextResponse.json(
-        { ok: false, error: "Esta postulaci?n ya fue aprobada" },
+        { ok: false, error: "Esta postulación ya fue aprobada" },
         { status: 400 }
       );
     }
@@ -211,14 +211,14 @@ export async function POST(req: NextRequest) {
 
     if (comunaBaseId === null) {
       return NextResponse.json(
-        { ok: false, error: "Falta comuna_base_id v?lido" },
+        { ok: false, error: "Falta comuna_base_id válido" },
         { status: 400 }
       );
     }
 
     if (!coberturaTipo) {
       return NextResponse.json(
-        { ok: false, error: "Falta cobertura_tipo v?lido" },
+        { ok: false, error: "Falta cobertura_tipo válido" },
         { status: 400 }
       );
     }

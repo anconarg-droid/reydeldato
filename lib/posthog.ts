@@ -34,7 +34,8 @@ export type PublicacionFunnelEvent =
   | "click_publicar_home"
   | "inicio_publicacion"
   | "paso1_completado"
-  | "publicacion_exitosa";
+  | "publicacion_exitosa"
+  | "edicion_basica_enviada_revision";
 
 export function capturePosthogEvent(
   event: PublicacionFunnelEvent,

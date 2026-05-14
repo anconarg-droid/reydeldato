@@ -8,8 +8,15 @@ export function publicarBorradorByTokenPath(token: string): string {
   return `${PUBLICAR_BORRADOR_PATH}/${encodeURIComponent(t)}`;
 }
 
-export function publicarBorradorByIdPath(id: string): string {
+export function publicarBorradorByIdPath(
+  id: string,
+  opts?: { edicionBasica?: boolean }
+): string {
   const t = String(id ?? "").trim();
   if (!t) return PUBLICAR_BORRADOR_PATH;
-  return `${PUBLICAR_BORRADOR_PATH}/${encodeURIComponent(t)}`;
+  const base = `${PUBLICAR_BORRADOR_PATH}/${encodeURIComponent(t)}`;
+  if (opts?.edicionBasica) {
+    return `${base}?edicion_basica=1`;
+  }
+  return base;
 }

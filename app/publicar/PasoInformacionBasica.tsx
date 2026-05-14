@@ -50,6 +50,7 @@ export default function PasoInformacionBasica({
   regiones,
   showIntro = true,
   saving = false,
+  variant = "default",
 }: {
   form: FormData;
   errors: Record<string, string>;
@@ -61,6 +62,8 @@ export default function PasoInformacionBasica({
   showIntro?: boolean;
   /** Envío final (flujo simple): muestra spinner sin cambiar el texto del botón. */
   saving?: boolean;
+  /** Edición de datos básicos de ficha ya publicada (cambios van a revisión). */
+  variant?: "default" | "edicion_basica_publicado";
 }) {
   const MAX_COMUNAS_VARIAS = 8;
 
@@ -439,9 +442,11 @@ export default function PasoInformacionBasica({
     comunas,
   ]);
 
+  const esEdicionBasicaPublicado = variant === "edicion_basica_publicado";
+
   return (
     <div style={cardStyle}>
-      {showIntro ? (
+      {showIntro && !esEdicionBasicaPublicado ? (
         <>
           <h2 style={titleStyle}>Crea tu ficha básica</h2>
 
@@ -451,6 +456,16 @@ export default function PasoInformacionBasica({
             más detalles para mejorar tu ficha.
           </div>
         </>
+      ) : null}
+
+      {esEdicionBasicaPublicado ? (
+        <div style={{ marginBottom: 22 }}>
+          <h2 style={titleStyle}>Editar datos básicos</h2>
+          <div style={noticeStyle}>
+            Podés modificar estos datos. Los cambios quedarán pendientes de revisión
+            antes de publicarse en tu ficha.
+          </div>
+        </div>
       ) : null}
 
       <div style={sectionTitleStyle}>Lo esencial</div>
@@ -1029,61 +1044,64 @@ export default function PasoInformacionBasica({
 
       <div className={footerOuterClass}>
         <div className={footerTermsClass}>
-          <label
-            htmlFor="acepta-terminos-privacidad"
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 10,
-              fontSize: 13,
-              color: "#374151",
-              lineHeight: 1.45,
-              fontWeight: 600,
-            }}
-          >
-            <input
-              id="acepta-terminos-privacidad"
-              type="checkbox"
-              checked={form.aceptaTerminosPrivacidad}
-              onChange={(e) =>
-                setField("aceptaTerminosPrivacidad", e.target.checked)
-              }
-              style={{ marginTop: 2, accentColor: "#0d9488" }}
-            />
-            <span>
-              Acepto los{" "}
-              <Link
-                href="/terminos"
-                style={{
-                  color: "#0d9488",
-                  fontWeight: 800,
-                  textDecoration: "underline",
-                  textUnderlineOffset: 2,
-                }}
-              >
-                Términos y Condiciones
-              </Link>{" "}
-              y la{" "}
-              <Link
-                href="/privacidad"
-                style={{
-                  color: "#0d9488",
-                  fontWeight: 800,
-                  textDecoration: "underline",
-                  textUnderlineOffset: 2,
-                }}
-              >
-                Política de Privacidad
-              </Link>
-              .
-            </span>
-          </label>
-          {errors.aceptaTerminosPrivacidad ? (
+          {!esEdicionBasicaPublicado ? (
+            <label
+              htmlFor="acepta-terminos-privacidad"
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+                fontSize: 13,
+                color: "#374151",
+                lineHeight: 1.45,
+                fontWeight: 600,
+              }}
+            >
+              <input
+                id="acepta-terminos-privacidad"
+                type="checkbox"
+                checked={form.aceptaTerminosPrivacidad}
+                onChange={(e) =>
+                  setField("aceptaTerminosPrivacidad", e.target.checked)
+                }
+                style={{ marginTop: 2, accentColor: "#0d9488" }}
+              />
+              <span>
+                Acepto los{" "}
+                <Link
+                  href="/terminos"
+                  style={{
+                    color: "#0d9488",
+                    fontWeight: 800,
+                    textDecoration: "underline",
+                    textUnderlineOffset: 2,
+                  }}
+                >
+                  Términos y Condiciones
+                </Link>{" "}
+                y la{" "}
+                <Link
+                  href="/privacidad"
+                  style={{
+                    color: "#0d9488",
+                    fontWeight: 800,
+                    textDecoration: "underline",
+                    textUnderlineOffset: 2,
+                  }}
+                >
+                  Política de Privacidad
+                </Link>
+                .
+              </span>
+            </label>
+          ) : null}
+          {!esEdicionBasicaPublicado && errors.aceptaTerminosPrivacidad ? (
             <p style={{ ...errorStyle, marginTop: 8 }}>
               {errors.aceptaTerminosPrivacidad}
             </p>
           ) : null}
 
+          {!esEdicionBasicaPublicado ? (
           <div
             style={{
               marginTop: 22,
@@ -1130,6 +1148,7 @@ export default function PasoInformacionBasica({
               Después podrás agregar fotos, redes sociales y más detalles para mejorar tu ficha.
             </span>
           </div>
+          ) : null}
         </div>
 
         <div className={primaryButtonWrapClass}>
@@ -1153,7 +1172,11 @@ export default function PasoInformacionBasica({
                   aria-hidden
                 />
               ) : null}
-              <span>Publicar y empezar a recibir contactos</span>
+              <span>
+                {esEdicionBasicaPublicado
+                  ? "Enviar cambios a revisión"
+                  : "Publicar y empezar a recibir contactos"}
+              </span>
             </span>
           </button>
         </div>

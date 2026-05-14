@@ -87,8 +87,8 @@ export async function notifyEmprendimientoAprobadoEmail(
       formatNombreEmprendimiento(nombreTrim) || nombreTrim;
     const nombreEscaped = nombreDisplay ? escapeHtml(nombreDisplay) : "";
     const introLine = nombreDisplay
-      ? `<p style="margin:0 0 18px 0;color:#4b5563;line-height:1.65;font-size:15px;">Tu negocio <strong style="color:#111827;">&ldquo;${nombreEscaped}&rdquo;</strong> ya está publicado en Rey del Dato.</p>`
-      : `<p style="margin:0 0 18px 0;color:#4b5563;line-height:1.65;font-size:15px;">Tu negocio ya está publicado en Rey del Dato.</p>`;
+      ? `<p style="margin:0 0 16px 0;color:#4b5563;line-height:1.65;font-size:15px;">Tu negocio <strong style="color:#111827;">&ldquo;${nombreEscaped}&rdquo;</strong> ya está publicado en Rey del Dato.</p>`
+      : `<p style="margin:0 0 16px 0;color:#4b5563;line-height:1.65;font-size:15px;">Tu negocio ya está publicado en Rey del Dato.</p>`;
 
     if (!emailBasicoValido(emailTo)) {
       // eslint-disable-next-line no-console
@@ -100,21 +100,19 @@ export async function notifyEmprendimientoAprobadoEmail(
     }
 
     const panelCta = panelUrl
-      ? `<a href="${panelUrl}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:800;font-size:16px;line-height:1.25;border-radius:12px;padding:16px 20px;">Entrar a mi panel</a>`
+      ? `<a href="${panelUrl}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:800;font-size:15px;line-height:1.3;border-radius:10px;padding:11px 18px;">Entrar a mi panel</a>`
       : "";
 
-    const panelAyuda = `<div style="margin:14px 0 20px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
-      <p style="margin:0 0 8px 0;color:#334155;font-size:14px;font-weight:700;line-height:1.45;">Desde tu panel podrás:</p>
-      <ul style="margin:0;padding:0 0 0 18px;color:#475569;font-size:14px;line-height:1.55;">
-        <li style="margin:0 0 6px 0;">Editar tu información</li>
-        <li style="margin:0 0 6px 0;">Subir fotos</li>
-        <li style="margin:0;">Revisar visitas y contactos</li>
-      </ul>
+    const panelAyuda = `<div style="margin:8px 0 6px 0;background:#fafafa;border:1px solid #f0f0f0;border-radius:8px;padding:10px 12px;">
+      <p style="margin:0 0 6px 0;color:#64748b;font-size:13px;font-weight:600;line-height:1.45;">Desde tu panel podrás:</p>
+      <p style="margin:0;color:#64748b;font-size:13px;line-height:1.5;">&bull; Editar tu información<br />
+&bull; Subir fotos<br />
+&bull; Revisar visitas y contactos</p>
     </div>`;
 
     const fichaSecundaria =
       fichaPublicaUrl
-        ? `<p style="margin:0 0 22px 0;color:#64748b;font-size:14px;line-height:1.55;">También puedes ver tu ficha pública aquí:<br />
+        ? `<p style="margin:4px 0 14px 0;color:#64748b;font-size:13px;line-height:1.5;">También puedes ver tu ficha pública:<br />
 <a href="${fichaPublicaUrl}" style="color:#0f766e;font-weight:600;text-decoration:underline;">Ver mi ficha pública</a></p>`
         : "";
 
@@ -127,7 +125,7 @@ export async function notifyEmprendimientoAprobadoEmail(
       </ul>
     </div>`;
 
-    const footerExtra = `<div style="margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb;">
+    const footerExtra = `<div style="margin-top:16px;padding-top:14px;border-top:1px solid #e5e7eb;">
       <p style="margin:0 0 12px 0;color:#64748b;font-size:13px;line-height:1.55;">Si necesitas ayuda, puedes responder este correo o escribirnos por <a href="https://wa.me/56975949281" style="color:#0f766e;font-weight:600;">WhatsApp</a>.</p>
       <p style="margin:0 0 10px 0;color:#6b7280;font-size:13px;line-height:1.5;">— Equipo Rey del Dato</p>
       <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;">
@@ -140,17 +138,17 @@ export async function notifyEmprendimientoAprobadoEmail(
       <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.45;">© Rey del Dato SpA · RUT 78.403.835-1</p>
     </div>`;
 
-    const html = `<div style="background:#f9fafb;padding:24px;font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#111827;">
-  <div style="max-width:560px;margin:0 auto;">
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;">
-      <div style="font-weight:900;letter-spacing:0.06em;font-size:12px;color:#0f766e;margin-bottom:10px;">REY DEL DATO</div>
-      <h1 style="font-size:20px;line-height:1.3;margin:0 0 14px 0;color:#111827;">🚀 Tu negocio ya está visible</h1>
+    const html = `<div style="background:#f9fafb;padding:20px 16px;font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#111827;">
+  <div style="max-width:640px;width:100%;margin:0 auto;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:22px 20px;">
+      <div style="font-weight:900;letter-spacing:0.06em;font-size:12px;color:#0f766e;margin-bottom:8px;">REY DEL DATO</div>
+      <h1 style="font-size:20px;line-height:1.3;margin:0 0 12px 0;color:#111827;">🚀 Tu negocio ya está visible</h1>
       ${introLine}
-      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:16px 18px;margin:0 0 20px 0;">
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:14px 16px;margin:0 0 14px 0;">
         <p style="margin:0 0 8px 0;color:#14532d;font-size:15px;font-weight:800;line-height:1.35;">¿Qué pasa ahora?</p>
         <p style="margin:0;color:#374151;font-size:14px;line-height:1.55;">Desde este momento, las personas de tu comuna pueden encontrarte y contactarte directamente por WhatsApp.</p>
       </div>
-      ${panelCta ? `<div style="margin:0 0 0 0;">${panelCta}</div>${panelAyuda}` : ""}
+      ${panelCta ? `<div style="margin:0;">${panelCta}</div>${panelAyuda}` : ""}
       ${fichaSecundaria}
       ${bloqueConsejo}
       ${footerExtra}

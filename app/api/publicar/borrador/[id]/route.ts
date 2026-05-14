@@ -30,11 +30,20 @@ import {
   pickPostulacionCampoEfectivo,
 } from "@/lib/postulacionLocalFisicoUbicacion";
 import { POSTULACIONES_BORRADOR_GET_SELECT } from "@/lib/loadPostulacionesModeracion";
+import {
+  ensureEdicionBasicaPostulacionId,
+  isEdicionBasicaUrlFlag,
+} from "@/lib/ensureEdicionBasicaPostulacion";
 
 /**
  * Next 15+ puede enviar `params` como Promise; normalizamos para leer `id` siempre bien.
  */
 type RouteParams = { id: string };
+
+function s(v: unknown): string {
+  if (v == null) return "";
+  return String(v).trim();
+}
 
 async function resolveParams(
   params: Promise<RouteParams> | RouteParams
@@ -384,6 +393,15 @@ export async function GET(
       );
     }
 
+    const url = (() => {
+      try {
+        return new URL(_req.url);
+      } catch {
+        return null;
+      }
+    })();
+    const edicionBasica = isEdicionBasicaUrlFlag(url?.searchParams.get("edicion_basica"));
+
     const { data: rowById, error: fetchError } = await supabase
       .from("postulaciones_emprendedores")
       .select(POSTULACIONES_BORRADOR_GET_SELECT)
@@ -409,36 +427,94 @@ export async function GET(
 
     let row = rowById;
 
-    /** `id` en la URL puede ser el UUID del emprendedor (p. ej. «Editar datos básicos» desde mejorar-ficha). */
-    if (!row) {
-      const { data: byEmpRows, error: byEmpErr } = await supabase
-        .from("postulaciones_emprendedores")
-        .select(POSTULACIONES_BORRADOR_GET_SELECT)
-        .eq("emprendedor_id", id)
-        .order("updated_at", { ascending: false })
-        .limit(1);
-      if (byEmpErr) {
-        console.error(
-          "[GET borrador] select by emprendedor_id:",
-          byEmpErr.message,
-          "id=",
-          id
-        );
-        const devDetail =
-          process.env.NODE_ENV === "development" ? byEmpErr.message : undefined;
-        return json(
-          {
-            ok: false,
-            message: devDetail
-              ? `No se pudo leer la postulación. ${devDetail}`
-              : "No se pudo leer la postulación.",
-            error: byEmpErr.message,
-            code: byEmpErr.code ?? null,
-          },
-          500
-        );
+    if (row && edicionBasica) {
+      const rec = row as unknown as Record<string, unknown>;
+      const tipo = s(rec.tipo_postulacion);
+      const est = normalizePostulacionEstado(rec.estado);
+      if (est === "aprobada" && tipo !== "edicion_basica") {
+        const eid = s(rec.emprendedor_id);
+        if (eid) {
+          const ensured = await ensureEdicionBasicaPostulacionId(supabase, eid);
+          if (ensured.ok) {
+            const { data: staging } = await supabase
+              .from("postulaciones_emprendedores")
+              .select(POSTULACIONES_BORRADOR_GET_SELECT)
+              .eq("id", ensured.postulacionId)
+              .maybeSingle();
+            if (staging) row = staging;
+          }
+        }
       }
-      row = byEmpRows?.[0] ?? null;
+    }
+
+    /** `id` en la URL puede ser el UUID del emprendedor (p. ej. «Editar datos básicos» desde el panel). */
+    if (!row) {
+      if (edicionBasica) {
+        const ensured = await ensureEdicionBasicaPostulacionId(supabase, id);
+        if (!ensured.ok) {
+          const status =
+            ensured.kind === "not_found"
+              ? 404
+              : ensured.kind === "not_publicado"
+                ? 403
+                : 400;
+          return json(
+            {
+              ok: false,
+              message: ensured.message,
+              error: ensured.message,
+            },
+            status
+          );
+        }
+        const { data: stagingRow, error: stErr } = await supabase
+          .from("postulaciones_emprendedores")
+          .select(POSTULACIONES_BORRADOR_GET_SELECT)
+          .eq("id", ensured.postulacionId)
+          .maybeSingle();
+        if (stErr) {
+          console.error("[GET borrador] staging edicion_basica:", stErr.message);
+          return json(
+            {
+              ok: false,
+              message: "No se pudo leer la solicitud de edición.",
+              error: stErr.message,
+              code: stErr.code ?? null,
+            },
+            500
+          );
+        }
+        row = stagingRow ?? null;
+      } else {
+        const { data: byEmpRows, error: byEmpErr } = await supabase
+          .from("postulaciones_emprendedores")
+          .select(POSTULACIONES_BORRADOR_GET_SELECT)
+          .eq("emprendedor_id", id)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+        if (byEmpErr) {
+          console.error(
+            "[GET borrador] select by emprendedor_id:",
+            byEmpErr.message,
+            "id=",
+            id
+          );
+          const devDetail =
+            process.env.NODE_ENV === "development" ? byEmpErr.message : undefined;
+          return json(
+            {
+              ok: false,
+              message: devDetail
+                ? `No se pudo leer la postulación. ${devDetail}`
+                : "No se pudo leer la postulación.",
+              error: byEmpErr.message,
+              code: byEmpErr.code ?? null,
+            },
+            500
+          );
+        }
+        row = byEmpRows?.[0] ?? null;
+      }
     }
 
     if (!row) {
@@ -622,7 +698,7 @@ export async function PATCH(
     }
 
     const PATCH_EXISTING_SELECT =
-      "id, estado, cobertura_tipo, comuna_base_id, comunas_cobertura, regiones_cobertura, emprendedor_id, frase_negocio, descripcion_libre, modalidades_atencion, direccion, direccion_referencia, locales, whatsapp_principal, whatsapp_secundario, instagram, sitio_web";
+      "id, estado, tipo_postulacion, cobertura_tipo, comuna_base_id, comunas_cobertura, regiones_cobertura, emprendedor_id, frase_negocio, descripcion_libre, modalidades_atencion, direccion, direccion_referencia, locales, whatsapp_principal, whatsapp_secundario, instagram, sitio_web";
 
     const { data: existingByPk, error: fetchError } = await supabase
       .from("postulaciones_emprendedores")
@@ -660,40 +736,115 @@ export async function PATCH(
 
     let existing = existingByPk;
 
+    let patchUrl: URL | null = null;
+    try {
+      patchUrl = new URL(req.url);
+    } catch {
+      patchUrl = null;
+    }
+    const edicionBasicaPatch = isEdicionBasicaUrlFlag(
+      patchUrl?.searchParams.get("edicion_basica")
+    );
+
+    if (existing && edicionBasicaPatch) {
+      const rec = existing as Record<string, unknown>;
+      const tipo = s(rec.tipo_postulacion);
+      const est = normalizePostulacionEstado(rec.estado);
+      if (est === "aprobada" && tipo !== "edicion_basica") {
+        const eid = s(rec.emprendedor_id);
+        if (eid) {
+          const ensured = await ensureEdicionBasicaPostulacionId(supabase, eid);
+          if (ensured.ok) {
+            const { data: staging } = await supabase
+              .from("postulaciones_emprendedores")
+              .select(PATCH_EXISTING_SELECT)
+              .eq("id", ensured.postulacionId)
+              .maybeSingle();
+            if (staging) {
+              existing = staging;
+              id = ensured.postulacionId;
+            }
+          }
+        }
+      }
+    }
+
     /** Mismo criterio que GET: el cliente puede enviar el UUID del emprendedor en lugar del id de postulación. */
     if (!existing) {
-      const { data: byEmpRows, error: byEmpErr } = await supabase
-        .from("postulaciones_emprendedores")
-        .select(PATCH_EXISTING_SELECT)
-        .eq("emprendedor_id", id)
-        .order("updated_at", { ascending: false })
-        .limit(1);
-      if (byEmpErr) {
-        console.error(
-          "[PATCH borrador] select by emprendedor_id:",
-          byEmpErr.message,
-          "id=",
-          id
-        );
-        return json(
-          {
-            ok: false,
-            phase: "db_read",
-            message: "Error al guardar. Intenta nuevamente.",
-            error: "Error al guardar. Intenta nuevamente.",
-            supabase: {
-              code: byEmpErr.code ?? null,
-              message: byEmpErr.message ?? null,
+      if (edicionBasicaPatch) {
+        const ensured = await ensureEdicionBasicaPostulacionId(supabase, id);
+        if (!ensured.ok) {
+          const status =
+            ensured.kind === "not_found"
+              ? 404
+              : ensured.kind === "not_publicado"
+                ? 403
+                : 400;
+          return json(
+            {
+              ok: false,
+              phase: "edicion_basica_resolve",
+              message: ensured.message,
+              error: ensured.message,
             },
-          },
-          500
-        );
-      }
-      const row = byEmpRows?.[0] ?? null;
-      if (row) {
-        existing = row;
-        const rid = String((row as Record<string, unknown>).id ?? "").trim();
-        if (rid) id = rid;
+            status
+          );
+        }
+        const { data: staging, error: stErr } = await supabase
+          .from("postulaciones_emprendedores")
+          .select(PATCH_EXISTING_SELECT)
+          .eq("id", ensured.postulacionId)
+          .maybeSingle();
+        if (stErr) {
+          console.error("[PATCH borrador] staging edicion_basica:", stErr.message);
+          return json(
+            {
+              ok: false,
+              phase: "db_read",
+              message: "Error al guardar. Intenta nuevamente.",
+              error: stErr.message,
+            },
+            500
+          );
+        }
+        if (staging) {
+          existing = staging;
+          id = ensured.postulacionId;
+        }
+      } else {
+        const { data: byEmpRows, error: byEmpErr } = await supabase
+          .from("postulaciones_emprendedores")
+          .select(PATCH_EXISTING_SELECT)
+          .eq("emprendedor_id", id)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+        if (byEmpErr) {
+          console.error(
+            "[PATCH borrador] select by emprendedor_id:",
+            byEmpErr.message,
+            "id=",
+            id
+          );
+          return json(
+            {
+              ok: false,
+              phase: "db_read",
+              message: "Error al guardar. Intenta nuevamente.",
+              error: "Error al guardar. Intenta nuevamente.",
+              supabase: {
+                code: byEmpErr.code ?? null,
+                message: byEmpErr.message ?? null,
+              },
+            },
+            500
+          );
+        }
+        const row = byEmpRows?.[0] ?? null;
+        if (row) {
+          existing = row;
+          const rid = String((row as Record<string, unknown>).id ?? "").trim();
+          if (rid) id = rid;
+        }
       }
     }
 

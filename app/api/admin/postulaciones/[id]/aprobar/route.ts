@@ -770,13 +770,17 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const esEdicionPublicado = s(p.tipo_postulacion) === "edicion_publicado";
+    const esEdicionBasica = s(p.tipo_postulacion) === "edicion_basica";
     const eidEdicionEarly = esEdicionPublicado ? s(p.emprendedor_id) : "";
+    const eidEdicionBasicaEarly = esEdicionBasica ? s(p.emprendedor_id) : "";
+    const eidClasificacionPublicadaMerge =
+      eidEdicionEarly || eidEdicionBasicaEarly || "";
     let clasificacionSinCambioVsPublicado = false;
 
-    if (esEdicionPublicado && eidEdicionEarly) {
+    if (eidClasificacionPublicadaMerge) {
       const publicadoLeido = await loadClasificacionPublicadaEmprendedor(
         supabase,
-        eidEdicionEarly
+        eidClasificacionPublicadaMerge
       );
       if (publicadoLeido) {
         if (!categoriaEfectivaUuidFinal) {
@@ -839,13 +843,13 @@ export async function POST(request: Request, context: RouteContext) {
      * Edición de ficha publicada: si el borrador no trae palabras clave de moderación / usuario,
      * conservar las que ya están en `emprendedores` para que `etiquetas_ia` del borrador no las reemplace solas.
      */
-    if (esEdicionPublicado && eidEdicionEarly) {
+    if ((esEdicionPublicado || esEdicionBasica) && eidClasificacionPublicadaMerge) {
       const needUsuario = keywordsUsuario.length === 0;
       const needFinales = !etiquetasSolo && keywordsFinalesFromModeracion.length === 0;
       if (needUsuario || needFinales) {
         const pub = await loadKeywordsPublicadosEmprendedorParaPreservarEdicion(
           supabase,
-          eidEdicionEarly
+          eidClasificacionPublicadaMerge
         );
         if (needUsuario && pub.usuario.length) {
           keywordsUsuario = pub.usuario;
@@ -1102,6 +1106,168 @@ export async function POST(request: Request, context: RouteContext) {
       delete emprendedorCore.categoria_slug_final;
       delete emprendedorCore.subcategoria_slug_final;
       emprendedorCore.keywords_finales = taxonomiaFinalesRow.keywords_finales;
+    }
+
+    if (esEdicionBasica) {
+      const emprendedorIdBasica = s(p.emprendedor_id);
+      if (!emprendedorIdBasica) {
+        return badRequest("La postulación no tiene emprendedor relacionado");
+      }
+
+      const verifBasica = await verificarEmprendedorAntesDeSyncPivotes(
+        supabase,
+        emprendedorIdBasica
+      );
+      if (!verifBasica.ok) {
+        if (verifBasica.message.includes("No se pudo verificar")) {
+          return serverError(
+            verifBasica.message,
+            { step: "verificarEmprendedorAntesDeSyncPivotes.edicion_basica" },
+            { error: verifBasica.message, code: "EMPRENDEDOR_LOOKUP_FALLIDA" }
+          );
+        }
+        return badRequest(
+          "El emprendedor vinculado a esta postulación no existe en la base (dato huérfano). No se puede aprobar hasta corregir el vínculo o rechazar la postulación."
+        );
+      }
+
+      const minimalBasica: Record<string, unknown> = {
+        nombre_emprendimiento: nombreEmprendimiento,
+        nombre: nombreEmprendimiento,
+        email: truncLegacyVarchar100(p.email),
+        frase_negocio: truncLegacyVarchar100(p.frase_negocio),
+        descripcion_libre: s(p.descripcion_libre) || null,
+        comuna_id: comunaRow.id,
+        cobertura_tipo: dbCobertura,
+        comunas_cobertura: comunasSlugsJson,
+        comunas_cobertura_ids: comunasCoberturaIds,
+        regiones_cobertura: regionesSlugsJson,
+        updated_at: new Date().toISOString(),
+      };
+      if (whatsappPrincipal) {
+        minimalBasica.whatsapp_principal = truncLegacyVarchar100(whatsappPrincipal);
+        minimalBasica.whatsapp = truncLegacyVarchar100(whatsappPrincipal);
+      }
+
+      const { error: updateBasicaErr } = await updateEmprendedoresWithSchemaRetry(
+        supabase,
+        emprendedorIdBasica,
+        minimalBasica
+      );
+      if (updateBasicaErr) {
+        return serverError(
+          "No se pudo actualizar el emprendimiento",
+          detailsFromPostgrest(updateBasicaErr, "emprendedores.update_edicion_basica"),
+          metaFromPostgrest(updateBasicaErr)
+        );
+      }
+
+      let modalidadesSyncBasica = modalidadesDbParaPublicar;
+      if (modalidadesSyncBasica.length === 0) {
+        const { data: modPivotBasica } = await supabase
+          .from("emprendedor_modalidades")
+          .select("modalidad")
+          .eq("emprendedor_id", emprendedorIdBasica);
+        modalidadesSyncBasica = modalidadesAtencionInputsToDbUnique(
+          (modPivotBasica ?? []).map((r) => s((r as { modalidad?: unknown }).modalidad))
+        );
+      }
+
+      let galeriaSyncBasica = galeriaUrls;
+      if (galeriaSyncBasica.length === 0) {
+        const { data: fpRow } = await supabase
+          .from("emprendedores")
+          .select("foto_principal_url")
+          .eq("id", emprendedorIdBasica)
+          .maybeSingle();
+        const fpUrl =
+          fpRow && typeof (fpRow as { foto_principal_url?: unknown }).foto_principal_url === "string"
+            ? s((fpRow as { foto_principal_url: string }).foto_principal_url)
+            : "";
+        const { data: galRowsBasica } = await supabase
+          .from("emprendedor_galeria")
+          .select("imagen_url")
+          .eq("emprendedor_id", emprendedorIdBasica)
+          .limit(8);
+        const urlsGal = (galRowsBasica ?? [])
+          .map((r) => s((r as { imagen_url?: unknown }).imagen_url))
+          .filter(Boolean);
+        galeriaSyncBasica = galeriaUrlsForEmprendedorPivotSync(urlsGal, fpUrl || null);
+      }
+
+      const relBasica = await syncEmprendedorRelacionesHijas(
+        supabase,
+        emprendedorIdBasica,
+        comunasPivotSlugs,
+        regionesSlugsJson,
+        modalidadesSyncBasica,
+        galeriaSyncBasica,
+        subcategoriasEfectivasIds,
+        clasificacionSinCambioVsPublicado ? { skipSubcategoriasPivot: true } : undefined
+      );
+      if (!relBasica.ok) {
+        return serverError(
+          "Se actualizó el emprendimiento pero falló sincronizar cobertura/modalidades/galería",
+          { step: "syncEmprendedorRelacionesHijas.edicion_basica", message: relBasica.message },
+          { error: relBasica.message, code: "SYNC_RELACIONES_EDICION_BASICA" }
+        );
+      }
+
+      const { error: closeBasicaErr } = await supabase
+        .from("postulaciones_emprendedores")
+        .update({
+          estado: "aprobada",
+          categoria_final: categoriaEfectivaUuid,
+          subcategoria_final: subcategoriaPrincipalUuid,
+          etiquetas_finales: keywordsFinales,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (closeBasicaErr) {
+        return serverError(
+          "Se aplicaron los cambios pero falló el cierre de la postulación",
+          detailsFromPostgrest(closeBasicaErr, "postulaciones_emprendedores.update_cierre_edicion_basica"),
+          metaFromPostgrest(closeBasicaErr)
+        );
+      }
+
+      const pubBasica = await adminPublishEmprendedorFicha(supabase, emprendedorIdBasica, {
+        modalidadesDbTrasSync: modalidadesSyncBasica,
+      });
+      if (!pubBasica.ok) {
+        return Response.json(
+          {
+            ok: false,
+            error: pubBasica.error,
+            reason: pubBasica.reason,
+            detail: pubBasica.detail ?? null,
+          },
+          { status: pubBasica.status }
+        );
+      }
+      const reindexBasica = await triggerReindexEmprendedorAlgolia(pubBasica.id);
+
+      const { data: slugRowBasica } = await supabase
+        .from("emprendedores")
+        .select("slug")
+        .eq("id", emprendedorIdBasica)
+        .maybeSingle();
+      const slugBasica =
+        slugRowBasica && typeof (slugRowBasica as { slug?: unknown }).slug === "string"
+          ? s((slugRowBasica as { slug: string }).slug)
+          : "";
+
+      return ok({
+        ok: true,
+        message:
+          "Cambios de datos básicos aplicados a la ficha publicada. El emprendimiento sigue siendo el mismo.",
+        emprendedor_id: emprendedorIdBasica,
+        ...(slugBasica ? { slug: slugBasica } : {}),
+        taxonomia_publicada: taxonomiaFinalesRow,
+        publicacion: { ok: true, estado_publicacion: "publicado" as const },
+        reindexAlgolia: reindexBasica,
+      });
     }
 
     if (p.tipo_postulacion === "nuevo") {
