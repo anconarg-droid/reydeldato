@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { MapPin, Scale, MessageCircle } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import HomeRecomienda from "@/components/home/HomeRecomienda";
 import HomeComunasAbiertasGrid, {
   type ComunaAbiertaItem,
@@ -22,6 +23,254 @@ type Props = {
 
 const cardBase =
   "rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition-shadow hover:shadow-md";
+
+const CAROUSEL_STRIDE = 272; /* 260px card + gap-3 */
+
+function useHomeCarouselDots(itemCount: number) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scroll = useCallback((dir: number) => {
+    trackRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
+  }, []);
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el || itemCount <= 0) return;
+    const onScroll = () => {
+      const max = Math.max(0, el.scrollWidth - el.clientWidth);
+      let idx = Math.round(el.scrollLeft / CAROUSEL_STRIDE);
+      if (max > 0 && el.scrollLeft >= max - 8) idx = itemCount - 1;
+      setActiveIndex(Math.max(0, Math.min(itemCount - 1, idx)));
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [itemCount]);
+  return { trackRef, activeIndex, scroll };
+}
+
+const COMO_FUNCIONA_STEPS = [
+  { n: "01", t: "Buscas en tu comuna", d: "Primero mostramos opciones cercanas." },
+  { n: "02", t: "Comparas opciones reales", d: "Ves descripción, comuna y forma de contacto." },
+  { n: "03", t: "Contactas directo", d: "Hablas por WhatsApp, sin intermediarios." },
+] as const;
+
+const LA_DIFERENCIA_ITEMS = [
+  {
+    icon: MapPin,
+    t: "Mostramos lo que está en tu comuna",
+    d: "Primero lo local. Si no alcanza, recién ahí aparece el resto.",
+  },
+  {
+    icon: Scale,
+    t: "Nadie compra su lugar",
+    d: "La ficha completa mejora cómo se ve. No compra ranking.",
+  },
+  {
+    icon: MessageCircle,
+    t: "Contacto directo. Sin formularios",
+    d: "Nombre, comuna y WhatsApp directo para decidir rápido.",
+  },
+] as const;
+
+function HomeMobileComoFunciona() {
+  const { trackRef, activeIndex, scroll } = useHomeCarouselDots(COMO_FUNCIONA_STEPS.length);
+  return (
+    <div className="md:hidden">
+      <div className="flex justify-between items-end mb-4">
+        <div>
+          <h2 className="text-xl font-medium text-gray-900">Cómo funciona</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Desliza para ver más →</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => scroll(-1)}
+            className="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700"
+            aria-label="Anterior"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            onClick={() => scroll(1)}
+            className="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700"
+            aria-label="Siguiente"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div
+        ref={trackRef}
+        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2"
+      >
+        {COMO_FUNCIONA_STEPS.map((step) => (
+          <div
+            key={step.n}
+            className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-5"
+          >
+            <div className="text-7xl font-medium text-[#E1F5EE] leading-none tabular-nums">{step.n}</div>
+            <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+              Paso {step.n}
+            </p>
+            <h3 className="mt-1 text-base font-semibold text-gray-900">{step.t}</h3>
+            <p className="mt-2 text-sm text-gray-600 leading-snug line-clamp-1">{step.d}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-1.5 mt-3">
+        {COMO_FUNCIONA_STEPS.map((_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 rounded-full transition-all ${
+              activeIndex === i ? "w-5 bg-[#0F6E56]" : "w-1.5 bg-gray-200"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HomeMobileLaDiferencia() {
+  const { trackRef, activeIndex, scroll } = useHomeCarouselDots(LA_DIFERENCIA_ITEMS.length);
+  return (
+    <div className="md:hidden">
+      <div className="flex justify-between items-end mb-4">
+        <div>
+          <h2 className="text-xl font-medium text-gray-900">La diferencia</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Desliza para ver más →</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => scroll(-1)}
+            className="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700"
+            aria-label="Anterior"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            onClick={() => scroll(1)}
+            className="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700"
+            aria-label="Siguiente"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div
+        ref={trackRef}
+        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2"
+      >
+        {LA_DIFERENCIA_ITEMS.map((x) => {
+          const Icon = x.icon;
+          return (
+            <div
+              key={x.t}
+              className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-5"
+            >
+              <div className="w-9 h-9 bg-[#E1F5EE] text-[#0F6E56] rounded-lg flex items-center justify-center">
+                <Icon className="w-4 h-4" strokeWidth={2} aria-hidden />
+              </div>
+              <h3 className="mt-3 text-base font-semibold text-gray-900">{x.t}</h3>
+              <p className="mt-2 text-sm text-gray-600 leading-snug">{x.d}</p>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-1.5 mt-3">
+        {LA_DIFERENCIA_ITEMS.map((_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 rounded-full transition-all ${
+              activeIndex === i ? "w-5 bg-[#0F6E56]" : "w-1.5 bg-gray-200"
+            }`}
+          />
+        ))}
+      </div>
+      <p className="mt-6 text-center text-xs text-gray-500">
+        Rey del Dato SpA · RUT 78.403.835-1
+      </p>
+    </div>
+  );
+}
+
+function serviciosActivosLabel(count: number): string {
+  if (count <= 0) return "Servicios sumándose hoy";
+  if (count === 1) return "1 servicio activo hoy";
+  return `${count} servicios activos hoy`;
+}
+
+function HomeMobileComunasDisponibles({ items }: { items: ComunaAbiertaItem[] }) {
+  const router = useRouter();
+  const { trackRef, activeIndex, scroll } = useHomeCarouselDots(items.length);
+  return (
+    <div className="md:hidden">
+      <div className="flex justify-between items-end mb-4">
+        <div>
+          <h2 className="text-xl font-medium text-gray-900">Comunas disponibles</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Desliza para ver más →</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => scroll(-1)}
+            className="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700"
+            aria-label="Anterior"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            onClick={() => scroll(1)}
+            className="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700"
+            aria-label="Siguiente"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div
+        ref={trackRef}
+        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2"
+      >
+        {items.map((c) => (
+          <div
+            key={c.slug}
+            className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-5 flex flex-col"
+          >
+            <p className="text-[15px] font-bold leading-snug text-gray-900">
+              <span aria-hidden className="mr-1">
+                🔥
+              </span>
+              {c.nombre}
+            </p>
+            <p className="mt-2 text-xs font-medium text-gray-600">{serviciosActivosLabel(c.count)}</p>
+            <button
+              type="button"
+              onClick={() => router.push(`/${encodeURIComponent(c.slug)}`)}
+              className="mt-4 w-full rounded-lg bg-[#0F6E56] px-3 py-2.5 text-sm font-semibold text-white"
+            >
+              Ver servicios →
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-1.5 mt-3">
+        {items.map((_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 rounded-full transition-all ${
+              activeIndex === i ? "w-5 bg-[#0F6E56]" : "w-1.5 bg-gray-200"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
   const searchParams = useSearchParams();
@@ -158,31 +407,31 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
     <div className="pb-0">
       {/* 1 · Cómo funciona */}
       <section
+        id="home-como-funciona"
         className="border-t border-slate-100 bg-white"
-        aria-labelledby="home-como-funciona"
+        aria-labelledby="home-como-funciona-heading"
       >
         <div className="mx-auto max-w-5xl px-4 pb-12 pt-16 sm:px-6 sm:pb-14 sm:pt-20">
-          <h2
-            id="home-como-funciona"
-            className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
-          >
-            Cómo funciona
-          </h2>
-          <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-            {[
-              { n: "01", t: "Buscas en tu comuna", d: "Primero mostramos opciones cercanas." },
-              { n: "02", t: "Comparas opciones reales", d: "Ves descripción, comuna y forma de contacto." },
-              { n: "03", t: "Contactas directo", d: "Hablas por WhatsApp, sin intermediarios." },
-            ].map((step) => (
-              <li key={step.n} className={cardBase}>
-                <div className="text-[clamp(1.75rem,4vw,2.35rem)] font-black tabular-nums leading-none tracking-[-0.04em] text-teal-700">
-                  {step.n}
-                </div>
-                <div className="mt-3 text-base font-bold text-slate-900">{step.t}</div>
-                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-700">{step.d}</p>
-              </li>
-            ))}
-          </ol>
+          <HomeMobileComoFunciona />
+          <div className="hidden md:block">
+            <h2
+              id="home-como-funciona-heading"
+              className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+            >
+              Cómo funciona
+            </h2>
+            <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+              {COMO_FUNCIONA_STEPS.map((step) => (
+                <li key={step.n} className={cardBase}>
+                  <div className="text-[clamp(1.75rem,4vw,2.35rem)] font-black tabular-nums leading-none tracking-[-0.04em] text-teal-700">
+                    {step.n}
+                  </div>
+                  <div className="mt-3 text-base font-bold text-slate-900">{step.t}</div>
+                  <p className="mt-2 text-sm font-medium leading-relaxed text-slate-700">{step.d}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </section>
 
@@ -201,46 +450,37 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
 
       {/* 3 · La diferencia (único bloque — sin duplicar problema/solución) */}
       <section
+        id="home-diferencia"
         className="border-t border-slate-100 bg-white"
-        aria-labelledby="home-diferencia-por-que home-diferencia"
+        aria-labelledby="home-diferencia-heading"
       >
         <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
-          <h2
-            id="home-diferencia"
-            className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
-          >
-            La diferencia
-          </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
-            Orden local, contacto directo y reglas claras.
-          </p>
-          <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {[
-              {
-                t: "Mostramos lo que está en tu comuna",
-                d: "Primero lo local. Si no alcanza, recién ahí aparece el resto.",
-              },
-              {
-                t: "Nadie compra su lugar",
-                d: "La ficha completa mejora cómo se ve. No compra ranking.",
-              },
-              {
-                t: "Contacto directo. Sin formularios",
-                d: "Nombre, comuna y WhatsApp directo para decidir rápido.",
-              },
-            ].map((x) => (
-              <div
-                key={x.t}
-                className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm border-l-[3px] border-l-teal-600 transition-shadow hover:shadow-md"
-              >
-                <div className="text-sm font-bold text-slate-900">{x.t}</div>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{x.d}</p>
-              </div>
-            ))}
+          <HomeMobileLaDiferencia />
+          <div className="hidden md:block">
+            <h2
+              id="home-diferencia-heading"
+              className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+            >
+              La diferencia
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+              Orden local, contacto directo y reglas claras.
+            </p>
+            <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+              {LA_DIFERENCIA_ITEMS.map((x) => (
+                <div
+                  key={x.t}
+                  className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm border-l-[3px] border-l-teal-600 transition-shadow hover:shadow-md"
+                >
+                  <div className="text-sm font-bold text-slate-900">{x.t}</div>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{x.d}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-10 text-center text-xs text-slate-500">
+              Rey del Dato SpA · RUT 78.403.835-1
+            </p>
           </div>
-          <p className="mt-10 text-center text-xs text-slate-500">
-            Rey del Dato SpA · RUT 78.403.835-1
-          </p>
         </div>
       </section>
 
@@ -266,31 +506,62 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
           ) : null}
 
           <div className="mt-10">
-            <h3 className="text-sm font-semibold text-slate-900">Con resultados</h3>
-            {loadingComunas ? (
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="h-[148px] animate-pulse rounded-xl bg-slate-100" />
-                ))}
-              </div>
-            ) : comunasCards.length === 0 ? (
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-5 sm:p-6">
-                <p className="text-sm leading-relaxed text-slate-700">
-                  Aún no hay comunas con resultados listadas acá. Busca la tuya para ver el estado.
-                </p>
+            <div className="md:hidden">
+              {loadingComunas ? (
+                <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="h-[148px] w-[260px] flex-shrink-0 animate-pulse rounded-xl bg-slate-100"
+                    />
+                  ))}
+                </div>
+              ) : comunasCards.length === 0 ? (
+                <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 sm:p-6">
+                  <p className="text-sm leading-relaxed text-slate-700">
+                    Aún no hay comunas con resultados listadas acá. Busca la tuya para ver el estado.
+                  </p>
+                  <div className="mt-4">
+                    <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <HomeMobileComunasDisponibles items={comunasCards} />
+                  <div className="mt-6 flex flex-col items-start gap-3">
+                    <p className="text-sm font-medium text-slate-800">¿Tu comuna no aparece?</p>
+                    <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="hidden md:block">
+              <h3 className="text-sm font-semibold text-slate-900">Con resultados</h3>
+              {loadingComunas ? (
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="h-[148px] animate-pulse rounded-xl bg-slate-100" />
+                  ))}
+                </div>
+              ) : comunasCards.length === 0 ? (
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-5 sm:p-6">
+                  <p className="text-sm leading-relaxed text-slate-700">
+                    Aún no hay comunas con resultados listadas acá. Busca la tuya para ver el estado.
+                  </p>
+                  <div className="mt-4">
+                    <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
+                  </div>
+                </div>
+              ) : (
                 <div className="mt-4">
-                  <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
+                  <HomeComunasAbiertasGrid items={comunasCards} />
+                  <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                    <p className="text-sm font-medium text-slate-800">¿Tu comuna no aparece?</p>
+                    <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="mt-4">
-                <HomeComunasAbiertasGrid items={comunasCards} />
-                <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-                  <p className="text-sm font-medium text-slate-800">¿Tu comuna no aparece?</p>
-                  <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {!loadingPrep && prep.length > 0 ? (

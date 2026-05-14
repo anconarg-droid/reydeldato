@@ -131,6 +131,16 @@ body {
   }
 }
 
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /**
  * Superficies y CTA coherentes (home, legales, flujos públicos).
  * Color principal: sky-600 (alineado con enlaces y fichas).
