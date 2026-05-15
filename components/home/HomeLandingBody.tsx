@@ -429,19 +429,14 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
               {COMO_FUNCIONA_STEPS.map((step) => (
                 <li
                   key={step.n}
-                  className="flex min-h-[160px] flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                  className="flex flex-row items-center gap-6 rounded-xl border border-gray-200 bg-white p-6"
                 >
-                  <div>
-                    <div className="text-3xl font-semibold tabular-nums leading-none text-[#0F6E56]/35">
-                      {step.n}
-                    </div>
-                    <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                      Paso {step.n}
-                    </p>
-                  </div>
-                  <div className="mt-3">
-                    <h3 className="text-sm font-bold text-slate-900">{step.t}</h3>
-                    <p className="mt-2 text-xs leading-snug text-slate-600 line-clamp-4">{step.d}</p>
+                  <span className="flex-shrink-0 text-7xl font-medium tabular-nums leading-none text-[#0F6E56]/15">
+                    {step.n}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-lg font-medium text-gray-900">{step.t}</p>
+                    <p className="mt-1 text-sm text-gray-500">{step.d}</p>
                   </div>
                 </li>
               ))}
