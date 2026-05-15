@@ -30,6 +30,14 @@ const STATS = [
   { n: "Gratis", l: "Publicar es gratis" },
 ];
 
+/** Métricas móviles (sin “0”); escritorio sigue usando `STATS`. */
+const STATS_MOBILE = [
+  { n: "Local", l: "Tu comuna primero" },
+  { n: "Sin intermediarios", l: "Contacto directo" },
+  { n: "Directo", l: "WhatsApp directo" },
+  { n: "Gratis", l: "Publicar básico gratis" },
+] as const;
+
 export default function HomeHero({ children, rubrosTicker = [] }: Props) {
   const searchParams = useSearchParams();
   const initialComunaSlug = searchParams.get("comuna") ?? null;
@@ -163,16 +171,28 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
               <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
                 En Rey del Dato apareces cuando alguien busca en tu comuna. Sin pagar publicidad. Sin intermediarios.
               </p>
-              <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-800 sm:text-base">
+              <p className="mt-4 hidden max-w-xl text-sm font-semibold leading-relaxed text-slate-800 sm:text-base md:block">
                 Todos tienen la misma oportunidad de aparecer.
                 <br />
                 Aquí no gana el que paga, gana el que está cerca.
               </p>
+              <div className="mt-4 md:hidden">
+                <p className="max-w-xl text-sm font-semibold leading-relaxed text-slate-800">
+                  Todos tienen la misma oportunidad de aparecer.
+                </p>
+                <div className="mt-2 max-w-xl rounded-lg border-l-[3px] border-[#0f766e] bg-emerald-50/90 px-3 py-2.5">
+                  <p className="text-sm font-semibold leading-snug text-slate-800">
+                    Aquí no gana el que paga.
+                    <br />
+                    Gana el que está cerca.
+                  </p>
+                </div>
+              </div>
 
               {/* Stats (balance visual vs card derecha) */}
-              <div className="mt-8 md:hidden grid grid-cols-4 gap-2">
-                {STATS.map((s) => (
-                  <div key={`${s.n}-${s.l}`} className="min-w-0 flex flex-col items-center text-center gap-0.5">
+              <div className="mt-6 grid grid-cols-4 gap-2 md:mt-8 md:hidden">
+                {STATS_MOBILE.map((s) => (
+                  <div key={`m-${s.n}-${s.l}`} className="min-w-0 flex flex-col items-center text-center gap-0.5">
                     <div className="text-xs font-semibold text-[#0F6E56] leading-tight">{s.n}</div>
                     <div className="text-xs text-gray-600 leading-snug">{s.l}</div>
                   </div>
@@ -194,14 +214,14 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
 
             {/* Derecha: card planes (gratis / ficha completa) + CTA */}
             <div className="w-full">
-              <div className="md:hidden overflow-hidden rounded-2xl border border-teal-200 bg-white px-5 py-6 text-left shadow-sm ring-1 ring-teal-100">
+              <div className="md:hidden overflow-hidden rounded-2xl border border-teal-200 bg-white px-4 py-5 text-left shadow-sm ring-1 ring-teal-100">
                 <h3 className="text-xl font-black leading-tight tracking-tight text-slate-900">
                   Impulsando el comercio local
                 </h3>
-                <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600">
+                <p className="mt-1.5 text-sm font-semibold leading-snug text-slate-600">
                   Aparece cuando buscan en tu comuna.
                 </p>
-                <ul className="mt-5 space-y-2.5 text-sm font-semibold text-slate-800">
+                <ul className="mt-3.5 space-y-1.5 text-sm font-semibold text-slate-800">
                   <li className="flex gap-2">
                     <span className="shrink-0 text-[#0f766e]" aria-hidden>
                       ✓
@@ -218,10 +238,10 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
                     <span className="shrink-0 text-[#0f766e]" aria-hidden>
                       ✓
                     </span>
-                    <span>Sin comisiones</span>
+                    <span>Sin intermediarios</span>
                   </li>
                 </ul>
-                <div className="mt-6">
+                <div className="mt-4">
                   <Link
                     href="/publicar"
                     onClick={() =>
@@ -234,18 +254,21 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
                     Publicar mi negocio
                   </Link>
                 </div>
-                <p className="mt-3 text-center text-xs leading-snug text-slate-500 px-0.5">
-                  Publicar básico es gratis. Luego podrás mejorar tu ficha si quieres.
-                </p>
-                <p className="mt-2 text-center text-xs leading-snug text-slate-600 px-0.5">
-                  También puedes ver opciones para mejorar tu ficha.{" "}
-                  <Link
-                    href="/planes"
-                    className="font-semibold text-[#0d7a5f] underline underline-offset-2 hover:text-teal-800"
-                  >
-                    Ver planes
-                  </Link>
-                </p>
+                <div className="mt-2 space-y-1.5 text-center">
+                  <p className="text-xs leading-snug text-slate-500">
+                    Publicar básico es gratis.
+                    <br />
+                    Luego podrás mejorar tu ficha si quieres.
+                  </p>
+                  <div className="flex justify-center pt-0.5">
+                    <Link
+                      href="/planes"
+                      className="inline-flex items-center justify-center rounded-full border border-teal-300/90 bg-white px-3.5 py-1.5 text-xs font-semibold text-[#0d7a5f] shadow-sm transition hover:border-teal-400 hover:bg-teal-50/80"
+                    >
+                      Ver planes
+                    </Link>
+                  </div>
+                </div>
               </div>
 
               <div className="hidden md:block overflow-hidden rounded-2xl border border-teal-200 bg-white text-center shadow-sm ring-1 ring-teal-100">
