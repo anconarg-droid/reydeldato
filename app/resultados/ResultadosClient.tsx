@@ -325,6 +325,9 @@ export default function ResultadosClient({
           : "";
   const comunaInvitacionActiva =
     Boolean(invitacionBuscaEnPaginaComuna) && directorioComunaAbierto && !tieneBusquedaActiva;
+  /** En `/[comuna]` sin término: en móvil el buscador tapa el listado; guiamos al listado publicado. */
+  const mostrarCtaListadoMovil =
+    Boolean(comuna && directorioComunaAbierto && !tieneBusquedaActiva);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -450,15 +453,40 @@ export default function ResultadosClient({
       <div className="mt-2 space-y-4">
         {headerDirectorioNormal}
         {bar}
-        <PublicSearchResults
-          comuna={comuna}
-          q=""
-          categoriaSlug={categoriaSlug || undefined}
-          subcategoriaSlug={subcategoriaSlug || undefined}
-          subcategoriaId={subcategoriaId || undefined}
-          comunaTituloConRegion={comunaTituloConRegion}
-          qDisplayLabel={initialQDisplay ?? ""}
-        />
+        {mostrarCtaListadoMovil ? (
+          <div className="md:hidden -mt-2 -mb-1 flex flex-col gap-2 rounded-xl border border-teal-200/90 bg-teal-50/80 px-3 py-2.5">
+            <p className="m-0 text-center text-[12px] font-semibold leading-snug text-teal-950">
+              Aquí abajo ya hay negocios publicados en {tituloComunaDisplay}. Puedes deslizar o ir
+              directo al listado.
+            </p>
+            <button
+              type="button"
+              className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-teal-700 bg-white px-3 text-[13px] font-extrabold text-[#0d7a5f] shadow-sm active:bg-teal-50"
+              onClick={() => {
+                document.getElementById("listado-resultados-comuna")?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }}
+            >
+              Ir al listado de negocios
+              <span aria-hidden className="text-base leading-none">
+                ↓
+              </span>
+            </button>
+          </div>
+        ) : null}
+        <div id="listado-resultados-comuna" className="scroll-mt-3">
+          <PublicSearchResults
+            comuna={comuna}
+            q=""
+            categoriaSlug={categoriaSlug || undefined}
+            subcategoriaSlug={subcategoriaSlug || undefined}
+            subcategoriaId={subcategoriaId || undefined}
+            comunaTituloConRegion={comunaTituloConRegion}
+            qDisplayLabel={initialQDisplay ?? ""}
+          />
+        </div>
       </div>
     );
   }

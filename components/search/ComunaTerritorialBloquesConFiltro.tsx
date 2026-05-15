@@ -201,6 +201,7 @@ export default function ComunaTerritorialBloquesConFiltro({
           className={
             enRaw.length > 0 || sinBasePeroConCobertura ? "mt-6 sm:mt-7" : ""
           }
+          defaultCollapsed={enRaw.length > 0}
           title={
             <>
               Atienden {nombreComunaDisplay} desde otras comunas (
