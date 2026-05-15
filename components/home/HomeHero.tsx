@@ -25,14 +25,6 @@ type Props = {
 
 const STATS = [
   { n: "Local", l: "Tu comuna primero" },
-  { n: "0", l: "Sin intermediarios" },
-  { n: "Directo", l: "WhatsApp directo" },
-  { n: "Gratis", l: "Publicar es gratis" },
-];
-
-/** Métricas móviles (sin “0”); escritorio sigue usando `STATS`. */
-const STATS_MOBILE = [
-  { n: "Local", l: "Tu comuna primero" },
   { n: "Sin intermediarios", l: "Contacto directo" },
   { n: "Directo", l: "WhatsApp directo" },
   { n: "Gratis", l: "Publicar básico gratis" },
@@ -191,20 +183,18 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
 
               {/* Stats (balance visual vs card derecha) */}
               <div className="mt-6 grid grid-cols-4 gap-2 md:mt-8 md:hidden">
-                {STATS_MOBILE.map((s) => (
+                {STATS.map((s) => (
                   <div key={`m-${s.n}-${s.l}`} className="min-w-0 flex flex-col items-center text-center gap-0.5">
                     <div className="text-xs font-semibold text-[#0F6E56] leading-tight">{s.n}</div>
                     <div className="text-xs text-gray-600 leading-snug">{s.l}</div>
                   </div>
                 ))}
               </div>
-              <div className="mt-8 hidden md:grid max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="mt-8 hidden max-w-2xl grid-cols-2 gap-x-6 gap-y-4 md:grid">
                 {STATS.map((s) => (
-                  <div key={`${s.n}-${s.l}`} className="min-w-0">
-                    <div className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#0f766e] leading-none">
-                      {s.n}
-                    </div>
-                    <div className="mt-1 text-xs sm:text-sm font-medium text-slate-500 leading-snug">
+                  <div key={`d-${s.n}-${s.l}`} className="min-w-0">
+                    <div className="text-sm font-bold leading-snug text-[#0f766e]">{s.n}</div>
+                    <div className="mt-0.5 text-xs font-medium leading-snug text-slate-500 sm:text-sm">
                       {s.l}
                     </div>
                   </div>

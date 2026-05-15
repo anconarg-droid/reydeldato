@@ -21,9 +21,6 @@ type Props = {
   ultimosPublicadosCards: EmprendedorSearchCardProps[];
 };
 
-const cardBase =
-  "rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition-shadow hover:shadow-md";
-
 const CAROUSEL_STRIDE = 272; /* 260px card + gap-3 */
 
 function useHomeCarouselDots(itemCount: number) {
@@ -55,7 +52,7 @@ const COMO_FUNCIONA_STEPS = [
   {
     n: "04",
     t: "Mejoras si quieres",
-    d: "Publicar es gratis. Por una pequeña cuota puedes agregar fotos, redes y más detalles a tu ficha.",
+    d: "Publicar es gratis. Luego puedes mejorar tu ficha con fotos y más detalles.",
   },
 ] as const;
 
@@ -419,23 +416,29 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-como-funciona-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 pb-12 pt-16 sm:px-6 sm:pb-14 sm:pt-20">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 md:py-12">
           <HomeMobileComoFunciona />
           <div className="hidden md:block">
             <h2
               id="home-como-funciona-heading"
-              className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+              className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
             >
               Cómo funciona
             </h2>
-            <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+            <ol className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
               {COMO_FUNCIONA_STEPS.map((step) => (
-                <li key={step.n} className={cardBase}>
-                  <div className="text-[clamp(1.75rem,4vw,2.35rem)] font-black tabular-nums leading-none tracking-[-0.04em] text-teal-700">
+                <li
+                  key={step.n}
+                  className="flex min-h-[156px] flex-col rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                >
+                  <div className="text-3xl font-semibold tabular-nums leading-none text-[#c7ebe3]">
                     {step.n}
                   </div>
-                  <div className="mt-3 text-base font-bold text-slate-900">{step.t}</div>
-                  <p className="mt-2 text-sm font-medium leading-relaxed text-slate-700">{step.d}</p>
+                  <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    Paso {step.n}
+                  </p>
+                  <h3 className="mt-1 text-sm font-bold text-slate-900">{step.t}</h3>
+                  <p className="mt-2 text-xs leading-snug text-slate-600 line-clamp-4">{step.d}</p>
                 </li>
               ))}
             </ol>
