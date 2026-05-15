@@ -431,7 +431,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
                   key={step.n}
                   className="flex flex-row items-center gap-6 rounded-xl border border-gray-200 bg-white p-6"
                 >
-                  <span className="flex-shrink-0 text-7xl font-medium tabular-nums leading-none text-[#0F6E56]/15">
+                  <span className="flex-shrink-0 text-7xl font-medium tabular-nums leading-none text-[#0F6E56]/55">
                     {step.n}
                   </span>
                   <div className="min-w-0">
