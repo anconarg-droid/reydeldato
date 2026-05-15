@@ -170,7 +170,15 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
               </p>
 
               {/* Stats (balance visual vs card derecha) */}
-              <div className="mt-8 grid max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="mt-8 md:hidden grid grid-cols-4 gap-2">
+                {STATS.map((s) => (
+                  <div key={`${s.n}-${s.l}`} className="min-w-0 flex flex-col items-center text-center gap-0.5">
+                    <div className="text-xs font-semibold text-[#0F6E56] leading-tight">{s.n}</div>
+                    <div className="text-xs text-gray-600 leading-snug">{s.l}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 hidden md:grid max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
                 {STATS.map((s) => (
                   <div key={`${s.n}-${s.l}`} className="min-w-0">
                     <div className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#0f766e] leading-none">
@@ -188,7 +196,7 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
             <div className="w-full">
               <div className="md:hidden overflow-hidden rounded-2xl border border-teal-200 bg-white px-5 py-6 text-left shadow-sm ring-1 ring-teal-100">
                 <h3 className="text-xl font-black leading-tight tracking-tight text-slate-900">
-                  Impulsa tu negocio local
+                  Impulsando el comercio local
                 </h3>
                 <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600">
                   Aparece cuando buscan en tu comuna.
