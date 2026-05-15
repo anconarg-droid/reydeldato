@@ -148,6 +148,95 @@ function IconCheckMini(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+/** Píldoras de modalidad: 14×14px, trazo (sin emoji). */
+function IconModalidadLocalFisico({ className, ...rest }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={14}
+      height={14}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn("shrink-0", className)}
+      aria-hidden
+      {...rest}
+    >
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  );
+}
+
+function IconModalidadDomicilio({ className, ...rest }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={14}
+      height={14}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn("shrink-0", className)}
+      aria-hidden
+      {...rest}
+    >
+      <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-.2-2.7-.3c-.5 0-.9.4-.9.9V17" />
+      <path d="M14 17H9" />
+      <circle cx="6.5" cy="17.5" r="2.5" />
+      <circle cx="16.5" cy="17.5" r="2.5" />
+    </svg>
+  );
+}
+
+function IconModalidadEntrega({ className, ...rest }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={14}
+      height={14}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn("shrink-0", className)}
+      aria-hidden
+      {...rest}
+    >
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  );
+}
+
+function IconModalidadEnLinea({ className, ...rest }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={14}
+      height={14}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn("shrink-0", className)}
+      aria-hidden
+      {...rest}
+    >
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  );
+}
+
 /** Cuatro slots fijos de modalidad en card; activo si el chip aparece en datos de listado. */
 function modalidadFijaSlotActiva(
   slot: "local_fisico" | "domicilio" | "delivery" | "online",
@@ -172,20 +261,22 @@ function modalidadFijaSlotActiva(
   return false;
 }
 
+type ModalidadMetaPill = (typeof MODALIDAD_META_PILLS)[number];
+
 const MODALIDAD_META_PILLS = [
-  { slot: "local_fisico" as const, emoji: "🏪", label: "Local físico" },
-  { slot: "domicilio" as const, emoji: "🚚", label: "A domicilio" },
-  { slot: "delivery" as const, emoji: "📦", label: "Delivery" },
-  { slot: "online" as const, emoji: "💻", label: "Online" },
+  { slot: "local_fisico" as const, label: "Local físico", Icon: IconModalidadLocalFisico },
+  { slot: "domicilio" as const, label: "A domicilio", Icon: IconModalidadDomicilio },
+  { slot: "delivery" as const, label: "Delivery", Icon: IconModalidadEntrega },
+  { slot: "online" as const, label: "Online", Icon: IconModalidadEnLinea },
 ] as const;
 
 function modalidadesActivasEnOrden(
   chips: string[],
-): { slot: (typeof MODALIDAD_META_PILLS)[number]["slot"]; emoji: string; label: string }[] {
+): { slot: ModalidadMetaPill["slot"]; label: string; Icon: ModalidadMetaPill["Icon"] }[] {
   return MODALIDAD_META_PILLS.filter((m) => modalidadFijaSlotActiva(m.slot, chips)).map((m) => ({
     slot: m.slot,
-    emoji: m.emoji,
     label: m.label,
+    Icon: m.Icon,
   }));
 }
 
@@ -860,18 +951,19 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
                 aria-label="Modalidades de atención"
               >
                 <div className="flex h-full max-h-full flex-wrap content-start gap-x-1 gap-y-0.5">
-                  {visible.map((m) => (
+                  {visible.map((m) => {
+                    const Icon = m.Icon;
+                    return (
                     <span
                       key={m.slot}
                       title={m.label}
                       className="inline-flex max-h-[22px] max-w-[calc(50%-0.125rem)] shrink-0 items-center gap-0.5 rounded border border-slate-200/70 bg-slate-50/80 px-1.5 py-0.5 text-xs leading-none text-slate-700"
                     >
-                      <span className="shrink-0 text-[12px] leading-none" aria-hidden>
-                        {m.emoji}
-                      </span>
+                      <Icon className="text-slate-600" />
                       <span className="min-w-0 truncate font-normal">{m.label}</span>
                     </span>
-                  ))}
+                    );
+                  })}
                   {extra > 0 ? (
                     <span
                       className="inline-flex max-h-[22px] shrink-0 items-center rounded border border-slate-200/70 bg-slate-50/60 px-1.5 py-0.5 text-xs font-medium tabular-nums leading-none text-slate-600"

@@ -74,6 +74,9 @@ const LA_DIFERENCIA_ITEMS = [
 
 function HomeMobileComoFunciona() {
   const { trackRef, activeIndex, scroll } = useHomeCarouselDots(COMO_FUNCIONA_STEPS.length);
+  useEffect(() => {
+    if (trackRef.current) trackRef.current.scrollLeft = 0;
+  }, []);
   return (
     <div className="md:hidden">
       <div className="flex justify-between items-end mb-4">

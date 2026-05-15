@@ -186,7 +186,49 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
 
             {/* Derecha: card planes (gratis / ficha completa) + CTA */}
             <div className="w-full">
-              <div className="overflow-hidden rounded-2xl border border-teal-200 bg-white text-center shadow-sm ring-1 ring-teal-100">
+              <div className="md:hidden overflow-hidden rounded-2xl border border-teal-200 bg-white px-5 py-6 text-left shadow-sm ring-1 ring-teal-100">
+                <h3 className="text-xl font-black leading-tight tracking-tight text-slate-900">
+                  Impulsa tu negocio local
+                </h3>
+                <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600">
+                  Aparece cuando buscan en tu comuna.
+                </p>
+                <ul className="mt-5 space-y-2.5 text-sm font-semibold text-slate-800">
+                  <li className="flex gap-2">
+                    <span className="shrink-0 text-[#0f766e]" aria-hidden>
+                      ✓
+                    </span>
+                    <span>Apareces en búsquedas por comuna</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="shrink-0 text-[#0f766e]" aria-hidden>
+                      ✓
+                    </span>
+                    <span>Contacto directo por WhatsApp</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="shrink-0 text-[#0f766e]" aria-hidden>
+                      ✓
+                    </span>
+                    <span>Sin comisiones</span>
+                  </li>
+                </ul>
+                <div className="mt-6">
+                  <Link
+                    href="/publicar"
+                    onClick={() =>
+                      capturePosthogEvent("click_publicar_home", {
+                        origen: "home_hero",
+                      })
+                    }
+                    className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-xl bg-teal-700 px-8 text-base font-extrabold text-white shadow-md transition hover:bg-teal-800"
+                  >
+                    Publicar mi negocio
+                  </Link>
+                </div>
+              </div>
+
+              <div className="hidden md:block overflow-hidden rounded-2xl border border-teal-200 bg-white text-center shadow-sm ring-1 ring-teal-100">
                 <div className="bg-white px-5 pt-4 pb-1 text-center sm:px-6">
                   <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-teal-800">
                     PARA EMPRENDEDORES
