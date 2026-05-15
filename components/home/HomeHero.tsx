@@ -234,6 +234,18 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
                     Publicar mi negocio
                   </Link>
                 </div>
+                <p className="mt-3 text-center text-xs leading-snug text-slate-500 px-0.5">
+                  Publicar básico es gratis. Luego podrás mejorar tu ficha si quieres.
+                </p>
+                <p className="mt-2 text-center text-xs leading-snug text-slate-600 px-0.5">
+                  También puedes ver opciones para mejorar tu ficha.{" "}
+                  <Link
+                    href="/planes"
+                    className="font-semibold text-[#0d7a5f] underline underline-offset-2 hover:text-teal-800"
+                  >
+                    Ver planes
+                  </Link>
+                </p>
               </div>
 
               <div className="hidden md:block overflow-hidden rounded-2xl border border-teal-200 bg-white text-center shadow-sm ring-1 ring-teal-100">

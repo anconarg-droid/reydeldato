@@ -1,3 +1,4 @@
+import LegalPageTopNav from "@/components/LegalPageTopNav";
 import LegalSection from "@/components/LegalSection";
 import ScrollSpySidebarNav from "@/components/legal/ScrollSpySidebarNav";
 
@@ -15,7 +16,9 @@ const SECCIONES = [
 
 export default function PrivacidadPage() {
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "2rem 1rem" }}>
+    <main className="mx-auto max-w-6xl px-4 py-10 text-slate-900">
+      <LegalPageTopNav />
+      <div className="mx-auto w-full" style={{ maxWidth: 720 }}>
       <div style={{ marginBottom: "2rem" }}>
         <h1 style={{ fontSize: "1.875rem", lineHeight: "2.25rem", fontWeight: 600, color: "var(--color-foreground)" }}>
           Política de Privacidad
@@ -126,6 +129,7 @@ export default function PrivacidadPage() {
           .legal-nav { display: block !important; }
         }
       `}</style>
-    </div>
+      </div>
+    </main>
   );
 }

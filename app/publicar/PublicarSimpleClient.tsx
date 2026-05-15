@@ -27,6 +27,7 @@ import {
   capturePosthogEvent,
   identifyPosthogUser,
 } from "@/lib/posthog";
+import { COPY_MEJORA_OPCIONAL_DESDE_REFERENCIA } from "@/lib/panelComercialCopy";
 
 type Comuna = {
   id: string;
@@ -1470,19 +1471,33 @@ export default function PublicarSimpleClient({
                 </Link>
               </div>
             ) : (
-              <PasoInformacionBasica
-                form={formForPaso}
-                errors={errors}
-                setField={setPasoField}
-                submitForm={() => void submitForm()}
-                saving={saving}
-                comunas={comunas}
-                regiones={regiones}
-                showIntro={false}
-                variant={
-                  edicionBasicaMode ? "edicion_basica_publicado" : "default"
-                }
-              />
+              <>
+                {!edicionBasicaMode ? (
+                  <div className="mx-auto mb-5 max-w-2xl rounded-xl border border-teal-100 bg-teal-50/60 px-4 py-3 text-sm leading-relaxed text-slate-700">
+                    <p className="m-0 font-semibold text-slate-900">
+                      Publicar tu negocio básico es gratis.
+                    </p>
+                    <p className="m-0 mt-2">
+                      Después de publicar, podrás mejorar tu ficha con fotos, redes y más detalles por
+                      una pequeña cuota.
+                    </p>
+                    <p className="m-0 mt-1.5 text-slate-600">{COPY_MEJORA_OPCIONAL_DESDE_REFERENCIA}</p>
+                  </div>
+                ) : null}
+                <PasoInformacionBasica
+                  form={formForPaso}
+                  errors={errors}
+                  setField={setPasoField}
+                  submitForm={() => void submitForm()}
+                  saving={saving}
+                  comunas={comunas}
+                  regiones={regiones}
+                  showIntro={false}
+                  variant={
+                    edicionBasicaMode ? "edicion_basica_publicado" : "default"
+                  }
+                />
+              </>
             )}
           </>
         ) : (

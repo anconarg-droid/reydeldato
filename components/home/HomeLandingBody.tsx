@@ -49,9 +49,14 @@ function useHomeCarouselDots(itemCount: number) {
 }
 
 const COMO_FUNCIONA_STEPS = [
-  { n: "01", t: "Buscas en tu comuna", d: "Primero mostramos opciones cercanas." },
-  { n: "02", t: "Comparas opciones reales", d: "Ves descripción, comuna y forma de contacto." },
-  { n: "03", t: "Contactas directo", d: "Hablas por WhatsApp, sin intermediarios." },
+  { n: "01", t: "Buscas en tu comuna", d: "Ves negocios cercanos." },
+  { n: "02", t: "Comparas opciones reales", d: "Revisas descripción y contacto." },
+  { n: "03", t: "Contactas directo", d: "Hablas por WhatsApp." },
+  {
+    n: "04",
+    t: "Mejoras si quieres",
+    d: "Publicar es gratis. Por una pequeña cuota puedes agregar fotos, redes y más detalles a tu ficha.",
+  },
 ] as const;
 
 const LA_DIFERENCIA_ITEMS = [
@@ -117,7 +122,7 @@ function HomeMobileComoFunciona() {
               Paso {step.n}
             </p>
             <h3 className="mt-1 text-base font-semibold text-gray-900">{step.t}</h3>
-            <p className="mt-2 text-sm text-gray-600 leading-snug line-clamp-1">{step.d}</p>
+            <p className="mt-2 text-sm text-gray-600 leading-snug line-clamp-3">{step.d}</p>
           </div>
         ))}
       </div>
@@ -423,7 +428,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             >
               Cómo funciona
             </h2>
-            <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+            <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
               {COMO_FUNCIONA_STEPS.map((step) => (
                 <li key={step.n} className={cardBase}>
                   <div className="text-[clamp(1.75rem,4vw,2.35rem)] font-black tabular-nums leading-none tracking-[-0.04em] text-teal-700">

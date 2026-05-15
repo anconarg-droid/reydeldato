@@ -125,6 +125,9 @@ export {
 export const COPY_PLAN_GRATIS_LUEGO_BASICO =
   "Gratis por 90 días. Luego puedes mantener tu ficha completa desde $3.500/mes. Si no continúas, tu negocio sigue visible con datos básicos.";
 
+/** Referencia de producto para mejoras opcionales (misma cifra que en checkout / hero planes). */
+export const COPY_MEJORA_OPCIONAL_DESDE_REFERENCIA = "Mejora opcional desde $3.500/mes.";
+
 /**
  * Línea secundaria compacta (API / resúmenes).
  */
