@@ -425,20 +425,24 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
             >
               Cómo funciona
             </h2>
-            <ol className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
+            <ol className="mt-6 grid grid-cols-2 gap-4 sm:gap-5">
               {COMO_FUNCIONA_STEPS.map((step) => (
                 <li
                   key={step.n}
-                  className="flex min-h-[156px] flex-col rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                  className="flex min-h-[160px] flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
                 >
-                  <div className="text-3xl font-semibold tabular-nums leading-none text-[#c7ebe3]">
-                    {step.n}
+                  <div>
+                    <div className="text-3xl font-semibold tabular-nums leading-none text-[#0F6E56]/35">
+                      {step.n}
+                    </div>
+                    <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      Paso {step.n}
+                    </p>
                   </div>
-                  <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                    Paso {step.n}
-                  </p>
-                  <h3 className="mt-1 text-sm font-bold text-slate-900">{step.t}</h3>
-                  <p className="mt-2 text-xs leading-snug text-slate-600 line-clamp-4">{step.d}</p>
+                  <div className="mt-3">
+                    <h3 className="text-sm font-bold text-slate-900">{step.t}</h3>
+                    <p className="mt-2 text-xs leading-snug text-slate-600 line-clamp-4">{step.d}</p>
+                  </div>
                 </li>
               ))}
             </ol>
