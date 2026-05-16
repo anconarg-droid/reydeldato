@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Sora } from "next/font/google";
 import HomeSearchClient from "@/app/HomeSearchClient";
 import HomeRubrosTicker from "@/components/home/HomeRubrosTicker";
+import HomeUltimosPublicadosClient from "@/components/home/HomeUltimosPublicadosClient";
 import type { RubroTickerItem } from "@/lib/loadRubrosTickerHome";
+import type { EmprendedorSearchCardProps } from "@/components/search/EmprendedorSearchCard";
 import { CHIPS_HERO } from "@/lib/homeConstants";
 import { capturePosthogEvent } from "@/lib/posthog";
 import { useSearchParams } from "next/navigation";
@@ -21,6 +24,8 @@ type Props = {
   children?: ReactNode;
   /** Subcategorías con al menos un publicado; con menos de 5 no se muestra ticker. */
   rubrosTicker?: RubroTickerItem[];
+  /** Carrusel “últimos publicados”: en móvil se muestra bajo el buscador. */
+  ultimosPublicadosCards?: EmprendedorSearchCardProps[];
 };
 
 const STATS = [
@@ -30,9 +35,44 @@ const STATS = [
   { n: "Gratis", l: "Publicar básico gratis" },
 ] as const;
 
-export default function HomeHero({ children, rubrosTicker = [] }: Props) {
+export default function HomeHero({
+  children,
+  rubrosTicker = [],
+  ultimosPublicadosCards = [],
+}: Props) {
   const searchParams = useSearchParams();
   const initialComunaSlug = searchParams.get("comuna") ?? null;
+
+  const [totalNegociosActivosHero, setTotalNegociosActivosHero] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/home/comunas-activas")
+      .then((res) => res.json())
+      .then(
+        (data: {
+          ok?: boolean;
+          items?: Array<{ count?: number }>;
+        }) => {
+          if (cancelled) return;
+          if (!data?.ok || !Array.isArray(data.items)) {
+            setTotalNegociosActivosHero(null);
+            return;
+          }
+          const sum = data.items.reduce(
+            (s, x) => s + Number((x as { count?: unknown }).count ?? 0),
+            0
+          );
+          setTotalNegociosActivosHero(sum);
+        }
+      )
+      .catch(() => {
+        if (!cancelled) setTotalNegociosActivosHero(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className={sora.variable}>
@@ -132,12 +172,22 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
             />
           </div>
 
+          {ultimosPublicadosCards.length > 0 ? (
+            <div className="mt-6 w-full md:hidden">
+              <HomeUltimosPublicadosClient
+                cards={ultimosPublicadosCards}
+                totalNegociosActivos={totalNegociosActivosHero}
+                headingId="home-ultimos-publicados-hero-mobile"
+              />
+            </div>
+          ) : null}
+
           <HomeRubrosTicker
             key={rubrosTicker.map((r) => r.slug).join("|")}
             items={rubrosTicker}
           />
 
-          <p className="mt-4 text-center text-sm font-semibold text-slate-700">
+          <p className="mt-4 hidden text-center text-sm font-semibold text-slate-700 md:block">
             Primero lo local. Contacto directo por WhatsApp.
           </p>
 
@@ -153,33 +203,31 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
           <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-14">
             {/* Izquierda: texto */}
             <div className="text-left">
-              <p className="text-sm font-semibold text-slate-700">Tu negocio aparece cuando alguien cerca te busca.</p>
-              <h2 className="mt-2 text-balance text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+              <p className="hidden text-sm font-semibold text-slate-700 md:block">
+                Tu negocio aparece cuando alguien cerca te busca.
+              </p>
+              <h2 className="mt-2 text-balance text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl md:mt-2">
                 Te encuentran cuando te necesitan
               </h2>
-              <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
+              <div className="mt-4 space-y-0.5 md:hidden">
+                <p className="text-sm font-semibold leading-snug text-slate-700">Primero lo local.</p>
+                <p className="text-sm font-semibold leading-snug text-slate-700">Sin intermediarios.</p>
+                <p className="text-sm font-semibold leading-snug text-slate-700">
+                  Contacto directo por WhatsApp.
+                </p>
+              </div>
+              <p className="mt-4 hidden max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base md:block">
                 Tus próximos clientes pueden estar cerca, pero no saben que existes.
               </p>
-              <p className="mt-4 max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base">
-                En Rey del Dato apareces cuando alguien busca en tu comuna. Sin pagar publicidad. Sin intermediarios.
+              <p className="mt-4 hidden max-w-xl text-sm font-semibold leading-relaxed text-slate-700 sm:text-base md:block">
+                En Rey del Dato apareces cuando alguien busca en tu comuna. Sin pagar publicidad. Sin
+                intermediarios.
               </p>
               <p className="mt-4 hidden max-w-xl text-sm font-semibold leading-relaxed text-slate-800 sm:text-base md:block">
                 Todos tienen la misma oportunidad de aparecer.
                 <br />
                 Aquí no gana el que paga, gana el que está cerca.
               </p>
-              <div className="mt-4 md:hidden">
-                <p className="max-w-xl text-sm font-semibold leading-relaxed text-slate-800">
-                  Todos tienen la misma oportunidad de aparecer.
-                </p>
-                <div className="mt-2 max-w-xl rounded-lg border-l-[3px] border-[#0f766e] bg-emerald-50/90 px-3 py-2.5">
-                  <p className="text-sm font-semibold leading-snug text-slate-800">
-                    Aquí no gana el que paga.
-                    <br />
-                    Gana el que está cerca.
-                  </p>
-                </div>
-              </div>
 
               {/* Stats (balance visual vs card derecha) */}
               <div className="mt-6 grid grid-cols-4 gap-2 md:mt-8 md:hidden">
@@ -202,66 +250,9 @@ export default function HomeHero({ children, rubrosTicker = [] }: Props) {
               </div>
             </div>
 
-            {/* Derecha: card planes (gratis / ficha completa) + CTA */}
-            <div className="w-full">
-              <div className="md:hidden overflow-hidden rounded-2xl border border-teal-200 bg-white px-4 py-5 text-left shadow-sm ring-1 ring-teal-100">
-                <h3 className="text-xl font-black leading-tight tracking-tight text-slate-900">
-                  Impulsando el comercio local
-                </h3>
-                <p className="mt-1.5 text-sm font-semibold leading-snug text-slate-600">
-                  Aparece cuando buscan en tu comuna.
-                </p>
-                <ul className="mt-3.5 space-y-1.5 text-sm font-semibold text-slate-800">
-                  <li className="flex gap-2">
-                    <span className="shrink-0 text-[#0f766e]" aria-hidden>
-                      ✓
-                    </span>
-                    <span>Apareces en búsquedas por comuna</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="shrink-0 text-[#0f766e]" aria-hidden>
-                      ✓
-                    </span>
-                    <span>Contacto directo por WhatsApp</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="shrink-0 text-[#0f766e]" aria-hidden>
-                      ✓
-                    </span>
-                    <span>Sin intermediarios</span>
-                  </li>
-                </ul>
-                <div className="mt-4">
-                  <Link
-                    href="/publicar"
-                    onClick={() =>
-                      capturePosthogEvent("click_publicar_home", {
-                        origen: "home_hero",
-                      })
-                    }
-                    className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-xl bg-teal-700 px-8 text-base font-extrabold text-white shadow-md transition hover:bg-teal-800"
-                  >
-                    Publicar mi negocio
-                  </Link>
-                </div>
-                <div className="mt-2 space-y-1.5 text-center">
-                  <p className="text-xs leading-snug text-slate-500">
-                    Publicar básico es gratis.
-                    <br />
-                    Luego podrás mejorar tu ficha si quieres.
-                  </p>
-                  <div className="flex justify-center pt-0.5">
-                    <Link
-                      href="/planes"
-                      className="inline-flex items-center justify-center rounded-full border border-teal-300/90 bg-white px-3.5 py-1.5 text-xs font-semibold text-[#0d7a5f] shadow-sm transition hover:border-teal-400 hover:bg-teal-50/80"
-                    >
-                      Ver planes
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              <div className="hidden md:block overflow-hidden rounded-2xl border border-teal-200 bg-white text-center shadow-sm ring-1 ring-teal-100">
+            {/* Derecha: card planes (gratis / ficha completa) + CTA — solo desktop */}
+            <div className="hidden w-full md:block">
+              <div className="overflow-hidden rounded-2xl border border-teal-200 bg-white text-center shadow-sm ring-1 ring-teal-100">
                 <div className="bg-white px-5 pt-4 pb-1 text-center sm:px-6">
                   <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-teal-800">
                     PARA EMPRENDEDORES

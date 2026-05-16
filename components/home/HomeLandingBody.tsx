@@ -445,9 +445,9 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
         </div>
       </section>
 
-      {/* 2 · Cards reales (evidencia) */}
+      {/* 2 · Cards reales (evidencia) — mismo bloque debajo del buscador en móvil */}
       <section
-        className="border-t border-slate-100 bg-slate-50/90"
+        className="hidden border-t border-slate-100 bg-slate-50/90 md:block"
         aria-labelledby="home-ultimos-publicados-heading"
       >
         <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">

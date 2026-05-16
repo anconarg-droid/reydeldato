@@ -23,7 +23,7 @@ export default async function HomePage() {
           </div>
         }
       >
-        <HomeHero rubrosTicker={rubrosTicker} />
+        <HomeHero rubrosTicker={rubrosTicker} ultimosPublicadosCards={ultimosPublicadosCards} />
       </Suspense>
       <Suspense
         fallback={

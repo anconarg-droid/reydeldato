@@ -141,7 +141,7 @@ export default function SoloCompletosFiltroControl({
         </button>
       </div>
 
-      <p className="px-1 text-center text-xs leading-relaxed text-gray-400">
+      <p className="px-1 text-center text-sm font-medium leading-relaxed text-gray-600">
         Las fichas completas muestran fotos, redes sociales y más detalles para ayudarte a decidir
         mejor.
       </p>

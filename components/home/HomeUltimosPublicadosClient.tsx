@@ -12,6 +12,8 @@ type Props = {
   cards: EmprendedorSearchCardProps[];
   /** Suma de negocios en comunas activas (API home); opcional. */
   totalNegociosActivos?: number | null;
+  /** Id del h2 (evita duplicar id si el bloque se monta dos veces en la página). */
+  headingId?: string;
 };
 
 const AUTO_ADVANCE_MS = 3000;
@@ -20,6 +22,7 @@ const RESUME_AFTER_INTERACTION_MS = 6500;
 export default function HomeUltimosPublicadosClient({
   cards,
   totalNegociosActivos = null,
+  headingId = "home-ultimos-publicados-heading",
 }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -196,10 +199,10 @@ export default function HomeUltimosPublicadosClient({
   }, [scrollLeftToAlignCardStart]);
 
   return (
-    <div className="w-full py-0" aria-labelledby="home-ultimos-publicados-heading">
+    <div className="w-full py-0" aria-labelledby={headingId}>
       <div className="mx-auto w-full max-w-5xl px-0">
         <h2
-          id="home-ultimos-publicados-heading"
+          id={headingId}
           className="text-center text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl md:text-3xl"
         >
           Más de {negociosLabel.toLocaleString("es-CL")} negocios ya están publicados
