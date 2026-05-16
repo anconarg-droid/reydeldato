@@ -10,6 +10,11 @@ import {
 import type { RubroTickerItem } from "@/lib/loadRubrosTickerHome";
 
 const MIN_RUBROS = 5;
+/** Ejemplos fijos (servicios típicos) al inicio del ticker: se mezclan con rubros reales del directorio. */
+const EJEMPLOS_SERVICIOS_FIJOS: RubroTickerItem[] = [
+  { slug: "_ej-gasfiter", label: "Gasfiter" },
+  { slug: "_ej-electricista", label: "Electricista" },
+];
 /** Límite de ciclos del array base por mitad (evita bucle infinito si un ítem es más ancho que el clip). */
 const MAX_REPEATS = 80;
 
@@ -76,9 +81,14 @@ export default function HomeRubrosTicker({
   const segRef = useRef<HTMLDivElement>(null);
   const [repeats, setRepeats] = useState(1);
 
+  const mergedItems = useMemo(
+    () => [...EJEMPLOS_SERVICIOS_FIJOS, ...items],
+    [items],
+  );
+
   const segmentRows = useMemo(
-    () => expandItems(items, repeats),
-    [items, repeats],
+    () => expandItems(mergedItems, repeats),
+    [mergedItems, repeats],
   );
 
   useLayoutEffect(() => {
@@ -101,25 +111,19 @@ export default function HomeRubrosTicker({
     });
     ro.observe(clip);
     return () => ro.disconnect();
-  }, [items, repeats]);
+  }, [mergedItems, repeats]);
 
-  if (items.length < MIN_RUBROS) return null;
+  if (mergedItems.length < MIN_RUBROS) return null;
 
   return (
     <div
       className="rubros-ticker-wrapper mx-auto mt-1.5 w-full max-w-[680px] select-none px-3 sm:mt-2 sm:px-4"
       role="region"
-      aria-labelledby="home-rubros-ticker-heading"
+      aria-label="Ejemplos de búsqueda: servicios y comercios publicados en el directorio"
     >
-      <p
-        id="home-rubros-ticker-heading"
-        className="mb-1.5 text-center text-[11px] font-medium leading-snug text-slate-500"
-      >
-        <span className="block">Ejemplos de servicios y comercios que puedes buscar</span>
-        <span className="mt-0.5 block font-normal text-slate-500/90">
-          Si no aparece lo que buscas, prueba por ejemplo: gasfiter, electricista.
-        </span>
-      </p>
+      <span className="sr-only">
+        Ejemplos para buscar: incluye servicios como gasfiter o electricista, y comercios según rubros publicados.
+      </span>
       <div
         ref={clipRef}
         className="rubros-ticker-clip pointer-events-none overflow-hidden px-1"
