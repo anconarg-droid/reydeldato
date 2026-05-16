@@ -166,14 +166,19 @@ function HomeComunasPreparacionMobile({ items }: { items: ComunaPreparacionItem[
 
 export default function HomeComunasPreparacion({
   items,
+  flush = false,
 }: {
   items: ComunaPreparacionItem[];
+  /** Sin margen/borde propios: útil cuando el bloque va dentro de otra `<section>` de página. */
+  flush?: boolean;
 }) {
   if (!items.length) return null;
 
   return (
     <section
-      className="mt-14 sm:mt-16 border-t border-slate-100 pt-10 sm:pt-12"
+      className={
+        flush ? "" : "mt-14 sm:mt-16 border-t border-slate-100 pt-10 sm:pt-12"
+      }
       aria-labelledby="comunas-preparacion-heading"
     >
       <HomeComunasPreparacionMobile items={items} />

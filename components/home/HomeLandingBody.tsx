@@ -50,12 +50,7 @@ function useHomeCarouselDots(itemCount: number) {
 const COMO_FUNCIONA_STEPS = [
   { n: "01", t: "Buscas en tu comuna", d: "Ves negocios cercanos." },
   { n: "02", t: "Comparas opciones reales", d: "Revisas descripción y contacto." },
-  { n: "03", t: "Contactas directo", d: "Hablas por WhatsApp." },
-  {
-    n: "04",
-    t: "Mejoras si quieres",
-    d: "Publicar es gratis. Luego puedes mejorar tu ficha con fotos y más detalles.",
-  },
+  { n: "03", t: "Hablas directo con el negocio", d: "WhatsApp, Instagram o llamada." },
 ] as const;
 
 const LA_DIFERENCIA_ITEMS = [
@@ -83,7 +78,7 @@ function HomeMobileComoFunciona() {
   }, []);
   return (
     <div className="md:hidden">
-      <div className="flex justify-between items-end mb-3">
+      <div className="flex justify-between items-end mb-2">
         <div>
           <h2 className="text-xl font-medium text-gray-900">Cómo funciona</h2>
           <p className="text-xs text-gray-500 mt-0.5">Desliza para ver más →</p>
@@ -116,7 +111,7 @@ function HomeMobileComoFunciona() {
             key={step.n}
             className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-4"
           >
-            <div className="text-7xl font-medium text-[#E1F5EE] leading-none tabular-nums">{step.n}</div>
+            <div className="text-6xl font-medium text-[#E1F5EE] leading-none tabular-nums">{step.n}</div>
             <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
               Paso {step.n}
             </p>
@@ -417,51 +412,53 @@ export default function HomeLandingBody({
 
   return (
     <div className="pb-0">
-      {/* 1 · Cómo funciona */}
+      {/* 1 · Fichas reales publicadas (justo después del bloque emprendedores en HomeHero) */}
+      {ultimosPublicadosCards.length > 0 ? (
+        <section
+          className="border-t border-slate-100 bg-slate-50/90"
+          aria-labelledby="home-ultimos-publicados-heading"
+        >
+          <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-9 md:py-10">
+            <HomeUltimosPublicadosClient
+              cards={ultimosPublicadosCards}
+              totalNegociosActivos={totalNegociosParaCarrusel}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {/* 2 · Cómo funciona */}
       <section
         id="home-como-funciona"
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-como-funciona-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 md:py-10 lg:py-12">
+        <div className="mx-auto max-w-5xl px-4 py-5 sm:px-6 md:py-7 lg:py-8">
           <HomeMobileComoFunciona />
           <div className="hidden md:block">
             <h2
               id="home-como-funciona-heading"
-              className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
+              className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[1.65rem]"
             >
               Cómo funciona
             </h2>
-            <ol className="mt-6 grid grid-cols-2 gap-4 sm:gap-5">
+            <ol className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
               {COMO_FUNCIONA_STEPS.map((step) => (
                 <li
                   key={step.n}
-                  className="flex flex-row items-center gap-6 rounded-xl border border-gray-200 bg-white p-6"
+                  className="flex flex-row items-center gap-4 rounded-xl border border-gray-200 bg-white p-4"
                 >
-                  <span className="flex-shrink-0 text-7xl font-medium tabular-nums leading-none text-[#0F6E56]/55">
+                  <span className="flex-shrink-0 text-5xl font-medium tabular-nums leading-none text-[#0F6E56]/55 sm:text-6xl">
                     {step.n}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-lg font-medium text-gray-900">{step.t}</p>
-                    <p className="mt-1 text-sm text-gray-500">{step.d}</p>
+                    <p className="text-base font-medium leading-snug text-gray-900">{step.t}</p>
+                    <p className="mt-0.5 text-sm text-gray-500">{step.d}</p>
                   </div>
                 </li>
               ))}
             </ol>
           </div>
-        </div>
-      </section>
-
-      {/* 2 · Cards reales (evidencia) — mismo bloque debajo del buscador en móvil */}
-      <section
-        className="hidden border-t border-slate-100 bg-slate-50/90 md:block"
-        aria-labelledby="home-ultimos-publicados-heading"
-      >
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-12 md:py-14">
-          <HomeUltimosPublicadosClient
-            cards={ultimosPublicadosCards}
-            totalNegociosActivos={totalNegociosParaCarrusel}
-          />
         </div>
       </section>
 
@@ -580,16 +577,19 @@ export default function HomeLandingBody({
               )}
             </div>
           </div>
-
-          {!loadingPrep && prep.length > 0 ? (
-            <div className="mt-14">
-              <HomeComunasPreparacion items={prep.slice(0, 6)} />
-            </div>
-          ) : null}
         </div>
       </section>
 
-      {/* 5 · Recomendar negocio */}
+      {/* 5 · Comunas en crecimiento */}
+      {!loadingPrep && prep.length > 0 ? (
+        <section className="border-t border-slate-100 bg-white">
+          <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 md:py-11">
+            <HomeComunasPreparacion items={prep.slice(0, 6)} flush />
+          </div>
+        </section>
+      ) : null}
+
+      {/* 6 · Recomendar negocio */}
       <section className="border-t border-slate-100 bg-white" aria-labelledby="home-recomendar">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
           <h2
@@ -605,23 +605,23 @@ export default function HomeLandingBody({
         </div>
       </section>
 
-      {/* 5 · CTA final (ancho completo) */}
+      {/* 7 · CTA final (ancho completo) */}
       <section
         className="mt-0 w-full border-t border-teal-900/20 bg-[#0f766e] text-white"
         aria-labelledby="home-cta-final"
       >
-        <div className="mx-auto max-w-5xl px-4 pt-16 pb-24 text-center sm:px-6 sm:pt-20 sm:pb-28">
+        <div className="mx-auto max-w-5xl px-4 pt-10 pb-14 text-center sm:px-6 sm:pt-12 sm:pb-16">
           <p className="text-xs font-extrabold tracking-[0.18em] text-white/90">
             PARA EMPRENDEDORES
           </p>
-          <h2 id="home-cta-final" className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+          <h2 id="home-cta-final" className="mt-2.5 text-3xl font-black tracking-tight sm:text-4xl">
             Empieza gratis.
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-relaxed text-white/95 sm:text-lg">
+          <p className="mx-auto mt-3 max-w-2xl text-base font-semibold leading-relaxed text-white/95 sm:text-lg">
             Tu próximo cliente puede estar cerca.
           </p>
 
-          <div className="mt-7 flex flex-col items-center gap-3">
+          <div className="mt-5 flex flex-col items-center gap-2.5">
             <Link
               href="/publicar"
               className="inline-flex h-14 min-h-14 w-full max-w-sm items-center justify-center rounded-xl bg-white px-8 text-base font-extrabold text-[#0f766e] shadow-lg shadow-teal-900/20 transition hover:bg-teal-50"

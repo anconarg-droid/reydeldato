@@ -5,9 +5,7 @@ import type { ReactNode } from "react";
 import { Sora } from "next/font/google";
 import HomeSearchClient from "@/app/HomeSearchClient";
 import HomeRubrosTicker from "@/components/home/HomeRubrosTicker";
-import HomeUltimosPublicadosClient from "@/components/home/HomeUltimosPublicadosClient";
 import type { RubroTickerItem } from "@/lib/loadRubrosTickerHome";
-import type { EmprendedorSearchCardProps } from "@/components/search/EmprendedorSearchCard";
 import { CHIPS_HERO } from "@/lib/homeConstants";
 import { capturePosthogEvent } from "@/lib/posthog";
 import { useSearchParams } from "next/navigation";
@@ -23,10 +21,6 @@ type Props = {
   children?: ReactNode;
   /** Subcategorías con al menos un publicado; con menos de 5 no se muestra ticker. */
   rubrosTicker?: RubroTickerItem[];
-  /** Carrusel “últimos publicados”: en móvil se muestra bajo el buscador. */
-  ultimosPublicadosCards?: EmprendedorSearchCardProps[];
-  /** Suma real de fichas por comuna (servidor); evita mostrar 31 y luego el valor real. */
-  totalNegociosActivos?: number | null;
 };
 
 const BENEFIT_PILLS = [
@@ -38,8 +32,6 @@ const BENEFIT_PILLS = [
 export default function HomeHero({
   children,
   rubrosTicker = [],
-  ultimosPublicadosCards = [],
-  totalNegociosActivos = null,
 }: Props) {
   const searchParams = useSearchParams();
   const initialComunaSlug = searchParams.get("comuna") ?? null;
@@ -145,16 +137,6 @@ export default function HomeHero({
             key={rubrosTicker.map((r) => r.slug).join("|")}
             items={rubrosTicker}
           />
-
-          {ultimosPublicadosCards.length > 0 ? (
-            <div className="mt-4 w-full md:hidden">
-              <HomeUltimosPublicadosClient
-                cards={ultimosPublicadosCards}
-                totalNegociosActivos={totalNegociosActivos}
-                headingId="home-ultimos-publicados-hero-mobile"
-              />
-            </div>
-          ) : null}
 
           {children ? (
             <div className="mt-6 text-left md:mt-8">{children}</div>
