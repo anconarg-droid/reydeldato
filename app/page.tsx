@@ -2,15 +2,17 @@ import { Suspense } from "react";
 import HomeHero from "@/components/home/HomeHero";
 import HomeLandingBody from "@/components/home/HomeLandingBody";
 import { loadRubrosTickerHome } from "@/lib/loadRubrosTickerHome";
+import { loadHomeTotalNegociosActivos } from "@/lib/loadHomeTotalNegociosActivos";
 import { loadUltimosEmprendimientosPublicadosHome } from "@/lib/loadUltimosEmprendimientosPublicadosHome";
 
 /** Carrusel “últimos publicados”: datos frescos sin depender solo del último deploy. */
 export const revalidate = 120;
 
 export default async function HomePage() {
-  const [fromDb, rubrosTicker] = await Promise.all([
+  const [fromDb, rubrosTicker, totalNegociosActivos] = await Promise.all([
     loadUltimosEmprendimientosPublicadosHome(),
     loadRubrosTickerHome(),
+    loadHomeTotalNegociosActivos(),
   ]);
   const ultimosPublicadosCards = fromDb;
 
@@ -23,7 +25,11 @@ export default async function HomePage() {
           </div>
         }
       >
-        <HomeHero rubrosTicker={rubrosTicker} ultimosPublicadosCards={ultimosPublicadosCards} />
+        <HomeHero
+          rubrosTicker={rubrosTicker}
+          ultimosPublicadosCards={ultimosPublicadosCards}
+          totalNegociosActivos={totalNegociosActivos}
+        />
       </Suspense>
       <Suspense
         fallback={
@@ -32,7 +38,10 @@ export default async function HomePage() {
           </div>
         }
       >
-        <HomeLandingBody ultimosPublicadosCards={ultimosPublicadosCards} />
+        <HomeLandingBody
+          ultimosPublicadosCards={ultimosPublicadosCards}
+          totalNegociosActivos={totalNegociosActivos}
+        />
       </Suspense>
     </div>
   );

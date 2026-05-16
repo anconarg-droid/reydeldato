@@ -19,6 +19,8 @@ type Comuna = { id: number; nombre: string; slug: string; total?: number };
 
 type Props = {
   ultimosPublicadosCards: EmprendedorSearchCardProps[];
+  /** Total negocios (servidor) para el carrusel sin flash 31→N */
+  totalNegociosActivos?: number | null;
 };
 
 const CAROUSEL_STRIDE = 272; /* 260px card + gap-3 */
@@ -81,7 +83,7 @@ function HomeMobileComoFunciona() {
   }, []);
   return (
     <div className="md:hidden">
-      <div className="flex justify-between items-end mb-4">
+      <div className="flex justify-between items-end mb-3">
         <div>
           <h2 className="text-xl font-medium text-gray-900">Cómo funciona</h2>
           <p className="text-xs text-gray-500 mt-0.5">Desliza para ver más →</p>
@@ -112,7 +114,7 @@ function HomeMobileComoFunciona() {
         {COMO_FUNCIONA_STEPS.map((step) => (
           <div
             key={step.n}
-            className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-5"
+            className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-4"
           >
             <div className="text-7xl font-medium text-[#E1F5EE] leading-none tabular-nums">{step.n}</div>
             <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
@@ -141,7 +143,7 @@ function HomeMobileLaDiferencia() {
   const { trackRef, activeIndex, scroll } = useHomeCarouselDots(LA_DIFERENCIA_ITEMS.length);
   return (
     <div className="md:hidden">
-      <div className="flex justify-between items-end mb-4">
+      <div className="flex justify-between items-end mb-3">
         <div>
           <h2 className="text-xl font-medium text-gray-900">La diferencia</h2>
           <p className="text-xs text-gray-500 mt-0.5">Desliza para ver más →</p>
@@ -174,7 +176,7 @@ function HomeMobileLaDiferencia() {
           return (
             <div
               key={x.t}
-              className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-5"
+              className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-4"
             >
               <div className="w-9 h-9 bg-[#E1F5EE] text-[#0F6E56] rounded-lg flex items-center justify-center">
                 <Icon className="w-4 h-4" strokeWidth={2} aria-hidden />
@@ -195,7 +197,7 @@ function HomeMobileLaDiferencia() {
           />
         ))}
       </div>
-      <p className="mt-6 text-center text-xs text-gray-500">
+      <p className="mt-4 text-center text-xs text-gray-500">
         Rey del Dato SpA · RUT 78.403.835-1
       </p>
     </div>
@@ -213,7 +215,7 @@ function HomeMobileComunasDisponibles({ items }: { items: ComunaAbiertaItem[] })
   const { trackRef, activeIndex, scroll } = useHomeCarouselDots(items.length);
   return (
     <div className="md:hidden">
-      <div className="flex justify-between items-end mb-4">
+      <div className="flex justify-between items-end mb-3">
         <div>
           <h2 className="text-xl font-medium text-gray-900">Comunas disponibles</h2>
           <p className="text-xs text-gray-500 mt-0.5">Desliza para ver más →</p>
@@ -244,7 +246,7 @@ function HomeMobileComunasDisponibles({ items }: { items: ComunaAbiertaItem[] })
         {items.map((c) => (
           <div
             key={c.slug}
-            className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-5 flex flex-col"
+            className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-4 flex flex-col"
           >
             <p className="text-[15px] font-bold leading-snug text-gray-900">
               <span aria-hidden className="mr-1">
@@ -277,7 +279,10 @@ function HomeMobileComunasDisponibles({ items }: { items: ComunaAbiertaItem[] })
   );
 }
 
-export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
+export default function HomeLandingBody({
+  ultimosPublicadosCards,
+  totalNegociosActivos: totalNegociosActivosServer = null,
+}: Props) {
   const searchParams = useSearchParams();
   const contextComunaSlug = (searchParams.get("comuna") || "").trim().toLowerCase();
 
@@ -407,6 +412,8 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
   }));
 
   const totalNegociosActivos = comunas.reduce((s, c) => s + (Number(c.total) || 0), 0);
+  const totalNegociosParaCarrusel =
+    totalNegociosActivosServer != null ? totalNegociosActivosServer : totalNegociosActivos;
 
   return (
     <div className="pb-0">
@@ -416,7 +423,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-como-funciona-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 md:py-12">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 md:py-10 lg:py-12">
           <HomeMobileComoFunciona />
           <div className="hidden md:block">
             <h2
@@ -450,10 +457,10 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
         className="hidden border-t border-slate-100 bg-slate-50/90 md:block"
         aria-labelledby="home-ultimos-publicados-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-12 md:py-14">
           <HomeUltimosPublicadosClient
             cards={ultimosPublicadosCards}
-            totalNegociosActivos={totalNegociosActivos}
+            totalNegociosActivos={totalNegociosParaCarrusel}
           />
         </div>
       </section>
@@ -464,7 +471,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-diferencia-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-12 md:py-20 lg:py-24">
           <HomeMobileLaDiferencia />
           <div className="hidden md:block">
             <h2
@@ -496,7 +503,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
 
       {/* 4 · Comunas */}
       <section className="border-t border-slate-100 bg-slate-50/90" aria-labelledby="home-local">
-        <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 md:py-20 lg:py-24">
           <h2
             id="home-local"
             className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
@@ -584,7 +591,7 @@ export default function HomeLandingBody({ ultimosPublicadosCards }: Props) {
 
       {/* 5 · Recomendar negocio */}
       <section className="border-t border-slate-100 bg-white" aria-labelledby="home-recomendar">
-        <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
           <h2
             id="home-recomendar"
             className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl"

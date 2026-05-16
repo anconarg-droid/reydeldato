@@ -8,6 +8,7 @@ import EmprendedorSearchCard, {
 } from "@/components/search/EmprendedorSearchCard";
 import EmprendedorSearchCardsGrid from "@/components/search/EmprendedorSearchCardsGrid";
 import TerritorialAccordionBlock from "@/components/search/TerritorialAccordionBlock";
+import { comunaLabelNombreYRegion } from "@/lib/comunaDisplayLabel";
 import { busquedaComunaResultsShellClassName } from "@/lib/busquedaComunaLayoutStyles";
 
 type AbrirComunaData = {
@@ -30,15 +31,6 @@ type AbrirComunaData = {
   /** Rubros con faltantes > 0 (`vw_faltantes_comuna_v2`), para copy público. */
   faltantes_servicios_nombres?: string[];
 };
-
-/** Títulos de acordeón alineados al lenguaje territorial del producto (solo copy; mismos grupos que antes). */
-function tituloYaHayNegociosEnComuna(n: number): string {
-  return `De tu comuna (${n.toLocaleString("es-CL")})`;
-}
-
-function tituloYaHayNegociosQueAtienden(comunaNombre: string, n: number): string {
-  return `Atienden ${comunaNombre} desde otras comunas (${n.toLocaleString("es-CL")})`;
-}
 
 function formatPorcentajeHumano(p: number): string {
   const x = Math.max(0, Math.min(100, Number(p) || 0));
@@ -111,6 +103,13 @@ export default function AbrirComunaClient({
     const atienden = cardsMostradas.filter((c) => c.bloqueTerritorial !== "de_tu_comuna");
     return { cardsConBaseEnComuna: conBase, cardsAtiendenDesdeFuera: atienden };
   }, [cardsMostradas]);
+
+  const nombreComunaDisplay = comunaLabelNombreYRegion(
+    safeData.comuna_nombre,
+    safeData.region_nombre
+  );
+  const sinBasePeroConCobertura =
+    cardsConBaseEnComuna.length === 0 && cardsAtiendenDesdeFuera.length > 0;
 
   /** Misma condición que antes; solo cambia el copy mostrado. */
   const lineaTiposNecesarios = useMemo(() => {
@@ -256,11 +255,26 @@ export default function AbrirComunaClient({
                 <div className="mt-2 space-y-2">
                   {publicadosTotal > 0 ? (
                     <>
-                      <p className="m-0 text-sm font-semibold text-slate-900 leading-snug">
-                        Ya hay {publicadosTotal.toLocaleString("es-CL")} emprendimiento
-                        {publicadosTotal === 1 ? "" : "s"} publicado
-                        {publicadosTotal === 1 ? "" : "s"} en {safeData.comuna_nombre}.
-                      </p>
+                      {cardsConBaseEnComuna.length === 0 ? (
+                        <p className="m-0 text-sm font-semibold text-slate-900 leading-snug">
+                          Aún no hay emprendimientos con base en {nombreComunaDisplay}. Ya hay{" "}
+                          {publicadosTotal.toLocaleString("es-CL")} que atienden esta zona desde otras
+                          comunas.
+                        </p>
+                      ) : (
+                        <p className="m-0 text-sm font-semibold text-slate-900 leading-snug">
+                          Ya hay {cardsConBaseEnComuna.length.toLocaleString("es-CL")} emprendimiento
+                          {cardsConBaseEnComuna.length === 1 ? "" : "s"} con base en{" "}
+                          {nombreComunaDisplay}.
+                          {cardsAtiendenDesdeFuera.length > 0 ? (
+                            <>
+                              {" "}
+                              Además hay {cardsAtiendenDesdeFuera.length.toLocaleString("es-CL")} que
+                              atienden desde otras comunas.
+                            </>
+                          ) : null}
+                        </p>
+                      )}
                       <p className="m-0 text-sm text-slate-700 leading-relaxed">
                         Aún faltan servicios clave para abrir el directorio completo.
                       </p>
@@ -323,34 +337,49 @@ export default function AbrirComunaClient({
                     id="activacion-emprendedores-listado-titulo"
                     className="text-lg sm:text-xl font-bold text-slate-900 leading-snug tracking-tight"
                   >
-                    Emprendimientos disponibles en {safeData.comuna_nombre}
+                    Emprendimientos disponibles en {nombreComunaDisplay}
                   </h2>
                 </div>
                 <p className="mb-4 text-sm text-gray-600 leading-relaxed">
                   Primero verás emprendimientos con base en esta comuna. Luego, los que atienden desde otras comunas.
                 </p>
                 <div className="space-y-5 w-full min-w-0">
-                  {cardsConBaseEnComuna.length > 0 ? (
+                  {cardsConBaseEnComuna.length > 0 || sinBasePeroConCobertura ? (
                     <TerritorialAccordionBlock
                       variant="local"
                       persistPrefix={territorialPersistPrefix}
                       which="base"
                       instanceId="abrir-comuna-bloque-base"
-                      title={tituloYaHayNegociosEnComuna(cardsConBaseEnComuna.length)}
-                      subtitle="Emprendimientos con base en esta comuna"
+                      title={
+                        <>
+                          En {nombreComunaDisplay} ({cardsConBaseEnComuna.length.toLocaleString("es-CL")})
+                        </>
+                      }
+                      subtitle="Con base en esta comuna"
                       defaultCollapsed={false}
                     >
-                      <EmprendedorSearchCardsGrid
-                        emptyMessage=""
-                        itemCount={cardsConBaseEnComuna.length}
-                        gridClassName={`grid w-full gap-4 ${gridColumnsClassName(cardsConBaseEnComuna.length)}`}
-                      >
-                        {cardsConBaseEnComuna.map((cardProps) => (
-                          <div key={cardProps.slug} className="min-w-0">
-                            <EmprendedorSearchCard {...cardProps} usarCardSimple={false} />
-                          </div>
-                        ))}
-                      </EmprendedorSearchCardsGrid>
+                      {sinBasePeroConCobertura ? (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5">
+                          <p className="m-0 text-sm font-extrabold text-slate-900">
+                            Aún no hay negocios con base en esta comuna para esta búsqueda.
+                          </p>
+                          <p className="m-0 mt-1 text-sm text-slate-600 leading-relaxed">
+                            Sí encontramos negocios que atienden esta comuna desde otras comunas.
+                          </p>
+                        </div>
+                      ) : (
+                        <EmprendedorSearchCardsGrid
+                          emptyMessage=""
+                          itemCount={cardsConBaseEnComuna.length}
+                          gridClassName={`grid w-full gap-4 ${gridColumnsClassName(cardsConBaseEnComuna.length)}`}
+                        >
+                          {cardsConBaseEnComuna.map((cardProps) => (
+                            <div key={cardProps.slug} className="min-w-0">
+                              <EmprendedorSearchCard {...cardProps} usarCardSimple={false} />
+                            </div>
+                          ))}
+                        </EmprendedorSearchCardsGrid>
+                      )}
                     </TerritorialAccordionBlock>
                   ) : null}
                   {cardsAtiendenDesdeFuera.length > 0 ? (
@@ -359,9 +388,19 @@ export default function AbrirComunaClient({
                       persistPrefix={territorialPersistPrefix}
                       which="atienden"
                       instanceId="abrir-comuna-bloque-atienden"
-                      title={tituloYaHayNegociosQueAtienden(safeData.comuna_nombre, cardsAtiendenDesdeFuera.length)}
+                      className={
+                        cardsConBaseEnComuna.length > 0 || sinBasePeroConCobertura
+                          ? "mt-6 sm:mt-7"
+                          : ""
+                      }
+                      title={
+                        <>
+                          Atienden {nombreComunaDisplay} desde otras comunas (
+                          {cardsAtiendenDesdeFuera.length.toLocaleString("es-CL")})
+                        </>
+                      }
                       subtitle="Negocios con base en otra comuna que atienden esta zona"
-                      defaultCollapsed
+                      defaultCollapsed={cardsConBaseEnComuna.length > 0}
                     >
                       <EmprendedorSearchCardsGrid
                         emptyMessage=""
