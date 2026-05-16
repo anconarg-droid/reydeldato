@@ -82,12 +82,12 @@ function HomeComunasPreparacionMobile({ items }: { items: ComunaPreparacionItem[
 
   return (
     <div className="md:hidden">
-      <div className="flex justify-between items-end mb-4">
+      <div className="flex justify-between items-end mb-2">
         <div>
-          <h2 id="comunas-preparacion-heading" className="text-xl font-medium text-gray-900">
+          <h2 id="comunas-preparacion-heading" className="text-lg font-medium text-gray-900">
             Comunas en crecimiento
           </h2>
-          <p className="text-xs text-gray-500 mt-0.5">Desliza para ver más →</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">Desliza para ver más →</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -110,7 +110,7 @@ function HomeComunasPreparacionMobile({ items }: { items: ComunaPreparacionItem[
       </div>
       <div
         ref={trackRef}
-        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2"
+        className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1.5"
       >
         {items.map((c) => {
           const { meta, cumplido, faltanLine } = getPreparacionCardMeta(c);
@@ -118,31 +118,31 @@ function HomeComunasPreparacionMobile({ items }: { items: ComunaPreparacionItem[
           return (
             <div
               key={c.slug}
-              className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-4 flex flex-col"
+              className="flex-shrink-0 w-[250px] snap-start bg-white border border-gray-200 rounded-lg p-3 flex flex-col"
             >
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-base font-semibold leading-tight text-gray-900">
+              <div className="flex items-start justify-between gap-1.5">
+                <h3 className="text-sm font-semibold leading-tight text-gray-900">
                   {c.nombre || prettySlug(c.slug)}
                 </h3>
-                <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-600">
+                <span className="shrink-0 text-[11px] font-semibold tabular-nums text-gray-600">
                   {c.porcentaje}%
                 </span>
               </div>
-              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-gray-100">
+              <div className="mt-1.5 h-0.5 w-full overflow-hidden rounded-full bg-gray-100">
                 <div
                   className="h-full rounded-full bg-[#0F6E56] transition-[width] duration-300"
                   style={{ width: `${Math.max(0, Math.min(100, c.porcentaje))}%` }}
                 />
               </div>
               {meta != null && meta > 0 && cumplido != null ? (
-                <p className="mt-2 text-xs font-medium tabular-nums text-gray-700">
-                  {cumplido} de {meta} negocios clave completos
+                <p className="mt-1.5 text-[11px] font-medium tabular-nums text-gray-700">
+                  {cumplido}/{meta} clave{meta === 1 ? "" : "s"}
                 </p>
               ) : null}
-              <p className="mt-2 text-xs text-gray-600 leading-snug">{faltanLine}</p>
+              <p className="mt-1.5 text-[11px] text-gray-600 leading-snug line-clamp-2">{faltanLine}</p>
               <Link
                 href={href}
-                className="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-[#0F6E56] px-4 py-2.5 text-sm font-medium text-[#0F6E56]"
+                className="mt-2.5 inline-flex w-full items-center justify-center rounded-md border border-[#0F6E56] px-3 py-1.5 text-xs font-medium text-[#0F6E56]"
               >
                 Ver avance →
               </Link>
@@ -150,7 +150,7 @@ function HomeComunasPreparacionMobile({ items }: { items: ComunaPreparacionItem[
           );
         })}
       </div>
-      <div className="flex gap-1.5 mt-3">
+      <div className="flex gap-1.5 mt-2">
         {items.map((_, i) => (
           <span
             key={i}
@@ -188,24 +188,24 @@ export default function HomeComunasPreparacion({
   return (
     <section
       className={
-        flush ? "" : "mt-14 sm:mt-16 border-t border-slate-100 pt-10 sm:pt-12"
+        flush ? "" : "mt-8 sm:mt-10 border-t border-slate-100 pt-6 sm:pt-8"
       }
       aria-labelledby="comunas-preparacion-heading"
     >
       <HomeComunasPreparacionMobile items={items} />
       <div className="hidden md:block">
-        <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
+        <p className="max-w-2xl text-xs leading-snug text-slate-600">
           Estamos completando el catálogo comuna por comuna. Algunas comunas ya muestran resultados, pero todavía
           necesitan más negocios clave para que el directorio sea más útil.
         </p>
-        <h2 className="mt-4 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+        <h2 className="mt-2.5 text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
           Comunas en crecimiento
         </h2>
-        <p className="mt-1.5 max-w-2xl text-sm text-slate-600">
+        <p className="mt-1 max-w-2xl text-xs leading-snug text-slate-600">
           Mientras más negocios reales se suman, mejores resultados muestra cada comuna.
         </p>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-stretch sm:gap-3 md:gap-4">
+        <div className="mt-3 grid grid-cols-2 gap-2 max-w-3xl">
           {desktopItems.map((c) => {
             const { meta, cumplido, faltanLine } = getPreparacionCardMeta(c);
 
@@ -213,18 +213,18 @@ export default function HomeComunasPreparacion({
               <Link
                 key={c.slug}
                 href={`/abrir-comuna/${encodeURIComponent(c.slug)}`}
-                className="group flex h-full min-h-0 flex-col rounded-xl border border-slate-200/90 bg-white p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+                className="group flex h-full min-h-0 flex-col rounded-lg border border-slate-200/90 bg-white p-3 transition-all duration-200 hover:border-slate-300 hover:shadow-sm active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-base font-semibold leading-tight text-slate-900">
+                <div className="flex items-start justify-between gap-1.5">
+                  <h3 className="text-sm font-semibold leading-tight text-slate-900">
                     {c.nombre || prettySlug(c.slug)}
                   </h3>
-                  <span className="shrink-0 text-xs font-semibold tabular-nums text-slate-600 sm:text-sm">
+                  <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-500">
                     {c.porcentaje}%
                   </span>
                 </div>
 
-                <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="mt-1.5 h-0.5 w-full overflow-hidden rounded-full bg-slate-100">
                   <div
                     className="h-full rounded-full bg-[#0f766e] transition-[width] duration-300"
                     style={{ width: `${Math.max(0, Math.min(100, c.porcentaje))}%` }}
@@ -232,26 +232,28 @@ export default function HomeComunasPreparacion({
                 </div>
 
                 {meta != null && meta > 0 && cumplido != null ? (
-                  <p className="mt-2 text-xs font-medium tabular-nums text-slate-800 sm:text-sm">
-                    {cumplido} de {meta} negocios clave completos
+                  <p className="mt-1.5 text-[11px] font-medium tabular-nums text-slate-700">
+                    {cumplido}/{meta} clave{meta === 1 ? "" : "s"}
                   </p>
                 ) : null}
 
-                <p className="mt-2 text-sm font-semibold leading-snug text-slate-900">{faltanLine}</p>
+                <p className="mt-1.5 line-clamp-2 text-xs font-medium leading-snug text-slate-800">
+                  {faltanLine}
+                </p>
 
-                <span className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-[#0f766e] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 sm:w-auto">
-                  Ver avance del catálogo →
+                <span className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-[#0f766e] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 sm:w-auto">
+                  Ver avance →
                 </span>
               </Link>
             );
           })}
         </div>
         {showVerMasDesktop ? (
-          <div className="mt-4 flex justify-center sm:justify-start">
+          <div className="mt-2.5 flex justify-center sm:justify-start">
             <button
               type="button"
               onClick={() => setDesktopPrepExpanded(true)}
-              className="text-sm font-semibold text-[#0f766e] underline-offset-2 hover:underline"
+              className="text-xs font-semibold text-[#0f766e] underline-offset-2 hover:underline"
             >
               Ver más comunas →
             </button>

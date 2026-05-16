@@ -15,8 +15,8 @@ export default function HomeFooter() {
         borderTop: "0.5px solid var(--color-border, var(--border))",
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" aria-label="Enlaces del sitio">
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <nav className="flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-sm" aria-label="Enlaces del sitio">
           <Link href="/que-es" className="text-slate-600 hover:text-slate-900">
             Qué es Rey del Dato
           </Link>
@@ -42,7 +42,7 @@ export default function HomeFooter() {
           </Link>
         </nav>
 
-        <p className="mt-5 text-xs text-slate-500">© Rey del Dato SpA · RUT 78.403.835-1</p>
+        <p className="mt-3 text-xs text-slate-500">© Rey del Dato SpA · RUT 78.403.835-1</p>
       </div>
     </footer>
   );

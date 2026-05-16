@@ -34,22 +34,22 @@ function ComunaDisponibleCard({
       type="button"
       onClick={() => onGo(slug)}
       aria-label={`Ver servicios en ${nombre}`}
-      className="group flex h-full min-h-0 flex-col rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition-[border-color,box-shadow,transform] duration-150 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 sm:p-3.5"
+      className="group flex h-full min-h-0 flex-col rounded-lg border border-slate-200 bg-white p-2.5 text-left shadow-sm transition-[border-color,box-shadow,transform] duration-150 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 sm:p-3"
     >
-      <span className="mb-2 inline-flex w-fit max-w-full items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-900">
+      <span className="mb-1.5 inline-flex w-fit max-w-full items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-900 sm:text-[11px]">
         Con resultados
       </span>
-      <p className="text-left text-[15px] font-bold leading-snug text-slate-900">
+      <p className="text-left text-sm font-bold leading-snug text-slate-900 sm:text-[15px]">
         <span aria-hidden className="mr-1">
           🔥
         </span>
         <span className="break-words">{nombre}</span>
         <span className="font-semibold text-slate-600"> ya disponible</span>
       </p>
-      <p className="mt-1.5 flex-1 text-xs font-medium leading-snug text-slate-600 sm:text-[13px]">
+      <p className="mt-1 flex-1 text-[11px] font-medium leading-snug text-slate-600 sm:text-xs">
         {serviciosActivosHoy(count)}
       </p>
-      <span className="mt-2 inline-flex w-fit shrink-0 items-center rounded-md bg-[#0d7a5f] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors duration-150 group-hover:bg-[#0b6a52]">
+      <span className="mt-1.5 inline-flex w-fit shrink-0 items-center rounded-md bg-[#0d7a5f] px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm transition-colors duration-150 group-hover:bg-[#0b6a52] sm:px-3 sm:py-1.5 sm:text-xs">
         Ver servicios →
       </span>
     </button>
@@ -83,7 +83,7 @@ export default function HomeComunasAbiertasGrid({
 
   return (
     <div className="w-full min-w-0">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2 lg:grid-cols-3 lg:gap-2.5">
         {visible.map((c) => (
           <ComunaDisponibleCard
             key={c.slug}
@@ -95,10 +95,10 @@ export default function HomeComunasAbiertasGrid({
         ))}
       </div>
       {mostrarVerMas ? (
-        <div className="mt-4 flex justify-center sm:mt-5">
+        <div className="mt-2.5 flex justify-center sm:mt-3">
           <button
             type="button"
-            className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 sm:px-4 sm:py-2 sm:text-sm"
             onClick={() => setExpanded(true)}
             aria-expanded={false}
           >

@@ -66,20 +66,20 @@ const LA_DIFERENCIA_ITEMS = [
 function HomeMobileComoFunciona() {
   return (
       <div className="md:hidden">
-      <h2 className="text-base font-semibold text-gray-900">Cómo funciona</h2>
-      <ol className="mt-2 list-none space-y-1.5 p-0">
+      <h2 className="text-sm font-semibold text-gray-900">Cómo funciona</h2>
+      <ol className="mt-1.5 list-none space-y-1 p-0">
         {COMO_FUNCIONA_STEPS.map((step) => (
           <li
             key={step.n}
-            className="rounded-lg border border-gray-200/90 bg-white px-3 py-2"
+            className="rounded-lg border border-gray-200/90 bg-white px-2.5 py-1.5"
           >
-            <div className="flex gap-2.5">
-              <span className="text-xl font-semibold tabular-nums leading-none text-[#0F6E56]/38">
+            <div className="flex gap-2">
+              <span className="text-lg font-semibold tabular-nums leading-none text-[#0F6E56]/38">
                 {step.n}
               </span>
               <div className="min-w-0">
-                <p className="text-sm font-semibold leading-snug text-gray-900">{step.t}</p>
-                <p className="mt-0.5 text-xs leading-snug text-gray-600">{step.d}</p>
+                <p className="text-[0.8125rem] font-semibold leading-snug text-gray-900">{step.t}</p>
+                <p className="mt-0.5 text-[11px] leading-snug text-gray-600">{step.d}</p>
               </div>
             </div>
           </li>
@@ -93,7 +93,7 @@ function HomeMobileLaDiferencia() {
   const { trackRef, activeIndex, scroll } = useHomeCarouselDots(LA_DIFERENCIA_ITEMS.length);
   return (
     <div className="md:hidden">
-      <div className="flex justify-between items-end mb-3">
+      <div className="flex justify-between items-end mb-2">
         <div>
           <h2 className="text-xl font-medium text-gray-900">La diferencia</h2>
           <p className="text-xs text-gray-500 mt-0.5">Desliza para ver más →</p>
@@ -126,13 +126,13 @@ function HomeMobileLaDiferencia() {
           return (
             <div
               key={x.t}
-              className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-4"
+              className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-lg p-3"
             >
-              <div className="w-9 h-9 bg-[#E1F5EE] text-[#0F6E56] rounded-lg flex items-center justify-center">
-                <Icon className="w-4 h-4" strokeWidth={2} aria-hidden />
+              <div className="w-8 h-8 bg-[#E1F5EE] text-[#0F6E56] rounded-lg flex items-center justify-center">
+                <Icon className="w-3.5 h-3.5" strokeWidth={2} aria-hidden />
               </div>
-              <h3 className="mt-3 text-base font-semibold text-gray-900">{x.t}</h3>
-              <p className="mt-2 text-sm text-gray-600 leading-snug">{x.d}</p>
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">{x.t}</h3>
+              <p className="mt-1 text-xs text-gray-600 leading-snug">{x.d}</p>
             </div>
           );
         })}
@@ -147,7 +147,7 @@ function HomeMobileLaDiferencia() {
           />
         ))}
       </div>
-      <p className="mt-4 text-center text-xs text-gray-500">
+      <p className="mt-3 text-center text-[11px] text-gray-500">
         Rey del Dato SpA · RUT 78.403.835-1
       </p>
     </div>
@@ -366,28 +366,28 @@ export default function HomeLandingBody() {
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-como-funciona-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6 md:py-4 lg:py-5">
+        <div className="mx-auto max-w-5xl px-4 py-2 sm:px-6 md:py-3">
           <HomeMobileComoFunciona />
           <div className="hidden md:block">
             <h2
               id="home-como-funciona-heading"
-              className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[1.65rem]"
+              className="text-[1.35rem] font-bold tracking-tight text-slate-900 sm:text-xl"
             >
               Cómo funciona
             </h2>
-            <ol className="mt-2 grid list-none grid-cols-3 gap-2.5 p-0 sm:gap-3">
+            <ol className="mt-1.5 grid list-none grid-cols-3 gap-2 p-0">
               {COMO_FUNCIONA_STEPS.map((step) => (
                 <li
                   key={step.n}
-                  className="flex h-full flex-col rounded-xl border border-slate-200/90 bg-white px-2.5 py-3.5 text-center shadow-sm"
+                  className="flex h-full flex-col rounded-lg border border-slate-200/90 bg-white px-2 py-2.5 text-center shadow-sm"
                 >
-                  <span className="text-3xl font-medium tabular-nums leading-none text-[#0F6E56]/35 sm:text-[2rem]">
+                  <span className="text-2xl font-medium tabular-nums leading-none text-[#0F6E56]/32 sm:text-[1.65rem]">
                     {step.n}
                   </span>
-                  <p className="mt-2 text-[0.9375rem] font-semibold leading-snug text-slate-900">
+                  <p className="mt-1 text-[0.8125rem] font-semibold leading-snug text-slate-900">
                     {step.t}
                   </p>
-                  <p className="mt-1.5 text-sm leading-snug text-slate-600">{step.d}</p>
+                  <p className="mt-1 text-xs leading-snug text-slate-600">{step.d}</p>
                 </li>
               ))}
             </ol>
@@ -401,30 +401,30 @@ export default function HomeLandingBody() {
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-diferencia-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 md:py-10 lg:py-12">
+        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6 sm:py-4 md:py-5">
           <HomeMobileLaDiferencia />
           <div className="hidden md:block">
             <h2
               id="home-diferencia-heading"
-              className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+              className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
             >
               La diferencia
             </h2>
-            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+            <p className="mt-1 max-w-2xl text-sm leading-snug text-slate-600">
               Orden local, contacto directo y reglas claras.
             </p>
-            <div className="mt-4 grid grid-cols-1 gap-2.5 md:grid-cols-3">
+            <div className="mt-2.5 grid grid-cols-3 gap-2">
               {LA_DIFERENCIA_ITEMS.map((x) => (
                 <div
                   key={x.t}
-                  className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm border-l-[3px] border-l-teal-600 transition-shadow hover:shadow-md"
+                  className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm border-l-[3px] border-l-teal-600"
                 >
-                  <div className="text-sm font-bold text-slate-900">{x.t}</div>
-                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{x.d}</p>
+                  <div className="text-xs font-bold leading-tight text-slate-900">{x.t}</div>
+                  <p className="mt-1 text-xs leading-snug text-slate-600">{x.d}</p>
                 </div>
               ))}
             </div>
-            <p className="mt-5 text-center text-xs text-slate-500">
+            <p className="mt-2.5 text-center text-[11px] text-slate-500">
               Rey del Dato SpA · RUT 78.403.835-1
             </p>
           </div>
@@ -433,18 +433,18 @@ export default function HomeLandingBody() {
 
       {/* 3 · Comunas */}
       <section className="border-t border-slate-100 bg-slate-50/90" aria-labelledby="home-local">
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 md:py-12 lg:py-14">
+        <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 sm:py-5 md:py-6">
           <h2
             id="home-local"
-            className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+            className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
           >
             Comunas
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
+          <p className="mt-2 max-w-2xl text-sm leading-snug text-slate-700">
             Algunas comunas ya tienen resultados. Otras están completando su catálogo.
           </p>
           {!loadingComunas && comunasCards.length > 0 ? (
-            <p className="mt-3 text-sm font-semibold tabular-nums text-teal-900 sm:text-[15px]">
+            <p className="mt-2 text-xs font-semibold tabular-nums text-teal-900 sm:text-sm">
               {comunasCards.length}{" "}
               {comunasCards.length === 1
                 ? "comuna abierta con resultados visibles"
@@ -452,14 +452,14 @@ export default function HomeLandingBody() {
             </p>
           ) : null}
 
-          <div className="mt-6">
+          <div className="mt-3">
             <div className="md:hidden">
               {loadingComunas ? (
-                <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
                   {[1, 2, 3].map((i) => (
                     <div
                       key={i}
-                      className="h-[148px] w-[260px] flex-shrink-0 animate-pulse rounded-xl bg-slate-100"
+                      className="h-[128px] w-[250px] flex-shrink-0 animate-pulse rounded-lg bg-slate-100"
                     />
                   ))}
                 </div>
@@ -468,26 +468,26 @@ export default function HomeLandingBody() {
                   <p className="text-sm leading-relaxed text-slate-700">
                     Aún no hay comunas con resultados listadas acá. Busca la tuya para ver el estado.
                   </p>
-                  <div className="mt-4">
+                  <div className="mt-3">
                     <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
                   </div>
                 </div>
               ) : (
                 <>
                   <HomeMobileComunasDisponibles items={comunasCards} />
-                  <div className="mt-6 flex flex-col items-start gap-3">
-                    <p className="text-sm font-medium text-slate-800">¿Tu comuna no aparece?</p>
+                  <div className="mt-4 flex flex-col items-start gap-2">
+                    <p className="text-xs font-medium text-slate-800 sm:text-sm">¿Tu comuna no aparece?</p>
                     <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
                   </div>
                 </>
               )}
             </div>
             <div className="hidden md:block">
-              <h3 className="text-sm font-semibold text-slate-900">Con resultados</h3>
+              <h3 className="mt-1 text-xs font-semibold text-slate-900 sm:text-sm">Con resultados</h3>
               {loadingComunas ? (
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2 lg:grid-cols-3 lg:gap-2.5">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="h-[148px] animate-pulse rounded-xl bg-slate-100" />
+                    <div key={i} className="h-[120px] animate-pulse rounded-lg bg-slate-100" />
                   ))}
                 </div>
               ) : comunasCards.length === 0 ? (
@@ -495,15 +495,15 @@ export default function HomeLandingBody() {
                   <p className="text-sm leading-relaxed text-slate-700">
                     Aún no hay comunas con resultados listadas acá. Busca la tuya para ver el estado.
                   </p>
-                  <div className="mt-4">
+                  <div className="mt-3">
                     <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
                   </div>
                 </div>
               ) : (
-                <div className="mt-4">
+                <div className="mt-3">
                   <HomeComunasAbiertasGrid items={comunasCards} />
-                  <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-                    <p className="text-sm font-medium text-slate-800">¿Tu comuna no aparece?</p>
+                  <div className="mt-3 flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                    <p className="text-xs font-medium text-slate-800 sm:text-sm">¿Tu comuna no aparece?</p>
                     <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
                   </div>
                 </div>
@@ -516,7 +516,7 @@ export default function HomeLandingBody() {
       {/* 4 · Comunas en crecimiento */}
       {!loadingPrep && prep.length > 0 ? (
         <section className="border-t border-slate-100 bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 md:py-9">
+          <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6 sm:py-4 md:py-5">
             <HomeComunasPreparacion items={prep.slice(0, 6)} flush />
           </div>
         </section>
@@ -524,17 +524,17 @@ export default function HomeLandingBody() {
 
       {/* 5 · Recomendar negocio */}
       <section className="border-t border-slate-100 bg-white" aria-labelledby="home-recomendar">
-        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
+        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6 sm:py-4 md:py-5">
           <h2
             id="home-recomendar"
-            className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl"
+            className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl"
           >
             ¿Conoces un negocio local que debería estar aquí?
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+          <p className="mt-1.5 max-w-md text-sm leading-snug text-slate-600">
             Recomiéndalo y ayúdanos a completar el catálogo de tu comuna.
           </p>
-          <div className="mx-auto mt-4 w-full max-w-lg">
+          <div className="mx-auto mt-3 w-full max-w-md">
             <HomeRecomienda embedded embeddedCompact initialComunaSlug={contextComunaSlug} />
           </div>
         </div>
@@ -545,25 +545,25 @@ export default function HomeLandingBody() {
         className="mt-0 w-full border-t border-teal-900/20 bg-[#0f766e] text-white"
         aria-labelledby="home-cta-final"
       >
-        <div className="mx-auto max-w-5xl px-4 pt-6 pb-8 text-center sm:px-6 sm:pt-7 sm:pb-9">
-          <p className="text-xs font-extrabold tracking-[0.18em] text-white/90">
+        <div className="mx-auto max-w-5xl px-4 pt-3 pb-5 text-center sm:px-6 sm:pt-4 sm:pb-6">
+          <p className="text-[10px] font-extrabold tracking-[0.18em] text-white/90 sm:text-xs">
             PARA EMPRENDEDORES
           </p>
-          <h2 id="home-cta-final" className="mt-1.5 text-3xl font-black tracking-tight sm:text-4xl">
+          <h2 id="home-cta-final" className="mt-0.5 text-2xl font-black tracking-tight sm:text-3xl">
             Empieza gratis.
           </h2>
-          <p className="mx-auto mt-2 max-w-2xl text-base font-semibold leading-relaxed text-white/95 sm:text-lg">
+          <p className="mx-auto mt-1 max-w-xl text-sm font-semibold leading-snug text-white/95 sm:text-base">
             Tu próximo cliente puede estar cerca.
           </p>
 
-          <div className="mt-3.5 flex flex-col items-center gap-1.5">
+          <div className="mt-2.5 flex flex-col items-center gap-0.5">
             <Link
               href="/publicar"
-              className="inline-flex h-12 min-h-12 w-full max-w-sm items-center justify-center rounded-xl bg-white px-8 text-base font-extrabold text-[#0f766e] shadow-lg shadow-teal-900/20 transition hover:bg-teal-50"
+              className="inline-flex h-11 min-h-11 w-full max-w-sm items-center justify-center rounded-xl bg-white px-6 text-sm font-extrabold text-[#0f766e] shadow-md shadow-teal-900/25 transition hover:bg-teal-50 sm:text-base"
             >
               Publicar mi negocio
             </Link>
-            <p className="text-xs font-semibold text-white/85">Publicar es gratis. La ficha completa es opcional.</p>
+            <p className="text-[11px] font-semibold text-white/85 sm:text-xs">Publicar es gratis. La ficha completa es opcional.</p>
           </div>
         </div>
       </section>

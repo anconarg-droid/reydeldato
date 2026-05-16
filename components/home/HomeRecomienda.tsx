@@ -224,22 +224,26 @@ export default function HomeRecomienda({
   const cardClass = onEmerald
     ? "rounded-none border-0 bg-transparent p-0 pt-8 sm:pt-10 shadow-none"
     : compactEmbedded
-      ? "rounded-2xl border border-slate-200 bg-slate-50/40 p-4 sm:p-5 shadow-sm"
+      ? "rounded-xl border border-slate-200 bg-slate-50/40 p-3 sm:p-4 shadow-sm"
       : embedded
         ? "rounded-2xl border border-slate-200 bg-slate-50/40 p-6 sm:p-8 shadow-sm"
         : "bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-6";
 
   const labelClass = onEmerald
     ? "block text-sm font-semibold text-emerald-100/95 mb-2"
-    : embedded
-      ? "block text-sm font-semibold text-slate-800 mb-2"
-      : "block text-xs font-semibold text-slate-700 mb-1.5";
+    : compactEmbedded
+      ? "block text-xs font-semibold text-slate-800 mb-1"
+      : embedded
+        ? "block text-sm font-semibold text-slate-800 mb-2"
+        : "block text-xs font-semibold text-slate-700 mb-1.5";
 
   const inputClass = onEmerald
     ? "w-full rounded-xl border border-white/18 bg-white/[0.88] px-4 py-3.5 text-base text-slate-800 placeholder:text-slate-500 shadow-none transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-white/30 focus:border-white/35"
-    : embedded
-      ? "w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 placeholder:text-slate-400 shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-400"
-      : "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500";
+    : compactEmbedded
+      ? "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-400"
+      : embedded
+        ? "w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 placeholder:text-slate-400 shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400/40 focus:border-slate-400"
+        : "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500";
 
   return (
     <section
@@ -258,9 +262,11 @@ export default function HomeRecomienda({
           className={
             onEmerald
               ? "text-lg sm:text-xl font-bold text-white mb-2"
-              : embedded
-                ? "text-lg sm:text-xl font-bold text-slate-900 mb-2"
-                : "text-lg sm:text-xl font-bold text-slate-900 mb-1"
+              : compactEmbedded
+                ? "text-base sm:text-lg font-bold text-slate-900 mb-1"
+                : embedded
+                  ? "text-lg sm:text-xl font-bold text-slate-900 mb-2"
+                  : "text-lg sm:text-xl font-bold text-slate-900 mb-1"
           }
         >
           {embedded ? "Entre todos completamos el directorio" : "Recomienda un buen emprendimiento"}
@@ -276,7 +282,7 @@ export default function HomeRecomienda({
               onEmerald
                 ? "text-emerald-50/90 text-sm mb-5 max-w-2xl leading-relaxed mx-auto text-center sm:text-left"
                 : compactEmbedded
-                  ? "text-slate-600 text-sm mb-3 max-w-2xl leading-relaxed"
+                  ? "text-slate-600 text-xs mb-2 max-w-md leading-snug"
                   : "text-slate-600 text-sm mb-5 max-w-2xl leading-relaxed"
             }
           >
@@ -287,7 +293,7 @@ export default function HomeRecomienda({
         <form
           onSubmit={handleSubmit}
           className={
-            embedded ? (compactEmbedded ? "space-y-4" : "space-y-5") : "space-y-4"
+            embedded ? (compactEmbedded ? "space-y-3" : "space-y-5") : "space-y-4"
           }
         >
           {embedded ? (
@@ -297,7 +303,7 @@ export default function HomeRecomienda({
                   onEmerald
                     ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 pt-1 border-t border-white/14"
                     : compactEmbedded
-                      ? "grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-1 border-t border-slate-200/80"
+                      ? "grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-3 pt-0.5 border-t border-slate-200/80"
                       : "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 pt-1 border-t border-slate-200/80"
                 }
               >
@@ -495,23 +501,33 @@ export default function HomeRecomienda({
               className={
                 onEmerald
                   ? "text-center text-sm text-emerald-100/90 pt-1 sm:text-left"
-                  : "text-center text-sm text-slate-600 pt-1"
+                  : compactEmbedded
+                    ? "text-center text-xs text-slate-600 pt-0 sm:text-left"
+                    : "text-center text-sm text-slate-600 pt-1"
               }
             >
               Te toma menos de 1 minuto.
             </p>
           ) : null}
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+          <div
+            className={
+              compactEmbedded
+                ? "flex flex-col sm:flex-row sm:items-center gap-2 pt-0.5"
+                : "flex flex-col sm:flex-row sm:items-center gap-3 pt-1"
+            }
+          >
             <button
               type="submit"
               disabled={loading}
               className={
                 onEmerald
                   ? "inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-white px-8 py-3.5 text-base font-extrabold text-[#047857] shadow-md transition hover:bg-emerald-50 disabled:bg-white/50 disabled:text-emerald-800/60 disabled:cursor-not-allowed"
-                  : embedded
-                    ? "inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-slate-900 text-white px-8 py-3.5 text-base font-semibold shadow-sm transition-colors duration-200 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed"
-                    : "inline-flex items-center justify-center rounded-full bg-slate-900 text-white px-5 py-2.5 text-sm font-semibold transition-colors duration-200 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed"
+                  : compactEmbedded
+                    ? "inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-slate-900 text-white px-6 py-2.5 text-sm font-semibold shadow-sm transition-colors duration-200 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed"
+                    : embedded
+                      ? "inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-slate-900 text-white px-8 py-3.5 text-base font-semibold shadow-sm transition-colors duration-200 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed"
+                      : "inline-flex items-center justify-center rounded-full bg-slate-900 text-white px-5 py-2.5 text-sm font-semibold transition-colors duration-200 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed"
               }
             >
               {loading
