@@ -54,85 +54,97 @@ export default function SoloCompletosFiltroControl({
   totalCount,
   completasCount,
 }: Props) {
-  const filtroCompletasActivo = checked;
+  const filtroActivo = checked;
 
   return (
-    <div className="mb-4 flex gap-2.5">
-      <button
-        type="button"
-        aria-pressed={!filtroCompletasActivo}
-        onClick={() => onCheckedChange(false)}
-        className={`flex flex-1 items-center gap-3 rounded-2xl border p-3.5 text-left transition-all ${
-          !filtroCompletasActivo
-            ? "border-[#0F6E56] bg-[#0F6E56] shadow-lg shadow-[#0F6E56]/20"
-            : "border-gray-200 bg-white hover:border-gray-300"
-        }`}
-      >
-        <div
-          className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${
-            !filtroCompletasActivo ? "bg-white/20 text-white" : "bg-[#EEFAF6] text-[#0F6E56]"
+    <div className="space-y-2.5">
+      <div className="flex gap-2.5">
+        <button
+          type="button"
+          aria-pressed={!filtroActivo}
+          onClick={() => onCheckedChange(false)}
+          className={`flex flex-1 cursor-pointer items-center gap-3 rounded-2xl p-3.5 text-left transition-all ${
+            !filtroActivo
+              ? "border-[1.5px] border-[#0F6E56] bg-[#0F6E56] shadow-lg shadow-[#0F6E56]/20"
+              : "border border-gray-200 bg-white hover:border-[#5DCAA5] hover:bg-[#FAFEFC]"
           }`}
         >
-          <ListIcon />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="mb-0.5 flex items-center gap-2">
-            <span
-              className={`text-sm font-medium ${!filtroCompletasActivo ? "text-white" : "text-gray-900"}`}
-            >
-              Todas
-            </span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                !filtroCompletasActivo ? "bg-white/20 text-white" : "bg-[#EEFAF6] text-[#085041]"
-              }`}
-            >
-              {totalCount}
-            </span>
+          <div
+            className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${
+              !filtroActivo ? "bg-white/20 text-white" : "bg-[#EEFAF6] text-[#0F6E56]"
+            }`}
+          >
+            <ListIcon />
           </div>
-          <p className={`text-xs ${!filtroCompletasActivo ? "text-[#9FE1CB]" : "text-gray-500"}`}>
-            Básicas y completas
-          </p>
-        </div>
-      </button>
+          <div className="min-w-0 flex-1">
+            <div className="mb-0.5 flex items-center gap-2">
+              <span
+                className={`text-sm font-medium ${!filtroActivo ? "text-white" : "text-gray-900"}`}
+              >
+                Todas
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  !filtroActivo ? "bg-white/20 text-white" : "bg-[#EEFAF6] text-[#085041]"
+                }`}
+              >
+                {totalCount}
+              </span>
+            </div>
+            <p className={`text-xs ${!filtroActivo ? "text-[#9FE1CB]" : "text-gray-500"}`}>
+              Básicas y completas
+            </p>
+          </div>
+        </button>
 
-      <button
-        type="button"
-        aria-pressed={filtroCompletasActivo}
-        onClick={() => onCheckedChange(true)}
-        className={`flex flex-1 items-center gap-3 rounded-2xl border p-3.5 text-left transition-all ${
-          filtroCompletasActivo
-            ? "border-[#0F6E56] bg-[#0F6E56] shadow-lg shadow-[#0F6E56]/20"
-            : "border-gray-200 bg-white hover:border-gray-300"
-        }`}
-      >
-        <div
-          className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${
-            filtroCompletasActivo ? "bg-white/20 text-white" : "bg-[#EEFAF6] text-[#0F6E56]"
+        <button
+          type="button"
+          aria-pressed={filtroActivo}
+          onClick={() => onCheckedChange(true)}
+          className={`flex flex-1 cursor-pointer items-center gap-3 rounded-2xl p-3.5 text-left transition-all ${
+            filtroActivo
+              ? "border-[1.5px] border-[#0F6E56] bg-[#0F6E56] shadow-lg shadow-[#0F6E56]/20"
+              : "border-[2px] border-[#5DCAA5] bg-white hover:border-[#0F6E56] hover:bg-[#FAFEFC]"
           }`}
         >
-          <PhotoCardIcon />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="mb-0.5 flex items-center gap-2">
-            <span
-              className={`text-sm font-medium ${filtroCompletasActivo ? "text-white" : "text-gray-900"}`}
-            >
-              Fichas completas
-            </span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                filtroCompletasActivo ? "bg-white/20 text-white" : "bg-[#EEFAF6] text-[#085041]"
-              }`}
-            >
-              {completasCount}
-            </span>
+          <div
+            className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${
+              filtroActivo ? "bg-white/20 text-white" : "bg-[#0F6E56] text-white"
+            }`}
+          >
+            <PhotoCardIcon />
           </div>
-          <p className={`text-xs ${filtroCompletasActivo ? "text-[#9FE1CB]" : "text-gray-500"}`}>
-            Más información para decidir
-          </p>
-        </div>
-      </button>
+          <div className="min-w-0 flex-1">
+            <div className="mb-0.5 flex items-center gap-2">
+              <span
+                className={`text-sm font-medium ${filtroActivo ? "text-white" : "text-gray-900"}`}
+              >
+                Fichas completas
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  filtroActivo ? "bg-white/20 text-white" : "bg-[#EEFAF6] text-[#085041]"
+                }`}
+              >
+                {completasCount}
+              </span>
+            </div>
+            <p className={`text-xs ${filtroActivo ? "text-[#9FE1CB]" : "text-gray-500"}`}>
+              Con fotos, galería y más información
+            </p>
+          </div>
+          {!filtroActivo ? (
+            <span className="ml-auto flex-shrink-0 text-base text-[#0F6E56]" aria-hidden>
+              →
+            </span>
+          ) : null}
+        </button>
+      </div>
+
+      <p className="px-1 text-center text-xs leading-relaxed text-gray-400">
+        Las fichas completas muestran fotos, redes sociales y más detalles para ayudarte a decidir
+        mejor.
+      </p>
     </div>
   );
 }
