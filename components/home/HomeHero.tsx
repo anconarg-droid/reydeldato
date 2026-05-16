@@ -43,14 +43,14 @@ export default function HomeHero({
         className="w-full text-center"
         style={{
           background: "linear-gradient(160deg, #eaf6f2 0%, #f7f8f6 55%)",
-          paddingTop: "clamp(28px, 5vw, 72px)",
-          paddingBottom: "clamp(22px, 3.5vw, 56px)",
+          paddingTop: "clamp(20px, 3.8vw, 54px)",
+          paddingBottom: "clamp(16px, 2.7vw, 42px)",
         }}
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
 
           {/* Eyebrow pill */}
-          <div className="inline-flex items-center gap-2 mb-4 sm:mb-5">
+          <div className="inline-flex items-center gap-2 mb-2 sm:mb-3">
             <span
               style={{
                 background: "#ccfbf1",
@@ -99,7 +99,7 @@ export default function HomeHero({
           </h1>
 
           <div
-            className="mx-auto mt-3 max-w-md space-y-0.5 px-1 text-center sm:mt-3.5"
+            className="mx-auto mt-2 max-w-md space-y-0.5 px-1 text-center sm:mt-2.5"
             style={{
               fontFamily: "var(--font-sora, sans-serif)",
               fontSize: "clamp(14px, 2vw, 17px)",
@@ -116,7 +116,7 @@ export default function HomeHero({
           {/* Search box */}
           <div
             style={{
-              marginTop: "clamp(20px, 4vw, 44px)",
+              marginTop: "clamp(14px, 3vw, 34px)",
               maxWidth: 680,
               marginLeft: "auto",
               marginRight: "auto",
@@ -139,14 +139,14 @@ export default function HomeHero({
           />
 
           {children ? (
-            <div className="mt-6 text-left md:mt-8">{children}</div>
+            <div className="mt-4 text-left md:mt-6">{children}</div>
           ) : null}
         </div>
       </section>
 
       {/* Comparación: publicidad vs intención */}
       <section className="w-full border-t border-slate-100 bg-white">
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-11 md:py-14">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
           <div className="grid grid-cols-1 items-start gap-6 sm:gap-7 lg:grid-cols-2 lg:gap-14">
             {/* Izquierda: texto */}
             <div className="text-left">

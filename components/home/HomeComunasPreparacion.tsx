@@ -164,6 +164,8 @@ function HomeComunasPreparacionMobile({ items }: { items: ComunaPreparacionItem[
   );
 }
 
+const PREPARACION_DESKTOP_INITIAL = 4;
+
 export default function HomeComunasPreparacion({
   items,
   flush = false,
@@ -172,7 +174,16 @@ export default function HomeComunasPreparacion({
   /** Sin margen/borde propios: útil cuando el bloque va dentro de otra `<section>` de página. */
   flush?: boolean;
 }) {
+  const [desktopPrepExpanded, setDesktopPrepExpanded] = useState(false);
+
   if (!items.length) return null;
+
+  const desktopItems =
+    desktopPrepExpanded || items.length <= PREPARACION_DESKTOP_INITIAL
+      ? items
+      : items.slice(0, PREPARACION_DESKTOP_INITIAL);
+  const showVerMasDesktop =
+    items.length > PREPARACION_DESKTOP_INITIAL && !desktopPrepExpanded;
 
   return (
     <section
@@ -195,7 +206,7 @@ export default function HomeComunasPreparacion({
         </p>
 
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-stretch sm:gap-4 md:gap-5">
-          {items.map((c) => {
+          {desktopItems.map((c) => {
             const { meta, cumplido, faltanLine } = getPreparacionCardMeta(c);
 
             return (
@@ -238,6 +249,17 @@ export default function HomeComunasPreparacion({
             );
           })}
         </div>
+        {showVerMasDesktop ? (
+          <div className="mt-4 flex justify-center sm:justify-start">
+            <button
+              type="button"
+              onClick={() => setDesktopPrepExpanded(true)}
+              className="text-sm font-semibold text-[#0f766e] underline-offset-2 hover:underline"
+            >
+              Ver más comunas →
+            </button>
+          </div>
+        ) : null}
       </div>
     </section>
   );

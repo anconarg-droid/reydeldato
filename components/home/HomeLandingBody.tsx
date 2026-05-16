@@ -72,64 +72,27 @@ const LA_DIFERENCIA_ITEMS = [
 ] as const;
 
 function HomeMobileComoFunciona() {
-  const { trackRef, activeIndex, scroll } = useHomeCarouselDots(COMO_FUNCIONA_STEPS.length);
-  useEffect(() => {
-    if (trackRef.current) trackRef.current.scrollLeft = 0;
-  }, []);
   return (
     <div className="md:hidden">
-      <div className="flex justify-between items-end mb-2">
-        <div>
-          <h2 className="text-xl font-medium text-gray-900">Cómo funciona</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Desliza para ver más →</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => scroll(-1)}
-            className="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700"
-            aria-label="Anterior"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            onClick={() => scroll(1)}
-            className="w-9 h-9 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-700"
-            aria-label="Siguiente"
-          >
-            ›
-          </button>
-        </div>
-      </div>
-      <div
-        ref={trackRef}
-        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2"
-      >
+      <h2 className="text-lg font-semibold text-gray-900">Cómo funciona</h2>
+      <ol className="mt-2.5 list-none space-y-2 p-0">
         {COMO_FUNCIONA_STEPS.map((step) => (
-          <div
+          <li
             key={step.n}
-            className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-4"
+            className="rounded-lg border border-gray-200/90 bg-white px-3 py-2.5"
           >
-            <div className="text-6xl font-medium text-[#E1F5EE] leading-none tabular-nums">{step.n}</div>
-            <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-              Paso {step.n}
-            </p>
-            <h3 className="mt-1 text-base font-semibold text-gray-900">{step.t}</h3>
-            <p className="mt-2 text-sm text-gray-600 leading-snug line-clamp-3">{step.d}</p>
-          </div>
+            <div className="flex gap-2.5">
+              <span className="text-xl font-semibold tabular-nums leading-none text-[#0F6E56]/38">
+                {step.n}
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold leading-snug text-gray-900">{step.t}</p>
+                <p className="mt-0.5 text-xs leading-snug text-gray-600">{step.d}</p>
+              </div>
+            </div>
+          </li>
         ))}
-      </div>
-      <div className="flex gap-1.5 mt-3">
-        {COMO_FUNCIONA_STEPS.map((_, i) => (
-          <span
-            key={i}
-            className={`h-1.5 rounded-full transition-all ${
-              activeIndex === i ? "w-5 bg-[#0F6E56]" : "w-1.5 bg-gray-200"
-            }`}
-          />
-        ))}
-      </div>
+      </ol>
     </div>
   );
 }
@@ -418,7 +381,7 @@ export default function HomeLandingBody({
           className="border-t border-slate-100 bg-slate-50/90"
           aria-labelledby="home-ultimos-publicados-heading"
         >
-          <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-9 md:py-10">
+          <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-7 md:py-8">
             <HomeUltimosPublicadosClient
               cards={ultimosPublicadosCards}
               totalNegociosActivos={totalNegociosParaCarrusel}
@@ -433,7 +396,7 @@ export default function HomeLandingBody({
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-como-funciona-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-5 sm:px-6 md:py-7 lg:py-8">
+        <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 md:py-5 lg:py-6">
           <HomeMobileComoFunciona />
           <div className="hidden md:block">
             <h2
@@ -442,19 +405,19 @@ export default function HomeLandingBody({
             >
               Cómo funciona
             </h2>
-            <ol className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+            <ol className="mt-3 grid list-none grid-cols-3 gap-3 p-0 sm:gap-4">
               {COMO_FUNCIONA_STEPS.map((step) => (
                 <li
                   key={step.n}
-                  className="flex flex-row items-center gap-4 rounded-xl border border-gray-200 bg-white p-4"
+                  className="flex flex-col rounded-xl border border-slate-200/90 bg-white px-3 py-5 text-center shadow-sm"
                 >
-                  <span className="flex-shrink-0 text-5xl font-medium tabular-nums leading-none text-[#0F6E56]/55 sm:text-6xl">
+                  <span className="text-4xl font-medium tabular-nums leading-none text-[#0F6E56]/35">
                     {step.n}
                   </span>
-                  <div className="min-w-0">
-                    <p className="text-base font-medium leading-snug text-gray-900">{step.t}</p>
-                    <p className="mt-0.5 text-sm text-gray-500">{step.d}</p>
-                  </div>
+                  <p className="mt-3 text-[0.9375rem] font-semibold leading-snug text-slate-900">
+                    {step.t}
+                  </p>
+                  <p className="mt-2 text-sm leading-snug text-slate-600">{step.d}</p>
                 </li>
               ))}
             </ol>
@@ -468,30 +431,30 @@ export default function HomeLandingBody({
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-diferencia-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-12 md:py-20 lg:py-24">
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 md:py-14 lg:py-16">
           <HomeMobileLaDiferencia />
           <div className="hidden md:block">
             <h2
               id="home-diferencia-heading"
-              className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+              className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
             >
               La diferencia
             </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
               Orden local, contacto directo y reglas claras.
             </p>
-            <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
               {LA_DIFERENCIA_ITEMS.map((x) => (
                 <div
                   key={x.t}
-                  className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm border-l-[3px] border-l-teal-600 transition-shadow hover:shadow-md"
+                  className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm border-l-[3px] border-l-teal-600 transition-shadow hover:shadow-md"
                 >
                   <div className="text-sm font-bold text-slate-900">{x.t}</div>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">{x.d}</p>
                 </div>
               ))}
             </div>
-            <p className="mt-10 text-center text-xs text-slate-500">
+            <p className="mt-6 text-center text-xs text-slate-500">
               Rey del Dato SpA · RUT 78.403.835-1
             </p>
           </div>
@@ -610,21 +573,21 @@ export default function HomeLandingBody({
         className="mt-0 w-full border-t border-teal-900/20 bg-[#0f766e] text-white"
         aria-labelledby="home-cta-final"
       >
-        <div className="mx-auto max-w-5xl px-4 pt-10 pb-14 text-center sm:px-6 sm:pt-12 sm:pb-16">
+        <div className="mx-auto max-w-5xl px-4 pt-8 pb-10 text-center sm:px-6 sm:pt-9 sm:pb-11">
           <p className="text-xs font-extrabold tracking-[0.18em] text-white/90">
             PARA EMPRENDEDORES
           </p>
-          <h2 id="home-cta-final" className="mt-2.5 text-3xl font-black tracking-tight sm:text-4xl">
+          <h2 id="home-cta-final" className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             Empieza gratis.
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-base font-semibold leading-relaxed text-white/95 sm:text-lg">
+          <p className="mx-auto mt-2.5 max-w-2xl text-base font-semibold leading-relaxed text-white/95 sm:text-lg">
             Tu próximo cliente puede estar cerca.
           </p>
 
-          <div className="mt-5 flex flex-col items-center gap-2.5">
+          <div className="mt-4 flex flex-col items-center gap-2">
             <Link
               href="/publicar"
-              className="inline-flex h-14 min-h-14 w-full max-w-sm items-center justify-center rounded-xl bg-white px-8 text-base font-extrabold text-[#0f766e] shadow-lg shadow-teal-900/20 transition hover:bg-teal-50"
+              className="inline-flex h-12 min-h-12 w-full max-w-sm items-center justify-center rounded-xl bg-white px-8 text-base font-extrabold text-[#0f766e] shadow-lg shadow-teal-900/20 transition hover:bg-teal-50"
             >
               Publicar mi negocio
             </Link>

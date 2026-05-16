@@ -107,7 +107,7 @@ export default function HomeRubrosTicker({
 
   return (
     <div
-      className="rubros-ticker-wrapper mx-auto mt-2 w-full max-w-[680px] select-none px-3 sm:mt-3 sm:px-4"
+      className="rubros-ticker-wrapper mx-auto mt-1.5 w-full max-w-[680px] select-none px-3 sm:mt-2 sm:px-4"
       role="region"
       aria-labelledby="home-rubros-ticker-heading"
     >
