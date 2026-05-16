@@ -172,7 +172,9 @@ export default function HomeHero({
                 Tu negocio aparece cuando alguien cerca te busca.
               </p>
               <h2 className="mt-2 text-balance text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl md:mt-2">
-                Te encuentran cuando te necesitan
+                Tu negocio aparece
+                <br />
+                cuando alguien te busca.
               </h2>
               <div className="mt-4 max-w-xl space-y-2 text-sm font-semibold leading-snug text-slate-800 sm:text-base">
                 <p className="m-0">Publica gratis y recibe contactos directos.</p>
