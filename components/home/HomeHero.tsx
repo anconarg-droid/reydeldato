@@ -5,7 +5,9 @@ import type { ReactNode } from "react";
 import { Sora } from "next/font/google";
 import HomeSearchClient from "@/app/HomeSearchClient";
 import HomeRubrosTicker from "@/components/home/HomeRubrosTicker";
+import HomeUltimosPublicadosClient from "@/components/home/HomeUltimosPublicadosClient";
 import type { RubroTickerItem } from "@/lib/loadRubrosTickerHome";
+import type { EmprendedorSearchCardProps } from "@/components/search/EmprendedorSearchCard";
 import { CHIPS_HERO } from "@/lib/homeConstants";
 import { capturePosthogEvent } from "@/lib/posthog";
 import { useSearchParams } from "next/navigation";
@@ -21,6 +23,9 @@ type Props = {
   children?: ReactNode;
   /** Subcategorías con al menos un publicado; con menos de 5 no se muestra ticker. */
   rubrosTicker?: RubroTickerItem[];
+  /** Carrusel justo después del bloque “Tu negocio aparece…”. */
+  ultimosPublicadosCards?: EmprendedorSearchCardProps[];
+  totalNegociosActivos?: number | null;
 };
 
 const BENEFIT_PILLS = [
@@ -32,6 +37,8 @@ const BENEFIT_PILLS = [
 export default function HomeHero({
   children,
   rubrosTicker = [],
+  ultimosPublicadosCards = [],
+  totalNegociosActivos = null,
 }: Props) {
   const searchParams = useSearchParams();
   const initialComunaSlug = searchParams.get("comuna") ?? null;
@@ -43,14 +50,14 @@ export default function HomeHero({
         className="w-full text-center"
         style={{
           background: "linear-gradient(160deg, #eaf6f2 0%, #f7f8f6 55%)",
-          paddingTop: "clamp(20px, 3.8vw, 54px)",
-          paddingBottom: "clamp(16px, 2.7vw, 42px)",
+          paddingTop: "clamp(14px, 3vw, 40px)",
+          paddingBottom: "clamp(12px, 2.2vw, 32px)",
         }}
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
 
           {/* Eyebrow pill */}
-          <div className="inline-flex items-center gap-2 mb-2 sm:mb-3">
+          <div className="inline-flex items-center gap-2 mb-1.5 sm:mb-2">
             <span
               style={{
                 background: "#ccfbf1",
@@ -99,7 +106,7 @@ export default function HomeHero({
           </h1>
 
           <div
-            className="mx-auto mt-2 max-w-md space-y-0.5 px-1 text-center sm:mt-2.5"
+            className="mx-auto mt-1.5 max-w-md space-y-0.5 px-1 text-center sm:mt-2"
             style={{
               fontFamily: "var(--font-sora, sans-serif)",
               fontSize: "clamp(14px, 2vw, 17px)",
@@ -116,7 +123,7 @@ export default function HomeHero({
           {/* Search box */}
           <div
             style={{
-              marginTop: "clamp(14px, 3vw, 34px)",
+              marginTop: "clamp(10px, 2.5vw, 26px)",
               maxWidth: 680,
               marginLeft: "auto",
               marginRight: "auto",
@@ -146,23 +153,23 @@ export default function HomeHero({
 
       {/* Comparación: publicidad vs intención */}
       <section className="w-full border-t border-slate-100 bg-white">
-        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
-          <div className="grid grid-cols-1 items-start gap-6 sm:gap-7 lg:grid-cols-2 lg:gap-14">
+        <div className="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-6 md:py-7">
+          <div className="grid grid-cols-1 items-start gap-5 sm:gap-6 lg:grid-cols-2 lg:gap-10 lg:items-start">
             {/* Izquierda: texto */}
-            <div className="text-left">
+            <div className="max-w-lg text-left lg:max-w-md">
               <p className="hidden text-sm font-semibold text-slate-700 md:block">
                 Tu negocio aparece cuando alguien cerca te busca.
               </p>
-              <h2 className="mt-2 text-balance text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl md:mt-2">
+              <h2 className="mt-1.5 text-balance text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl md:mt-2">
                 Tu negocio aparece
                 <br />
                 cuando alguien te busca.
               </h2>
-              <div className="mt-4 max-w-xl space-y-2 text-sm font-semibold leading-snug text-slate-800 sm:text-base">
+              <div className="mt-3 max-w-md space-y-1.5 text-sm font-semibold leading-snug text-slate-800 sm:text-base">
                 <p className="m-0">Publica gratis y recibe contactos directos.</p>
                 <p className="m-0">WhatsApp, Instagram o llamada.</p>
               </div>
-              <div className="mt-4 flex max-w-xl flex-wrap gap-2">
+              <div className="mt-3 flex max-w-md flex-wrap gap-2">
                 {BENEFIT_PILLS.map((label) => (
                   <span
                     key={label}
@@ -176,7 +183,7 @@ export default function HomeHero({
             </div>
 
             {/* Derecha: card planes (gratis / ficha completa) + CTA — solo desktop */}
-            <div className="hidden w-full md:block">
+            <div className="hidden w-full md:block lg:self-start lg:-mt-1">
               <div className="overflow-hidden rounded-2xl border border-teal-200 bg-white text-center shadow-sm ring-1 ring-teal-100">
                 <div className="bg-white px-5 pt-3 pb-0.5 text-center sm:px-6">
                   <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-teal-800">
@@ -273,6 +280,20 @@ export default function HomeHero({
           </div>
         </div>
       </section>
+
+      {ultimosPublicadosCards.length > 0 ? (
+        <section
+          className="border-t border-slate-100 bg-slate-50/90"
+          aria-labelledby="home-ultimos-publicados-heading"
+        >
+          <div className="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-6 md:py-7">
+            <HomeUltimosPublicadosClient
+              cards={ultimosPublicadosCards}
+              totalNegociosActivos={totalNegociosActivos}
+            />
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

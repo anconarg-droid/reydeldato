@@ -118,7 +118,7 @@ function HomeComunasPreparacionMobile({ items }: { items: ComunaPreparacionItem[
           return (
             <div
               key={c.slug}
-              className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-5 flex flex-col"
+              className="flex-shrink-0 w-[260px] snap-start bg-white border border-gray-200 rounded-xl p-4 flex flex-col"
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-base font-semibold leading-tight text-gray-900">
@@ -198,14 +198,14 @@ export default function HomeComunasPreparacion({
           Estamos completando el catálogo comuna por comuna. Algunas comunas ya muestran resultados, pero todavía
           necesitan más negocios clave para que el directorio sea más útil.
         </p>
-        <h2 className="mt-6 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+        <h2 className="mt-4 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
           Comunas en crecimiento
         </h2>
-        <p className="mt-2 max-w-2xl text-sm text-slate-600">
+        <p className="mt-1.5 max-w-2xl text-sm text-slate-600">
           Mientras más negocios reales se suman, mejores resultados muestra cada comuna.
         </p>
 
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-stretch sm:gap-4 md:gap-5">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-stretch sm:gap-3 md:gap-4">
           {desktopItems.map((c) => {
             const { meta, cumplido, faltanLine } = getPreparacionCardMeta(c);
 
@@ -213,18 +213,18 @@ export default function HomeComunasPreparacion({
               <Link
                 key={c.slug}
                 href={`/abrir-comuna/${encodeURIComponent(c.slug)}`}
-                className="group flex h-full min-h-0 flex-col rounded-2xl border border-slate-200/90 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 sm:p-6"
+                className="group flex h-full min-h-0 flex-col rounded-xl border border-slate-200/90 bg-white p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-lg font-semibold leading-tight text-slate-900">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-base font-semibold leading-tight text-slate-900">
                     {c.nombre || prettySlug(c.slug)}
                   </h3>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-600">
+                  <span className="shrink-0 text-xs font-semibold tabular-nums text-slate-600 sm:text-sm">
                     {c.porcentaje}%
                   </span>
                 </div>
 
-                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-slate-100">
                   <div
                     className="h-full rounded-full bg-[#0f766e] transition-[width] duration-300"
                     style={{ width: `${Math.max(0, Math.min(100, c.porcentaje))}%` }}
@@ -232,17 +232,14 @@ export default function HomeComunasPreparacion({
                 </div>
 
                 {meta != null && meta > 0 && cumplido != null ? (
-                  <p className="mt-3 text-sm font-medium tabular-nums text-slate-800">
+                  <p className="mt-2 text-xs font-medium tabular-nums text-slate-800 sm:text-sm">
                     {cumplido} de {meta} negocios clave completos
                   </p>
                 ) : null}
 
-                <p className="mt-4 text-sm font-semibold text-slate-900">{faltanLine}</p>
-                <p className="mt-2 flex-1 text-sm leading-snug text-slate-600">
-                  Sé uno de los primeros en sumar tu negocio
-                </p>
+                <p className="mt-2 text-sm font-semibold leading-snug text-slate-900">{faltanLine}</p>
 
-                <span className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-[#0f766e] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 sm:w-auto">
+                <span className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-[#0f766e] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 sm:w-auto">
                   Ver avance del catálogo →
                 </span>
               </Link>

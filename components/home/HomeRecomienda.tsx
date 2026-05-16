@@ -24,6 +24,8 @@ type ApiResponse = {
 type HomeRecomiendaProps = {
   /** En la home: sin márgenes/padding de página completa. */
   embedded?: boolean;
+  /** Bloque home: card y formulario más compactos (requiere `embedded`). */
+  embeddedCompact?: boolean;
   /**
    * Bloque CTA verde en home: sin card blanca aislada; labels/texto para fondo emerald.
    * Requiere `embedded`.
@@ -37,12 +39,14 @@ type HomeRecomiendaProps = {
 
 export default function HomeRecomienda({
   embedded = false,
+  embeddedCompact = false,
   embeddedOnEmerald = false,
   initialComunaSlug = "",
   initialComunaNombre = "",
   initialServicioTexto = "",
 }: HomeRecomiendaProps) {
   const onEmerald = embedded && embeddedOnEmerald;
+  const compactEmbedded = embedded && embeddedCompact && !onEmerald;
   const [nombreEmprendimiento, setNombreEmprendimiento] = useState("");
   const [servicioTexto, setServicioTexto] = useState(initialServicioTexto);
   const [comunaInput, setComunaInput] = useState(() =>
@@ -219,9 +223,11 @@ export default function HomeRecomienda({
 
   const cardClass = onEmerald
     ? "rounded-none border-0 bg-transparent p-0 pt-8 sm:pt-10 shadow-none"
-    : embedded
-      ? "rounded-2xl border border-slate-200 bg-slate-50/40 p-6 sm:p-8 shadow-sm"
-      : "bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-6";
+    : compactEmbedded
+      ? "rounded-2xl border border-slate-200 bg-slate-50/40 p-4 sm:p-5 shadow-sm"
+      : embedded
+        ? "rounded-2xl border border-slate-200 bg-slate-50/40 p-6 sm:p-8 shadow-sm"
+        : "bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-6";
 
   const labelClass = onEmerald
     ? "block text-sm font-semibold text-emerald-100/95 mb-2"
@@ -269,21 +275,30 @@ export default function HomeRecomienda({
             className={
               onEmerald
                 ? "text-emerald-50/90 text-sm mb-5 max-w-2xl leading-relaxed mx-auto text-center sm:text-left"
-                : "text-slate-600 text-sm mb-5 max-w-2xl leading-relaxed"
+                : compactEmbedded
+                  ? "text-slate-600 text-sm mb-3 max-w-2xl leading-relaxed"
+                  : "text-slate-600 text-sm mb-5 max-w-2xl leading-relaxed"
             }
           >
             Ayuda a completar tu comuna recomendando un negocio.
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className={embedded ? "space-y-5" : "space-y-4"}>
+        <form
+          onSubmit={handleSubmit}
+          className={
+            embedded ? (compactEmbedded ? "space-y-4" : "space-y-5") : "space-y-4"
+          }
+        >
           {embedded ? (
             <>
               <div
                 className={
                   onEmerald
                     ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 pt-1 border-t border-white/14"
-                    : "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 pt-1 border-t border-slate-200/80"
+                    : compactEmbedded
+                      ? "grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-1 border-t border-slate-200/80"
+                      : "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 pt-1 border-t border-slate-200/80"
                 }
               >
                 <div ref={comunaBoxRef} className="relative sm:col-span-1">

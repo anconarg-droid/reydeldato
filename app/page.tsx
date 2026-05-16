@@ -25,7 +25,11 @@ export default async function HomePage() {
           </div>
         }
       >
-        <HomeHero rubrosTicker={rubrosTicker} />
+        <HomeHero
+          rubrosTicker={rubrosTicker}
+          ultimosPublicadosCards={ultimosPublicadosCards}
+          totalNegociosActivos={totalNegociosActivos}
+        />
       </Suspense>
       <Suspense
         fallback={
@@ -34,10 +38,7 @@ export default async function HomePage() {
           </div>
         }
       >
-        <HomeLandingBody
-          ultimosPublicadosCards={ultimosPublicadosCards}
-          totalNegociosActivos={totalNegociosActivos}
-        />
+        <HomeLandingBody />
       </Suspense>
     </div>
   );

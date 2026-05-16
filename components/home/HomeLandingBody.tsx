@@ -12,16 +12,8 @@ import HomeComunaAutocomplete from "@/components/home/HomeComunaAutocomplete";
 import HomeComunasPreparacion, {
   type ComunaPreparacionItem,
 } from "@/components/home/HomeComunasPreparacion";
-import HomeUltimosPublicadosClient from "@/components/home/HomeUltimosPublicadosClient";
-import type { EmprendedorSearchCardProps } from "@/components/search/EmprendedorSearchCard";
 
 type Comuna = { id: number; nombre: string; slug: string; total?: number };
-
-type Props = {
-  ultimosPublicadosCards: EmprendedorSearchCardProps[];
-  /** Total negocios (servidor) para el carrusel sin flash 31→N */
-  totalNegociosActivos?: number | null;
-};
 
 const CAROUSEL_STRIDE = 272; /* 260px card + gap-3 */
 
@@ -73,13 +65,13 @@ const LA_DIFERENCIA_ITEMS = [
 
 function HomeMobileComoFunciona() {
   return (
-    <div className="md:hidden">
-      <h2 className="text-lg font-semibold text-gray-900">Cómo funciona</h2>
-      <ol className="mt-2.5 list-none space-y-2 p-0">
+      <div className="md:hidden">
+      <h2 className="text-base font-semibold text-gray-900">Cómo funciona</h2>
+      <ol className="mt-2 list-none space-y-1.5 p-0">
         {COMO_FUNCIONA_STEPS.map((step) => (
           <li
             key={step.n}
-            className="rounded-lg border border-gray-200/90 bg-white px-3 py-2.5"
+            className="rounded-lg border border-gray-200/90 bg-white px-3 py-2"
           >
             <div className="flex gap-2.5">
               <span className="text-xl font-semibold tabular-nums leading-none text-[#0F6E56]/38">
@@ -237,10 +229,7 @@ function HomeMobileComunasDisponibles({ items }: { items: ComunaAbiertaItem[] })
   );
 }
 
-export default function HomeLandingBody({
-  ultimosPublicadosCards,
-  totalNegociosActivos: totalNegociosActivosServer = null,
-}: Props) {
+export default function HomeLandingBody() {
   const searchParams = useSearchParams();
   const contextComunaSlug = (searchParams.get("comuna") || "").trim().toLowerCase();
 
@@ -369,34 +358,15 @@ export default function HomeLandingBody({
     count: Number(c.total || 0),
   }));
 
-  const totalNegociosActivos = comunas.reduce((s, c) => s + (Number(c.total) || 0), 0);
-  const totalNegociosParaCarrusel =
-    totalNegociosActivosServer != null ? totalNegociosActivosServer : totalNegociosActivos;
-
   return (
     <div className="pb-0">
-      {/* 1 · Fichas reales publicadas (justo después del bloque emprendedores en HomeHero) */}
-      {ultimosPublicadosCards.length > 0 ? (
-        <section
-          className="border-t border-slate-100 bg-slate-50/90"
-          aria-labelledby="home-ultimos-publicados-heading"
-        >
-          <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-7 md:py-8">
-            <HomeUltimosPublicadosClient
-              cards={ultimosPublicadosCards}
-              totalNegociosActivos={totalNegociosParaCarrusel}
-            />
-          </div>
-        </section>
-      ) : null}
-
-      {/* 2 · Cómo funciona */}
+      {/* 1 · Cómo funciona (fichas van en HomeHero tras “Tu negocio aparece…”) */}
       <section
         id="home-como-funciona"
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-como-funciona-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 md:py-5 lg:py-6">
+        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6 md:py-4 lg:py-5">
           <HomeMobileComoFunciona />
           <div className="hidden md:block">
             <h2
@@ -405,19 +375,19 @@ export default function HomeLandingBody({
             >
               Cómo funciona
             </h2>
-            <ol className="mt-3 grid list-none grid-cols-3 gap-3 p-0 sm:gap-4">
+            <ol className="mt-2 grid list-none grid-cols-3 gap-2.5 p-0 sm:gap-3">
               {COMO_FUNCIONA_STEPS.map((step) => (
                 <li
                   key={step.n}
-                  className="flex flex-col rounded-xl border border-slate-200/90 bg-white px-3 py-5 text-center shadow-sm"
+                  className="flex h-full flex-col rounded-xl border border-slate-200/90 bg-white px-2.5 py-3.5 text-center shadow-sm"
                 >
-                  <span className="text-4xl font-medium tabular-nums leading-none text-[#0F6E56]/35">
+                  <span className="text-3xl font-medium tabular-nums leading-none text-[#0F6E56]/35 sm:text-[2rem]">
                     {step.n}
                   </span>
-                  <p className="mt-3 text-[0.9375rem] font-semibold leading-snug text-slate-900">
+                  <p className="mt-2 text-[0.9375rem] font-semibold leading-snug text-slate-900">
                     {step.t}
                   </p>
-                  <p className="mt-2 text-sm leading-snug text-slate-600">{step.d}</p>
+                  <p className="mt-1.5 text-sm leading-snug text-slate-600">{step.d}</p>
                 </li>
               ))}
             </ol>
@@ -425,13 +395,13 @@ export default function HomeLandingBody({
         </div>
       </section>
 
-      {/* 3 · La diferencia (único bloque — sin duplicar problema/solución) */}
+      {/* 2 · La diferencia (único bloque — sin duplicar problema/solución) */}
       <section
         id="home-diferencia"
         className="border-t border-slate-100 bg-white"
         aria-labelledby="home-diferencia-heading"
       >
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 md:py-14 lg:py-16">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 md:py-10 lg:py-12">
           <HomeMobileLaDiferencia />
           <div className="hidden md:block">
             <h2
@@ -440,37 +410,37 @@ export default function HomeLandingBody({
             >
               La diferencia
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
               Orden local, contacto directo y reglas claras.
             </p>
-            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-2.5 md:grid-cols-3">
               {LA_DIFERENCIA_ITEMS.map((x) => (
                 <div
                   key={x.t}
-                  className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm border-l-[3px] border-l-teal-600 transition-shadow hover:shadow-md"
+                  className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm border-l-[3px] border-l-teal-600 transition-shadow hover:shadow-md"
                 >
                   <div className="text-sm font-bold text-slate-900">{x.t}</div>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{x.d}</p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{x.d}</p>
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-center text-xs text-slate-500">
+            <p className="mt-5 text-center text-xs text-slate-500">
               Rey del Dato SpA · RUT 78.403.835-1
             </p>
           </div>
         </div>
       </section>
 
-      {/* 4 · Comunas */}
+      {/* 3 · Comunas */}
       <section className="border-t border-slate-100 bg-slate-50/90" aria-labelledby="home-local">
-        <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 md:py-20 lg:py-24">
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 md:py-12 lg:py-14">
           <h2
             id="home-local"
             className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
           >
             Comunas
           </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
             Algunas comunas ya tienen resultados. Otras están completando su catálogo.
           </p>
           {!loadingComunas && comunasCards.length > 0 ? (
@@ -482,7 +452,7 @@ export default function HomeLandingBody({
             </p>
           ) : null}
 
-          <div className="mt-10">
+          <div className="mt-6">
             <div className="md:hidden">
               {loadingComunas ? (
                 <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
@@ -532,7 +502,7 @@ export default function HomeLandingBody({
               ) : (
                 <div className="mt-4">
                   <HomeComunasAbiertasGrid items={comunasCards} />
-                  <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                  <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
                     <p className="text-sm font-medium text-slate-800">¿Tu comuna no aparece?</p>
                     <HomeComunaAutocomplete placeholder="Busca tu comuna…" />
                   </div>
@@ -543,48 +513,50 @@ export default function HomeLandingBody({
         </div>
       </section>
 
-      {/* 5 · Comunas en crecimiento */}
+      {/* 4 · Comunas en crecimiento */}
       {!loadingPrep && prep.length > 0 ? (
         <section className="border-t border-slate-100 bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 md:py-11">
+          <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 md:py-9">
             <HomeComunasPreparacion items={prep.slice(0, 6)} flush />
           </div>
         </section>
       ) : null}
 
-      {/* 6 · Recomendar negocio */}
+      {/* 5 · Recomendar negocio */}
       <section className="border-t border-slate-100 bg-white" aria-labelledby="home-recomendar">
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
           <h2
             id="home-recomendar"
             className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl"
           >
             ¿Conoces un negocio local que debería estar aquí?
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
             Recomiéndalo y ayúdanos a completar el catálogo de tu comuna.
           </p>
-          <HomeRecomienda embedded initialComunaSlug={contextComunaSlug} />
+          <div className="mx-auto mt-4 w-full max-w-lg">
+            <HomeRecomienda embedded embeddedCompact initialComunaSlug={contextComunaSlug} />
+          </div>
         </div>
       </section>
 
-      {/* 7 · CTA final (ancho completo) */}
+      {/* 6 · CTA final (ancho completo) */}
       <section
         className="mt-0 w-full border-t border-teal-900/20 bg-[#0f766e] text-white"
         aria-labelledby="home-cta-final"
       >
-        <div className="mx-auto max-w-5xl px-4 pt-8 pb-10 text-center sm:px-6 sm:pt-9 sm:pb-11">
+        <div className="mx-auto max-w-5xl px-4 pt-6 pb-8 text-center sm:px-6 sm:pt-7 sm:pb-9">
           <p className="text-xs font-extrabold tracking-[0.18em] text-white/90">
             PARA EMPRENDEDORES
           </p>
-          <h2 id="home-cta-final" className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+          <h2 id="home-cta-final" className="mt-1.5 text-3xl font-black tracking-tight sm:text-4xl">
             Empieza gratis.
           </h2>
-          <p className="mx-auto mt-2.5 max-w-2xl text-base font-semibold leading-relaxed text-white/95 sm:text-lg">
+          <p className="mx-auto mt-2 max-w-2xl text-base font-semibold leading-relaxed text-white/95 sm:text-lg">
             Tu próximo cliente puede estar cerca.
           </p>
 
-          <div className="mt-4 flex flex-col items-center gap-2">
+          <div className="mt-3.5 flex flex-col items-center gap-1.5">
             <Link
               href="/publicar"
               className="inline-flex h-12 min-h-12 w-full max-w-sm items-center justify-center rounded-xl bg-white px-8 text-base font-extrabold text-[#0f766e] shadow-lg shadow-teal-900/20 transition hover:bg-teal-50"
