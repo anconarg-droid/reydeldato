@@ -115,7 +115,10 @@ export default function HomeRubrosTicker({
         id="home-rubros-ticker-heading"
         className="mb-1.5 text-center text-[11px] font-medium leading-snug text-slate-500"
       >
-        Ejemplos de servicios que puedes buscar
+        <span className="block">Ejemplos de servicios y comercios que puedes buscar</span>
+        <span className="mt-0.5 block font-normal text-slate-500/90">
+          Si no aparece lo que buscas, prueba por ejemplo: gasfiter, electricista.
+        </span>
       </p>
       <div
         ref={clipRef}
