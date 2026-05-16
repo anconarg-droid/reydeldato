@@ -7,7 +7,10 @@ import { slugToReadableLabel } from "@/lib/search/slugToReadableLabel";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import PublicSearchResults from "@/components/search/PublicSearchResults";
 import SoloCompletosFiltroControl from "@/components/search/SoloCompletosFiltroControl";
-import { filtrarItemsPorMejoresOpciones } from "@/lib/buscarApiItemPasaFiltroVerMejoresOpciones";
+import {
+  buscarApiItemPasaFiltroVerMejoresOpciones,
+  filtrarItemsPorMejoresOpciones,
+} from "@/lib/buscarApiItemPasaFiltroVerMejoresOpciones";
 import {
   buscarApiItemToEmprendedorCardProps,
   type BuscarApiItem,
@@ -100,6 +103,10 @@ function GlobalDbResults({
   error: string | null;
 }) {
   const [soloCompletos, setSoloCompletos] = useState(false);
+  const completasCountGlobal = useMemo(
+    () => items.filter((i) => buscarApiItemPasaFiltroVerMejoresOpciones(i)).length,
+    [items],
+  );
   const itemsFiltrados = useMemo(
     () => filtrarItemsPorMejoresOpciones(items, soloCompletos),
     [items, soloCompletos],
@@ -152,7 +159,12 @@ function GlobalDbResults({
   return (
     <div className="space-y-3">
       <div className="w-full">
-        <SoloCompletosFiltroControl checked={soloCompletos} onCheckedChange={setSoloCompletos} />
+        <SoloCompletosFiltroControl
+          checked={soloCompletos}
+          onCheckedChange={setSoloCompletos}
+          totalCount={items.length}
+          completasCount={completasCountGlobal}
+        />
       </div>
       {soloCompletos && ningunoConFiltro ? (
         <div className="rounded-lg border border-sky-200/80 bg-sky-50/90 px-3 py-2 text-sm text-slate-800">

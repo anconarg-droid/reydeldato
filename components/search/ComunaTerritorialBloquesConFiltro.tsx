@@ -71,6 +71,11 @@ export default function ComunaTerritorialBloquesConFiltro({
   );
 
   const totalRaw = enRaw.length + atiendenRaw.length;
+  const completasCountTerritorial = useMemo(
+    () =>
+      [...enRaw, ...atiendenRaw].filter((i) => buscarApiItemPasaFiltroVerMejoresOpciones(i)).length,
+    [enRaw, atiendenRaw],
+  );
   const totalFiltrado = fEn.length + fAt.length;
   const ningunoFiltradoPeroHayRaw =
     aplicarSoloCompletos && totalFiltrado === 0 && totalRaw > 0;
@@ -128,7 +133,12 @@ export default function ComunaTerritorialBloquesConFiltro({
 
       {!ocultarFiltroSoloCompletos ? (
         <div className="w-full">
-          <SoloCompletosFiltroControl checked={soloCompletos} onCheckedChange={setSoloCompletos} />
+          <SoloCompletosFiltroControl
+            checked={soloCompletos}
+            onCheckedChange={setSoloCompletos}
+            totalCount={totalRaw}
+            completasCount={completasCountTerritorial}
+          />
         </div>
       ) : null}
 
