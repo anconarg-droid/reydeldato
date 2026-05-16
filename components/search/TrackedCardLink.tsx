@@ -1,6 +1,7 @@
 "use client";
 
 import { getSessionId } from "@/lib/sessionId";
+import { registerWhatsappInteraccionClient, dispatchWhatsappContactHint } from "@/lib/registerWhatsappInteraccionClient";
 
 type Props = {
   slug: string;
@@ -60,7 +61,7 @@ function postEventApi(body: string) {
 
 /**
  * Clic en tarjeta: home → POST /api/event (whatsapp_click | profile_click);
- * otros listados → WhatsApp `/api/track-click`; ver ficha → `/api/analytics` `card_view_click`.
+ * otros listados → WhatsApp POST /api/interacciones/whatsapp; ver ficha → `/api/analytics` `card_view_click`.
  */
 export function sendTrackedCardEvent(
   slug: string,
@@ -95,35 +96,32 @@ export function sendTrackedCardEvent(
       };
       if (emprendedorId) payload.emprendedor_id = emprendedorId;
       postEventApi(JSON.stringify(payload));
+      if (type === "whatsapp") {
+        dispatchWhatsappContactHint();
+      }
       return;
     }
 
     if (type === "whatsapp") {
-      const body = JSON.stringify({ slug: s, type: "whatsapp" });
-      const blob = new Blob([body], { type: "application/json" });
-      if (typeof navigator !== "undefined" && navigator.sendBeacon) {
-        navigator.sendBeacon("/api/track-click", blob);
-      } else {
-        void fetch("/api/track-click", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body,
-          keepalive: true,
-        });
-      }
-    } else {
-      const sessionId = getSessionId();
-      const body = JSON.stringify({
+      registerWhatsappInteraccionClient({
         slug: s,
-        event_type: "card_view_click",
-        session_id: sessionId || undefined,
-        metadata: {
-          source,
-          to_slug: s,
-        },
+        emprendedorId: emprendedorId,
+        origen: "card",
       });
-      postAnalyticsBody(body);
+      return;
     }
+
+    const sessionId = getSessionId();
+    const body = JSON.stringify({
+      slug: s,
+      event_type: "card_view_click",
+      session_id: sessionId || undefined,
+      metadata: {
+        source,
+        to_slug: s,
+      },
+    });
+    postAnalyticsBody(body);
   } catch {
     /* no bloquear UI */
   }

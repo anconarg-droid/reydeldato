@@ -5,6 +5,7 @@ import './globals.css'
 import HomeFooter from '@/components/home/HomeFooter'
 import GlobalHeader from '@/components/GlobalHeader'
 import PostHogProvider from '@/app/posthog-provider'
+import WhatsappContactHintHost from '@/components/recomendacion/WhatsappContactHintHost'
 
 const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
@@ -43,6 +44,7 @@ export default function RootLayout({
       >
         <PostHogProvider>
           <div className="min-h-screen flex flex-col">
+            <WhatsappContactHintHost />
             <GlobalHeader />
             <main className="flex-1">{children}</main>
             <HomeFooter />

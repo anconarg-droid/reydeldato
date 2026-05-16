@@ -1,9 +1,12 @@
 "use client";
 
 import { posthog } from "@/lib/posthog";
+import { registerWhatsappInteraccionClient } from "@/lib/registerWhatsappInteraccionClient";
 
 type Props = {
   slug: string;
+  /** Requerido en ficha para recomendación post-contacto (MVP). */
+  emprendedorId?: string | null;
   type: "whatsapp" | "instagram" | "web" | "email";
   href: string;
   label: string;
@@ -20,6 +23,7 @@ type Props = {
 
 export default function TrackedActionButton({
   slug,
+  emprendedorId = null,
   type,
   href,
   label,
@@ -41,30 +45,37 @@ export default function TrackedActionButton({
         } catch {
           /* noop */
         }
-      }
-      const payload = JSON.stringify({ slug, type });
+        registerWhatsappInteraccionClient({
+          slug,
+          emprendedorId,
+          origen: "ficha",
+        });
+      } else {
+        const payload = JSON.stringify({ slug, type });
 
-      try {
-        if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
-          const blob = new Blob([payload], { type: "application/json" });
-          (navigator as Navigator & { sendBeacon: (url: string, data?: BodyInit | null) => boolean }).sendBeacon(
-            "/api/track-click",
-            blob
-          );
-        } else {
-          fetch("/api/track-click", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: payload,
-            keepalive: true,
-          }).catch((error) => {
-            console.error("No se pudo registrar click", error);
-          });
+        try {
+          if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
+            const blob = new Blob([payload], { type: "application/json" });
+            (
+              navigator as Navigator & {
+                sendBeacon: (url: string, data?: BodyInit | null) => boolean;
+              }
+            ).sendBeacon("/api/track-click", blob);
+          } else {
+            fetch("/api/track-click", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: payload,
+              keepalive: true,
+            }).catch((error) => {
+              console.error("No se pudo registrar click", error);
+            });
+          }
+        } catch (error) {
+          console.error("No se pudo registrar click", error);
         }
-      } catch (error) {
-        console.error("No se pudo registrar click", error);
       }
     }
 

@@ -4,6 +4,7 @@ import TrackedActionButton from "./TrackedActionButton";
 import TrackView from "@/components/TrackView";
 import BackLink from "@/components/BackLink";
 import SimilaresFichaSection from "@/components/cards/SimilaresFichaSection";
+import RecomendacionPostContacto from "@/components/recomendacion/RecomendacionPostContacto";
 import FichaHero from "@/components/emprendedor/FichaHero";
 import FichaDestacados from "@/components/emprendedor/FichaDestacados";
 import {
@@ -1363,6 +1364,7 @@ export default async function Page({
               {whatsappUrl ? (
                 <TrackedActionButton
                   slug={item.slug}
+                  emprendedorId={s(item.id)}
                   type="whatsapp"
                   href={whatsappUrl}
                   label="Contactar por WhatsApp"
@@ -1461,6 +1463,8 @@ export default async function Page({
           />
         </>
       )}
+
+      <RecomendacionPostContacto emprendedorId={s(item.id)} />
 
       {similares.length > 0 ? (
         <SimilaresFichaSection

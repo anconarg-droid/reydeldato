@@ -103,6 +103,18 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    if (event_type === "whatsapp_click" && emprendedor_id && session_id) {
+      const { error: vErr } = await supabase.from("viewer_whatsapp_clicks").insert({
+        emprendedor_id,
+        viewer_id: session_id,
+        origen: "card",
+      });
+      if (vErr) {
+        console.error("viewer_whatsapp_clicks insert (home/card):", vErr.message);
+      }
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("api/event error:", err);

@@ -6,6 +6,7 @@ import PortalGallery from "@/app/emprendedor/[slug]/PortalGallery";
 import ShareFichaButton from "@/app/emprendedor/[slug]/ShareFichaButton";
 import TrackedActionButton from "@/app/emprendedor/[slug]/TrackedActionButton";
 import { posthog } from "@/lib/posthog";
+import { registerWhatsappInteraccionClient } from "@/lib/registerWhatsappInteraccionClient";
 import FichaComoAtiende from "@/components/emprendedor/FichaComoAtiende";
 import FichaPanelSecundarios from "@/components/emprendedor/FichaPanelSecundarios";
 import CopyInlineButton from "@/components/ui/CopyInlineButton";
@@ -430,6 +431,7 @@ export default function FichaHero({
                 <div className="rounded-2xl overflow-hidden ring-2 ring-emerald-600/20 shadow-[0_10px_40px_-12px_rgba(22,163,74,0.52)] transition-all duration-200 ease-out motion-safe:hover:ring-emerald-500/35 motion-safe:hover:shadow-[0_16px_48px_-14px_rgba(22,163,74,0.58)] motion-reduce:transition-none">
                   <TrackedActionButton
                     slug={slug}
+                    emprendedorId={emprendedorId}
                     type="whatsapp"
                     href={whatsappUrl}
                     label="Enviar mensaje por WhatsApp"
@@ -472,6 +474,11 @@ export default function FichaHero({
                           } catch {
                             /* noop */
                           }
+                          registerWhatsappInteraccionClient({
+                            slug,
+                            emprendedorId,
+                            origen: "ficha",
+                          });
                         }}
                         className="mt-2 mx-auto flex w-full max-w-md items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[14px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                         aria-label="Escribir por WhatsApp al número alternativo"
