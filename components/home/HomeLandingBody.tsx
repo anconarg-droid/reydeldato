@@ -74,7 +74,7 @@ function HomeMobileComoFunciona() {
             className="rounded-lg border border-gray-200/90 bg-white px-2.5 py-1.5"
           >
             <div className="flex gap-2">
-              <span className="text-lg font-semibold tabular-nums leading-none text-[#0F6E56]/38">
+              <span className="text-lg font-bold tabular-nums leading-none text-[#0f766e]">
                 {step.n}
               </span>
               <div className="min-w-0">
@@ -381,7 +381,7 @@ export default function HomeLandingBody() {
                   key={step.n}
                   className="flex h-full flex-col rounded-lg border border-slate-200/90 bg-white px-2 py-2.5 text-center shadow-sm"
                 >
-                  <span className="text-2xl font-medium tabular-nums leading-none text-[#0F6E56]/32 sm:text-[1.65rem]">
+                  <span className="text-2xl font-bold tabular-nums leading-none text-[#0f766e] sm:text-[1.65rem]">
                     {step.n}
                   </span>
                   <p className="mt-1 text-[0.8125rem] font-semibold leading-snug text-slate-900">

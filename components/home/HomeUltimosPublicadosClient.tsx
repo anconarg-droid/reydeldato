@@ -208,7 +208,7 @@ export default function HomeUltimosPublicadosClient({
           Más de {negociosLabel.toLocaleString("es-CL")} negocios ya están publicados
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-center text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">
-          Últimos negocios aprobados y publicados: deslizá la ficha o tocá las flechas a los lados.
+          Últimos negocios aprobados y publicados: desliza la ficha o toca las flechas a los lados.
         </p>
 
         <div
@@ -331,7 +331,7 @@ export default function HomeUltimosPublicadosClient({
                 metadata: { source: "home" },
               })
             }
-            className="inline-flex h-10 min-w-[min(100%,17rem)] items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-medium text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:h-11"
+            className="inline-flex h-11 min-h-11 min-w-[min(100%,17rem)] items-center justify-center rounded-xl bg-[#0f766e] px-6 text-sm font-extrabold text-white shadow-md shadow-teal-900/20 transition hover:bg-[#0b6a52] sm:text-base"
           >
             Publica tu negocio gratis
           </Link>
