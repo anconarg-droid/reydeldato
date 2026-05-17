@@ -585,8 +585,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
     return (
       <article
         className={cn(
-          "flex min-h-[500px] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-300 bg-slate-50 shadow-sm md:h-[520px] md:max-h-[520px] md:min-h-[520px]",
-          isCarousel && "h-full min-h-0",
+          "flex min-w-0 flex-col overflow-visible rounded-2xl border border-slate-300 bg-slate-50 shadow-sm max-md:min-h-0 md:h-[520px] md:max-h-[520px] md:min-h-[520px] md:overflow-hidden",
+          isCarousel && "h-full min-h-0 max-md:overflow-hidden",
         )}
         aria-label={`${nombreDisplay}: disponible cuando la comuna esté activa`}
       >
@@ -667,9 +667,9 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   return (
     <article
       className={cn(
-        "flex min-h-[500px] min-w-0 flex-col overflow-hidden rounded-2xl border md:h-[520px] md:max-h-[520px] md:min-h-[520px]",
+        "flex min-w-0 flex-col overflow-visible rounded-2xl border max-md:min-h-0 md:h-[520px] md:max-h-[520px] md:min-h-[520px] md:overflow-hidden",
         listadoUiPerfilCompleto ? "border-[#0f766e] bg-white" : "border-slate-300 bg-slate-50",
-        isCarousel && "h-full min-h-0",
+        isCarousel && "h-full min-h-0 max-md:overflow-hidden",
       )}
       style={{
         boxShadow: cardShadow,
@@ -688,7 +688,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
 
       <div
         className={cn(
-          "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+          "flex min-h-0 min-w-0 flex-1 flex-col max-md:overflow-visible md:overflow-hidden",
           listadoUiPerfilCompleto ? "bg-white" : "bg-slate-50",
         )}
       >
@@ -758,8 +758,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           ) : null}
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-2">
-          <div className="flex min-h-0 w-full shrink-0 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-visible px-4 py-2 max-md:flex-none md:flex-1 md:overflow-hidden">
+          <div className="flex w-full shrink-0 flex-col max-md:min-h-0">
             <div className="mb-1 flex min-h-[2.75rem] w-full flex-col justify-start">
               <h3
                 className={cn(
@@ -782,8 +782,8 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
               {confianzaTexto || "\u00A0"}
             </p>
 
-            <div className="mb-1.5 flex min-h-[48px] w-full flex-col justify-start">
-              <p className="m-0 line-clamp-3 w-full shrink-0 text-sm font-medium leading-relaxed text-slate-700">
+            <div className="mb-1.5 flex w-full flex-col justify-start max-md:min-h-0 md:min-h-[48px]">
+              <p className="m-0 w-full shrink-0 text-sm font-medium leading-relaxed text-slate-700 max-md:line-clamp-none line-clamp-3">
                 {descDisplay}
               </p>
             </div>
@@ -947,7 +947,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
             const extra = actives.length > 4 ? actives.length - 3 : 0;
             return (
               <div
-                className="mb-0.5 h-[48px] max-h-[48px] w-full shrink-0 overflow-hidden"
+                className="mb-0.5 w-full shrink-0 max-md:h-auto max-md:max-h-none max-md:overflow-visible md:h-[48px] md:max-h-[48px] md:overflow-hidden"
                 aria-label="Modalidades de atención"
               >
                 <div className="flex h-full max-h-full flex-wrap content-start gap-x-1 gap-y-0.5">

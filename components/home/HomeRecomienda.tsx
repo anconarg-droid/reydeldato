@@ -303,7 +303,7 @@ export default function HomeRecomienda({
                   onEmerald
                     ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 pt-1 border-t border-white/14"
                     : compactEmbedded
-                      ? "grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-3 pt-0.5 border-t border-slate-200/80"
+                      ? "grid grid-cols-1 gap-3 border-t border-slate-200/80 pt-0.5 md:grid-cols-3"
                       : "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 pt-1 border-t border-slate-200/80"
                 }
               >
@@ -380,7 +380,7 @@ export default function HomeRecomienda({
                     >
                       {whatsappEmbeddedHint.text}
                     </p>
-                  ) : (
+                  ) : compactEmbedded ? null : (
                     <p
                       className={
                         onEmerald ? "mt-1.5 text-xs text-emerald-100/85" : "mt-1.5 text-xs text-slate-500"
@@ -390,18 +390,33 @@ export default function HomeRecomienda({
                     </p>
                   )}
                 </div>
+
+                {compactEmbedded ? (
+                  <div>
+                    <label className={labelClass}>Nombre del negocio (opcional)</label>
+                    <input
+                      type="text"
+                      value={nombreEmprendimiento}
+                      onChange={(e) => setNombreEmprendimiento(e.target.value)}
+                      placeholder="Ej: Gasfitería Express / Minimarket Don Luis"
+                      className={inputClass}
+                    />
+                  </div>
+                ) : null}
               </div>
 
-              <div>
-                <label className={labelClass}>Nombre del negocio (opcional)</label>
-                <input
-                  type="text"
-                  value={nombreEmprendimiento}
-                  onChange={(e) => setNombreEmprendimiento(e.target.value)}
-                  placeholder="Ej: Gasfitería Express / Minimarket Don Luis"
-                  className={inputClass}
-                />
-              </div>
+              {!compactEmbedded ? (
+                <div>
+                  <label className={labelClass}>Nombre del negocio (opcional)</label>
+                  <input
+                    type="text"
+                    value={nombreEmprendimiento}
+                    onChange={(e) => setNombreEmprendimiento(e.target.value)}
+                    placeholder="Ej: Gasfitería Express / Minimarket Don Luis"
+                    className={inputClass}
+                  />
+                </div>
+              ) : null}
             </>
           ) : (
             <>
@@ -506,14 +521,14 @@ export default function HomeRecomienda({
                     : "text-center text-sm text-slate-600 pt-1"
               }
             >
-              Te toma menos de 1 minuto.
+              {compactEmbedded ? "Te tomará unos segundos." : "Te toma menos de 1 minuto."}
             </p>
           ) : null}
 
           <div
             className={
               compactEmbedded
-                ? "flex flex-col sm:flex-row sm:items-center gap-2 pt-0.5"
+                ? "flex w-full flex-col gap-2 pt-0.5"
                 : "flex flex-col sm:flex-row sm:items-center gap-3 pt-1"
             }
           >
@@ -524,7 +539,7 @@ export default function HomeRecomienda({
                 onEmerald
                   ? "inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-white px-8 py-3.5 text-base font-extrabold text-[#047857] shadow-md transition hover:bg-emerald-50 disabled:bg-white/50 disabled:text-emerald-800/60 disabled:cursor-not-allowed"
                   : compactEmbedded
-                    ? "inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-slate-900 text-white px-6 py-2.5 text-sm font-semibold shadow-sm transition-colors duration-200 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed"
+                    ? "inline-flex w-full items-center justify-center rounded-lg bg-slate-900 text-white px-6 py-2.5 text-sm font-semibold shadow-sm transition-colors duration-200 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed"
                     : embedded
                       ? "inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-slate-900 text-white px-8 py-3.5 text-base font-semibold shadow-sm transition-colors duration-200 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed"
                       : "inline-flex items-center justify-center rounded-full bg-slate-900 text-white px-5 py-2.5 text-sm font-semibold transition-colors duration-200 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed"

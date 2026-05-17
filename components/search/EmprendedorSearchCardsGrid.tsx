@@ -13,7 +13,7 @@ const EMPTY_STYLE: CSSProperties = {
 };
 
 const gridChildLayoutClass =
-  "min-h-0 [&>*]:h-full [&>*]:min-h-0 [&>[data-grid-row='banner']]:h-auto [&>[data-grid-row='banner']]:min-h-0";
+  "min-h-0 max-md:[&>*]:h-auto max-md:[&>*]:min-h-0 md:[&>*]:h-full md:[&>*]:min-h-0 [&>[data-grid-row='banner']]:h-auto [&>[data-grid-row='banner']]:min-h-0";
 
 function defaultColumns(itemCount: number): string {
   const n = Math.max(0, Math.floor(Number(itemCount) || 0));
