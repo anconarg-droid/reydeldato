@@ -194,7 +194,7 @@ export default function HomeComunasPreparacion({
     >
       <HomeComunasPreparacionMobile items={items} />
       <div className="hidden md:block">
-        <p className="max-w-2xl text-xs leading-snug text-slate-600">
+        <p className="max-w-2xl text-[15px] leading-snug text-slate-900">
           Estamos completando el catálogo comuna por comuna. Algunas comunas ya muestran resultados, pero todavía
           necesitan más negocios clave para que el directorio sea más útil.
         </p>
