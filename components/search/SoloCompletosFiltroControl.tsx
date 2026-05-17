@@ -58,12 +58,12 @@ export default function SoloCompletosFiltroControl({
 
   return (
     <div className="space-y-2.5">
-      <div className="flex gap-2.5">
+      <div className="flex flex-col gap-3 md:flex-row md:gap-2.5">
         <button
           type="button"
           aria-pressed={!filtroActivo}
           onClick={() => onCheckedChange(false)}
-          className={`flex flex-1 cursor-pointer items-center gap-3 rounded-2xl p-3.5 text-left transition-all ${
+          className={`flex w-full cursor-pointer items-center gap-3 rounded-2xl p-3.5 text-left transition-all md:flex-1 ${
             !filtroActivo
               ? "border-[1.5px] border-[#0F6E56] bg-[#0F6E56] shadow-lg shadow-[#0F6E56]/20"
               : "border border-gray-200 bg-white hover:border-[#5DCAA5] hover:bg-[#FAFEFC]"
@@ -101,7 +101,7 @@ export default function SoloCompletosFiltroControl({
           type="button"
           aria-pressed={filtroActivo}
           onClick={() => onCheckedChange(true)}
-          className={`flex flex-1 cursor-pointer items-center gap-3 rounded-2xl p-3.5 text-left transition-all ${
+          className={`flex w-full cursor-pointer items-center gap-3 rounded-2xl p-3.5 text-left transition-all md:flex-1 ${
             filtroActivo
               ? "border-[1.5px] border-[#0F6E56] bg-[#0F6E56] shadow-lg shadow-[#0F6E56]/20"
               : "border-[2px] border-[#5DCAA5] bg-white hover:border-[#0F6E56] hover:bg-[#FAFEFC]"
