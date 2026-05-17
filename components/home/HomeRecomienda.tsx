@@ -308,7 +308,9 @@ export default function HomeRecomienda({
                 }
               >
                 <div ref={comunaBoxRef} className="relative sm:col-span-1">
-                  <label className={labelClass}>Comuna (obligatoria)</label>
+                  <label className={labelClass}>
+                    {compactEmbedded ? "Comuna" : "Comuna (obligatoria)"}
+                  </label>
                   <input
                     type="text"
                     value={comunaInput}
@@ -320,7 +322,9 @@ export default function HomeRecomienda({
                     onFocus={() => {
                       if (comunaInput.trim().length >= 2) setOpenComuna(true);
                     }}
-                    placeholder="Ej: Maipú, San Bernardo, Puente Alto"
+                    placeholder={
+                      compactEmbedded ? "Ej: Maipú" : "Ej: Maipú, San Bernardo, Puente Alto"
+                    }
                     className={inputClass}
                     autoComplete="off"
                   />
@@ -358,7 +362,9 @@ export default function HomeRecomienda({
                 </div>
 
                 <div>
-                  <label className={labelClass}>WhatsApp (obligatorio)</label>
+                  <label className={labelClass}>
+                    {compactEmbedded ? "WhatsApp" : "WhatsApp (obligatorio)"}
+                  </label>
                   <input
                     type="tel"
                     inputMode="tel"
@@ -393,12 +399,12 @@ export default function HomeRecomienda({
 
                 {compactEmbedded ? (
                   <div>
-                    <label className={labelClass}>Nombre del negocio (opcional)</label>
+                    <label className={labelClass}>Nombre del negocio</label>
                     <input
                       type="text"
                       value={nombreEmprendimiento}
                       onChange={(e) => setNombreEmprendimiento(e.target.value)}
-                      placeholder="Ej: Gasfitería Express / Minimarket Don Luis"
+                      placeholder="Ej: Minimarket Don Luis"
                       className={inputClass}
                     />
                   </div>
