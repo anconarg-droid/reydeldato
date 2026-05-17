@@ -51,8 +51,8 @@ function gridColumnsClassName(itemCount: number): string {
   return n === 1
     ? "grid-cols-1 justify-items-center [&>*]:w-full [&>*]:max-w-sm"
     : n === 2
-      ? "grid-cols-1 md:grid-cols-2"
-      : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
+      ? "grid-cols-1 sm:grid-cols-2"
+      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
 }
 
 export default function AbrirComunaClient({
@@ -215,7 +215,7 @@ export default function AbrirComunaClient({
 
   return (
     <div>
-      <div className={`${busquedaComunaResultsShellClassName} pb-10 sm:pb-16 pt-2 sm:pt-4 sm:px-6`}>
+      <div className={`${busquedaComunaResultsShellClassName} pb-10 sm:pb-16 pt-2 sm:pt-4`}>
         <section className="rounded-3xl border border-slate-200/80 bg-white shadow-[0_20px_50px_-24px_rgba(15,23,42,0.25)] overflow-hidden">
           <div className="px-4 pt-8 pb-6 sm:px-6 sm:pt-9 sm:pb-7 bg-gradient-to-b from-white to-slate-50/90 md:px-8">
             <div className="mx-auto max-w-lg">
