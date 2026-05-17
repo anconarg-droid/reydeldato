@@ -534,7 +534,7 @@ export default function HomeLandingBody() {
           <p className="mt-1.5 max-w-md text-sm leading-snug text-slate-600">
             Recomiéndalo y ayúdanos a completar el catálogo de tu comuna.
           </p>
-          <div className="mx-auto mt-3 w-full max-w-md">
+          <div className="mx-auto mt-3 w-full max-w-[760px]">
             <HomeRecomienda embedded embeddedCompact initialComunaSlug={contextComunaSlug} />
           </div>
         </div>
