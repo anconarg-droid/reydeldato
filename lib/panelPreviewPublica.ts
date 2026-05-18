@@ -33,6 +33,24 @@ export function panelPreviewDebeBloquearAccionesPublicas(
   return panelPreviewTieneEdicionPublicadaPendiente(item);
 }
 
+export function panelNegocioEstaPublicado(
+  item: Record<string, unknown> | null | undefined
+): boolean {
+  if (!item || typeof item !== "object") return false;
+  const ep = normalizeEstadoPublicacionDb(String(item.estado_publicacion ?? ""));
+  return ep === ESTADO_PUBLICACION.publicado;
+}
+
+/**
+ * Vista previa de ficha en panel: ocultar compartir/tracking solo si aún no está publicada.
+ * Publicado con cambios pendientes → misma UI que la ficha live (incl. Compartir ficha).
+ */
+export function panelPreviewOcultarAccionesPublicasFicha(
+  item: Record<string, unknown> | null | undefined
+): boolean {
+  return !panelNegocioEstaPublicado(item);
+}
+
 /** Subtítulo bajo "Vista previa de tu ficha" en la card del panel. */
 export function panelPreviewSubtituloInformativo(
   item: Record<string, unknown> | null | undefined

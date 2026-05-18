@@ -22,6 +22,7 @@ import { getBloqueUbicacionFicha } from "@/lib/getContextoUbicacion";
 import { formatComunaRegion } from "@/lib/productRules";
 import { normalizeDescripcionCorta } from "@/lib/descripcionProductoForm";
 import { buildAtiendeLine, humanizeCoverageSlug } from "@/lib/search/atiendeResumenLabel";
+import { getLineaTaxonomiaCard } from "@/lib/search/emprendedorSearchCardHelpers";
 import { panelSlugFichaPublicaDesdeItem } from "@/lib/panelItemToSearchCardProps";
 import { getPublicSiteUrl } from "@/lib/getPublicSiteUrl";
 
@@ -94,6 +95,7 @@ export default function PanelFichaPreviewDosColumnas({
   const galeria = main ? galeriaRaw.filter((u) => s(u) !== main) : galeriaRaw;
 
   const comunaNombre = s(item.comunaBaseNombre);
+  const comunaBaseRegionAbrev = s(item.comunaBaseRegionAbrev);
   const coberturaTipo = s(item.coberturaTipo);
   const comunaBaseSlug = s(item.comunaBaseSlug);
   const comunasSlugs = uniqStrings(arr(item.comunasCoberturaSlugs)).filter(
@@ -121,7 +123,7 @@ export default function PanelFichaPreviewDosColumnas({
 
   const ubicacionUnaLinea = formatComunaRegion({
     comunaNombre,
-    regionNombre: null,
+    regionNombre: comunaBaseRegionAbrev || null,
     regionSlug: null,
   });
 
@@ -129,7 +131,7 @@ export default function PanelFichaPreviewDosColumnas({
     comunaBuscadaSlug: "",
     comunaBaseSlug: comunaBaseSlug || null,
     comunaBaseNombre: comunaNombre || null,
-    regionNombre: null,
+    regionNombre: comunaBaseRegionAbrev || null,
     regionSlug: null,
     coberturaTipo: coberturaTipo || null,
     comunasCobertura: null,
@@ -161,6 +163,22 @@ export default function PanelFichaPreviewDosColumnas({
   const rubroTitulo = rubroVisibleDesdeItem(item);
   const categoriaVisible =
     rubroTitulo || s(item.categoriaNombre) || "Servicios";
+
+  const subSlugs = Array.isArray(item.subcategoriasSlugs)
+    ? (item.subcategoriasSlugs as unknown[]).map((x) => s(x))
+    : [];
+  const subFinal =
+    s(
+      item.subcategoriaSlugFinal ??
+        (item as { subcategoria_slug_final?: unknown }).subcategoria_slug_final ??
+        "",
+    ) || undefined;
+  const lineaTaxonomia =
+    getLineaTaxonomiaCard({
+      categoriaNombre: s(item.categoriaNombre) || undefined,
+      subcategoriaSlugFinal: subFinal,
+      subcategoriasSlugs: subSlugs.length ? subSlugs : undefined,
+    }).trim() || "";
 
   const subtituloVisible = buildSubtituloFicha({
     categoria: categoriaVisible,
@@ -210,16 +228,18 @@ export default function PanelFichaPreviewDosColumnas({
     if (!Array.isArray(raw)) return undefined;
     const mapped = raw
       .map((r: any) => {
-        const comunaSlug = s(r?.comunaSlug ?? r?.comuna_slug);
-        const comunaNombre =
-          s(r?.comunaNombre ?? r?.comuna_nombre) || humanizeCoverageSlug(comunaSlug);
+        const comunaSlugLoc = s(r?.comunaSlug ?? r?.comuna_slug);
+        const comunaNombreLoc =
+          s(r?.comunaNombre ?? r?.comuna_nombre) ||
+          humanizeCoverageSlug(comunaSlugLoc);
         const direccion = s(r?.direccion);
         const referencia = s(r?.referencia);
         const esPrincipal = r?.esPrincipal === true || r?.es_principal === true;
-        if (!comunaNombre && !direccion && !referencia) return null;
+        if (!comunaNombreLoc && !direccion && !referencia) return null;
         return {
           nombre_local: null as string | null,
-          comuna_nombre: comunaNombre || "",
+          comuna_nombre: comunaNombreLoc || "",
+          comuna_slug: comunaSlugLoc || null,
           direccion,
           referencia: referencia || undefined,
           es_principal: esPrincipal,
@@ -289,6 +309,8 @@ export default function PanelFichaPreviewDosColumnas({
         responsableNombre={s(item.responsable)}
         localesFicha={localesFicha}
         shareUrl={shareUrl}
+        lineaTaxonomia={lineaTaxonomia}
+        mostrarEnlacesMapas={comoAtiende.localFisico}
         moderacionVistaPrevia={ocultarAccionesPublicas}
       />
     </div>

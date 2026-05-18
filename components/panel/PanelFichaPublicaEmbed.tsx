@@ -1,7 +1,12 @@
 "use client";
 
 import type { ModoVistaPanel } from "@/lib/panelModoVista";
-import { panelPreviewMensajeEmbed } from "@/lib/panelPreviewPublica";
+import {
+  panelNegocioEstaPublicado,
+  panelPreviewMensajeEmbed,
+  panelPreviewOcultarAccionesPublicasFicha,
+  panelPreviewTieneEdicionPublicadaPendiente,
+} from "@/lib/panelPreviewPublica";
 import PanelFichaPreviewDosColumnas from "@/components/panel/PanelFichaPreviewDosColumnas";
 
 type Props = {
@@ -35,9 +40,29 @@ export default function PanelFichaPublicaEmbed({
     );
   }
 
+  const src = `/emprendedor/${encodeURIComponent(s)}`;
+  const esBasica = modoVista === "basica";
+  const publicado = item ? panelNegocioEstaPublicado(item) : false;
+  const cambiosPendientes = item
+    ? panelPreviewTieneEdicionPublicadaPendiente(item)
+    : false;
+  const usarIframeFichaLive = publicado && !cambiosPendientes && !esBasica;
+
+  const iframeFichaLive = (
+    <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+      <iframe
+        title="Vista pública de tu ficha (igual que verán los clientes)"
+        src={src}
+        className="w-full min-h-[min(72vh,680px)] border-0 bg-white"
+        loading="lazy"
+      />
+    </div>
+  );
+
   if (vistaPublicaBloqueada) {
     if (item) {
       const msg = panelPreviewMensajeEmbed(item);
+      const ocultarAcciones = panelPreviewOcultarAccionesPublicasFicha(item);
       return (
         <div className="space-y-3">
           <div
@@ -49,11 +74,15 @@ export default function PanelFichaPublicaEmbed({
               {msg.cuerpo}
             </p>
           </div>
-          <PanelFichaPreviewDosColumnas
-            item={item}
-            urlSlugParam={urlSlugParam}
-            ocultarAccionesPublicas
-          />
+          {usarIframeFichaLive ? (
+            iframeFichaLive
+          ) : (
+            <PanelFichaPreviewDosColumnas
+              item={item}
+              urlSlugParam={urlSlugParam}
+              ocultarAccionesPublicas={ocultarAcciones}
+            />
+          )}
         </div>
       );
     }
@@ -72,9 +101,6 @@ export default function PanelFichaPublicaEmbed({
       </div>
     );
   }
-
-  const src = `/emprendedor/${encodeURIComponent(s)}`;
-  const esBasica = modoVista === "basica";
 
   return (
     <div className="space-y-2">
@@ -95,27 +121,21 @@ export default function PanelFichaPublicaEmbed({
             </p>
           </div>
         </div>
-      ) : item ? (
+      ) : usarIframeFichaLive || !item ? (
+        iframeFichaLive
+      ) : (
         <PanelFichaPreviewDosColumnas
           item={item}
           urlSlugParam={urlSlugParam}
+          ocultarAccionesPublicas={panelPreviewOcultarAccionesPublicasFicha(item)}
         />
-      ) : (
-        <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-          <iframe
-            title="Vista pública de tu ficha (igual que verán los clientes)"
-            src={src}
-            className="w-full min-h-[min(72vh,680px)] border-0 bg-white"
-            loading="lazy"
-          />
-        </div>
       )}
 
       {!esBasica ? (
         <p className="text-xs text-gray-500">
-          {item
-            ? "Misma estructura que la ficha pública: galería y descripción a la izquierda, panel de contacto a la derecha."
-            : "Es la misma página pública que abren tus clientes. Puede tardar un momento en cargar."}
+          {usarIframeFichaLive || !item
+            ? "Es la misma página pública que abren tus clientes. Puede tardar un momento en cargar."
+            : "Misma estructura que la ficha pública: galería y descripción a la izquierda, panel de contacto a la derecha."}
         </p>
       ) : null}
     </div>
