@@ -444,7 +444,16 @@ async function searchEmprendedoresGlobalAlgoliaInner(
   }
 
   if (slugsOrdered.length === 0) {
-    return { items: [], error: null };
+    /** Algolia no matchea bien nombres propios cortos (p. ej. «ulmo»); Supabase ILIKE en nombre sí. */
+    const textFallback = await searchEmprendedoresGlobalText(inputTerm, limit, opts);
+    if (regionSlug) {
+      return {
+        items: textFallback.items,
+        error: textFallback.error,
+        meta: { regionalFallback: false, regionOriginal: regionSlug },
+      };
+    }
+    return { items: textFallback.items, error: textFallback.error };
   }
 
   const { data: vwRows, error: vwError } = await supabase
