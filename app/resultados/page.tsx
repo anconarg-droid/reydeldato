@@ -215,7 +215,7 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
 
   const regionSlugParaBusquedaGlobal = scopeNacional ? null : regionFocoSlug;
 
-  const verOtrasRegionesActivo = (params.ver_otras_regiones ?? "").trim() === "1";
+  let verOtrasRegionesActivo = (params.ver_otras_regiones ?? "").trim() === "1";
 
   const globalDb =
     q && !comuna
@@ -225,8 +225,8 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
       : null;
 
   /**
-   * Listado nacional (otras regiones): solo con `?ver_otras_regiones=1` explícito
-   * o el usuario ya eligió búsqueda nacional (`scope=nacional` no usa este bloque).
+   * Otras regiones: explícito (`?ver_otras_regiones=1`) o automático si en la región no hay
+   * resultados pero sí a nivel nacional (p. ej. nombre de negocio en otra región).
    */
   let globalDbOtrasRegiones: Awaited<
     ReturnType<typeof searchEmprendedoresGlobalAlgolia>
@@ -236,13 +236,19 @@ export default async function ResultadosPage({ searchParams }: PageProps) {
     !comuna &&
     !scopeNacional &&
     regionSlugParaBusquedaGlobal &&
-    verOtrasRegionesActivo &&
     globalDb &&
-    !globalDb.error
+    !globalDb.error &&
+    globalDb.items.length === 0
   ) {
-    globalDbOtrasRegiones = await searchEmprendedoresGlobalAlgolia(q, 24, {
+    const nacional = await searchEmprendedoresGlobalAlgolia(q, 24, {
       regionSlug: null,
     });
+    if (nacional.items.length > 0) {
+      globalDbOtrasRegiones = nacional;
+      verOtrasRegionesActivo = true;
+    } else if (verOtrasRegionesActivo) {
+      globalDbOtrasRegiones = nacional;
+    }
   }
 
   return (

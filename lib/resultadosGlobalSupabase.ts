@@ -89,6 +89,25 @@ function buildStrictIntentTextOrFilter(normTerm: string): string {
   return `${ilike},keywords_finales.cs.{${normTerm}}`;
 }
 
+async function fetchGlobalTextRowsBroad(
+  supabase: ReturnType<typeof createSupabaseServerPublicClient>,
+  normTerm: string,
+  fetchCap: number
+): Promise<Record<string, unknown>[]> {
+  const primaryOr = buildGlobalTextOrFilter(normTerm);
+  const { data, error } = await supabase
+    .from("vw_emprendedores_publico")
+    .select("*")
+    .eq("estado_publicacion", "publicado")
+    .or(primaryOr)
+    .limit(fetchCap);
+  if (error) {
+    console.error("[global-search] fallback amplio:", error.message);
+    return [];
+  }
+  return Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
+}
+
 function buildGlobalTextOrFilterFromPatterns(patterns: string[]): string {
   const parts: string[] = [];
   const seenCs = new Set<string>();
@@ -210,6 +229,11 @@ export async function searchEmprendedoresGlobalText(
         }
         rows = Array.isArray(r3.data) ? (r3.data as Record<string, unknown>[]) : [];
       }
+    }
+
+    /** Rubro mapeado pero sin fichas con ese `subcategoria_slug_final`: ampliar a texto/keywords. */
+    if (rows.length === 0) {
+      rows = await fetchGlobalTextRowsBroad(supabase, normTerm, fetchCap);
     }
   } else {
     const tokens = normTerm.split(/\s+/).filter(Boolean);

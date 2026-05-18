@@ -520,8 +520,14 @@ export default function ResultadosClient({
   const hrefVerOtrasRegiones = `/resultados?${paramsVerOtras.toString()}`;
   const regionalVacio =
     Boolean(q) && hayFocoRegionalActivo && !db.error && db.items.length === 0;
-  const mostrarBloqueNacionalSeparado =
-    Boolean(verOtrasRegionesActivo && otras && !otras.error && otras.items.length > 0);
+  const hayResultadosOtrasRegiones = Boolean(
+    otras && !otras.error && otras.items.length > 0,
+  );
+  const mostrarBloqueNacionalSeparado = Boolean(
+    verOtrasRegionesActivo && hayResultadosOtrasRegiones,
+  );
+  const amplioAutomaticoOtrasRegiones =
+    regionalVacio && hayResultadosOtrasRegiones && verOtrasRegionesActivo;
 
   return (
     <div className="mt-2 space-y-4">
@@ -557,7 +563,7 @@ export default function ResultadosClient({
         <GlobalDbResults q={q} items={db.items} error={db.error} />
       ) : (
         <div className="space-y-8">
-          {regionalVacio && !verOtrasRegionesActivo ? (
+          {regionalVacio && !hayResultadosOtrasRegiones ? (
             <div
               className="rounded-2xl border border-slate-200 bg-white px-4 py-5 sm:px-5"
               style={{ boxShadow: "0 1px 3px rgba(15,23,42,0.06)" }}
@@ -575,6 +581,12 @@ export default function ResultadosClient({
                 </Link>
               </div>
             </div>
+          ) : amplioAutomaticoOtrasRegiones ? (
+            <p className="m-0 text-sm font-medium leading-relaxed text-slate-800">
+              No hay &ldquo;{terminoParaCopy}&rdquo; en{" "}
+              {(regionFocoNombre ?? "").trim() || "tu región"}, pero sí encontramos opciones en
+              otras regiones:
+            </p>
           ) : null}
 
           {db.items.length > 0 ? (
