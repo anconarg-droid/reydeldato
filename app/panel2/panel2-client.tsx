@@ -610,7 +610,7 @@ export default function Panel2Client({
           PLAN_UI_LINEA_FECHAS_NO_PANEL,
         ].filter(Boolean);
         return (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-row items-center justify-between gap-4">
             <div className="space-y-1.5 text-sm text-gray-800 min-w-0">
               <h2 className="text-base font-black text-gray-900 leading-snug">
                 {planUi.titulo}
@@ -625,7 +625,7 @@ export default function Panel2Client({
               <Link
                 href={planesHref}
                 prefetch={false}
-                className="inline-flex shrink-0 min-h-[44px] items-center justify-center rounded-xl px-4 text-sm font-bold bg-gray-900 text-white hover:bg-gray-800"
+                className="inline-flex shrink-0 min-h-[40px] items-center justify-center rounded-xl border border-teal-600 px-5 text-sm font-semibold text-teal-700 bg-white hover:bg-teal-50 transition-colors"
               >
                 Ver planes
               </Link>
