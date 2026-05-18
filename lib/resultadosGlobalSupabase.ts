@@ -212,20 +212,39 @@ export async function searchEmprendedoresGlobalText(
       }
     }
   } else {
-    const primaryOr = buildGlobalTextOrFilter(normTerm);
-
-    let { data, error } = await supabase
-      .from("vw_emprendedores_publico")
-      .select("*")
-      .eq("estado_publicacion", "publicado")
-      .or(primaryOr)
-      .limit(fetchCap);
-
-    if (error) {
-      return { items: [], error: error.message };
+    const tokens = normTerm.split(/\s+/).filter(Boolean);
+    if (tokens.length === 1 && normTerm.length >= 3) {
+      const nombrePattern = `%${escapeIlikePattern(normTerm)}%`;
+      const nombreRes = await supabase
+        .from("vw_emprendedores_publico")
+        .select("*")
+        .eq("estado_publicacion", "publicado")
+        .ilike("nombre_emprendimiento", nombrePattern)
+        .limit(fetchCap);
+      if (nombreRes.error) {
+        return { items: [], error: nombreRes.error.message };
+      }
+      rows = Array.isArray(nombreRes.data)
+        ? (nombreRes.data as Record<string, unknown>[])
+        : [];
     }
 
-    rows = Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
+    if (rows.length === 0) {
+      const primaryOr = buildGlobalTextOrFilter(normTerm);
+
+      const { data, error } = await supabase
+        .from("vw_emprendedores_publico")
+        .select("*")
+        .eq("estado_publicacion", "publicado")
+        .or(primaryOr)
+        .limit(fetchCap);
+
+      if (error) {
+        return { items: [], error: error.message };
+      }
+
+      rows = Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
+    }
 
     if (
       rows.length === 0 &&

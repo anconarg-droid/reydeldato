@@ -320,6 +320,20 @@ async function searchEmprendedoresGlobalAlgoliaInner(
   const intentSubSlugs = mapQueryToSubcategorias(normQ);
   const detectedSub = intentSubSlugs?.length ? null : detectSubcategoria(tokens);
 
+  const busquedaPorNombrePropio =
+    tokens.length === 1 && !intentSubSlugs?.length && !detectedSub && tokens[0].length >= 3;
+  if (busquedaPorNombrePropio) {
+    const textOnly = await searchEmprendedoresGlobalText(inputTerm, limit, opts);
+    if (regionSlug) {
+      return {
+        items: textOnly.items,
+        error: textOnly.error,
+        meta: { regionalFallback: false, regionOriginal: regionSlug },
+      };
+    }
+    return { items: textOnly.items, error: textOnly.error };
+  }
+
   const index = getAlgoliaAdminIndex(INDEX_NAME);
 
   /** Pedir más hits si hay filtro regional (mismo criterio que antes: filtrar en memoria). */
@@ -351,7 +365,7 @@ async function searchEmprendedoresGlobalAlgoliaInner(
       "descripcion_larga",
     ],
     optionalWords: tokens.length > 1 ? tokens : undefined,
-    removeWordsIfNoResults: "allOptional",
+    removeWordsIfNoResults: tokens.length === 1 ? "none" : "allOptional",
     ignorePlurals: true,
     typoTolerance: "min",
   });
@@ -488,6 +502,18 @@ async function searchEmprendedoresGlobalAlgoliaInner(
     rowsFiltered = orderedRows.filter((r) => recordMatchesRegionSlug(r, regionSlug));
   } else {
     rowsFiltered = orderedRows;
+  }
+
+  if (rowsFiltered.length === 0 && slugsOrdered.length > 0) {
+    const textOnly = await searchEmprendedoresGlobalText(inputTerm, limit, opts);
+    if (regionSlug) {
+      return {
+        items: textOnly.items,
+        error: textOnly.error,
+        meta: { regionalFallback: false, regionOriginal: regionSlug },
+      };
+    }
+    return { items: textOnly.items, error: textOnly.error };
   }
 
   if (
