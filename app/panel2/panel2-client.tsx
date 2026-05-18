@@ -40,6 +40,22 @@ import {
   type PanelInteresMetricasFlags,
 } from "@/lib/panelMetricasInteresUi";
 
+const TABLER_ICONS_HREF =
+  "https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css";
+
+function TablerIconsStylesheet() {
+  useEffect(() => {
+    const id = "tabler-icons-panel2-metrics";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = TABLER_ICONS_HREF;
+    document.head.appendChild(link);
+  }, []);
+  return null;
+}
+
 type Metrics = {
   impresiones: number;
   visitas: number;
@@ -166,21 +182,20 @@ function MetricsResumenPanel({
       title={rangeLabel}
       aria-label={ariaResumen}
     >
+      <TablerIconsStylesheet />
       <div className="space-y-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1.5">
+          <div className="min-w-0 space-y-1">
             <h3 className="text-base font-semibold tracking-tight text-gray-900">
               Rendimiento de tu negocio
             </h3>
-            <p className="text-sm leading-relaxed text-gray-500">
-              Cuántas veces apareciste y qué hicieron las personas.
-            </p>
+            <p className="text-sm leading-relaxed text-gray-500">{rangeLabel}</p>
           </div>
           {headerRight ? <div className="shrink-0">{headerRight}</div> : null}
         </div>
 
-        <section>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <section aria-label="Métricas principales">
+          <div className="grid grid-cols-3 gap-3">
             {loading ? (
               <>
                 {[0, 1, 2].map((k) => (
@@ -189,46 +204,37 @@ function MetricsResumenPanel({
                     className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-center"
                     aria-hidden
                   >
-                    <div className="h-4 w-28 mx-auto rounded bg-gray-200/90 animate-pulse" />
-                    <div className="mt-3 h-9 w-16 mx-auto rounded bg-gray-200/90 animate-pulse" />
-                    <div className="mt-2 h-3 w-full max-w-[12rem] mx-auto rounded bg-gray-100 animate-pulse" />
+                    <div className="mx-auto h-5 w-5 rounded bg-gray-200/90 animate-pulse" />
+                    <div className="mx-auto mt-3 h-9 w-12 rounded bg-gray-200/90 animate-pulse" />
+                    <div className="mx-auto mt-2 h-3 w-full max-w-[4.5rem] rounded bg-gray-100 animate-pulse" />
                   </div>
                 ))}
               </>
             ) : (
               <>
                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
-                  <p className="text-lg" aria-hidden>
-                    🔍
-                  </p>
-                  <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
+                  <i className="ti ti-eye text-xl text-gray-500" aria-hidden />
+                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
                     {apariciones}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-gray-700">
-                    Te encontraron
-                  </p>
+                  <p className="mt-1 text-xs font-medium text-gray-500">Te encontraron</p>
                 </div>
                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
-                  <p className="text-lg" aria-hidden>
-                    👁
-                  </p>
-                  <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
+                  <i className="ti ti-id-badge text-xl text-gray-500" aria-hidden />
+                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
                     {vistas}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-gray-700">
-                    Vieron tu ficha
-                  </p>
+                  <p className="mt-1 text-xs font-medium text-gray-500">Vieron tu ficha</p>
                 </div>
-                <div className="rounded-xl border border-emerald-200/80 bg-gray-50 p-4 text-center ring-1 ring-emerald-100/60">
-                  <p className="text-lg" aria-hidden>
-                    💬
-                  </p>
-                  <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-gray-900">
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center">
+                  <i
+                    className="ti ti-brand-whatsapp text-xl text-green-700"
+                    aria-hidden
+                  />
+                  <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-green-800">
                     {clicsWhatsApp}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-gray-700">
-                    Te contactaron
-                  </p>
+                  <p className="mt-1 text-xs font-medium text-gray-500">Te escribieron</p>
                 </div>
               </>
             )}
@@ -239,50 +245,64 @@ function MetricsResumenPanel({
           <>
             <hr className="border-gray-200" aria-hidden />
 
-            <section className="space-y-2" aria-label="Mostraron interés">
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-gray-900">Mostraron interés</h4>
-                <p className="text-xs leading-relaxed text-gray-500">
-                  Otras acciones que indican interés
+            <section className="space-y-2" aria-label="También mostraron interés">
+              {!loading &&
+              (interes.mostrarInstagramWeb || interes.mostrarComoLlegar) ? (
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-gray-400">
+                  También mostraron interés
                 </p>
-              </div>
+              ) : null}
               {loading ? (
-                <div className="mt-4 space-y-3" aria-hidden>
-                  {[0, 1].map((k) => (
-                    <div key={k} className="flex justify-between gap-4">
-                      <div className="h-4 flex-1 max-w-[10rem] rounded bg-gray-100 animate-pulse" />
-                      <div className="h-4 w-10 rounded bg-gray-100 animate-pulse" />
+                <div
+                  className={`grid gap-3 ${
+                    nCardsInteres >= 2 ? "grid-cols-2" : "grid-cols-1 max-w-xs"
+                  }`}
+                  aria-hidden
+                >
+                  {[0, 1].slice(0, Math.max(nCardsInteres, 1)).map((k) => (
+                    <div
+                      key={k}
+                      className="flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5"
+                    >
+                      <div className="h-8 w-8 shrink-0 rounded bg-gray-200/90 animate-pulse" />
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="h-6 w-10 rounded bg-gray-200/90 animate-pulse" />
+                        <div className="h-3 w-20 rounded bg-gray-100 animate-pulse" />
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div
-                  className={`grid grid-cols-1 gap-3 ${
-                    nCardsInteres >= 2 ? "sm:grid-cols-2" : "sm:max-w-xs sm:mx-auto sm:grid-cols-1"
+                  className={`grid gap-3 ${
+                    nCardsInteres >= 2 ? "grid-cols-2" : "grid-cols-1 max-w-xs"
                   }`}
                 >
                   {interes.mostrarInstagramWeb ? (
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
-                      <p className="text-lg" aria-hidden>
-                        🌐
-                      </p>
-                      <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
-                        {clicsInstagramWeb}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-gray-700">
-                        {interes.etiquetaInstagramWeb}
-                      </p>
+                    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                      <i
+                        className="ti ti-brand-instagram shrink-0 text-xl text-gray-600"
+                        aria-hidden
+                      />
+                      <div className="min-w-0 text-left">
+                        <p className="text-xl font-bold tabular-nums tracking-tight text-gray-900">
+                          {clicsInstagramWeb}
+                        </p>
+                        <p className="text-xs font-medium text-gray-500">
+                          {interes.etiquetaInstagramWeb}
+                        </p>
+                      </div>
                     </div>
                   ) : null}
                   {interes.mostrarComoLlegar ? (
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
-                      <p className="text-lg" aria-hidden>
-                        🗺
-                      </p>
-                      <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
-                        {comoLlegar}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-gray-700">Cómo llegar</p>
+                    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                      <i className="ti ti-map-2 shrink-0 text-xl text-gray-600" aria-hidden />
+                      <div className="min-w-0 text-left">
+                        <p className="text-xl font-bold tabular-nums tracking-tight text-gray-900">
+                          {comoLlegar}
+                        </p>
+                        <p className="text-xs font-medium text-gray-500">Cómo llegar</p>
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -301,16 +321,20 @@ function MetricsResumenPanel({
             if (!insight) return null;
             return (
               <div
-                className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm leading-relaxed text-emerald-950"
+                className="flex items-start gap-2 rounded-lg border border-green-100 bg-green-50 px-3 py-2 text-sm font-medium text-green-800"
                 role="status"
               >
-                {insight}
+                <i
+                  className="ti ti-circle-check mt-0.5 shrink-0 text-base text-green-700"
+                  aria-hidden
+                />
+                <p className="m-0 leading-snug">{insight}</p>
               </div>
             );
           })()
         ) : (
           <div
-            className="h-14 rounded-xl border border-green-100 bg-green-50/80 animate-pulse"
+            className="h-11 rounded-lg border border-green-100 bg-green-50/80 animate-pulse"
             aria-hidden
           />
         )}
