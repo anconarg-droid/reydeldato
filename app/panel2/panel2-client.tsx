@@ -625,7 +625,7 @@ export default function Panel2Client({
               <Link
                 href={planesHref}
                 prefetch={false}
-                className="inline-flex shrink-0 min-h-[40px] items-center justify-center rounded-xl border border-teal-600 px-5 text-sm font-semibold text-teal-700 bg-white hover:bg-teal-50 transition-colors"
+                className="inline-flex shrink-0 min-h-[44px] items-center justify-center rounded-xl border border-teal-600 px-6 text-base font-semibold text-teal-700 bg-white hover:bg-teal-50 transition-colors"
               >
                 Ver planes
               </Link>
@@ -648,7 +648,7 @@ export default function Panel2Client({
         <Link
           href={editarMiFichaHref}
           prefetch={false}
-          className="inline-flex min-h-[44px] w-full min-w-[10rem] items-center justify-center rounded-xl px-5 text-sm font-bold bg-gray-900 text-white hover:bg-gray-800 sm:w-auto sm:px-7 sm:text-base"
+          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-teal-600 bg-teal-600 px-5 text-base font-bold text-white hover:bg-teal-700 hover:border-teal-700 transition-colors"
         >
           Editar mi ficha
         </Link>
@@ -661,10 +661,16 @@ export default function Panel2Client({
 
   const cuandoTerminePlan =
     tieneNegocio && !fichaLoading && mostrarBloqueCuandoTerminePlan(comercial) ? (
-      <div
-        className="space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4"
-        style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}
-      >
+      <div style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        <div
+          className="space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4"
+          style={{
+            flexGrow: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
         <BloqueCuandoTerminePlan />
         <div className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-amber-300/60 bg-white/90 p-5 text-center shadow-inner mt-4">
           <p className="w-full px-1 text-center text-lg font-black leading-tight text-gray-900">
@@ -674,6 +680,7 @@ export default function Panel2Client({
             Completa · Básica
           </p>
           <SwitchModoVista value={modoVista} onChange={setModoVista} size="prominent" />
+        </div>
         </div>
       </div>
     ) : null;

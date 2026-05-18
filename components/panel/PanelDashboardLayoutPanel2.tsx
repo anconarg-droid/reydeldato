@@ -25,7 +25,7 @@ export default function PanelDashboardLayoutPanel2({
   return (
     <main style={{ maxWidth: "1280px", margin: "0 auto", padding: "24px 16px" }}>
       {backButton}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: "24px", alignItems: "start", marginTop: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: "24px", alignItems: "stretch", marginTop: "24px" }}>
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "16px" }}>
           {tuNegocio}
           {planActual}
