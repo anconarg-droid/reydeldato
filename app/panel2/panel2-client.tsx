@@ -477,8 +477,11 @@ export default function Panel2Client({
       modoVista,
       (tipoFichaPanel ?? "basica") as TipoFicha
     );
-    return applied;
-  }, [negocioItem, modoVista, tipoFichaPanel]);
+    return {
+      ...applied,
+      bloquearAccesoFichaPublica: previewInformativa,
+    };
+  }, [negocioItem, modoVista, tipoFichaPanel, previewInformativa]);
 
   const slugFichaPublica = useMemo(() => {
     return negocioItem ? panelSlugFichaPublicaDesdeItem(negocioItem) : "";
@@ -766,7 +769,6 @@ export default function Panel2Client({
             <EmprendedorSearchCard
               {...previewCardProps}
               modoVista={modoVista}
-              etiquetaVerFicha="Ver ficha completa"
             />
           </div>
         ) : (

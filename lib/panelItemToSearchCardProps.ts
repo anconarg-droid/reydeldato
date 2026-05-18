@@ -1,5 +1,6 @@
 import type { EmprendedorSearchCardProps } from "@/components/search/EmprendedorSearchCard";
 import { pareceUuidEmprendedor } from "@/lib/emprendedorLookupParam";
+import { normalizeEstadoPublicacionDb } from "@/lib/estadoPublicacion";
 import {
   buildLocalesResumenLineaTarjeta,
   modalidadesDbToCardBadges,
@@ -136,6 +137,9 @@ export function panelNegocioItemToSearchCardProps(
     comunaBaseNombre:
       String(item.comunaBaseNombre ?? "").trim() || "—",
     atiendeLine,
+    estadoPublicacion:
+      normalizeEstadoPublicacionDb(String(item.estado_publicacion ?? "")) ||
+      undefined,
     analyticsSource: "panel",
   };
 }

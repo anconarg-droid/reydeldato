@@ -14,7 +14,11 @@ export function aplicarModoBasicoSearchCardProps(
   _tipoComercialReal: TipoFicha
 ): EmprendedorSearchCardProps {
   if (modo === "completa") {
-    return { ...base };
+    return {
+      ...base,
+      esFichaCompleta: true,
+      estadoFicha: "ficha_completa",
+    };
   }
   return {
     ...base,
