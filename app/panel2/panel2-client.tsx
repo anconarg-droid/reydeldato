@@ -661,18 +661,23 @@ export default function Panel2Client({
 
   const cuandoTerminePlan =
     tieneNegocio && !fichaLoading && mostrarBloqueCuandoTerminePlan(comercial) ? (
-      <div style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+      <div
+        style={{
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+          justifyContent: "center",
+          gap: "16px",
+        }}
+      >
+        <div className="shrink-0 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
+          <BloqueCuandoTerminePlan />
+        </div>
         <div
-          className="space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4"
-          style={{
-            flexGrow: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
+          className="flex w-full shrink-0 flex-col items-center justify-center gap-3 rounded-xl border-2 border-amber-300/60 bg-white/90 p-5 text-center shadow-inner"
+          style={{ marginTop: "auto", marginBottom: "auto" }}
         >
-        <BloqueCuandoTerminePlan />
-        <div className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-amber-300/60 bg-white/90 p-5 text-center shadow-inner mt-4">
           <p className="w-full px-1 text-center text-lg font-black leading-tight text-gray-900">
             Compara cómo te ven
           </p>
@@ -680,7 +685,6 @@ export default function Panel2Client({
             Completa · Básica
           </p>
           <SwitchModoVista value={modoVista} onChange={setModoVista} size="prominent" />
-        </div>
         </div>
       </div>
     ) : null;
