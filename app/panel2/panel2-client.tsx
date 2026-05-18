@@ -689,6 +689,19 @@ export default function Panel2Client({
               size="prominent"
             />
           </div>
+          {modoVista === "basica" && (
+            <div className="mt-3 w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-1">
+              <p className="font-bold">En ficha básica perderías:</p>
+              <ul className="space-y-1 pl-1">
+                <li>· Sin estadísticas de rendimiento en el panel</li>
+                <li>· Sin tarjeta de búsqueda con foto y descripción</li>
+                <li>· Sin ficha pública completa</li>
+              </ul>
+              <p className="mt-2 text-xs text-amber-800">
+                Elige «Completa» arriba para mantener todo esto.
+              </p>
+            </div>
+          )}
         </section>
       </div>
     ) : null;
