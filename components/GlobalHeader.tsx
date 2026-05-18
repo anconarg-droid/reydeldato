@@ -5,6 +5,7 @@ import { Sora } from "next/font/google";
 import { postClientAnalyticsEvent } from "@/lib/postClientAnalyticsEvent";
 import { capturePosthogEvent } from "@/lib/posthog";
 import ReyDelDatoLogo from "@/components/brand/ReyDelDatoLogo";
+import { usePanelEmbed } from "@/hooks/usePanelEmbed";
 
 const sora = Sora({
   subsets: ["latin"],
@@ -14,6 +15,9 @@ const sora = Sora({
 });
 
 export default function GlobalHeader() {
+  const panelEmbed = usePanelEmbed();
+  if (panelEmbed) return null;
+
   return (
     <header
       className={`${sora.variable} sticky top-0 z-40 w-full`}

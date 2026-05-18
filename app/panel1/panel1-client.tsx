@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import PanelBrandHomeBar from "@/components/panel/PanelBrandHomeBar";
+import PanelCargandoScreen from "@/components/panel/PanelCargandoScreen";
 import PanelFichaPublicaEmbed from "@/components/panel/PanelFichaPublicaEmbed";
 import { PanelRendimientoModoBasicaPreview } from "@/components/panel/PanelRendimientoModoBasicaPreview";
 import { SwitchModoVista } from "@/components/panel/SwitchModoVista";
@@ -522,6 +523,13 @@ export default function Panel1Client({
     setModoVista("completa");
   }, [qs]);
 
+  const panelCargando =
+    fichaLoading || (qs ? loading || data === null : false);
+
+  if (panelCargando) {
+    return <PanelCargandoScreen />;
+  }
+
   const backButton = <PanelBrandHomeBar />;
 
   const tuNegocio = (
@@ -775,6 +783,7 @@ export default function Panel1Client({
           item={negocioItem}
           urlSlugParam={slug}
           vistaPublicaBloqueada={previewInformativa}
+          embedSoloFicha
         />
       </section>
     ) : null;

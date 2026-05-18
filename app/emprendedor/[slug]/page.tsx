@@ -30,6 +30,7 @@ import {
 } from "@/lib/emprendedorFichaUi";
 import { displayTitleCaseWords } from "@/lib/displayTextFormat";
 import { getBloqueUbicacionFicha } from "@/lib/getContextoUbicacion";
+import { parsePanelEmbedQuery } from "@/lib/panelEmbedQuery";
 import { getEmprendedorPublicoBySlug } from "@/lib/getEmprendedorPublicoBySlug";
 import {
   direccionCallePrincipalDesdeLocales,
@@ -734,14 +735,7 @@ export default async function Page({
       console.log("[ficha-page] slug_param", { slug });
     }
     const sp = (await searchParams) ?? {};
-    const panelEmbedRaw = Array.isArray(sp.panel_embed)
-      ? sp.panel_embed[0]
-      : sp.panel_embed;
-    const panelEmbed = ["1", "true", "yes"].includes(
-      String(panelEmbedRaw ?? "")
-        .trim()
-        .toLowerCase(),
-    );
+    const panelEmbed = parsePanelEmbedQuery(sp.panel_embed);
     const item = await getEmprendedor(slug);
 
     if (!item) notFound();
@@ -1229,7 +1223,13 @@ export default async function Page({
   }
 
   return (
-    <main style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 20px 80px" }}>
+    <main
+      style={{
+        maxWidth: 1280,
+        margin: "0 auto",
+        padding: panelEmbed ? "12px 12px 20px" : "28px 20px 80px",
+      }}
+    >
       <TrackView slug={item.slug} />
 
       <script
@@ -1237,27 +1237,30 @@ export default async function Page({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div
-        style={{
-          marginBottom: 8,
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <BackLink
+      {!panelEmbed ? (
+        <div
           style={{
-            fontWeight: 700,
-            fontSize: 14,
-            textDecoration: "none",
-            color: "#2563eb",
+            marginBottom: 8,
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            flexWrap: "wrap",
           }}
         >
-          ← Volver
-        </BackLink>
-      </div>
+          <BackLink
+            style={{
+              fontWeight: 700,
+              fontSize: 14,
+              textDecoration: "none",
+              color: "#2563eb",
+            }}
+          >
+            ← Volver
+          </BackLink>
+        </div>
+      ) : null}
 
+      {!panelEmbed ? (
       <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 20 }}>
         <a href="/" style={{ color: "#2563eb", textDecoration: "none" }}>
           Inicio
@@ -1300,6 +1303,7 @@ export default async function Page({
         {" / "}
         {nombreFichaTitulo}
       </div>
+      ) : null}
 
       {!esFichaCompleta ? (
         <>

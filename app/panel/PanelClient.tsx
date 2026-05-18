@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import EmprendedorSearchCard from "@/components/search/EmprendedorSearchCard";
 import PanelBrandHomeBar from "@/components/panel/PanelBrandHomeBar";
+import PanelCargandoScreen from "@/components/panel/PanelCargandoScreen";
 import { PanelRendimientoModoBasicaPreview } from "@/components/panel/PanelRendimientoModoBasicaPreview";
 import type { PerfilCompleto } from "@/lib/calcularCompletitudEmprendedor";
 import type { TipoFicha } from "@/lib/calcularTipoFicha";
@@ -883,7 +884,9 @@ export default function PanelClient({
     completitud: PerfilCompleto;
   } | null>(null);
   const [tipoFichaPanel, setTipoFichaPanel] = useState<TipoFicha | null>(null);
-  const [fichaLoading, setFichaLoading] = useState(false);
+  const [fichaLoading, setFichaLoading] = useState(
+    () => Boolean(id?.trim() || slug?.trim() || accessToken?.trim())
+  );
   const [comercial, setComercial] = useState<PanelComercialPayload | null>(
     null
   );
@@ -1130,15 +1133,11 @@ export default function PanelClient({
       .finally(() => setFichaLoading(false));
   }, [id, slug, accessToken]);
 
-  if (loading || data === null) {
-    return (
-      <div className="w-full">
-        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 py-8 space-y-5">
-          <PanelBrandHomeBar />
-          Cargando…
-        </div>
-      </div>
-    );
+  const panelCargando =
+    fichaLoading || (qs ? loading || data === null : false);
+
+  if (panelCargando) {
+    return <PanelCargandoScreen maxWidthClass="max-w-[1440px]" />;
   }
 
   return (

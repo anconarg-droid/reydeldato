@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import type { Viewport } from 'next'
+import { Suspense } from 'react'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import HomeFooter from '@/components/home/HomeFooter'
@@ -45,9 +46,13 @@ export default function RootLayout({
         <PostHogProvider>
           <div className="min-h-screen flex flex-col">
             <WhatsappContactHintHost />
-            <GlobalHeader />
+            <Suspense fallback={null}>
+              <GlobalHeader />
+            </Suspense>
             <main className="flex-1">{children}</main>
-            <HomeFooter />
+            <Suspense fallback={null}>
+              <HomeFooter />
+            </Suspense>
           </div>
         </PostHogProvider>
       </body>

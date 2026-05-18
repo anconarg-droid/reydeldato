@@ -68,9 +68,7 @@ export default function PanelFichaPublicaEmbed({
     );
   }
 
-  const src = embedSoloFicha
-    ? `/emprendedor/${encodeURIComponent(s)}?panel_embed=1`
-    : `/emprendedor/${encodeURIComponent(s)}`;
+  const src = `/emprendedor/${encodeURIComponent(s)}?panel_embed=1`;
   const esBasica = modoVista === "basica";
   const publicado = item ? panelNegocioEstaPublicado(item) : false;
   const cambiosPendientes = item

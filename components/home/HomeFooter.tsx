@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { usePanelEmbed } from "@/hooks/usePanelEmbed";
 
 export default function HomeFooter() {
+  const panelEmbed = usePanelEmbed();
   const pathname = usePathname();
+  if (panelEmbed) return null;
   const isTerminos = pathname === "/terminos";
   const isPrivacidad = pathname === "/privacidad";
   return (
