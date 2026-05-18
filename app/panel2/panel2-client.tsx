@@ -804,6 +804,7 @@ export default function Panel2Client({
           item={negocioItem}
           urlSlugParam={slug}
           vistaPublicaBloqueada={previewInformativa}
+          embedSoloFicha
         />
       </section>
     ) : null;

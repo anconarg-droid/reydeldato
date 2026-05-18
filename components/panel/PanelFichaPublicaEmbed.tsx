@@ -19,6 +19,8 @@ type Props = {
   urlSlugParam?: string;
   /** `estado_publicacion = en_revision`: sin iframe ni URL pública; vista previa local si hay `item`. */
   vistaPublicaBloqueada?: boolean;
+  /** Iframe sin bloque «similares» (panel2). */
+  embedSoloFicha?: boolean;
 };
 
 function VeloFichaModoBasica({ children }: { children: ReactNode }) {
@@ -55,6 +57,7 @@ export default function PanelFichaPublicaEmbed({
   item = null,
   urlSlugParam,
   vistaPublicaBloqueada = false,
+  embedSoloFicha = false,
 }: Props) {
   const s = String(slug || "").trim();
   if (!s) {
@@ -65,7 +68,9 @@ export default function PanelFichaPublicaEmbed({
     );
   }
 
-  const src = `/emprendedor/${encodeURIComponent(s)}`;
+  const src = embedSoloFicha
+    ? `/emprendedor/${encodeURIComponent(s)}?panel_embed=1`
+    : `/emprendedor/${encodeURIComponent(s)}`;
   const esBasica = modoVista === "basica";
   const publicado = item ? panelNegocioEstaPublicado(item) : false;
   const cambiosPendientes = item

@@ -734,6 +734,14 @@ export default async function Page({
       console.log("[ficha-page] slug_param", { slug });
     }
     const sp = (await searchParams) ?? {};
+    const panelEmbedRaw = Array.isArray(sp.panel_embed)
+      ? sp.panel_embed[0]
+      : sp.panel_embed;
+    const panelEmbed = ["1", "true", "yes"].includes(
+      String(panelEmbedRaw ?? "")
+        .trim()
+        .toLowerCase(),
+    );
     const item = await getEmprendedor(slug);
 
     if (!item) notFound();
@@ -981,8 +989,9 @@ export default async function Page({
     });
   }
 
-  const similaresRaw = await getSimilaresFichaUI(item);
-  const similares = filtrarSimilaresSinRuido(similaresRaw).slice(0, 4);
+  const similares = panelEmbed
+    ? []
+    : filtrarSimilaresSinRuido(await getSimilaresFichaUI(item)).slice(0, 4);
 
   if (logSimilaresPage) {
     console.log("[similares-page] similares", { count: similares.length });
