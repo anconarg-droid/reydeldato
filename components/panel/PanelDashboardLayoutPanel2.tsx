@@ -1,5 +1,4 @@
 "use client";
-
 import type { ReactNode } from "react";
 
 type Props = {
@@ -24,24 +23,23 @@ export default function PanelDashboardLayoutPanel2({
   perfilPublico,
 }: Props) {
   return (
-    <main className="mx-auto w-full max-w-[1280px] px-4 py-6 space-y-6">
+    <main style={{ maxWidth: "1280px", margin: "0 auto", padding: "24px 16px" }}>
       {backButton}
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_400px] md:items-start">
-        <section className="min-w-0 space-y-4">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: "24px", alignItems: "start", marginTop: "24px" }}>
+        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "16px" }}>
           {tuNegocio}
           {planActual}
           {progresoFicha}
           {cuandoTerminePlan}
-        </section>
-
-        <aside className="min-w-0 space-y-4 md:sticky md:top-24">
+        </div>
+        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "16px", position: "sticky", top: "96px" }}>
           {rendimiento}
           {previewBusqueda}
-        </aside>
+        </div>
       </div>
-
-      <section className="w-full">{perfilPublico}</section>
+      <div style={{ marginTop: "40px" }}>
+        {perfilPublico}
+      </div>
     </main>
   );
 }
