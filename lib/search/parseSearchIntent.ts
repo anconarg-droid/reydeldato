@@ -1,6 +1,40 @@
 import { detectComunaFromQuery } from "./comunaAliases";
 import { INTENT_ALIASES } from "./intentAliases";
 
+/** Artículos y conectores: no deben disparar intención (p. ej. «la» en «la espuela» ≠ electricista «se cortó la luz»). */
+const SEARCH_STOPWORDS = new Set([
+  "la",
+  "el",
+  "los",
+  "las",
+  "lo",
+  "le",
+  "les",
+  "de",
+  "del",
+  "en",
+  "y",
+  "e",
+  "o",
+  "u",
+  "a",
+  "al",
+  "un",
+  "una",
+  "unos",
+  "unas",
+  "con",
+  "por",
+  "para",
+  "que",
+  "su",
+  "sus",
+]);
+
+function meaningfulTokens(tokens: string[]): string[] {
+  return tokens.filter((t) => t.length >= 2 && !SEARCH_STOPWORDS.has(t));
+}
+
 function normalize(text: string): string {
   return (text || "")
     .toLowerCase()
@@ -61,8 +95,9 @@ export function parseSearchIntent(raw: string): ParsedSearchIntent {
     // token exact (ej. "auto" presente como palabra completa)
     if (aliasTokens.includes(restNorm)) return 95;
 
-    // multi-token: uno de los tokens coincide exacto
-    if (restTokens.some((t) => aliasTokens.includes(t))) return 90;
+    // multi-token: token con significado (sin artículos «la», «el», …)
+    const meaningfulRest = meaningfulTokens(restTokens);
+    if (meaningfulRest.some((t) => aliasTokens.includes(t))) return 90;
 
     // Para queries cortas: NO permitimos match por substring dentro de tokens (ej. auto ⊂ automático)
     if (isShortQuery) return 0;
