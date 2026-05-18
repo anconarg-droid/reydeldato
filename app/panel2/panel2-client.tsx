@@ -531,10 +531,10 @@ export default function Panel2Client({
       aria-label={`Tu negocio: ${tituloHeaderPanel}`}
     >
       <div className="shrink-0 space-y-0.5 border-b border-gray-200/80 pb-2">
-        <p className="text-base font-black tracking-tight text-gray-900 sm:text-lg">
+        <p className="text-2xl font-black tracking-tight text-gray-900">
           Tu negocio
         </p>
-        <p className="text-[11px] font-semibold text-gray-500 sm:text-xs">
+        <p className="text-sm text-gray-500">
           Gestiona tu perfil
         </p>
       </div>
@@ -542,17 +542,19 @@ export default function Panel2Client({
         {tituloHeaderPanel}
       </h1>
       {tieneNegocio && !fichaLoading && negocioItem ? (
-        <div className="mt-2 space-y-1 text-sm text-gray-600">
+        <div className="mt-2 space-y-1">
           {String(negocioItem.comunaBaseNombre ?? "").trim() ? (
             <p>
-              <span className="font-semibold text-gray-700">Comuna:</span>{" "}
-              {String(negocioItem.comunaBaseNombre).trim()}
+              <span className="text-base font-semibold text-gray-900">Comuna:</span>{" "}
+              <span className="text-base text-gray-800">
+                {String(negocioItem.comunaBaseNombre).trim()}
+              </span>
             </p>
           ) : null}
           {estadoPanelResumen ? (
             <p>
-              <span className="font-semibold text-gray-700">Estado:</span>{" "}
-              <span className="text-gray-800">{estadoPanelResumen}</span>
+              <span className="text-base font-semibold text-gray-900">Estado:</span>{" "}
+              <span className="text-base text-gray-800">{estadoPanelResumen}</span>
             </p>
           ) : null}
         </div>
@@ -565,7 +567,7 @@ export default function Panel2Client({
           />
         ) : (
           <p
-            className={`mt-2 inline-flex w-fit max-w-full rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${
+            className={`mt-2 inline-flex w-fit max-w-full rounded-full border px-4 py-1.5 text-sm font-bold uppercase tracking-wide ${
               perfilCompletoEnHeader
                 ? "border-emerald-200 bg-emerald-50 text-emerald-900"
                 : "border-amber-200 bg-amber-50 text-amber-950"
@@ -659,10 +661,13 @@ export default function Panel2Client({
 
   const cuandoTerminePlan =
     tieneNegocio && !fichaLoading && mostrarBloqueCuandoTerminePlan(comercial) ? (
-      <div className="space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
+      <div
+        className="space-y-3 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4"
+        style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}
+      >
         <BloqueCuandoTerminePlan />
-        <div className="flex w-full max-w-md flex-col items-center justify-center gap-2.5 rounded-lg border border-amber-300/50 bg-white/90 p-3 text-center shadow-inner mx-auto">
-          <p className="w-full px-1 text-center text-base font-black leading-tight text-gray-900">
+        <div className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-amber-300/60 bg-white/90 p-5 text-center shadow-inner mt-4">
+          <p className="w-full px-1 text-center text-lg font-black leading-tight text-gray-900">
             Compara cómo te ven
           </p>
           <p className="w-full text-center text-[10px] font-semibold uppercase tracking-wide text-amber-900/90">
