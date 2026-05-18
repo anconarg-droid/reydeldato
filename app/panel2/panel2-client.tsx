@@ -121,6 +121,12 @@ function textoRangoMetricas(range: StatsRange): string {
   return "Estás viendo estadísticas desde la activación de tu ficha";
 }
 
+function textoRangoMetricasCorto(range: StatsRange): string {
+  if (range === "7d") return "Últimos 7 días";
+  if (range === "30d") return "Últimos 30 días";
+  return "Desde el inicio";
+}
+
 function panelInsightMessage(
   apariciones: number,
   vistas: number,
@@ -138,12 +144,14 @@ function panelInsightMessage(
 function MetricsResumenPanel({
   data,
   rangeLabel,
+  range,
   interes,
   loading = false,
   headerRight,
 }: {
   data: Metrics;
   rangeLabel: string;
+  range: StatsRange;
   interes: PanelInteresMetricasFlags;
   loading?: boolean;
   headerRight?: ReactNode;
@@ -189,7 +197,9 @@ function MetricsResumenPanel({
             <h3 className="text-base font-semibold tracking-tight text-gray-900">
               Rendimiento de tu negocio
             </h3>
-            <p className="text-sm leading-relaxed text-gray-500">{rangeLabel}</p>
+            <p className="text-sm leading-relaxed text-gray-500">
+              {textoRangoMetricasCorto(range)}
+            </p>
           </div>
           {headerRight ? <div className="shrink-0">{headerRight}</div> : null}
         </div>
@@ -736,6 +746,7 @@ export default function Panel2Client({
       <MetricsResumenPanel
         data={metricsMostrados}
         rangeLabel={textoRangoMetricas(rangoMostrado)}
+        range={rangoMostrado}
         interes={interesMetricasFlags}
         loading={loading}
         headerRight={
