@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { ModoVistaPanel } from "@/lib/panelModoVista";
 import {
   panelNegocioEstaPublicado,
@@ -20,9 +21,33 @@ type Props = {
   vistaPublicaBloqueada?: boolean;
 };
 
+function VeloFichaModoBasica({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative min-h-[min(420px,72vh)] rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+      <div
+        className="pointer-events-none min-h-[min(420px,72vh)] max-h-[min(72vh,680px)] overflow-hidden blur-[10px] brightness-[0.88] contrast-[0.92] saturate-[0.85]"
+        aria-hidden
+      >
+        {children}
+      </div>
+      <div
+        className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 p-6 text-center bg-white/88 pointer-events-none"
+        role="status"
+      >
+        <p className="text-base sm:text-lg font-black text-gray-900 max-w-md leading-snug">
+          Aquí es donde decides si te contactan o no
+        </p>
+        <p className="text-sm font-semibold text-gray-700 max-w-md leading-snug">
+          Con ficha completa ganas visibilidad; con ficha básica solo contacto por WhatsApp.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Modo **completa**: vista 2 columnas con datos del panel (como la ficha pública).
- * Modo **básica**: iframe de la página + velo borroso.
+ * Modo **básica**: iframe o preview con velo borroso y mensaje de producto.
  */
 export default function PanelFichaPublicaEmbed({
   slug,
@@ -47,22 +72,44 @@ export default function PanelFichaPublicaEmbed({
     ? panelPreviewTieneEdicionPublicadaPendiente(item)
     : false;
   const usarIframeFichaLive = publicado && !cambiosPendientes && !esBasica;
+  const ocultarAcciones = panelPreviewOcultarAccionesPublicasFicha(item);
 
-  const iframeFichaLive = (
+  const iframeFicha = (
+    <iframe
+      title={
+        esBasica
+          ? "Vista previa: página ampliada (perfil completo)"
+          : "Vista pública de tu ficha (igual que verán los clientes)"
+      }
+      src={src}
+      className="w-full min-h-[min(72vh,680px)] border-0 bg-white"
+      loading="lazy"
+    />
+  );
+
+  const fichaCuerpo: ReactNode = usarIframeFichaLive ? (
+    iframeFicha
+  ) : item ? (
+    <PanelFichaPreviewDosColumnas
+      item={item}
+      urlSlugParam={urlSlugParam}
+      ocultarAccionesPublicas={ocultarAcciones}
+    />
+  ) : (
+    iframeFicha
+  );
+
+  const fichaVisual = esBasica ? (
+    <VeloFichaModoBasica>{fichaCuerpo}</VeloFichaModoBasica>
+  ) : (
     <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-      <iframe
-        title="Vista pública de tu ficha (igual que verán los clientes)"
-        src={src}
-        className="w-full min-h-[min(72vh,680px)] border-0 bg-white"
-        loading="lazy"
-      />
+      {fichaCuerpo}
     </div>
   );
 
   if (vistaPublicaBloqueada) {
     if (item) {
       const msg = panelPreviewMensajeEmbed(item);
-      const ocultarAcciones = panelPreviewOcultarAccionesPublicasFicha(item);
       return (
         <div className="space-y-3">
           <div
@@ -74,15 +121,7 @@ export default function PanelFichaPublicaEmbed({
               {msg.cuerpo}
             </p>
           </div>
-          {usarIframeFichaLive ? (
-            iframeFichaLive
-          ) : (
-            <PanelFichaPreviewDosColumnas
-              item={item}
-              urlSlugParam={urlSlugParam}
-              ocultarAccionesPublicas={ocultarAcciones}
-            />
-          )}
+          {fichaVisual}
         </div>
       );
     }
@@ -104,33 +143,7 @@ export default function PanelFichaPublicaEmbed({
 
   return (
     <div className="space-y-2">
-      {esBasica ? (
-        <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-          <iframe
-            title="Vista previa: página ampliada (perfil completo)"
-            src={src}
-            className="w-full min-h-[min(72vh,680px)] border-0 bg-white"
-            loading="lazy"
-          />
-          <div
-            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 p-6 text-center bg-white/70 backdrop-blur-[5px] pointer-events-none supports-[backdrop-filter]:bg-white/55"
-            aria-hidden
-          >
-            <p className="text-base sm:text-lg font-black text-gray-900 max-w-md leading-snug">
-              Aquí es donde decides si te contactan o no
-            </p>
-          </div>
-        </div>
-      ) : usarIframeFichaLive || !item ? (
-        iframeFichaLive
-      ) : (
-        <PanelFichaPreviewDosColumnas
-          item={item}
-          urlSlugParam={urlSlugParam}
-          ocultarAccionesPublicas={panelPreviewOcultarAccionesPublicasFicha(item)}
-        />
-      )}
-
+      {fichaVisual}
       {!esBasica ? (
         <p className="text-xs text-gray-500">
           {usarIframeFichaLive || !item

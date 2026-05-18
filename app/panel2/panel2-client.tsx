@@ -332,27 +332,6 @@ function mostrarBloqueCuandoTerminePlan(
   );
 }
 
-function BloqueCuandoTerminePlan() {
-  return (
-    <section
-      className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm text-sm text-gray-800 sm:p-3.5"
-      aria-label="Qué pasa cuando termina tu plan"
-    >
-      <h2 className="text-base font-black text-gray-900 mb-2">
-        Cuando termine tu plan:
-      </h2>
-      <ul className="list-disc pl-4 space-y-1 text-sm text-gray-800 leading-snug">
-        <li>Tu negocio seguirá visible en tu comuna</li>
-        <li>Pasarás a ficha básica: solo WhatsApp y datos esenciales</li>
-        <li>No podrás mostrar fotos, redes ni descripción completa</li>
-      </ul>
-      <p className="mt-3 text-sm text-gray-800 leading-snug">
-        Puedes activar la ficha completa cuando quieras para mostrar mejor tu negocio.
-      </p>
-    </section>
-  );
-}
-
 type Props = {
   id: string;
   slug: string;
@@ -667,24 +646,50 @@ export default function Panel2Client({
           flexDirection: "column",
           minHeight: 0,
           justifyContent: "center",
-          gap: "16px",
         }}
       >
-        <div className="shrink-0 rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-white to-white p-3 shadow-sm sm:p-4">
-          <BloqueCuandoTerminePlan />
-        </div>
-        <div
-          className="flex w-full shrink-0 flex-col items-center justify-center gap-3 rounded-xl border-2 border-amber-300/60 bg-white/90 p-5 text-center shadow-inner"
-          style={{ marginTop: "auto", marginBottom: "auto" }}
+        <section
+          className="w-full rounded-xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/95 via-amber-50/90 to-amber-50/75 p-4 shadow-sm sm:p-5"
+          aria-label="Compara cómo te ven al terminar tu plan"
         >
-          <p className="w-full px-1 text-center text-lg font-black leading-tight text-gray-900">
+          <p className="m-0 text-lg font-black text-center text-gray-900">
             Compara cómo te ven
           </p>
-          <p className="w-full text-center text-[10px] font-semibold uppercase tracking-wide text-amber-900/90">
-            Completa · Básica
+          <p className="mt-2 m-0 text-sm text-center text-amber-900">
+            Al terminar tu plan pasarás a ficha básica:
           </p>
-          <SwitchModoVista value={modoVista} onChange={setModoVista} size="prominent" />
-        </div>
+          <ul className="m-0 mt-3 list-none space-y-1.5 p-0">
+            {[
+              "Tu negocio seguirá visible en tu comuna",
+              "Solo WhatsApp y datos esenciales",
+              "Sin fotos, redes ni descripción completa",
+            ].map((linea) => (
+              <li
+                key={linea}
+                className="flex items-center justify-center gap-1.5 text-sm text-center text-gray-700 leading-snug"
+              >
+                <span
+                  className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-200/90 text-[10px] font-black text-amber-950"
+                  aria-hidden
+                >
+                  ✓
+                </span>
+                {linea}
+              </li>
+            ))}
+          </ul>
+          <hr className="my-4 border-0 border-t border-amber-200/90" />
+          <p className="m-0 text-sm font-semibold text-center text-gray-900">
+            ¿Cómo prefieres que te vean?
+          </p>
+          <div className="mt-3 flex justify-center">
+            <SwitchModoVista
+              value={modoVista}
+              onChange={setModoVista}
+              size="prominent"
+            />
+          </div>
+        </section>
       </div>
     ) : null;
 
