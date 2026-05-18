@@ -320,9 +320,16 @@ async function searchEmprendedoresGlobalAlgoliaInner(
   const intentSubSlugs = mapQueryToSubcategorias(normQ);
   const detectedSub = intentSubSlugs?.length ? null : detectSubcategoria(tokens);
 
-  const busquedaPorNombrePropio =
-    tokens.length === 1 && !intentSubSlugs?.length && !detectedSub && tokens[0].length >= 3;
-  if (busquedaPorNombrePropio) {
+  const busquedaPorNombreNegocio =
+    !intentSubSlugs?.length &&
+    !detectedSub &&
+    normQ.length >= 3 &&
+    (tokens.length === 1
+      ? tokens[0].length >= 3
+      : tokens.length >= 2 &&
+        tokens.length <= 5 &&
+        tokens.every((t) => t.length >= 2));
+  if (busquedaPorNombreNegocio) {
     const textOnly = await searchEmprendedoresGlobalText(inputTerm, limit, opts);
     if (regionSlug) {
       return {

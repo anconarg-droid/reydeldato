@@ -25,6 +25,9 @@ const QUERY_KEY_TO_SUBS: Record<string, string[]> = {
   carniceria: ["carniceria"],
   carnicero: ["carniceria"],
   cecinas: ["carniceria"],
+  electricista: ["electricista"],
+  electricistas: ["electricista"],
+  electricidad: ["electricista"],
 };
 
 export function mapQueryToSubcategorias(query: string): string[] | null {

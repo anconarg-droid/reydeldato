@@ -31,12 +31,12 @@ function escapeIlikePattern(text: string): string {
 const GLOBAL_FETCH_CAP_WITH_REGION = 2000;
 
 /** Campos de texto en `vw_emprendedores_publico` para ILIKE (sin cambiar ranking posterior). */
+/** Solo columnas `text`; `palabras_clave` / `keywords_finales` son `text[]` (usar `.cs`, no ILIKE). */
 const GLOBAL_TEXT_ILIKE_FIELDS = [
   "nombre_emprendimiento",
   "frase_negocio",
   "descripcion_libre",
   "categoria_nombre",
-  "palabras_clave",
   "subcategoria_slug_final",
 ] as const;
 
@@ -213,7 +213,13 @@ export async function searchEmprendedoresGlobalText(
     }
   } else {
     const tokens = normTerm.split(/\s+/).filter(Boolean);
-    if (tokens.length === 1 && normTerm.length >= 3) {
+    const buscaNombrePrimero =
+      normTerm.length >= 3 &&
+      (tokens.length === 1 ||
+        (tokens.length >= 2 &&
+          tokens.length <= 5 &&
+          tokens.every((t) => t.length >= 2)));
+    if (buscaNombrePrimero) {
       const nombrePattern = `%${escapeIlikePattern(normTerm)}%`;
       const nombreRes = await supabase
         .from("vw_emprendedores_publico")
