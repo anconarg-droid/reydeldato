@@ -472,16 +472,12 @@ export default function Panel2Client({
       negocioItem,
       (tipoFichaPanel ?? "basica") as "basica" | "completa"
     );
-    const applied = aplicarModoBasicoSearchCardProps(
+    return aplicarModoBasicoSearchCardProps(
       base,
       modoVista,
       (tipoFichaPanel ?? "basica") as TipoFicha
     );
-    return {
-      ...applied,
-      bloquearAccesoFichaPublica: previewInformativa,
-    };
-  }, [negocioItem, modoVista, tipoFichaPanel, previewInformativa]);
+  }, [negocioItem, modoVista, tipoFichaPanel]);
 
   const slugFichaPublica = useMemo(() => {
     return negocioItem ? panelSlugFichaPublicaDesdeItem(negocioItem) : "";
@@ -766,10 +762,7 @@ export default function Panel2Client({
                 </p>
               </div>
             ) : null}
-            <EmprendedorSearchCard
-              {...previewCardProps}
-              modoVista={modoVista}
-            />
+            <EmprendedorSearchCard {...previewCardProps} />
           </div>
         ) : (
           <div

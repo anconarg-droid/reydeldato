@@ -18,6 +18,7 @@ import {
   getModalidadesChips,
   getSubcategoriaDescripcionFallback,
   listadoFooterCtasDosColumnas,
+  isPerfilCompletoCard,
   listadoPerfilCompletoUi,
   tieneModalidadLocalFisicoEnChips,
 } from "@/lib/search/emprendedorSearchCardHelpers";
@@ -445,6 +446,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
   const etiquetaVerFicha = String(p.etiquetaVerFicha ?? "").trim() || "Ver ficha";
   /** Badge, borde teal, sombra y CTA secundario activo: trial/plan + publicado + sin bloqueo. */
   const listadoUiPerfilCompleto = listadoPerfilCompletoUi(p);
+  const perfilCompletoVisual = isPerfilCompletoCard(p);
   /** WhatsApp + columna secundaria (enlace o deshabilitada): trial/plan + publicado. */
   const listadoPieDosCtas = listadoFooterCtasDosColumnas(p);
   const esIntermedio = perfilIntermedioListadoPorTexto(p);
@@ -738,7 +740,7 @@ export default function EmprendedorSearchCard(p: EmprendedorSearchCardProps) {
           )}
 
           <div className="pointer-events-none absolute bottom-2 left-2 z-[1]">
-            {listadoUiPerfilCompleto ? (
+            {perfilCompletoVisual ? (
               <span className="rounded-full bg-[#0f766e] px-2.5 py-1 text-[9px] font-extrabold tracking-wide text-white shadow-sm">
                 Perfil completo
               </span>

@@ -43,6 +43,7 @@ import {
   validateLocalesRules,
 } from "@/lib/emprendedorLocalesDb";
 import { ESTADO_PUBLICACION } from "@/lib/estadoPublicacion";
+import { getRegionShort } from "@/utils/regionShort";
 import { assertPostulacionLocalFisicoUbicacion } from "@/lib/postulacionLocalFisicoUbicacion";
 import { requiereDireccionSiModalidadLocalFisico } from "@/lib/requiereDireccionLocalFisico";
 import { POSTULACIONES_MODERACION_SELECT } from "@/lib/loadPostulacionesModeracion";
@@ -819,20 +820,30 @@ export async function GET(req: NextRequest) {
 
     let comunaSlug = "";
     let comunaBaseNombre = "";
+    let comunaBaseRegionAbrev = "";
     const comunaRef = comunaRefFromRow(row);
     if (comunaRef != null) {
       try {
         const { data: comuna, error: errC } = await supabase
           .from("comunas")
-          .select("slug, nombre")
+          .select("slug, nombre, regiones(nombre)")
           .eq("id", comunaRef)
           .maybeSingle();
         if (errC) {
           logPanelNegocioGet("comunas_error", { message: errC.message });
         } else if (comuna && typeof comuna === "object") {
-          const c = comuna as { slug?: unknown; nombre?: unknown };
+          const c = comuna as {
+            slug?: unknown;
+            nombre?: unknown;
+            regiones?: { nombre?: unknown } | null;
+          };
           if (typeof c.slug === "string") comunaSlug = s(c.slug);
           if (typeof c.nombre === "string") comunaBaseNombre = s(c.nombre);
+          const regNom =
+            c.regiones != null && typeof c.regiones === "object"
+              ? s((c.regiones as { nombre?: unknown }).nombre)
+              : "";
+          comunaBaseRegionAbrev = regNom ? getRegionShort(regNom) : "";
         }
       } catch (e) {
         logPanelNegocioGet("comunas_exception", {
@@ -1284,6 +1295,7 @@ export async function GET(req: NextRequest) {
       subcategoriasSlugs,
 
       comunaBaseSlug: comunaSlug,
+      ...(comunaBaseRegionAbrev ? { comunaBaseRegionAbrev } : {}),
       coberturaTipo: ((): "solo_comuna" | "varias_comunas" | "regional" | "nacional" => {
         if (
           coberturaRaw === "comuna" ||

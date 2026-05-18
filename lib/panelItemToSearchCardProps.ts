@@ -136,6 +136,10 @@ export function panelNegocioItemToSearchCardProps(
       modalidadesCardBadges.length > 0 ? modalidadesCardBadges : undefined,
     comunaBaseNombre:
       String(item.comunaBaseNombre ?? "").trim() || "—",
+    comunaBaseSlug:
+      String(item.comunaBaseSlug ?? "").trim() || undefined,
+    comunaBaseRegionAbrev:
+      String(item.comunaBaseRegionAbrev ?? "").trim() || undefined,
     atiendeLine,
     estadoPublicacion:
       normalizeEstadoPublicacionDb(String(item.estado_publicacion ?? "")) ||
