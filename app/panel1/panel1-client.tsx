@@ -18,10 +18,9 @@ import {
 } from "@/lib/estadoPublicacion";
 import {
   buildPlanUi,
-  PLAN_UI_LINEA_FECHAS_NO_PANEL,
-  PLAN_UI_LINEA_PLAN_ACTIVO,
   PLAN_UI_TITULO_ACCESO_INICIAL,
 } from "@/lib/panelEstadoPlanUi";
+import { PanelPlanActualResumenBody } from "@/components/panel/PanelPlanActualResumenBody";
 import {
   aplicarModoBasicoSearchCardProps,
   type ModoVistaPanel,
@@ -603,21 +602,13 @@ export default function Panel1Client({
           );
         }
         if (!comercial) return null;
-        const lineas = [
-          PLAN_UI_LINEA_PLAN_ACTIVO,
-          PLAN_UI_LINEA_FECHAS_NO_PANEL,
-        ].filter(Boolean);
         return (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1.5 text-sm text-gray-800 min-w-0">
               <h2 className="text-base font-black text-gray-900 leading-snug">
                 {planUi.titulo}
               </h2>
-              {lineas.map((t, idx) => (
-                <p key={idx} className="m-0 text-gray-700 leading-relaxed">
-                  {t}
-                </p>
-              ))}
+              <PanelPlanActualResumenBody planUi={planUi} />
             </div>
             {planesUiVisible ? (
               <Link
